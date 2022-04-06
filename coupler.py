@@ -113,16 +113,26 @@ class Waveguide:
             raise ValueError("Shutter array is neither a single value nor array of appropriate size.")    
 
     def __get_sbend_parameter(self, D):
-        
-        # assert we have a radius defined
-        
+        assert self._radius is not None, "Try to compute S-bend parameter with R = None."
         dy = np.abs(D/2)
         a = np.arccos(1 - (dy/self._radius))
-        dx = 2 * self._radius * np.sin(a)
-        return (a, dx)
+        dx = 2 * self._radius * np.sin(a)    
+        return (a, dx)              
     
     def curvature(self):
-        pass
+        dx_dt = np.gradient(self._M['x'])
+        dy_dt = np.gradient(self._M['y'])
+        dz_dt = np.gradient(self._M['z'])
+        
+        d2x_dt2 = np.gradient(dx_dt)
+        d2y_dt2 = np.gradient(dy_dt)
+        d2z_dt2 = np.gradient(dz_dt)
+        
+        num = np.sqrt((d2z_dt2*dy_dt - d2y_dt2*dz_dt)**2 + (d2x_dt2*dz_dt - d2z_dt2*dx_dt)**2 + (d2y_dt2*dx_dt - d2x_dt2*dy_dt)**2)
+        den = (dx_dt*dx_dt + dy_dt*dy_dt + dz_dt*dz_dt)**1.5
+        default_zero = np.ones(np.size(num))*np.inf
+        curvature = np.divide(num, den, out=default_zero, where=den!=0) # only divide nonzeros else Inf
+        return curvature
     
     def __cmd_per_second(self):
         pass
@@ -163,8 +173,27 @@ for index, wg in enumerate(coup):
     wg.end()
 
 print(wg.M)
+print(wg.curvature())
 
-plt.figure()
-for wg in coup:
-    plt.plot(wg.M['x'], wg.M['y'], )
-plt.show()
+
+# plt.figure()
+# for wg in coup:
+#     plt.plot(wg.M['x'], wg.M['y'], )
+# plt.show()
+
+
+# import plotly.graph_objects as go
+
+# import plotly.io as pio
+# pio.renderers.default = 'svg'
+# # pio.renderers.default = 'browser'
+
+# x = ['Product A', 'Product B', 'Product C']
+# y = [20, 14, 23]
+
+# fig = go.Figure(data=[go.Bar(
+#             x=x, y=y,
+#             text=y,
+#             textposition='auto',
+#         )])
+# fig.show()
