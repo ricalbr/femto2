@@ -3,63 +3,69 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 class Waveguide:
-    def __init__(self, xi=None, yi=None, zi=None, xv=None, yv=None, vpos=5):
-        self._xi=xi
-        self._yi=yi
-        self._zi=zi
+    def __init__(self, 
+                 pitch=None, 
+                 radius=None, 
+                 num_scan=None, 
+                 c_max=1200, 
+                 l_sample=None, 
+                 n_env=1.5/1.33, # TODO: importa come una costante
+                 vpos=5):
         
-        self._xv=xv
-        self._yv=yv
+        self._pitch=pitch
+        self._radius=radius
+        self._num_scan=num_scan
+        self._c_max=c_max        
+        self._l_sample=l_sample
         self._vpos=vpos
+        self._n_env=n_env
 
         self._M = {}
     
+    # Getters/Setters
     @property
-    def xi(self):
-        return self._xi
+    def num_scan(self):
+        return self._num_scan
     
-    @xi.setter
-    def xi(self, x):
-        self._xi=x
-        self.set_init_point()
-    
-    @property
-    def yi(self):
-        return self._yi
-    
-    @yi.setter
-    def yi(self, y):
-        self._yi=y
-        self.set_init_point()
+    @num_scan.setter
+    def num_scan(self, num_scan):
+        self._num_scan=num_scan
     
     @property
-    def zi(self):
-        return self._zi
+    def c_max(self):
+        return self._c_max
     
-    @zi.setter
-    def zi(self, z):
-        self._zi=z
-        self.set_init_point()
+    @c_max.setter
+    def c_max(self, c_max):
+        self._c_max=c_max
     
     @property
     def vpos(self):
         return self._vpos
-        self.set_init_point()
     
     @vpos.setter
     def vpos(self, v):
         self._vpos=v
         
     @property
+    def n_env(self):
+        return self._n_env
+    
+    @n_env.setter
+    def n_env(self, n_env):
+        self._n_env=n_env
+        
+    @property
     def M(self):
         return pd.DataFrame.from_dict(self._M)
     
+    # Methods
     def start(self, init_pos):
         assert np.size(init_pos) == 3, f'Given initial position is not valid. 3 values are required, {np.size(init_pos)} were given.'
         
-        self._xi = init_pos[0]; self._M['x'] = [self._xi]
-        self._yi = init_pos[1]; self._M['y'] = [self._yi]
-        self._zi = init_pos[2]; self._M['z'] = [self._zi]
+        self._M['x'] = [init_pos[0]]
+        self._M['y'] = [init_pos[1]]
+        self._M['z'] = [init_pos[2]]
         self._M['f'] = [self._vpos]
         self._M['s'] = [0]
         
@@ -106,11 +112,23 @@ class Waveguide:
         else:
             raise ValueError("Shutter array is neither a single value nor array of appropriate size.")    
 
+    def __get_sbend_parameter(self, D):
+        
+        # assert we have a radius defined
+        
+        dy = np.abs(D/2)
+        a = np.arccos(1 - (dy/self._radius))
+        dx = 2 * self._radius * np.sin(a)
+        return (a, dx)
+    
+    def curvature(self):
+        pass
+    
+    def __cmd_per_second(self):
+        pass
+    
 # %% GEOMETRICAL DATA
 filename = "test.pgm"
-nw = 1.33
-ng = 1.50
-neff = nw/ng
 speed = 20
 
 radius = 15
