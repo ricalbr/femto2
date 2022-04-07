@@ -1,24 +1,15 @@
 import numpy as np 
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib.ticker import AutoMinorLocator
 
 class Waveguide:
     def __init__(self, 
-                 pitch=None, 
-                 radius=None, 
-                 num_scan=None, 
-                 c_max=1200, 
-                 l_sample=None, 
-                 n_env=1.5/1.33, # TODO: importa come una costante
-                 vpos=5):
+                 num_scan=None,
+                 c_max=1200):
         
-        self._pitch=pitch
-        self._radius=radius
         self._num_scan=num_scan
-        self._c_max=c_max        
-        self._l_sample=l_sample
-        self._vpos=vpos
-        self._n_env=n_env
+        self._c_max=c_max
 
         self._M = {}
     
@@ -38,22 +29,6 @@ class Waveguide:
     @c_max.setter
     def c_max(self, c_max):
         self._c_max=c_max
-    
-    @property
-    def vpos(self):
-        return self._vpos
-    
-    @vpos.setter
-    def vpos(self, v):
-        self._vpos=v
-        
-    @property
-    def n_env(self):
-        return self._n_env
-    
-    @n_env.setter
-    def n_env(self, n_env):
-        self._n_env=n_env
         
     @property
     def M(self):
@@ -62,11 +37,12 @@ class Waveguide:
     # Methods
     def start(self, init_pos):
         assert np.size(init_pos) == 3, f'Given initial position is not valid. 3 values are required, {np.size(init_pos)} were given.'
+        # assert che M sia vuota
         
         self._M['x'] = [init_pos[0]]
         self._M['y'] = [init_pos[1]]
         self._M['z'] = [init_pos[2]]
-        self._M['f'] = [self._vpos]
+        self._M['f'] = [5]
         self._M['s'] = [0]
         
     def end(self):
@@ -76,14 +52,14 @@ class Waveguide:
         self._M['f'].append(self._M['f'][-1])
         self._M['s'].append(0)
     
-    def linear(self, increment, speed, shutter):
+    def linear(self, increment, speed=0.0, shutter=1):
         self._M['x'].append(self._M['x'][-1] + increment[0])
         self._M['y'].append(self._M['y'][-1] + increment[1])
         self._M['z'].append(self._M['z'][-1] + increment[2])
         self._M['f'].append(speed)
         self._M['s'].append(shutter)
         
-    def sin_bend(self, D, radius, speed, shutter, N=100):
+    def sin_bend(self, D, radius, speed=0.0, shutter=1, N=100):
         a = np.arccos(1-(np.abs(D/2)/radius))
         dx = 2 * radius * np.sin(a)
         
@@ -104,19 +80,30 @@ class Waveguide:
         else:
             raise ValueError("Speed array is neither a single value nor array of appropriate size.")    
 
-        # update shutter array
-        if np.size(shutter) == 1:
-            self._M['s'].extend(shutter*np.ones(new_x.shape))
-        elif np.size(speed) == np.size(new_x):
-            self._M['s'].extend(shutter)
-        else:
-            raise ValueError("Shutter array is neither a single value nor array of appropriate size.")    
-
-    def __get_sbend_parameter(self, D):
-        assert self._radius is not None, "Try to compute S-bend parameter with R = None."
+        self._M['s'].extend(shutter*np.ones(new_x.shape))
+            
+    def acc_sin(self, D, radius, speed=0.0, shutter=1):
+        self.sin_bend(D, radius, speed, shutter)
+        self.sin_bend(-D, radius, speed, shutter)
+    
+    def mzi_sin(self, D, radius, L=0, speed=0.0, shutter=1):
+        self.acc_sin(D, radius, speed, shutter)
+        self.linear([L,0,0], speed, shutter)
+        self.acc_sin(D, radius, speed, shutter)
+    
+    def arc_bend(self, D, radius, speed=0.0, shutter=1, N=100):
+        pass
+    
+    def acc_arc():
+        pass
+    
+    def mzi_arc():
+        pass
+    
+    def __get_sbend_parameter(self, D, radius):
         dy = np.abs(D/2)
-        a = np.arccos(1 - (dy/self._radius))
-        dx = 2 * self._radius * np.sin(a)    
+        a = np.arccos(1 - (dy/radius))
+        dx = 2 * radius * np.sin(a)    
         return (a, dx)              
     
     def curvature(self):
@@ -137,63 +124,45 @@ class Waveguide:
     def __cmd_per_second(self):
         pass
     
-# %% GEOMETRICAL DATA
-filename = "test.pgm"
-speed = 20
-
-radius = 15
-pitch = 0.080
-depth = 0.035
-int_dist = 0.007
-int_length = 0.0
-tilt_angle = 0.1
-tot_length = 90
-
-speed = 20
-sht = 1
-p = 0.08
-Dx = 4; Dy = 0.0; Dz = 0.0
-increment = [Dx, Dy, Dz]
-
-#%% CALCULATIONS
-angle = np.arccos(1 - (pitch - int_dist)/(4 * radius))
-l_straight = (tot_length - int_dist - 4*radius*np.sin(angle))/2
-d_bend = 0.5*(pitch-int_dist)
-
-# %% COUPLER
-coup = [Waveguide() for _ in range(2)]
-for index, wg in enumerate(coup):
-    [xi, yi, zi] = [-2, -p/2 + index*p, 0.035]
+    def __compute_number_points(self):
+        pass
     
-    wg.start([xi, yi, zi])
-    wg.linear(increment, speed, sht)
-    wg.sin_bend((-1)**index*d_bend, radius, speed, sht)
-    wg.sin_bend((-1)**(index-1)*d_bend, radius, speed, sht)
-    wg.linear(increment, speed, sht)
-    wg.end()
-
-print(wg.M)
-print(wg.curvature())
-
-
-# plt.figure()
-# for wg in coup:
-#     plt.plot(wg.M['x'], wg.M['y'], )
-# plt.show()
-
-
-# import plotly.graph_objects as go
-
-# import plotly.io as pio
-# pio.renderers.default = 'svg'
-# # pio.renderers.default = 'browser'
-
-# x = ['Product A', 'Product B', 'Product C']
-# y = [20, 14, 23]
-
-# fig = go.Figure(data=[go.Bar(
-#             x=x, y=y,
-#             text=y,
-#             textposition='auto',
-#         )])
-# fig.show()
+if __name__ == '__main__':
+    # %% GEOMETRICAL DATA
+    filename = "test.pgm"
+    speed = 20
+    
+    radius = 15
+    pitch = 0.080
+    depth = 0.035
+    int_dist = 0.007
+    int_length = 0.0
+    tilt_angle = 0.1
+    tot_length = 25
+    length_arm = 1.5
+    
+    #%% CALCULATIONS
+    angle = np.arccos(1 - (pitch - int_dist)/(4 * radius))
+    l_straight = (tot_length - int_dist - 4*radius*np.sin(angle))/2
+    d_bend = 0.5*(pitch-int_dist)
+    Dx = 4; Dy = 0.0; Dz = 0.0
+    increment = [Dx, Dy, Dz]
+    
+    coup = [Waveguide() for _ in range(2)]
+    for index, wg in enumerate(coup):
+        [xi, yi, zi] = [-2, -pitch/2 + index*pitch, depth]
+        
+        wg.start([xi, yi, zi])
+        wg.linear(increment, speed)
+        wg.mzi_sin((-1)**index*d_bend, radius, length_arm, speed)
+        wg.linear(increment, speed)
+        wg.end()
+    
+    c = wg.M
+    print(wg.M)
+    
+    fig, ax = plt.subplots()
+    for wg in coup:
+        ax.plot(wg.M['x'], wg.M['y'], color='k', linewidth=2.5)
+        
+    plt.show()
