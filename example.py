@@ -33,5 +33,4 @@ print(wg.M)
 fig, ax = plt.subplots()
 for wg in coup:
     ax.plot(wg.M['x'], wg.M['y'], color='k', linewidth=2.5)
-    
 plt.show()
