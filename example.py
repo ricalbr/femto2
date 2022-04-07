@@ -9,8 +9,6 @@ pitch = 0.080
 depth = 0.035
 int_distance = 0.007
 int_length = 0.0
-tilt_angle = 0.1
-tot_length = 25
 length_arm = 1.5
 speed = 20
 
