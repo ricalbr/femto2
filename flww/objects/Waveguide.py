@@ -114,21 +114,29 @@ class Waveguide:
         d2y_dt2 = np.gradient(dy_dt)
         d2z_dt2 = np.gradient(dz_dt)
         
-        num = np.sqrt((d2z_dt2*dy_dt - d2y_dt2*dz_dt)**2 + (d2x_dt2*dz_dt - d2z_dt2*dx_dt)**2 + (d2y_dt2*dx_dt - d2x_dt2*dy_dt)**2)
-        den = (dx_dt*dx_dt + dy_dt*dy_dt + dz_dt*dz_dt)**1.5
+        num = (dx_dt**2+ dy_dt**2 + dz_dt**2)**1.5
+        den = np.sqrt((d2z_dt2*dy_dt - d2y_dt2*dz_dt)**2 + (d2x_dt2*dz_dt - d2z_dt2*dx_dt)**2 + (d2y_dt2*dx_dt - d2x_dt2*dy_dt)**2)
         default_zero = np.ones(np.size(num))*np.inf
         curvature = np.divide(num, den, out=default_zero, where=den!=0) # only divide nonzeros else Inf
         return curvature
     
-    def __cmd_per_second(self):
-        pass
+    def cmd_rate(self):
+        dx_dt = np.gradient(self._M['x'][:-1]) # exclude last point, it's there just to close the shutter
+        dy_dt = np.gradient(self._M['y'][:-1])
+        dz_dt = np.gradient(self._M['z'][:-1])
+        v = self._M['f'][-1] 
+        
+        dt = np.sqrt(dx_dt**2 + dy_dt**2 + dz_dt**2)
+        default_zero = np.ones(np.size(dt))*np.inf
+        cmd_rate = np.divide(v, dt, out=default_zero, where=v!=0) # only divide nonzeros else Inf
+        return cmd_rate
     
     def __compute_number_points(self):
         pass
     
 if __name__ == '__main__':
-    # %% GEOMETRICAL DATA
-    filename = "test.pgm"
+    
+    # Data
     speed = 20
     
     radius = 15
@@ -140,13 +148,11 @@ if __name__ == '__main__':
     tot_length = 25
     length_arm = 1.5
     
-    #%% CALCULATIONS
-    angle = np.arccos(1 - (pitch - int_dist)/(4 * radius))
-    l_straight = (tot_length - int_dist - 4*radius*np.sin(angle))/2
     d_bend = 0.5*(pitch-int_dist)
     Dx = 4; Dy = 0.0; Dz = 0.0
     increment = [Dx, Dy, Dz]
     
+    # Calculations
     coup = [Waveguide() for _ in range(2)]
     for index, wg in enumerate(coup):
         [xi, yi, zi] = [-2, -pitch/2 + index*pitch, depth]
@@ -157,11 +163,8 @@ if __name__ == '__main__':
         wg.linear(increment, speed)
         wg.end()
     
-    c = wg.M
-    print(wg.M)
-    
+    # Plot
     fig, ax = plt.subplots()
     for wg in coup:
         ax.plot(wg.M['x'], wg.M['y'], color='k', linewidth=2.5)
-        
     plt.show()
