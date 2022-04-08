@@ -125,7 +125,7 @@ if __name__ == '__main__':
         wg.end()
     
     # Compilation 
-    gc = PGMCompiler('PROVA.pgm', n_rif=1.5/1.33, angle=angle)
+    gc = PGMCompiler('MZImultiscan.pgm', n_rif=1.5/1.33, angle=angle)
     gc.header()
     gc.rpt(wg.num_scan)
     for i, wg in enumerate(coup):    
