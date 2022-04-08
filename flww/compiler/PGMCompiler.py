@@ -144,7 +144,6 @@ class PGMCompiler:
         return (x,y,z,f,s)
     
     def compile_pgm(self):
-        
         if not self._filename.endswith('.pgm'):
             self._filename += '.pgm'
         
