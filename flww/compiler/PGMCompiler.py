@@ -144,9 +144,14 @@ class PGMCompiler:
         return (x,y,z,f,s)
     
     def compile_pgm(self):
+        
+        if not self._filename.endswith('.pgm'):
+            self._filename += '.pgm'
+        
         f = open(self._filename, "w")
         f.write(''.join(self._instructions))
         f.close()
+        print('G-code compilation completed.')
         
 if __name__ == '__main__':
     
@@ -173,12 +178,12 @@ if __name__ == '__main__':
         
         wg.start([xi, yi, zi])
         wg.linear(increment, speed)
-        wg.mzi_sin((-1)**index*d_bend, radius, length_arm, speed,)
+        wg.sin_mzi((-1)**index*d_bend, radius, length_arm, speed,)
         wg.linear(increment, speed)
         wg.end()
     
     # Compilation 
-    gc = PGMCompiler('MZImultiscan.pgm', ind_rif=1.5/1.33, angle=angle)
+    gc = PGMCompiler('MZImultiscan', ind_rif=1.5/1.33, angle=angle)
     gc.header()
     gc.rpt(wg.num_scan)
     for i, wg in enumerate(coup):    
