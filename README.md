@@ -2,8 +2,17 @@
 Python scripts for Femtosecond Laser waveguide writing.
 
 ### Installation
-Download GitHub Desktop and run the following command in Spyder console
+#### GitHub Desktop + Spyder 
 
+Run the following command in the Spyder console
 ```bash
 pip install -e C:\Users\<user>\Documents\GitHub\flww
+```
+
+#### Terminal 
+Run the following commands in the terminal
+```bash
+git clone git@github.com:ricalbr/flww.git
+cd flww
+pip install -e .
 ```
