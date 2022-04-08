@@ -17,3 +17,4 @@ d = 0.5*(pitch-int_distance)
 
 # %% G-CODE DATA
 n_scan = 6
+ind_rif = 1.5/1.33
