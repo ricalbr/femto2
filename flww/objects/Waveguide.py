@@ -142,13 +142,10 @@ if __name__ == '__main__':
     depth = 0.035
     int_dist = 0.007
     int_length = 0.0
-    tilt_angle = 0.1
-    tot_length = 25
     length_arm = 1.5
     
     d_bend = 0.5*(pitch-int_dist)
-    Dx = 4; Dy = 0.0; Dz = 0.0
-    increment = [Dx, Dy, Dz]
+    increment = [4, 0, 0]
     
     # Calculations
     coup = [Waveguide() for _ in range(2)]
