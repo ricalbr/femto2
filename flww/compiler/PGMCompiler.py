@@ -4,21 +4,21 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 class PGMCompiler:
-    def __init__(self, filename, line='CAPABLE', angle=0.0, n_rif=None, long_pause=0.5, short_pause=0.15):
+    def __init__(self, filename, ind_rif, line='CAPABLE', angle=0.0, long_pause=0.5, short_pause=0.15):
         
         self._filename = filename
+        self._ind_rif=ind_rif
         self._line=line
+        self._angle=angle
         self._long_pause=long_pause
         self._short_pause=short_pause
-        self._angle=angle
-        self._n_rif=n_rif
 
         self._RM = np.array([[np.cos(self._angle), -np.sin(self._angle), 0],
                              [np.sin(self._angle), np.cos(self._angle), 0],
                              [0, 0, 1]])
         self._SM = np.array([[1,0,0],
                               [0,1,0],
-                              [0,0,1/self._n_rif]])
+                              [0,0,1/self._ind_rif]])
         self._instructions = ''
         
     def header(self):
@@ -125,7 +125,7 @@ if __name__ == '__main__':
         wg.end()
     
     # Compilation 
-    gc = PGMCompiler('MZImultiscan.pgm', n_rif=1.5/1.33, angle=angle)
+    gc = PGMCompiler('MZImultiscan.pgm', ind_rif=1.5/1.33, angle=angle)
     gc.header()
     gc.rpt(wg.num_scan)
     for i, wg in enumerate(coup):    

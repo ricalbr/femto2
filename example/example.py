@@ -27,7 +27,7 @@ for wg in mzi:
 plt.show()
 
 # Compilation
-gc = PGMCompiler('MZImultiscan.pgm', n_rif=p.ind_rif)
+gc = PGMCompiler('MZImultiscan.pgm', ind_rif=p.ind_rif)
 gc.header()
 gc.rpt(wg.num_scan)
 for i, wg in enumerate(mzi):
