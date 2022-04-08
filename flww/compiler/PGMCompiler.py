@@ -19,45 +19,45 @@ class PGMCompiler:
         self._SM = np.array([[1,0,0],
                               [0,1,0],
                               [0,0,1/self._ind_rif]])
-        self._instructions = ''
+        self._instructions = []
         
     def header(self):
         if self._line.lower() == 'capable':
-            self._instructions += 'ENABLE X Y Z\n'
-            self._instructions += 'METRIC\n'
-            self._instructions += 'SECONDS\n'
-            self._instructions += 'G359\n'
-            self._instructions += 'VELOCITY ON\n'
-            self._instructions += 'PSOCONTROL X RESET\n'
-            self._instructions += 'PSOOUTPUT X CONTROL 3 0\n'
-            self._instructions += 'PSOCONTROL X OFF\n'
-            self._instructions += 'ABSOLUTE\n'
-            self._instructions += 'G17\n'
-            self._instructions += 'DWELL 1\n'
-            self._instructions += '\n'
-            self._instructions += '\n'
+            self._instructions.append('ENABLE X Y Z\n')
+            self._instructions.append('METRIC\n')
+            self._instructions.append('SECONDS\n')
+            self._instructions.append('G359\n')
+            self._instructions.append('VELOCITY ON\n')
+            self._instructions.append('PSOCONTROL X RESET\n')
+            self._instructions.append('PSOOUTPUT X CONTROL 3 0\n')
+            self._instructions.append('PSOCONTROL X OFF\n')
+            self._instructions.append('ABSOLUTE\n')
+            self._instructions.append('G17\n')
+            self._instructions.append('DWELL 1\n')
+            self._instructions.append('\n')
+            self._instructions.append('\n')
         elif self._line.lower() == 'fire':
-            self._instructions += 'ENABLE X Y Z\n'
-            self._instructions += 'METRIC\n'
-            self._instructions += 'SECONDS\n'
-            self._instructions += 'WAIT MODE NOWAIT\n'
-            self._instructions += 'VELOCITY ON\n'
-            self._instructions += 'PSOCONTROL X RESET\n'
-            self._instructions += 'PSOCONTROL X OFF\n'
-            self._instructions += 'ABSOLUTE\n'
-            self._instructions += 'G17\n'
-            self._instructions += 'DWELL 1\n'
-            self._instructions += '\n'
-            self._instructions += '\n'
+            self._instructions.append('ENABLE X Y Z\n')
+            self._instructions.append('METRIC\n')
+            self._instructions.append('SECONDS\n')
+            self._instructions.append('WAIT MODE NOWAIT\n')
+            self._instructions.append('VELOCITY ON\n')
+            self._instructions.append('PSOCONTROL X RESET\n')
+            self._instructions.append('PSOCONTROL X OFF\n')
+            self._instructions.append('ABSOLUTE\n')
+            self._instructions.append('G17\n')
+            self._instructions.append('DWELL 1\n')
+            self._instructions.append('\n')
+            self._instructions.append('\n')
     
     def comment(self, comstring):
-        self._instructions += f'; {comstring}\n'
+        self._instructions.append(f'; {comstring}\n')
         
     def rpt(self, num):
-        self._instructions += f'REPEAT {num}\n'
+        self._instructions.append(f'REPEAT {num}\n')
         
     def endrpt(self):
-        self._instructions += 'ENDREPEAT\n\n'
+        self._instructions.append('ENDREPEAT\n\n')
     
     def point_to_instruction(self, M):
         x = M['x']
@@ -76,23 +76,23 @@ class PGMCompiler:
         for i in range(len(x)):
             if s[i] == 0 and shutter_on is False:
                 # self._instructions += 'PSOCONTROL X OFF\n'
-                self._instructions += f'LINEAR X{x[i]:.6f} Y{y[i]:.6f} Z{z[i]:.6f} F{f[i]:.6f}\n'
-                self._instructions += f'DWELL {self._long_pause:.6f}\n\n'
+                self._instructions.append(f'LINEAR X{x[i]:.6f} Y{y[i]:.6f} Z{z[i]:.6f} F{f[i]:.6f}\n')
+                self._instructions.append(f'DWELL {self._long_pause:.6f}\n\n')
             elif s[i] == 0 and shutter_on is True:
-                self._instructions += 'PSOCONTROL X OFF\n'
-                self._instructions += f'DWELL {self._short_pause:.6f}\n'
+                self._instructions.append('PSOCONTROL X OFF\n')
+                self._instructions.append(f'DWELL {self._short_pause:.6f}\n')
                 shutter_on = False
             elif s[i] == 1 and shutter_on is False:
-                self._instructions += 'PSOCONTROL X ON\n'
-                self._instructions += f'LINEAR X{x[i]:.6f} Y{y[i]:.6f} Z{z[i]:.6f} F{f[i]:.6f}\n'
+                self._instructions.append('PSOCONTROL X ON\n')
+                self._instructions.append(f'LINEAR X{x[i]:.6f} Y{y[i]:.6f} Z{z[i]:.6f} F{f[i]:.6f}\n')
                 shutter_on = True
             else:
-                self._instructions += f'LINEAR X{x[i]:.6f} Y{y[i]:.6f} Z{z[i]:.6f} F{f[i]:.6f}\n'
+                self._instructions.append(f'LINEAR X{x[i]:.6f} Y{y[i]:.6f} Z{z[i]:.6f} F{f[i]:.6f}\n')
         return (x,y,z,f,s)
     
     def compile_pgm(self):
         f = open(self._filename, "w")
-        f.write(self._instructions)
+        f.write(''.join(self._instructions))
         f.close()
         
 if __name__ == '__main__':
