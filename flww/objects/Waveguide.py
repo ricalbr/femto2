@@ -78,14 +78,15 @@ class Waveguide:
 
         self._M['s'].extend(shutter*np.ones(new_x.shape))
             
-    def acc_sin(self, D, radius, speed=0.0, shutter=1, N=50):
+    def acc_sin(self, D, radius, arm_length=0.0, speed=0.0, shutter=1, N=50):
         self.sin_bend(D, radius, speed, shutter, N/2)
+        self.linear([arm_length,0,0], speed, shutter)
         self.sin_bend(-D, radius, speed, shutter, N/2)
     
-    def mzi_sin(self, D, radius, L=0, speed=0.0, shutter=1, N=100):
-        self.acc_sin(D, radius, speed, shutter, N/2)
-        self.linear([L,0,0], speed, shutter)
-        self.acc_sin(D, radius, speed, shutter, N/2)
+    def mzi_sin(self, D, radius, arm_length=0.0, int_length=0.0, speed=0.0, shutter=1, N=100):
+        self.acc_sin(D, radius, arm_length, speed, shutter, N/2)
+        self.linear([int_length,0,0], speed, shutter)
+        self.acc_sin(D, radius, arm_length, speed, shutter, N/2)
     
     def arc_bend(self, D, radius, speed=0.0, shutter=1, N=25):
         pass
