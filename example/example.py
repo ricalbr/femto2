@@ -34,4 +34,4 @@ for i, wg in enumerate(mzi):
     gc.comment(f'Modo: {i+1}')
     gc.point_to_instruction(wg.M)
 gc.endrpt()
-# gc.compile_pgm()
+gc.compile_pgm()
