@@ -4,25 +4,83 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 class PGMCompiler:
-    def __init__(self, filename, ind_rif, line='CAPABLE', angle=0.0, long_pause=0.5, short_pause=0.15):
+    def __init__(self, filename, ind_rif, fab_line='CAPABLE', angle=0.0, long_pause=0.5, short_pause=0.15):
         
         self._filename = filename
         self._ind_rif=ind_rif
-        self._line=line
+        self._fab_line=fab_line
         self._angle=angle
         self._long_pause=long_pause
         self._short_pause=short_pause
-
-        self._RM = np.array([[np.cos(self._angle), -np.sin(self._angle), 0],
-                             [np.sin(self._angle), np.cos(self._angle), 0],
-                             [0, 0, 1]])
-        self._SM = np.array([[1,0,0],
-                              [0,1,0],
-                              [0,0,1/self._ind_rif]])
+        
+        self._TM = None
+        self.compute_t_matrix()
+        
         self._instructions = []
         
+    # Getters/Setters
+    @property
+    def filename(self):
+        return self._filename
+    
+    @filename.setter
+    def filename(self, filename):
+        self._filename=filename
+        
+    @property
+    def ind_rif(self):
+        return self._ind_rif
+    
+    @ind_rif.setter
+    def ind_rif(self, ind_rif):
+        self._ind_rif=ind_rif
+        self.compute_t_matrix()
+        
+    @property
+    def fab_line(self):
+        return self._fab_line
+    
+    @fab_line.setter
+    def fab_line(self, fab_line):
+        self._fab_line=fab_line
+        
+    @property
+    def angle(self):
+        return self._angle
+    
+    @angle.setter
+    def angle(self, angle):
+        self._angle=angle
+        self.compute_t_matrix()
+        
+    @property
+    def long_pause(self):
+        return self._long_pause
+    
+    @long_pause.setter
+    def long_pause(self, long_pause):
+        self._long_pause=long_pause
+        
+    @property
+    def short_pause(self):
+        return self._short_pause
+    
+    @short_pause.setter
+    def short_pause(self, short_pause):
+        self._short_pause=short_pause
+    
+    # Methods
+    def compute_t_matrix(self):
+        RM = np.array([[np.cos(self._angle), -np.sin(self._angle), 0],
+                       [np.sin(self._angle), np.cos(self._angle), 0],
+                       [0, 0, 1]])
+        SM = np.array([[1,0,0],
+                       [0,1,0],
+                       [0,0,1/self._ind_rif]])
+        self._TM = np.dot(SM,RM)
+        
     def header(self):
-        if self._line.lower() == 'capable':
+        if self._fab_line.lower() == 'capable':
             self._instructions.append('ENABLE X Y Z\n')
             self._instructions.append('METRIC\n')
             self._instructions.append('SECONDS\n')
@@ -36,7 +94,7 @@ class PGMCompiler:
             self._instructions.append('DWELL 1\n')
             self._instructions.append('\n')
             self._instructions.append('\n')
-        elif self._line.lower() == 'fire':
+        elif self._fab_line.lower() == 'fire':
             self._instructions.append('ENABLE X Y Z\n')
             self._instructions.append('METRIC\n')
             self._instructions.append('SECONDS\n')
@@ -60,15 +118,10 @@ class PGMCompiler:
         self._instructions.append('ENDREPEAT\n\n')
     
     def point_to_instruction(self, M):
-        x = M['x']
-        y = M['y']
-        z = M['z']
-        f = M['f']
-        s = M['s']
+        x = M['x']; y = M['y']; z = M['z']; f = M['f']; s = M['s']
         
-        TM = np.dot(self._SM, self._RM)
         coord = np.column_stack((x,y,z))
-        t_coord = np.dot(TM, coord.T).T
+        t_coord = np.dot(self._TM, coord.T).T
         x, y, z = t_coord[:, 0], t_coord[:, 1], t_coord[:, 2]
         
         shutter_on = False
