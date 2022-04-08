@@ -1,3 +1,4 @@
+from flww.objects.Waveguide import Waveguide
 import numpy as np 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -95,7 +96,6 @@ class PGMCompiler:
         f.close()
         
 if __name__ == '__main__':
-    from flww.objects.Waveguide import Waveguide
     
     # Data
     speed = 20
