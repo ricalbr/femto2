@@ -55,7 +55,7 @@ class Waveguide:
         self._M['f'].append(speed)
         self._M['s'].append(shutter)
         
-    def bend_sin(self, D, radius, speed=0.0, shutter=1, N=25):
+    def sin_bend(self, D, radius, speed=0.0, shutter=1, N=25):
         a = np.arccos(1-(np.abs(D/2)/radius))
         dx = 2 * radius * np.sin(a)
         
@@ -78,15 +78,15 @@ class Waveguide:
 
         self._M['s'].extend(shutter*np.ones(new_x.shape))
             
-    def acc_sin(self, D, radius, arm_length=0.0, speed=0.0, shutter=1, N=50):
+    def sin_acc(self, D, radius, arm_length=0.0, speed=0.0, shutter=1, N=50):
         self.sin_bend(D, radius, speed, shutter, N/2)
         self.linear([arm_length,0,0], speed, shutter)
         self.sin_bend(-D, radius, speed, shutter, N/2)
     
-    def mzi_sin(self, D, radius, int_length=0.0, arm_length=0.0, speed=0.0, shutter=1, N=100):
-        self.acc_sin(D, radius, int_length, speed, shutter, N/2)
+    def sin_mzi(self, D, radius, int_length=0.0, arm_length=0.0, speed=0.0, shutter=1, N=100):
+        self.sin_acc(D, radius, int_length, speed, shutter, N/2)
         self.linear([arm_length,0,0], speed, shutter)
-        self.acc_sin(D, radius, int_length, speed, shutter, N/2)
+        self.sin_acc(D, radius, int_length, speed, shutter, N/2)
     
     def circ(self, initial_angle, final_angle, radius, speed=0.0, shutter=1, N=25):
         
@@ -110,7 +110,7 @@ class Waveguide:
 
         self._M['s'].extend(shutter*np.ones(new_x.shape))
     
-    def bend_arc(self, D, radius, speed=0.0, shutter=1, N=25):
+    def arc_bend(self, D, radius, speed=0.0, shutter=1, N=25):
         (a, _) = self.__get_sbend_parameter(D, radius)
 
         if D>0:
@@ -120,15 +120,15 @@ class Waveguide:
             self.circ(np.pi*(1/2), np.pi*(1/2)-a, radius, speed, shutter, np.round(N/2))
             self.circ(np.pi*(3/2)-a, np.pi*(3/2), radius, speed, shutter, np.round(N/2))      
     
-    def acc_arc(self, D, radius, arm_length=0.0, speed=0.0, shutter=1, N=50):
+    def arc_acc(self, D, radius, arm_length=0.0, speed=0.0, shutter=1, N=50):
         self.arc_bend(D, radius, speed, shutter, N/2)
         self.linear([arm_length,0,0], speed, shutter)
         self.arc_bend(-D, radius, speed, shutter, N/2)
     
-    def mzi_arc(self, D, radius, int_length=0.0, arm_length=0.0, speed=0.0, shutter=1, N=100):
-        self.acc_arc(D, radius, arm_length, speed, shutter, N/2)
+    def arc_mzi(self, D, radius, int_length=0.0, arm_length=0.0, speed=0.0, shutter=1, N=100):
+        self.arc_acc(D, radius, arm_length, speed, shutter, N/2)
         self.linear([int_length,0,0], speed, shutter)
-        self.acc_arc(D, radius, arm_length, speed, shutter, N/2)
+        self.arc_acc(D, radius, arm_length, speed, shutter, N/2)
     
     def __get_sbend_parameter(self, D, radius):
         dy = np.abs(D/2)
@@ -181,25 +181,18 @@ if __name__ == '__main__':
     increment = [4, 0, 0]
     
     # Calculations
-    # coup = [Waveguide() for _ in range(2)]
-    # for index, wg in enumerate(coup):
-    #     [xi, yi, zi] = [-2, -pitch/2 + index*pitch, depth]
+    coup = [Waveguide() for _ in range(2)]
+    for index, wg in enumerate(coup):
+        [xi, yi, zi] = [-2, -pitch/2 + index*pitch, depth]
         
-    #     wg.start([xi, yi, zi])
-    #     wg.linear(increment, speed)
-    #     wg.mzi_sin((-1)**index*d_bend, radius, int_length=0.0, arm_length=arm_length, speed=speed)
-    #     wg.linear(increment, speed)
-    #     wg.end()
-        
-    wg = Waveguide()
-    [xi, yi, zi] = [-2, 0, depth]
-        
-    wg.start([xi, yi, zi])
-    wg.mzi_arc(d_bend, radius, speed=speed)
-    print(wg.curvature())
+        wg.start([xi, yi, zi])
+        wg.linear(increment, speed)
+        wg.sin_mzi((-1)**index*d_bend, radius,speed=speed)
+        wg.linear(increment, speed)
+        wg.end()
     
     # Plot
     fig, ax = plt.subplots()
-    # for wg in coup:
-    ax.plot(wg.M['x'][:-1], wg.M['y'][:-1], color='k', linewidth=2.5)
+    for wg in coup:
+        ax.plot(wg.M['x'][:-1], wg.M['y'][:-1], color='k', linewidth=2.5)
     plt.show()
