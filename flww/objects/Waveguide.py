@@ -7,7 +7,6 @@ class Waveguide:
         
         self._num_scan=num_scan
         self._c_max=c_max
-
         self._M = {}
     
     # Getters/Setters
@@ -56,7 +55,7 @@ class Waveguide:
         self._M['f'].append(speed)
         self._M['s'].append(shutter)
         
-    def sin_bend(self, D, radius, speed=0.0, shutter=1, N=100):
+    def sin_bend(self, D, radius, speed=0.0, shutter=1, N=25):
         a = np.arccos(1-(np.abs(D/2)/radius))
         dx = 2 * radius * np.sin(a)
         
@@ -79,16 +78,16 @@ class Waveguide:
 
         self._M['s'].extend(shutter*np.ones(new_x.shape))
             
-    def acc_sin(self, D, radius, speed=0.0, shutter=1):
-        self.sin_bend(D, radius, speed, shutter)
-        self.sin_bend(-D, radius, speed, shutter)
+    def acc_sin(self, D, radius, speed=0.0, shutter=1, N=50):
+        self.sin_bend(D, radius, speed, shutter, N/2)
+        self.sin_bend(-D, radius, speed, shutter, N/2)
     
-    def mzi_sin(self, D, radius, L=0, speed=0.0, shutter=1):
-        self.acc_sin(D, radius, speed, shutter)
+    def mzi_sin(self, D, radius, L=0, speed=0.0, shutter=1, N=100):
+        self.acc_sin(D, radius, speed, shutter, N/2)
         self.linear([L,0,0], speed, shutter)
-        self.acc_sin(D, radius, speed, shutter)
+        self.acc_sin(D, radius, speed, shutter, N/2)
     
-    def arc_bend(self, D, radius, speed=0.0, shutter=1, N=100):
+    def arc_bend(self, D, radius, speed=0.0, shutter=1, N=25):
         pass
     
     def acc_arc():
@@ -122,9 +121,9 @@ class Waveguide:
         dx_dt = np.gradient(self._M['x'][:-1]) # exclude last point, it's there just to close the shutter
         dy_dt = np.gradient(self._M['y'][:-1])
         dz_dt = np.gradient(self._M['z'][:-1])
-        v = self._M['f'][-1] 
-        
         dt = np.sqrt(dx_dt**2 + dy_dt**2 + dz_dt**2)
+        
+        v = self._M['f'][-1] 
         default_zero = np.ones(np.size(dt))*np.inf
         cmd_rate = np.divide(v, dt, out=default_zero, where=v!=0) # only divide nonzeros else Inf
         return cmd_rate
