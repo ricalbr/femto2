@@ -16,10 +16,10 @@ for i, wg in enumerate(circ20x20):
     wg.linear(increment, p.speed)
     wg.sin_bend((-1)**(i%2+1)*p.d1, p.radius, p.speed)
     for j in range(p.NN-1):
-        wg.acc_sin((-1)**(j+i%2)*p.d1, p.radius, speed=p.speed)
+        wg.sin_acc((-1)**(j+i%2)*p.d1, p.radius, speed=p.speed)
         wg.sin_bend((-1)**(j+i%2)*p.d2, p.radius, p.speed)
     wg.sin_bend((-1)**(j+i%2+1)*p.d1, p.radius, p.speed)    
-    wg.acc_sin((-1)**(j+i%2)*p.d1, p.radius, speed=p.speed)
+    wg.sin_acc((-1)**(j+i%2)*p.d1, p.radius, speed=p.speed)
     wg.linear(increment, p.speed)
     wg.end()
 

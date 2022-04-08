@@ -13,7 +13,7 @@ for i, wg in enumerate(mzi):
     
     wg.start([xi, yi, zi])
     wg.linear(increment, p.speed)
-    wg.mzi_sin((-1)**i*p.d, p.radius, p.length_arm, p.speed)
+    wg.sin_mzi((-1)**i*p.d, p.radius, p.length_arm, p.speed)
     wg.linear(increment, p.speed)
     wg.end()
 
