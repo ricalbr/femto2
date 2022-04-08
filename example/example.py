@@ -1,4 +1,5 @@
 from flww.objects.Waveguide import Waveguide
+from flww.compiler.PGMCompiler import PGMCompiler
 import param as p
 import matplotlib.pyplot as plt
 
@@ -18,7 +19,19 @@ for i, wg in enumerate(mzi):
 
 print(wg.M)
 
+# Plot
 fig, ax = plt.subplots()
 for wg in mzi:
-    ax.plot(wg.M['x'], wg.M['y'], color='k', linewidth=2.5)
+    x = wg.M['x']; y = wg.M['y']    
+    ax.plot(x[:-1], y[:-1], color='k', linewidth=2.5)
 plt.show()
+
+# Compilation
+gc = PGMCompiler('MZImultiscan.pgm', n_rif=p.ind_rif)
+gc.header()
+gc.rpt(wg.num_scan)
+for i, wg in enumerate(mzi):
+    gc.comment(f'Modo: {i+1}')
+    gc.point_to_instruction(wg.M)
+gc.endrpt()
+# gc.compile_pgm()
