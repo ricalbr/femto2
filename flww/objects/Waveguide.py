@@ -160,9 +160,9 @@ if __name__ == '__main__':
         wg.mzi_sin((-1)**index*d_bend, radius, length_arm, speed)
         wg.linear(increment, speed)
         wg.end()
-    
+        
     # Plot
     fig, ax = plt.subplots()
     for wg in coup:
-        ax.plot(wg.M['x'], wg.M['y'], color='k', linewidth=2.5)
+        ax.plot(wg.M['x'][:-1], wg.M['y'][:-1], color='k', linewidth=2.5)
     plt.show()
