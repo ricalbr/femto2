@@ -3,9 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 class Waveguide:
-    def __init__(self, 
-                 num_scan=None,
-                 c_max=1200):
+    def __init__(self, num_scan=None, c_max=1200):
         
         self._num_scan=num_scan
         self._c_max=c_max
@@ -44,12 +42,12 @@ class Waveguide:
         self._M['f'] = [5]
         self._M['s'] = [0]
         
-    def end(self):
-        self._M['x'].append(self._M['x'][-1])
-        self._M['y'].append(self._M['y'][-1])
-        self._M['z'].append(self._M['z'][-1])
-        self._M['f'].append(self._M['f'][-1])
-        self._M['s'].append(0)
+    def end(self, v_fast=75):
+        self._M['x'].append(self._M['x'][-1]);  self._M['x'].append(self._M['x'][0]); 
+        self._M['y'].append(self._M['y'][-1]);  self._M['y'].append(self._M['y'][0]);
+        self._M['z'].append(self._M['z'][-1]);  self._M['z'].append(self._M['z'][0]);
+        self._M['f'].append(self._M['f'][-1]);  self._M['f'].append(v_fast);
+        self._M['s'].append(0);                 self._M['s'].append(0);
     
     def linear(self, increment, speed=0.0, shutter=1):
         self._M['x'].append(self._M['x'][-1] + increment[0])
