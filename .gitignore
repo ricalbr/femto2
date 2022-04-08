@@ -114,5 +114,6 @@ dmypy.json
 .pyre/
 fit_stress_test.py
 
-# pip folders
-aqualab.egg-info/
+# G-Code files
+*.pgm 
+*.ogm
