@@ -33,7 +33,7 @@ class Waveguide:
     # Methods
     def start(self, init_pos):
         assert np.size(init_pos) == 3, f'Given initial position is not valid. 3 values are required, {np.size(init_pos)} were given.'
-        # assert che M sia vuota
+        assert bool(self._M) == False, 'Coordinate matrix is not empty. Cannot start a new waveguide in this point.'
         
         self._M['x'] = [init_pos[0]]
         self._M['y'] = [init_pos[1]]
