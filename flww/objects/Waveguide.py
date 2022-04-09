@@ -167,32 +167,25 @@ class Waveguide:
     
 if __name__ == '__main__':
     
-    # Data
-    speed = 20
-    
-    radius = 15
-    pitch = 0.080
-    depth = 0.035
-    int_dist = 0.007
-    int_length = 0.0
-    arm_length = 1.5
-    
+    # Data    
+    pitch = 0.080; int_dist = 0.007
     d_bend = 0.5*(pitch-int_dist)
     increment = [4, 0, 0]
     
     # Calculations
     coup = [Waveguide() for _ in range(2)]
     for index, wg in enumerate(coup):
-        [xi, yi, zi] = [-2, -pitch/2 + index*pitch, depth]
+        [xi, yi, zi] = [-2, -pitch/2 + index*pitch, 0.035]
         
         wg.start([xi, yi, zi])
-        wg.linear(increment, speed)
-        wg.sin_mzi((-1)**index*d_bend, radius,speed=speed)
-        wg.linear(increment, speed)
+        wg.linear(increment, speed=20)
+        wg.sin_mzi((-1)**index*d_bend, radius=15, speed=20)
+        wg.linear(increment, speed=20)
         wg.end()
     
     # Plot
     fig, ax = plt.subplots()
     for wg in coup:
-        ax.plot(wg.M['x'][:-1], wg.M['y'][:-1], color='k', linewidth=2.5)
+        ax.plot(wg.M['x'][:-1], wg.M['y'][:-1], '-k', linewidth=2.5)
+        ax.plot(wg.M['x'][-2:], wg.M['y'][-2:], ':b', linewidth=1.0)
     plt.show()
