@@ -87,11 +87,11 @@ class PGMCompiler:
     def set_home(self, home_pos):
         assert self._shutter_on is False, 'Try to move with OPEN shutter.'
         assert np.size(home_pos) == 3, f'Given final position is not valid. 3 values are required, {np.size(home_pos)} were given.'
-        
+
         x,y,z = home_pos
         args = self._format_args(x, y, z)
-        space = ' ' if len(args) > 0 else ''
-        self._instructions.append('G92' + space + args + '\n')
+        self._instructions.append(f'G92 {args}\n')
+
         
     def homing(self):
         self.comment('HOMING\n')
