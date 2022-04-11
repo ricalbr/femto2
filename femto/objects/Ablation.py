@@ -11,7 +11,7 @@ class Marker(Waveguide):
         self.lx = lx
         self.ly = ly
         self._M = {}
-        
+
     def cross(self, position, speed=1, speed_pos=5):
         self.start(position)
         self.linear([-self.lx/2,0,0], speed=speed_pos, shutter=0)
@@ -21,8 +21,8 @@ class Marker(Waveguide):
         self.linear([0,self.ly,0], speed=speed)
         self.linear([0,-self.ly/2,0], speed=speed_pos, shutter=0)
         self.end(speed_pos)
-        
+
 
 if __name__ == '__main__':
     c = Marker(1, 0.60)
-    c.cross([5,5,0.001])    
+    c.cross([5,5,0.001])

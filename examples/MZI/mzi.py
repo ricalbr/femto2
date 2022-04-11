@@ -10,7 +10,7 @@ increment = [p.swg_length, 0.0, 0.0]
 
 for i, wg in enumerate(mzi):
     [xi, yi, zi] = [p.x0, p.y0-(0.5-i)*p.pitch, p.depth]
-    
+
     wg.start([xi, yi, zi])
     wg.linear(increment, p.speed)
     wg.sin_mzi((-1)**i*p.d, p.radius, arm_length=p.length_arm, speed=p.speed)
@@ -22,7 +22,7 @@ print(wg.M)
 # Plot
 fig, ax = plt.subplots()
 for wg in mzi:
-    x = wg.M['x']; y = wg.M['y']    
+    x = wg.M['x']; y = wg.M['y']
     ax.plot(x[:-1], y[:-1], color='k', linewidth=2.5)
 plt.show()
 
