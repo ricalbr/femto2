@@ -27,9 +27,17 @@ class Waveguide:
         self._c_max=c_max
         
     @property
-    def M(self):
-        return pd.DataFrame.from_dict(self._M)
+    def Mu(self):
+        return self._unique_points()
     
+    @property
+    def M(self):
+        return self._unique_points()
+    
+    def _unique_points(self):
+        data = pd.DataFrame.from_dict(self._M)
+        return pd.DataFrame.drop_duplicates(data, ignore_index=True)
+        
     # Methods
     def start(self, init_pos):
         assert np.size(init_pos) == 3, f'Given initial position is not valid. 3 values are required, {np.size(init_pos)} were given.'
@@ -137,9 +145,15 @@ class Waveguide:
         return (a, dx)              
     
     def curvature(self):
-        dx_dt = np.gradient(self._M['x'])
-        dy_dt = np.gradient(self._M['y'])
-        dz_dt = np.gradient(self._M['z'])
+        data = self._unique_points()
+        
+        x = np.array(data['x'])
+        y = np.array(data['y'])
+        z = np.array(data['z'])
+        
+        dx_dt = np.gradient(x)
+        dy_dt = np.gradient(y)
+        dz_dt = np.gradient(z)
         
         d2x_dt2 = np.gradient(dx_dt)
         d2y_dt2 = np.gradient(dy_dt)
@@ -152,12 +166,18 @@ class Waveguide:
         return curvature
     
     def cmd_rate(self):
-        dx_dt = np.gradient(self._M['x'][:-1]) # exclude last point, it's there just to close the shutter
-        dy_dt = np.gradient(self._M['y'][:-1])
-        dz_dt = np.gradient(self._M['z'][:-1])
+        data = self._unique_points()
+        
+        x = np.array(data['x'][:-1]) # exclude last point, it's there just to close the shutter
+        y = np.array(data['y'][:-1])
+        z = np.array(data['z'][:-1])
+        v = np.array(data['f'][:-1])
+        
+        dx_dt = np.gradient(x) 
+        dy_dt = np.gradient(y)
+        dz_dt = np.gradient(z)
         dt = np.sqrt(dx_dt**2 + dy_dt**2 + dz_dt**2)
         
-        v = self._M['f'][-1] 
         default_zero = np.ones(np.size(dt))*np.inf
         cmd_rate = np.divide(v, dt, out=default_zero, where=v!=0) # only divide nonzeros else Inf
         return cmd_rate
@@ -173,8 +193,8 @@ if __name__ == '__main__':
     increment = [4, 0, 0]
     
     # Calculations
-    coup = [Waveguide() for _ in range(2)]
-    for index, wg in enumerate(coup):
+    mzi = [Waveguide() for _ in range(2)]
+    for index, wg in enumerate(mzi):
         [xi, yi, zi] = [-2, -pitch/2 + index*pitch, 0.035]
         
         wg.start([xi, yi, zi])
@@ -182,10 +202,13 @@ if __name__ == '__main__':
         wg.sin_mzi((-1)**index*d_bend, radius=15, speed=20)
         wg.linear(increment, speed=20)
         wg.end()
+        
+    print(wg.M)
+    
     
     # Plot
     fig, ax = plt.subplots()
-    for wg in coup:
+    for wg in mzi:
         ax.plot(wg.M['x'][:-1], wg.M['y'][:-1], '-k', linewidth=2.5)
         ax.plot(wg.M['x'][-2:], wg.M['y'][-2:], ':b', linewidth=1.0)
     plt.show()
