@@ -6,7 +6,7 @@ import os
 CWD = os.path.dirname(os.path.abspath(__file__))
 
 class PGMCompiler:
-    def __init__(self, filename, ind_rif, fab_line='CAPABLE', angle=0.0, long_pause=0.5, short_pause=0.15, output_digits=6):
+    def __init__(self, filename, ind_rif, fab_line='CAPABLE', angle=0.0, long_pause=0.25, short_pause=0.15, output_digits=6):
 
         self.filename = filename
         self.fab_line=fab_line
@@ -92,9 +92,8 @@ class PGMCompiler:
         args = self._format_args(x, y, z)
         self._instructions.append(f'G92 {args}\n')
 
-
     def homing(self):
-        self.comment('HOMING\n')
+        self.comment('HOMING')
         self.move_to([0,0,0])
 
     def _format_args(self, x=None, y=None, z=None, f=None):
