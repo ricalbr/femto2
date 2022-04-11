@@ -94,6 +94,7 @@ class PGMCompiler:
         self._instructions.append('G92' + space + args + '\n')
         
     def homing(self):
+        self.comment('HOMING\n')
         self.move_to([0,0,0])
         
     def _format_args(self, x=None, y=None, z=None, f=None):
