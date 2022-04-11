@@ -1,8 +1,8 @@
 from flww.objects.Waveguide import Waveguide
 from flww.compiler.PGMCompiler import PGMCompiler
 import param as p
-import time 
 import matplotlib.pyplot as plt
+import time 
 
 t = time.time()
 
