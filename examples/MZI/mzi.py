@@ -1,5 +1,5 @@
-from flww.objects.Waveguide import Waveguide
-from flww.compiler.PGMCompiler import PGMCompiler
+from femto.objects.Waveguide import Waveguide
+from femto.compiler.PGMCompiler import PGMCompiler
 import param as p
 import matplotlib.pyplot as plt
 
@@ -13,7 +13,7 @@ for i, wg in enumerate(mzi):
     
     wg.start([xi, yi, zi])
     wg.linear(increment, p.speed)
-    wg.sin_mzi((-1)**i*p.d, p.radius, p.length_arm, p.speed)
+    wg.sin_mzi((-1)**i*p.d, p.radius, arm_length=p.length_arm, speed=p.speed)
     wg.linear(increment, p.speed)
     wg.end()
 
