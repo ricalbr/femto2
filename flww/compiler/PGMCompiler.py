@@ -111,8 +111,10 @@ class PGMCompiler:
         return args
     
     def move_to(self, position, speed_pos=50):
-        assert self._shutter_on is False, 'Try to move with OPEN shutter.'
         assert np.size(position) == 3, f'Given final position is not valid. 3 values are required, {np.size(position)} were given.'
+        
+        if self._shutter_on is True:
+            self.shutter('OFF')
         
         x, y, z = position
         args = self._format_args(x, y, z, speed_pos)
