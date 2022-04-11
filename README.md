@@ -1,4 +1,4 @@
-# ![image](https://user-images.githubusercontent.com/45992199/162255376-969a4560-eaf0-4727-abe3-4f180ba0e872.png) femto
+# ![image](https://pixelartmaker-data-78746291193.nyc3.digitaloceanspaces.com/image/64d83aa577c018d.png) femto
 Python scripts for Femtosecond Laser waveguide writing.
 
 ### Installation
