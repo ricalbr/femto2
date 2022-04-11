@@ -3,11 +3,6 @@ from flww.compiler.PGMCompiler import PGMCompiler
 import param as p
 import time 
 import matplotlib.pyplot as plt
-import plotly.graph_objects as go
-import plotly.io as pio
-
-# pio.renderers.default = 'svg'
-pio.renderers.default = 'browser'
 
 t = time.time()
 
@@ -35,16 +30,6 @@ for wg in circ20x20:
     ax.plot(wg.M['x'][:-1], wg.M['y'][:-1], '-b', linewidth=2.5)
     ax.plot(wg.M['x'][-2:], wg.M['y'][-2:], ':k', linewidth=1)
 plt.show()
-
-# # 3D Plot
-# fig = go.Figure()
-# for wg in circ20x20:
-#     x = wg.M['x'][:-1]; y = wg.M['y'][:-1]; z = wg.M['z'][:-1]
-#     fig.add_trace(go.Scatter3d(
-#               x=x, y=y, z=z,
-#               mode = 'lines',
-#               line = dict(color='royalblue', width=4)))
-# fig.show()
 
 # Compilation 
 gc = PGMCompiler('20x20cirq.pgm', ind_rif=p.ind_env, angle=p.angle)
