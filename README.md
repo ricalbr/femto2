@@ -6,13 +6,13 @@ Python scripts for Femtosecond Laser waveguide writing.
 
 Run the following command in the Spyder console
 ```bash
-pip install -e C:\Users\<user>\Documents\GitHub\flww
+pip install -e C:\Users\<user>\Documents\GitHub\femto
 ```
 
 #### Terminal 
 Run the following commands in the terminal
 ```bash
-git clone git@github.com:ricalbr/flww.git
+git clone git@github.com:ricalbr/femto.git
 cd flww
 pip install -e .
 ```
