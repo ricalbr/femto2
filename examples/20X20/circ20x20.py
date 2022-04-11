@@ -1,5 +1,5 @@
-from flww.objects.Waveguide import Waveguide
-from flww.compiler.PGMCompiler import PGMCompiler
+from femto.objects.Waveguide import Waveguide
+from femto.compiler.PGMCompiler import PGMCompiler
 import param as p
 import matplotlib.pyplot as plt
 import time 
