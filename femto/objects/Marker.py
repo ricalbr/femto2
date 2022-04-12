@@ -1,4 +1,4 @@
-from Waveguide import Waveguide
+from femto.objects.Waveguide import Waveguide
 from femto.compiler.PGMCompiler import PGMCompiler
 import numpy as np
 import pandas as pd
