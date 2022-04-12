@@ -64,6 +64,4 @@ for i, c in enumerate(circ['marker']):
     gc.endrpt()
 gc.compile_pgm()
 
-
-
 print(f'Elapsed time: {time.time() - t:.2f} s.')
