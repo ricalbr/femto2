@@ -57,8 +57,10 @@ class Waveguide:
         """
 
         data = pd.DataFrame.from_dict(self._M)
-        diff = data.diff()
-        mask = diff.sum(axis=1).astype('bool'); mask[0] = True
+        mask = (data.diff()             # row-wise diff
+                    .sum(axis=1)        # col-wise sum
+                    .astype('bool'))    # cast to bool
+        mask[0] = True
         return data[mask].reset_index()
 
     # Methods
