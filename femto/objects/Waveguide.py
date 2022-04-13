@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from typing import List
-vector: List[float] = list()
 
 
 class Waveguide:
@@ -17,7 +16,7 @@ class Waveguide:
         return self._unique_points()
 
     # Methods
-    def start(self, init_pos: vector):
+    def start(self, init_pos: List[float]):
         """
         Start
 
@@ -28,7 +27,7 @@ class Waveguide:
 
         Parameters
         ----------
-        init_pos : list[float]
+        init_pos : List[float]
             Ordered list of coordinate that specifies the waveguide starting
             point [mm].
             init_pos[0] -> X
@@ -76,7 +75,7 @@ class Waveguide:
         self._M['s'].extend([0, 0])
 
     def linear(self,
-               increment: vector,
+               increment: List[float],
                speed: float = 0.0,
                shutter: int = 1):
         """
@@ -88,7 +87,7 @@ class Waveguide:
 
         Parameters
         ----------
-        increment : list[float]
+        increment : List[float]
             Ordered list of coordinate that specifies the increment [mm].
             increment[0] -> dX
             increment[1] -> dY
