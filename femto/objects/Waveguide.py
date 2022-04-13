@@ -39,6 +39,8 @@ class Waveguide:
 
         Duplicates can be selected by crating a boolean index mask as follow:
             - make a row-wise diff operation (data.diff)
+            - compute absolute value of all elements in order to work only 
+                with positive numbers
             - make a column-wise sum (.sum(axis=1))
         In this way consecutive duplicates correspond to a 0.0 value in the
         latter array.
@@ -58,6 +60,7 @@ class Waveguide:
 
         data = pd.DataFrame.from_dict(self._M)
         mask = (data.diff()             # row-wise diff
+                    .abs()              # abs of each element
                     .sum(axis=1)        # col-wise sum
                     .astype('bool'))    # cast to bool
         mask[0] = True
