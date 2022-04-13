@@ -3,7 +3,6 @@ import numpy as np
 import pandas as pd
 import os
 from typing import List
-vector: List[float] = list()
 
 CWD = os.path.dirname(os.path.abspath(__file__))
 
@@ -28,7 +27,6 @@ class PGMCompiler:
         self.output_digits = output_digits
 
         self._num_repeat = 0
-        self._num_for = 0
         self._total_dwell_time = 0.0
         self._shutter_on = False
 
@@ -52,7 +50,6 @@ class PGMCompiler:
         None.
 
         """
-
         assert fabbrication_line.upper() in ['CAPABLE', 'FIRE'], \
             ('Specified fabrication line is neither CAPABLE nor FIRE. '
              f'Given {fabbrication_line.upper()}.')
@@ -63,6 +60,25 @@ class PGMCompiler:
         else:
             with open(os.path.join(CWD, 'header_fire.txt')) as fd:
                 self._instructions.extend(fd.readlines())
+
+    def dvar(self, variables: List[str]):
+        """
+        Declaration of variable
+
+        Fuction to add the declaration of variables in a G-Code file.
+
+        Parameters
+        ----------
+        variables : List[str]
+            List of variables names.
+
+        Returns
+        -------
+        None.
+
+        """
+        args = ' '.join(["${}"]*len(variables)).format(*variables)
+        self._instructions.append(f'DVAR {args}\n')
 
     def comment(self, comstring: str):
         """
@@ -116,6 +132,109 @@ class PGMCompiler:
         else:
             pass
 
+    def dwell(self, pause: float):
+        """
+        Dwell
+
+        Add pause instruction to a G-Code file.
+
+        Parameters
+        ----------
+        pause : float
+            Value of the pause time [s].
+
+        Returns
+        -------
+        None.
+
+        """
+        self._instructions.append(f'DWELL {pause}\n\n')
+        self._total_dwell_time += float(pause)
+
+    def set_home(self, home_pos: List[float]):
+        """
+        Set home
+
+        This function defines a preset position or a software home position to
+        the one specified in the input list.
+        To exclude a variable set it to None.
+
+        Example:
+            Set current (X,Y) position to (1,2), leave Z unchanged
+            >> gc = PGMCompiler()
+            >> gc.set_home([1,2,None])
+
+        Parameters
+        ----------
+        home_pos : List[float]
+            Ordered coordinate list that specifies software home position [mm].
+            home_pos[0] -> X
+            home_pos[1] -> Y
+            home_pos[2] -> Z
+
+        Returns
+        -------
+        None.
+
+        """
+        assert self._shutter_on is False, 'Try to move with shutter OPEN.'
+        assert np.size(home_pos) == 3, \
+            ('Given final position is not valid. ' +
+             f'3 values are required, {np.size(home_pos)} were given.')
+
+        x, y, z = home_pos
+        args = self._format_args(x, y, z)
+        self._instructions.append(f'G92 {args}\n')
+
+    def homing(self):
+        """
+        Homing
+
+        Utility function to return to the origin (0,0,0) with shutter OFF.
+
+        Returns
+        -------
+        None.
+
+        """
+        self.comment('HOMING')
+        self.move_to([0, 0, 0])
+
+    def move_to(self, position: List[float], speed_pos: float = 50):
+        """
+        Move to position
+
+        Utility function to move to a given position with the shutter OFF.
+        The user can specify the target position and the positioning speed.
+
+        Parameters
+        ----------
+        position : List[float]
+            Ordered coordinate list that specifies the target position [mm].
+            position[0] -> X
+            position[1] -> Y
+            position[2] -> Z
+        speed_pos : float, optional
+            Positioning speed [mm/s]. The default is 50.
+
+        Returns
+        -------
+        None.
+
+        """
+        assert np.size(position) == 3, \
+            ('Given final position is not valid. ' +
+             f'3 values are required, {np.size(position)} were given.')
+
+        if self._shutter_on is True:
+            self.shutter('OFF')
+
+        x, y, z = position
+        args = self._format_args(x, y, z, speed_pos)
+
+        self._instructions.append(f'LINEAR {args}\n')
+        self.dwell(self.long_pause)
+
     def rpt(self, num: int):
         """
         Repeat
@@ -148,109 +267,6 @@ class PGMCompiler:
         """
         self._instructions.append('ENDREPEAT\n\n')
         self._num_repeat -= 1
-
-    def dwell(self, pause: float):
-        """
-        Dwell
-
-        Add pause instruction to a G-Code file.
-
-        Parameters
-        ----------
-        pause : float
-            Value of the pause time [s].
-
-        Returns
-        -------
-        None.
-
-        """
-        self._instructions.append(f'DWELL {pause}\n\n')
-        self._total_dwell_time += float(pause)
-
-    def set_home(self, home_pos: vector):
-        """
-        Set home
-
-        This function defines a preset position or a software home position to
-        the one specified in the input list.
-        To exclude a variable set it to None.
-
-        Example:
-            Set current (X,Y) position to (1,2), leave Z unchanged
-            >> gc = PGMCompiler()
-            >> gc.set_home([1,2,None])
-
-        Parameters
-        ----------
-        home_pos : list[float]
-            Ordered coordinate list that specifies software home position [mm].
-            home_pos[0] -> X
-            home_pos[1] -> Y
-            home_pos[2] -> Z
-
-        Returns
-        -------
-        None.
-
-        """
-        assert self._shutter_on is False, 'Try to move with shutter OPEN.'
-        assert np.size(home_pos) == 3, \
-            ('Given final position is not valid. '
-             f'3 values are required, {np.size(home_pos)} were given.')
-
-        x, y, z = home_pos
-        args = self._format_args(x, y, z)
-        self._instructions.append(f'G92 {args}\n')
-
-    def homing(self):
-        """
-        Homing
-
-        Utility function to return to the origin (0,0,0) with shutter OFF.
-
-        Returns
-        -------
-        None.
-
-        """
-        self.comment('HOMING')
-        self.move_to([0, 0, 0])
-
-    def move_to(self, position: vector, speed_pos: float = 50):
-        """
-        Move to position
-
-        Utility function to move to a given position with the shutter OFF.
-        The user can specify the target position and the positioning speed.
-
-        Parameters
-        ----------
-        position : vector
-            Ordered coordinate list that specifies the target position [mm].
-            position[0] -> X
-            position[1] -> Y
-            position[2] -> Z
-        speed_pos : float, optional
-            Positioning speed [mm/s]. The default is 50.
-
-        Returns
-        -------
-        None.
-
-        """
-        assert np.size(position) == 3, \
-            ('Given final position is not valid. '
-             f'3 values are required, {np.size(position)} were given.')
-
-        if self._shutter_on is True:
-            self.shutter('OFF')
-
-        x, y, z = position
-        args = self._format_args(x, y, z, speed_pos)
-
-        self._instructions.append(f'LINEAR {args}\n')
-        self.dwell(self.long_pause)
 
     def point_to_instruction(self, M: pd.core.frame.DataFrame):
         """
@@ -291,8 +307,8 @@ class PGMCompiler:
         x = c_rot[:, 0]
         y = c_rot[:, 1]
         z = c_rot[:, 2]
-        f = M['f']
-        s = M['s']
+        f = M['f'].to_numpy()
+        s = M['s'].to_numpy()
 
         for i in range(len(x)):
             args = self._format_args(x[i], y[i], z[i], f[i])
@@ -307,7 +323,6 @@ class PGMCompiler:
                 self._instructions.append(f'LINEAR {args}\n')
             else:
                 self._instructions.append(f'LINEAR {args}\n')
-        # TODO: convert x,y,z,f,s to np.array
         return (x, y, z, f, s)
 
     def compile_pgm(self):
@@ -325,6 +340,10 @@ class PGMCompiler:
 
         """
         assert self.filename is not None, 'No filename given.'
+        assert self._num_repeat == 0, \
+            (f'Missing {np.abs(self._num_repeat)} ' +
+             f'{"END REPEAT" if self._num_repeat >0 else "REPEAT"} ' +
+             f'instruction{"s" if np.abs(self._num_repeat) != 1 else ""}.')
 
         # if not present in the filename, add the proper file extension
         if not self.filename.endswith('.pgm'):
