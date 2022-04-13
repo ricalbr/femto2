@@ -1,34 +1,575 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from typing import List
+vector: List[float] = list()
+
 
 class Waveguide:
-    def __init__(self, num_scan=None, c_max=1200):
+    def __init__(self, num_scan: int = None, c_max: int = 1200):
 
-        self._num_scan=num_scan
-        self._c_max=c_max
+        self.num_scan = num_scan
+        self.c_max = c_max
         self._M = {}
-
-    # Getters/Setters
-    @property
-    def num_scan(self):
-        return self._num_scan
-
-    @num_scan.setter
-    def num_scan(self, num_scan):
-        self._num_scan=num_scan
-
-    @property
-    def c_max(self):
-        return self._c_max
-
-    @c_max.setter
-    def c_max(self, c_max):
-        self._c_max=c_max
 
     @property
     def M(self):
         return self._unique_points()
+
+    # Methods
+    def start(self, init_pos: vector):
+        """
+        Start
+
+        The function starts a waveguide in the initial position given as
+        input.
+        The coordinates of the initial position are the first added to the
+        matrix that describes the waveguide.
+
+        Parameters
+        ----------
+        init_pos : list[float]
+            Ordered list of coordinate that specifies the waveguide starting
+            point [mm].
+            init_pos[0] -> X
+            init_pos[1] -> Y
+            init_pos[2] -> Z
+
+        Returns
+        -------
+        None.
+
+        """
+        assert np.size(init_pos) == 3, \
+            ('Given initial position is not valid. 3 values are required. '
+             f'{np.size(init_pos)} were given.')
+        assert bool(self._M) is False, \
+            ('Coordinate matrix is not empty. '
+             'Cannot start a new waveguide in this point.')
+
+        self._M['x'] = [init_pos[0]]
+        self._M['y'] = [init_pos[1]]
+        self._M['z'] = [init_pos[2]]
+        self._M['f'] = [5]
+        self._M['s'] = [0]
+
+    def end(self, speed: float = 75):
+        """
+        End
+
+        End a waveguide. The function automatically
+
+        Parameters
+        ----------
+        speed : float, optional
+            DESCRIPTION. The default is 75.
+
+        Returns
+        -------
+        None.
+
+        """
+        self._M['x'].extend([self._M['x'][-1], self._M['x'][0]])
+        self._M['y'].extend([self._M['y'][-1], self._M['y'][0]])
+        self._M['z'].extend([self._M['z'][-1], self._M['z'][0]])
+        self._M['f'].extend([self._M['f'][-1], speed])
+        self._M['s'].extend([0, 0])
+
+    def linear(self,
+               increment: vector,
+               speed: float = 0.0,
+               shutter: int = 1):
+        """
+        Linear
+
+        The function add a linear increment to the last point of the current
+        waveguide.
+
+
+        Parameters
+        ----------
+        increment : list[float]
+            Ordered list of coordinate that specifies the increment [mm].
+            increment[0] -> dX
+            increment[1] -> dY
+            increment[2] -> dZ
+        speed : float, optional
+            Transition speed [mm/s]. The default is 0.0.
+        shutter : int, optional
+            State of the shutter [0: 'OFF', 1: 'ON']. The default is 1.
+
+        Returns
+        -------
+        None.
+
+        """
+        self._M['x'].append(self._M['x'][-1] + increment[0])
+        self._M['y'].append(self._M['y'][-1] + increment[1])
+        self._M['z'].append(self._M['z'][-1] + increment[2])
+        self._M['f'].append(speed)
+        self._M['s'].append(shutter)
+
+    def circ(self,
+             initial_angle: float,
+             final_angle: float,
+             radius: float,
+             speed: float = 0.0,
+             shutter: int = 1,
+             N: int = 25):
+        """
+        Circ
+
+        Compute the points in the xy-plane that connects two angles
+        (initial_angle and final_angle) with a circular arc of a given radius.
+        The user can set the transition speed, the shutter state during
+        the movement and the number of points of the arc.
+
+        Parameters
+        ----------
+        initial_angle : float
+            Starting angle of the circular arc [radians].
+        final_angle : float
+            Ending angle of the circular arc [radians].
+        radius : float
+            Radius of the circular arc [mm].
+        speed : float, optional
+            Transition speed [mm/s]. The default is 0.0.
+        shutter : int, optional
+            State of the shutter [0: 'OFF', 1: 'ON']. The default is 1.
+        N : int, optional
+            Number of points. The default is 25.
+
+        Raises
+        ------
+        ValueError
+            Speed values has the wrong shape.
+
+        Returns
+        -------
+        None.
+
+        """
+        t = np.linspace(initial_angle, final_angle, N)
+        new_x = self._M['x'][-1] - radius*np.cos(initial_angle) + \
+            radius*np.cos(t)
+        new_y = self._M['y'][-1] - radius*np.sin(initial_angle) + \
+            radius*np.sin(t)
+        new_z = self._M['z'][-1]*np.ones(new_x.shape)
+
+        # update coordinates
+        self._M['x'].extend(new_x)
+        self._M['y'].extend(new_y)
+        self._M['z'].extend(new_z)
+
+        # update speed array
+        if np.size(speed) == 1:
+            self._M['f'].extend(speed*np.ones(new_x.shape))
+        elif np.size(speed) == np.size(new_x):
+            self._M['f'].extend(speed)
+        else:
+            raise ValueError('Speed array is neither a single value nor ',
+                             'array of appropriate size.')
+
+        self._M['s'].extend(shutter*np.ones(new_x.shape))
+
+    def arc_bend(self,
+                 D: float,
+                 radius: float,
+                 speed: float = 0.0,
+                 shutter: int = 1,
+                 N: int = 25):
+        """
+        Circular bend
+
+        The function concatenate two circular arc to make a circular S-bend.
+        The user can specify the amplitude of the S-bend (height in the y
+        direction) and the curvature radius. Starting and ending angle of the
+        two arcs are computed automatically.
+        The sign of D encodes the direction of the S-bend:
+            - D > 0, upward S-bend
+            - D < 0, downward S-bend
+
+        Parameters
+        ----------
+        D : float
+            Amplitude of the S-bend along the y direction [mm].
+        radius : float
+            Curvature radius of the S-bend [mm].
+        speed : float, optional
+            Transition speed [mm/s]. The default is 0.0.
+        shutter : int, optional
+            State of the shutter [0: 'OFF', 1: 'ON']. The default is 1.
+        N : int, optional
+            Number of points. The default is 25.
+
+        Returns
+        -------
+        None.
+
+        """
+        (a, _) = self._get_sbend_parameter(D, radius)
+
+        if D > 0:
+            self.circ(np.pi*(3/2),
+                      np.pi*(3/2)+a,
+                      radius,
+                      speed,
+                      shutter,
+                      np.round(N/2))
+            self.circ(np.pi*(1/2)+a,
+                      np.pi*(1/2),
+                      radius, speed,
+                      shutter,
+                      np.round(N/2))
+        else:
+            self.circ(np.pi*(1/2),
+                      np.pi*(1/2)-a,
+                      radius,
+                      speed,
+                      shutter,
+                      np.round(N/2))
+            self.circ(np.pi*(3/2)-a,
+                      np.pi*(3/2),
+                      radius,
+                      speed,
+                      shutter,
+                      np.round(N/2))
+
+    def arc_acc(self,
+                D: float,
+                radius: float,
+                arm_length: float = 0.0,
+                speed: float = 0.0,
+                shutter: int = 1,
+                N: int = 50):
+        """
+        Circular coupler
+
+        The function concatenate two circular S-bend to make a single mode of
+        a circular directional coupler.
+        The user can specify the amplitude of the coupler (height in the y
+        direction) and the curvature radius.
+        The sign of D encodes the direction of the coupler:
+            - D > 0, upward S-bend
+            - D < 0, downward S-bend
+
+        Parameters
+        ----------
+        D : float
+            Amplitude of the coupler along the y-direction [mm].
+        radius : float
+            Curvature radius of the coupler's bends [mm].
+        arm_length : float, optional
+            Length of the coupler straight arm [mm]. The default is 0.0.
+        speed : float, optional
+            Transition speed [mm/s]. The default is 0.0.
+        shutter : int, optional
+            State of the shutter [0: 'OFF', 1: 'ON']. The default is 1.
+        N : int, optional
+            Number of points. The default is 50.
+
+        Returns
+        -------
+        None.
+
+        """
+        self.arc_bend(D, radius, speed, shutter, N/2)
+        self.linear([arm_length, 0, 0], speed, shutter)
+        self.arc_bend(-D, radius, speed, shutter, N/2)
+
+    def arc_mzi(self,
+                D: float,
+                radius: float,
+                int_length: float = 0.0,
+                arm_length: float = 0.0,
+                speed: float = 0.0,
+                shutter: int = 1,
+                N: int = 100):
+        """
+        Circular Mach-Zehnder Interferometer (MZI)
+
+        The function concatenate two circular couplers to make a single mode
+        of a circular MZI.
+        The user can specify the amplitude of the coupler (height in the y
+        direction) and the curvature radius.
+        The sign of D encodes the direction of the coupler:
+            - D > 0, upward S-bend
+            - D < 0, downward S-bend
+
+        Parameters
+        ----------
+        D : float
+            Amplitude of the MZI along the y-direction [mm].
+        radius : float
+            Curvature radius of the MZI's bends [mm].
+        int_length : float, optional
+            Interaction distance of the MZI [mm]. The default is 0.0.
+        arm_length : float, optional
+            Length of the MZI straight arm [mm]. The default is 0.0.
+        speed : float, optional
+            Transition speed [mm/s]. The default is 0.0.
+        shutter : int, optional
+            State of the shutter [0: 'OFF', 1: 'ON']. The default is 1.
+        N : int, optional
+            Number of points. The default is 100.
+
+        Returns
+        -------
+        None.
+
+        """
+        self.arc_acc(D, radius, arm_length, speed, shutter, N/2)
+        self.linear([int_length, 0, 0], speed, shutter)
+        self.arc_acc(D, radius, arm_length, speed, shutter, N/2)
+
+    def sin_bend(self,
+                 D: float,
+                 radius: float,
+                 speed: float = 0.0,
+                 shutter: int = 1,
+                 N: int = 25):
+        """
+        Sinusoidal bend
+
+        The function compute the points in the xy-plane of a Sin-bend curve.
+        The distance between the initial and final point is the same of the
+        equivalent (circular) S-bend of given radius.
+        The user can specify the amplitude of the Sin-bend (height in the y
+        direction) and the curvature radius as well as the transition speed,
+        the shutter state during the movement and the number of points of the
+        arc.
+        The sign of D encodes the direction of the Sin-bend:
+            - D > 0, upward S-bend
+            - D < 0, downward S-bend
+
+        NB: the radius is an effective radius. The radius of curvature of the
+            overall curve will be lower (in general) than the specified
+            radius.
+
+        Parameters
+        ----------
+        D : float
+            Amplitude of the Sin-bend along the y direction [mm].
+        radius : float
+            Effective curvature radius of the Sin-bend [mm].
+        speed : float, optional
+            Transition speed [mm/s]. The default is 0.0.
+        shutter : int, optional
+            State of the shutter [0: 'OFF', 1: 'ON']. The default is 1.
+        N : int, optional
+            Number of points. The default is 25.
+
+        Raises
+        ------
+        ValueError
+            Speed values has the wrong shape.
+
+        Returns
+        -------
+        None.
+
+        """
+        (a, dx) = self._get_sbend_parameter(D, radius)
+
+        new_x = np.arange(self._M['x'][-1], self._M['x'][-1] + dx, dx/(N - 1))
+        new_y = self._M['y'][-1] + \
+            0.5*D*(1 - np.cos(np.pi/dx*(new_x - self._M['x'][-1])))
+        new_z = self._M['z'][-1]*np.ones(new_x.shape)
+
+        # update coordinates
+        self._M['x'].extend(new_x)
+        self._M['y'].extend(new_y)
+        self._M['z'].extend(new_z)
+
+        # update speed array
+        if np.size(speed) == 1:
+            self._M['f'].extend(speed*np.ones(new_x.shape))
+        elif np.size(speed) == np.size(new_x):
+            self._M['f'].extend(speed)
+        else:
+            raise ValueError('Speed array is neither a single value nor ',
+                             'array of appropriate size.')
+
+        self._M['s'].extend(shutter*np.ones(new_x.shape))
+
+    def sin_acc(self,
+                D: float,
+                radius: float,
+                arm_length: float = 0.0,
+                speed: float = 0.0,
+                shutter: int = 1,
+                N: int = 50):
+        """
+        Sinusoidal coupler
+
+        The function concatenate two Sin-bend to make a single mode of a
+        sinusoidal directional coupler.
+        The user can specify the amplitude of the coupler (height in the y
+        direction) and the effective curvature radius.
+        The sign of D encodes the direction of the coupler:
+            - D > 0, upward Sin-bend
+            - D < 0, downward Sin-bend
+
+        Parameters
+        ----------
+        D : float
+            Amplitude of the coupler along the y-direction [mm].
+        radius : float
+            Effective curvature radius of the coupler's bends [mm].
+        arm_length : float, optional
+            Length of the coupler straight arm [mm]. The default is 0.0.
+        speed : float, optional
+            Transition speed [mm/s]. The default is 0.0.
+        shutter : int, optional
+            State of the shutter [0: 'OFF', 1: 'ON']. The default is 1.
+        N : int, optional
+            Number of points. The default is 50.
+
+        Returns
+        -------
+        None.
+
+        """
+        self.sin_bend(D, radius, speed, shutter, N/2)
+        self.linear([arm_length, 0, 0], speed, shutter)
+        self.sin_bend(-D, radius, speed, shutter, N/2)
+
+    def sin_mzi(self,
+                D: float,
+                radius: float,
+                int_length: float = 0.0,
+                arm_length: float = 0.0,
+                speed: float = 0.0,
+                shutter: int = 1,
+                N: float = 100):
+        """
+        Sinusoidal Mach-Zehnder Interferometer (MZI)
+
+        The function concatenate two sinusoidal couplers to make a single mode
+        of a sinusoidal MZI.
+        The user can specify the amplitude of the coupler (height in the y
+        direction) and the curvature radius.
+        The sign of D encodes the direction of the coupler:
+            - D > 0, upward S-bend
+            - D < 0, downward S-bend
+
+        Parameters
+        ----------
+        D : float
+            Amplitude of the MZI along the y-direction [mm].
+        radius : float
+            Effective curvature radius of the coupler's bends [mm].
+        int_length : float, optional
+            Interaction distance of the MZI [mm]. The default is 0.0.
+        arm_length : float, optional
+            Length of the MZI straight arm [mm]. The default is 0.0.
+        speed : float, optional
+            Transition speed [mm/s]. The default is 0.0.
+        shutter : int, optional
+            State of the shutter [0: 'OFF', 1: 'ON']. The default is 1.
+        N : int, optional
+            Number of points. The default is 100.
+
+        Returns
+        -------
+        None.
+
+        """
+        self.sin_acc(D, radius, int_length, speed, shutter, N/2)
+        self.linear([arm_length, 0, 0], speed, shutter)
+        self.sin_acc(D, radius, int_length, speed, shutter, N/2)
+
+    def curvature(self) -> np.ndarray:
+        """
+        Curvarure
+
+        Compute the 3D point-to-point curvature radius of the waveguide
+        shape.
+
+        Returns
+        -------
+        curvature : numpy.ndarray
+            Array of the curvature radii computed at each point of the curve.
+
+        """
+        data = self._unique_points()
+
+        x = np.array(data['x'])
+        y = np.array(data['y'])
+        z = np.array(data['z'])
+
+        dx_dt = np.gradient(x)
+        dy_dt = np.gradient(y)
+        dz_dt = np.gradient(z)
+
+        d2x_dt2 = np.gradient(dx_dt)
+        d2y_dt2 = np.gradient(dy_dt)
+        d2z_dt2 = np.gradient(dz_dt)
+
+        num = (dx_dt**2 + dy_dt**2 + dz_dt**2)**1.5
+        den = np.sqrt((d2z_dt2*dy_dt - d2y_dt2*dz_dt)**2 +
+                      (d2x_dt2*dz_dt - d2z_dt2*dx_dt)**2 +
+                      (d2y_dt2*dx_dt - d2x_dt2*dy_dt)**2)
+        default_zero = np.ones(np.size(num))*np.inf
+        # only divide nonzeros else Inf
+        curvature = np.divide(num, den, out=default_zero, where=(den != 0))
+        return curvature
+
+    def cmd_rate(self) -> np.ndarray:
+        """
+        Command rate
+
+        Compute the point-to-point command rate of the waveguide shape.
+
+        Returns
+        -------
+        cmd_rate : numpy.ndarray
+            Array of the command rates computed at each point of the curve.
+
+        """
+        data = self._unique_points()
+
+        # exclude last point, it's there just to close the shutter
+        x = np.array(data['x'][:-1])
+        y = np.array(data['y'][:-1])
+        z = np.array(data['z'][:-1])
+        v = np.array(data['f'][:-1])
+
+        dx_dt = np.gradient(x)
+        dy_dt = np.gradient(y)
+        dz_dt = np.gradient(z)
+        dt = np.sqrt(dx_dt**2 + dy_dt**2 + dz_dt**2)
+
+        default_zero = np.ones(np.size(dt))*np.inf
+        # only divide nonzeros else Inf
+        cmd_rate = np.divide(v, dt, out=default_zero, where=(v != 0))
+        return cmd_rate
+
+    # Private interface
+    def _get_sbend_parameter(self, D: float, radius: float) -> tuple:
+        """
+        Get S-Bend parameters
+
+        The function computes the final angle, and x-displacement for a
+        circular S-bend given the y-displacement D and curvature radius.
+
+        Parameters
+        ----------
+        D : float
+            Displacement along y-direction [mm].
+        radius : float
+            Curvature radius of the S-bend [mm]..
+
+        Returns
+        -------
+        tuple
+            (final angle, x-displacement), ([radians], [mm]).
+
+        """
+        dy = np.abs(D/2)
+        a = np.arccos(1 - (dy/radius))
+        dx = 2*radius*np.sin(a)
+        return (a, dx)
 
     def _unique_points(self):
         """
@@ -39,7 +580,7 @@ class Waveguide:
 
         Duplicates can be selected by crating a boolean index mask as follow:
             - make a row-wise diff operation (data.diff)
-            - compute absolute value of all elements in order to work only 
+            - compute absolute value of all elements in order to work only
                 with positive numbers
             - make a column-wise sum (.sum(axis=1))
         In this way consecutive duplicates correspond to a 0.0 value in the
@@ -48,8 +589,8 @@ class Waveguide:
         index mask can be retrieved.
         The first element is set to True by default since it is lost by the
         diff operation.
-
-        Also indexes have to be resetted in order
+        Also indexes are reset to the new dataframe (with less element, in
+        principle).
 
         Returns
         -------
@@ -66,157 +607,17 @@ class Waveguide:
         mask[0] = True
         return data[mask].reset_index()
 
-    # Methods
-    def start(self, init_pos):
-        assert np.size(init_pos) == 3, f'Given initial position is not valid. 3 values are required, {np.size(init_pos)} were given.'
-        assert bool(self._M) == False, 'Coordinate matrix is not empty. Cannot start a new waveguide in this point.'
-
-        self._M['x'] = [init_pos[0]]
-        self._M['y'] = [init_pos[1]]
-        self._M['z'] = [init_pos[2]]
-        self._M['f'] = [5]
-        self._M['s'] = [0]
-
-    def end(self, speed=75):
-        self._M['x'].append(self._M['x'][-1]);  self._M['x'].append(self._M['x'][0]);
-        self._M['y'].append(self._M['y'][-1]);  self._M['y'].append(self._M['y'][0]);
-        self._M['z'].append(self._M['z'][-1]);  self._M['z'].append(self._M['z'][0]);
-        self._M['f'].append(self._M['f'][-1]);  self._M['f'].append(speed);
-        self._M['s'].append(0);                 self._M['s'].append(0);
-
-    def linear(self, increment, speed=0.0, shutter=1):
-        self._M['x'].append(self._M['x'][-1] + increment[0])
-        self._M['y'].append(self._M['y'][-1] + increment[1])
-        self._M['z'].append(self._M['z'][-1] + increment[2])
-        self._M['f'].append(speed)
-        self._M['s'].append(shutter)
-
-    def sin_bend(self, D, radius, speed=0.0, shutter=1, N=25):
-        a = np.arccos(1-(np.abs(D/2)/radius))
-        dx = 2 * radius * np.sin(a)
-
-        new_x = np.arange(self._M['x'][-1], self._M['x'][-1] + dx, dx/(N - 1))
-        new_y = self._M['y'][-1] + 0.5 * D * (1 - np.cos(np.pi / dx * (new_x - self._M['x'][-1])))
-        new_z = self._M['z'][-1]*np.ones(new_x.shape)
-
-        # update coordinates
-        self._M['x'].extend(new_x)
-        self._M['y'].extend(new_y)
-        self._M['z'].extend(new_z)
-
-        # update speed array
-        if np.size(speed) == 1:
-            self._M['f'].extend(speed*np.ones(new_x.shape))
-        elif np.size(speed) == np.size(new_x):
-            self._M['f'].extend(speed)
-        else:
-            raise ValueError("Speed array is neither a single value nor array of appropriate size.")
-
-        self._M['s'].extend(shutter*np.ones(new_x.shape))
-
-    def sin_acc(self, D, radius, arm_length=0.0, speed=0.0, shutter=1, N=50):
-        self.sin_bend(D, radius, speed, shutter, N/2)
-        self.linear([arm_length,0,0], speed, shutter)
-        self.sin_bend(-D, radius, speed, shutter, N/2)
-
-    def sin_mzi(self, D, radius, int_length=0.0, arm_length=0.0, speed=0.0, shutter=1, N=100):
-        self.sin_acc(D, radius, int_length, speed, shutter, N/2)
-        self.linear([arm_length,0,0], speed, shutter)
-        self.sin_acc(D, radius, int_length, speed, shutter, N/2)
-
-    def circ(self, initial_angle, final_angle, radius, speed=0.0, shutter=1, N=25):
-
-        t = np.linspace(initial_angle, final_angle, N);
-        new_x = self._M['x'][-1] - radius*np.cos(initial_angle) + radius*np.cos(t);
-        new_y = self._M['y'][-1] - radius*np.sin(initial_angle) + radius*np.sin(t);
-        new_z = self._M['z'][-1]*np.ones(new_x.shape)
-
-        # update coordinates
-        self._M['x'].extend(new_x)
-        self._M['y'].extend(new_y)
-        self._M['z'].extend(new_z)
-
-        # update speed array
-        if np.size(speed) == 1:
-            self._M['f'].extend(speed*np.ones(new_x.shape))
-        elif np.size(speed) == np.size(new_x):
-            self._M['f'].extend(speed)
-        else:
-            raise ValueError("Speed array is neither a single value nor array of appropriate size.")
-
-        self._M['s'].extend(shutter*np.ones(new_x.shape))
-
-    def arc_bend(self, D, radius, speed=0.0, shutter=1, N=25):
-        (a, _) = self.__get_sbend_parameter(D, radius)
-
-        if D>0:
-            self.circ(np.pi*(3/2), np.pi*(3/2)+a, radius, speed, shutter, np.round(N/2))
-            self.circ(np.pi*(1/2)+a, np.pi*(1/2), radius, speed, shutter, np.round(N/2))
-        else:
-            self.circ(np.pi*(1/2), np.pi*(1/2)-a, radius, speed, shutter, np.round(N/2))
-            self.circ(np.pi*(3/2)-a, np.pi*(3/2), radius, speed, shutter, np.round(N/2))
-
-    def arc_acc(self, D, radius, arm_length=0.0, speed=0.0, shutter=1, N=50):
-        self.arc_bend(D, radius, speed, shutter, N/2)
-        self.linear([arm_length,0,0], speed, shutter)
-        self.arc_bend(-D, radius, speed, shutter, N/2)
-
-    def arc_mzi(self, D, radius, int_length=0.0, arm_length=0.0, speed=0.0, shutter=1, N=100):
-        self.arc_acc(D, radius, arm_length, speed, shutter, N/2)
-        self.linear([int_length,0,0], speed, shutter)
-        self.arc_acc(D, radius, arm_length, speed, shutter, N/2)
-
-    def __get_sbend_parameter(self, D, radius):
-        dy = np.abs(D/2)
-        a = np.arccos(1 - (dy/radius))
-        dx = 2 * radius * np.sin(a)
-        return (a, dx)
-
-    def curvature(self):
-        data = self._unique_points()
-
-        x = np.array(data['x'])
-        y = np.array(data['y'])
-        z = np.array(data['z'])
-
-        dx_dt = np.gradient(x)
-        dy_dt = np.gradient(y)
-        dz_dt = np.gradient(z)
-
-        d2x_dt2 = np.gradient(dx_dt)
-        d2y_dt2 = np.gradient(dy_dt)
-        d2z_dt2 = np.gradient(dz_dt)
-
-        num = (dx_dt**2+ dy_dt**2 + dz_dt**2)**1.5
-        den = np.sqrt((d2z_dt2*dy_dt - d2y_dt2*dz_dt)**2 + (d2x_dt2*dz_dt - d2z_dt2*dx_dt)**2 + (d2y_dt2*dx_dt - d2x_dt2*dy_dt)**2)
-        default_zero = np.ones(np.size(num))*np.inf
-        curvature = np.divide(num, den, out=default_zero, where=den!=0) # only divide nonzeros else Inf
-        return curvature
-
-    def cmd_rate(self):
-        data = self._unique_points()
-
-        x = np.array(data['x'][:-1]) # exclude last point, it's there just to close the shutter
-        y = np.array(data['y'][:-1])
-        z = np.array(data['z'][:-1])
-        v = np.array(data['f'][:-1])
-
-        dx_dt = np.gradient(x)
-        dy_dt = np.gradient(y)
-        dz_dt = np.gradient(z)
-        dt = np.sqrt(dx_dt**2 + dy_dt**2 + dz_dt**2)
-
-        default_zero = np.ones(np.size(dt))*np.inf
-        cmd_rate = np.divide(v, dt, out=default_zero, where=v!=0) # only divide nonzeros else Inf
-        return cmd_rate
-
-    def __compute_number_points(self):
+    def _compute_number_points(self):
+        # TODO: write method that compute the optimal number of points given
+        #       the max value of cmd rate
         pass
+
 
 if __name__ == '__main__':
 
     # Data
-    pitch = 0.080; int_dist = 0.007
+    pitch = 0.080
+    int_dist = 0.007
     d_bend = 0.5*(pitch-int_dist)
     increment = [4, 0, 0]
 
@@ -233,10 +634,9 @@ if __name__ == '__main__':
 
     print(wg.M)
 
-
-    # # Plot
-    # fig, ax = plt.subplots()
-    # for wg in mzi:
-    #     ax.plot(wg.M['x'][:-1], wg.M['y'][:-1], '-k', linewidth=2.5)
-    #     ax.plot(wg.M['x'][-2:], wg.M['y'][-2:], ':b', linewidth=1.0)
-    # plt.show()
+    # Plot
+    fig, ax = plt.subplots()
+    for wg in mzi:
+        ax.plot(wg.M['x'][:-1], wg.M['y'][:-1], '-k', linewidth=2.5)
+        ax.plot(wg.M['x'][-2:], wg.M['y'][-2:], ':b', linewidth=1.0)
+    plt.show()
