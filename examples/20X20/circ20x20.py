@@ -13,7 +13,7 @@ t = time.time()
 # 20x20 circuit
 circ = {
     'waveguide':    [Waveguide() for _ in range(p.MM)], 
-    'marker':   [Marker(p.lx, p.ly) for _ in range(p.MM)]
+    'marker':       [Marker(p.lx, p.ly) for _ in range(p.MM)]
     }
 
 for i, wg in enumerate(circ['waveguide']):
