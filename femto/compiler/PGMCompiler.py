@@ -289,15 +289,15 @@ class PGMCompiler:
 
         Returns
         -------
-        x : np.array
+        x : numpy.array
             Transformed values for the X coordinate.
-        y : np.array
+        y : numpy.array
             Transformed values for the Y coordinate.
-        z : np.array
+        z : numpy.array
             Transformed values for the Z coordinate.
-        f : np.array
+        f : numpy.array
             Values for the F coordinate.
-        s : np.array
+        s : numpy.array
             Values for the S coordinate.
 
         """
