@@ -12,7 +12,20 @@ class Waveguide:
         self._M = {}
 
     @property
-    def M(self):
+    def M(self) -> pd.core.frame.DataFrame:
+        """
+        Coordinates matrix getter
+
+        The getter returns the coordinates matrix as a pandas.DataFrame object.
+        The dataframe is parsed through a unique functions that removes all the
+        subsequent identical points in the set.
+
+        Returns
+        -------
+        pandas.DataFrame
+            [X, Y, Z, F, S] unique point matrix.
+
+        """
         return self._unique_points()
 
     # Methods
