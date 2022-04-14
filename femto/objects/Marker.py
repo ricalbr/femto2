@@ -24,7 +24,7 @@ class Marker(Waveguide):
               ly: float,
               speed_pos: float = 5):
         """
-        Cross marker
+        CROSS MARKER.
 
         The function computes the point of a cross marker of given widht along
         x- and y-direction.

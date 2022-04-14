@@ -14,7 +14,7 @@ class Waveguide:
     @property
     def M(self) -> pd.core.frame.DataFrame:
         """
-        Coordinates matrix getter
+        COORDINATES MATRIX GETTER.
 
         The getter returns the coordinates matrix as a pandas.DataFrame object.
         The dataframe is parsed through a unique functions that removes all the
@@ -31,7 +31,7 @@ class Waveguide:
     # Methods
     def start(self, init_pos: List[float]):
         """
-        Start
+        START.
 
         The function starts a waveguide in the initial position given as
         input.
@@ -67,7 +67,7 @@ class Waveguide:
 
     def end(self, speed: float = 75):
         """
-        End
+        END.
 
         End a waveguide. The function automatically
 
@@ -92,7 +92,7 @@ class Waveguide:
                speed: float = 0.0,
                shutter: int = 1):
         """
-        Linear
+        LINEAR.
 
         The function add a linear increment to the last point of the current
         waveguide.
@@ -129,7 +129,7 @@ class Waveguide:
              shutter: int = 1,
              N: int = 25):
         """
-        Circ
+        CIRC.
 
         Compute the points in the xy-plane that connects two angles
         (initial_angle and final_angle) with a circular arc of a given radius.
@@ -191,7 +191,7 @@ class Waveguide:
                  shutter: int = 1,
                  N: int = 25):
         """
-        Circular bend
+        CIRCULAR BEND.
 
         The function concatenate two circular arc to make a circular S-bend.
         The user can specify the amplitude of the S-bend (height in the y
@@ -255,7 +255,7 @@ class Waveguide:
                 shutter: int = 1,
                 N: int = 50):
         """
-        Circular coupler
+        CIRCULAR COUPLER.
 
         The function concatenate two circular S-bend to make a single mode of
         a circular directional coupler.
@@ -298,7 +298,7 @@ class Waveguide:
                 shutter: int = 1,
                 N: int = 100):
         """
-        Circular Mach-Zehnder Interferometer (MZI)
+        CIRCULAR MACH-ZEHNDER INTERFEROMETER (MZI).
 
         The function concatenate two circular couplers to make a single mode
         of a circular MZI.
@@ -341,7 +341,7 @@ class Waveguide:
                  shutter: int = 1,
                  N: int = 25):
         """
-        Sinusoidal bend
+        SINUSOIDAL BEND.
 
         The function compute the points in the xy-plane of a Sin-bend curve.
         The distance between the initial and final point is the same of the
@@ -412,7 +412,7 @@ class Waveguide:
                 shutter: int = 1,
                 N: int = 50):
         """
-        Sinusoidal coupler
+        SINUSOIDAL COUPLER.
 
         The function concatenate two Sin-bend to make a single mode of a
         sinusoidal directional coupler.
@@ -455,7 +455,7 @@ class Waveguide:
                 shutter: int = 1,
                 N: float = 100):
         """
-        Sinusoidal Mach-Zehnder Interferometer (MZI)
+        SINUSOIDAL MACH-ZEHNDER INTERFEROMETER (MZI).
 
         The function concatenate two sinusoidal couplers to make a single mode
         of a sinusoidal MZI.
@@ -493,7 +493,7 @@ class Waveguide:
 
     def curvature(self) -> np.ndarray:
         """
-        Curvarure
+        CURVARURE.
 
         Compute the 3D point-to-point curvature radius of the waveguide
         shape.
@@ -529,7 +529,7 @@ class Waveguide:
 
     def cmd_rate(self) -> np.ndarray:
         """
-        Command rate
+        COMMAND RATE.
 
         Compute the point-to-point command rate of the waveguide shape.
 
@@ -560,7 +560,7 @@ class Waveguide:
     # Private interface
     def _get_sbend_parameter(self, D: float, radius: float) -> tuple:
         """
-        Get S-Bend parameters
+        GET S-BEND PARAMETERS.
 
         The function computes the final angle, and x-displacement for a
         circular S-bend given the y-displacement D and curvature radius.
@@ -585,7 +585,7 @@ class Waveguide:
 
     def _unique_points(self):
         """
-        Remove all consecutive duplicates.
+        REMOVE ALL CONSECUTIVE DUPLICATES.
 
         At least one coordinate (X,Y,Z,F,S) have to change between two
         consecutive lines.

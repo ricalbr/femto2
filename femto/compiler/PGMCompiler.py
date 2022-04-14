@@ -36,7 +36,7 @@ class PGMCompiler:
     # Methods
     def header(self, fabbrication_line: str = 'CAPABLE'):
         """
-        Header
+        HEADER.
 
         The function print the header file of the G-Code file. The user can
         specify the fabrication line to work in CAPABLE or FIRE LINE1.
@@ -64,7 +64,7 @@ class PGMCompiler:
 
     def dvar(self, variables: List[str]):
         """
-        Declaration of variable
+        DECLARATION OF VARIABLE.
 
         Fuction to add the declaration of variables in a G-Code file.
 
@@ -83,7 +83,7 @@ class PGMCompiler:
 
     def comment(self, comstring: str):
         """
-        Comment
+        COMMENT.
 
         Add a comment to a G-Code file.
 
@@ -101,7 +101,7 @@ class PGMCompiler:
 
     def shutter(self, state: str):
         """
-        Shutter
+        SHUTTER.
 
         Add the instruction to open (close) the shutter to a G-Code file only
         when necessary.
@@ -135,7 +135,7 @@ class PGMCompiler:
 
     def dwell(self, pause: float):
         """
-        Dwell
+        DWELL.
 
         Add pause instruction to a G-Code file.
 
@@ -154,7 +154,7 @@ class PGMCompiler:
 
     def set_home(self, home_pos: List[float]):
         """
-        Set home
+        SET HOME.
 
         This function defines a preset position or a software home position to
         the one specified in the input list.
@@ -189,7 +189,7 @@ class PGMCompiler:
 
     def homing(self):
         """
-        Homing
+        HOMING.
 
         Utility function to return to the origin (0,0,0) with shutter OFF.
 
@@ -203,7 +203,7 @@ class PGMCompiler:
 
     def move_to(self, position: List[float], speed_pos: float = 50):
         """
-        Move to position
+        MOVE TO POSITION.
 
         Utility function to move to a given position with the shutter OFF.
         The user can specify the target position and the positioning speed.
@@ -238,7 +238,7 @@ class PGMCompiler:
 
     def for_loop(self, var: str, num: int):
         """
-        For loop
+        FOR LOOP.
 
         Add the instruction th begin a FOR loop to a G-Code file.
 
@@ -259,7 +259,7 @@ class PGMCompiler:
 
     def end_for(self, var: str):
         """
-        End foor loop
+        END FOOR LOOP.
 
         Add the NEXT instruction to a G-Code file.
 
@@ -278,7 +278,7 @@ class PGMCompiler:
 
     def rpt(self, num: int):
         """
-        Repeat
+        REPEAT.
 
         Add the REPEAT instruction to a G-Code file.
 
@@ -297,7 +297,7 @@ class PGMCompiler:
 
     def endrpt(self):
         """
-        End repeat
+        END REPEAT.
 
         Add the END REPEAT instruction to a G-Code file.
 
@@ -311,7 +311,7 @@ class PGMCompiler:
 
     def point_to_instruction(self, M: pd.core.frame.DataFrame):
         """
-        Point to instruction
+        POINT TO INSTRUCTION.
 
         The function convert the quintuple (X,Y,Z,F,S) to G-Code instructions.
         The (X,Y,Z) coordinates are transformed using the transformation
@@ -368,7 +368,7 @@ class PGMCompiler:
 
     def compile_pgm(self):
         """
-        Compile PGM
+        COMPILE PGM.
 
         The function dumps all the instruction in self._instruction in a .pgm
         file.
@@ -403,7 +403,7 @@ class PGMCompiler:
     # Private interface
     def _compute_t_matrix(self) -> np.ndarray:
         """
-        Compute transformation matrix
+        COMPUTE TRANSFORMATION MATRIX.
 
         Given the rotation angle and the rifraction index, the function
         compute the transformation matrix as composition of rotatio matrix (RM)
@@ -429,7 +429,7 @@ class PGMCompiler:
                      z: float = None,
                      f: float = None) -> str:
         """
-        Format arguments
+        FORMAT ARGUMENTS.
 
         Utility function that creates a string prepending the coordinate name
         to the given value for all the given the coordinates (X,Y,Z) and feed
