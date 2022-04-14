@@ -27,6 +27,7 @@ class PGMCompiler:
         self.output_digits = output_digits
 
         self._num_repeat = 0
+        self._num_for = 0
         self._total_dwell_time = 0.0
         self._shutter_on = False
 
@@ -235,16 +236,56 @@ class PGMCompiler:
         self._instructions.append(f'LINEAR {args}\n')
         self.dwell(self.long_pause)
 
+    def for_loop(self, var: str, num: int):
+        """
+        For loop
+
+        Add the instruction th begin a FOR loop to a G-Code file.
+
+        Parameters
+        ----------
+        var : str
+            Name of the variable used for iteration.
+        num : int
+            Number of iterations.
+
+        Returns
+        -------
+        None.
+
+        """
+        self._instructions.append(f'FOR ${var} = 0 TO {num-1}\n')
+        self._num_for += 1
+
+    def end_for(self, var: str):
+        """
+        End foor loop
+
+        Add the NEXT instruction to a G-Code file.
+
+        Parameters
+        ----------
+        var : str
+            Name of the variable used for the corresponding FOR loop.
+
+        Returns
+        -------
+        None.
+
+        """
+        self._instructions.append(f'NEXT ${var}\n\n')
+        self._num_for -= 1
+
     def rpt(self, num: int):
         """
         Repeat
 
-        Add the repeat instruction to a G-Code file.
+        Add the REPEAT instruction to a G-Code file.
 
         Parameters
         ----------
         num : int
-            Number of repetition.
+            Number of iterations.
 
         Returns
         -------
@@ -258,7 +299,7 @@ class PGMCompiler:
         """
         End repeat
 
-        Add the end repeat instruction to a G-Code file.
+        Add the END REPEAT instruction to a G-Code file.
 
         Returns
         -------
@@ -344,6 +385,10 @@ class PGMCompiler:
             (f'Missing {np.abs(self._num_repeat)} ' +
              f'{"END REPEAT" if self._num_repeat >0 else "REPEAT"} ' +
              f'instruction{"s" if np.abs(self._num_repeat) != 1 else ""}.')
+        assert self._num_for == 0, \
+            (f'Missing {np.abs(self._num_for)} ' +
+             f'{"NEXT" if self._num_for >0 else "FOR"} ' +
+             f'instruction{"s" if np.abs(self._num_for) != 1 else ""}.')
 
         # if not present in the filename, add the proper file extension
         if not self.filename.endswith('.pgm'):
