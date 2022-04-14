@@ -5,8 +5,8 @@ import param as p
 import matplotlib.pyplot as plt
 import time
 from IPython import get_ipython
-# get_ipython().run_line_magic('matplotlib', 'inline')
-get_ipython().run_line_magic('matplotlib', 'qt5')
+get_ipython().run_line_magic('matplotlib', 'inline')
+# get_ipython().run_line_magic('matplotlib', 'qt5')
 
 t = time.time()
 
