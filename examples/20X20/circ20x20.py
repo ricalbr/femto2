@@ -8,7 +8,7 @@ from IPython import get_ipython
 get_ipython().run_line_magic('matplotlib', 'inline')
 # get_ipython().run_line_magic('matplotlib', 'qt5')
 
-t = time.time()
+t = time.perf_counter()
 
 # 20x20 circuit
 circ = {
@@ -24,11 +24,11 @@ for i, wg in enumerate(circ['waveguide']):
     wg.sin_bend((-1)**(i % 2+1)*p.d1, p.radius, p.speed)
     for j in range(p.NN-1):
         wg.sin_bend((-1)**(j+i % 2)*p.d1, p.radius, speed=p.speed)
-        if i == p.NN-1: circ['marker'][j].cross([wg.M['x'].iloc[-1], wg.M['y'].iloc[-1]-.2, 0.001])
+        if i == p.NN-1: circ['marker'][j].cross([wg.M['x'].iloc[-1], wg.M['y'].iloc[-1]-.2])
         wg.sin_bend((-1)**(j+i % 2+1)*p.d1, p.radius, speed=p.speed)
         wg.sin_bend((-1)**(j+i % 2)*p.d2, p.radius, p.speed)
     wg.sin_bend((-1)**(j+i % 2+1)*p.d1, p.radius, p.speed)
-    if i == p.NN-1: circ['marker'][j+1].cross([wg.M['x'].iloc[-1], wg.M['y'].iloc[-1]-.2, 0.001])
+    if i == p.NN-1: circ['marker'][j+1].cross([wg.M['x'].iloc[-1], wg.M['y'].iloc[-1]-.2])
     wg.sin_acc((-1)**(j+i % 2)*p.d1, p.radius, speed=p.speed)
     wg.linear(p.increment, p.speed)
     wg.end()
@@ -64,4 +64,4 @@ for i, c in enumerate(circ['marker']):
     gc.endrpt()
 gc.compile_pgm()
 
-print(f'Elapsed time: {time.time() - t:.2f} s.')
+print(f'Elapsed time: {time.perf_counter() - t:.2f} s.')
