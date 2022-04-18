@@ -20,8 +20,8 @@ class Marker(Waveguide):
 
     def cross(self,
               position: List[float],
-              lx: float,
-              ly: float,
+              lx: float = 1,
+              ly: float = 0.05,
               speed_pos: float = 5):
         """
         CROSS MARKER.
@@ -36,9 +36,9 @@ class Marker(Waveguide):
             position[0] -> X
             position[1] -> Y
         lx : float
-            Length of the cross marker along x [mm].
+            Length of the cross marker along x [mm]. The default is 1.
         ly : float
-            Length of the cross marker along y [mm].
+            Length of the cross marker along y [mm]. The default is 0.05.
         speed_pos : float, optional
             Shutter closed transition speed [mm/s]. The default is 5.
 
