@@ -2,6 +2,7 @@ from femto.objects.Waveguide import Waveguide
 import numpy as np
 import pandas as pd
 import os
+from pathlib import Path
 from typing import List
 
 CWD = os.path.dirname(os.path.abspath(__file__))
@@ -30,6 +31,7 @@ class PGMCompiler:
         self._num_for = 0
         self._total_dwell_time = 0.0
         self._shutter_on = False
+        self._loaded_files = []
 
         self._instructions = []
 
@@ -309,6 +311,83 @@ class PGMCompiler:
         self._instructions.append('ENDREPEAT\n\n')
         self._num_repeat -= 1
 
+    def tic(self):
+        """
+        TIC.
+
+        Print the current time (hh:mm:ss) in message panel. The function is
+        intended to be used before the execution of an operation or script
+        to measure its time performances.
+
+        Returns
+        -------
+        None.
+
+        """
+        self._instructions.append('MSGDISPLAY 1, "INIZIO #TS"\n\n')
+
+    def toc(self):
+        """
+        TOC.
+
+        Print the current time (hh:mm:ss) in message panel. The function is
+        intended to be used after the execution of an operation or script
+        to measure its time performances.
+
+        Returns
+        -------
+        None.
+
+        """
+        self._instructions.append('MSGDISPLAY 1, "FINE   #TS"\n')
+        self._instructions.append('MSGDISPLAY 1, "---------------------"\n')
+        self._instructions.append('MSGDISPLAY 1, " "\n\n')
+
+    def load(self, filename: str, filepath: str = None):
+        """
+        LOAD PROGRAM.
+
+        Add the instruction to LOAD a program in a G-Code file.
+
+        Parameters
+        ----------
+        filename : str
+            Name of the file that have to be loaded.
+        filepath : str, optional
+            Path of the folder containing the file. The default is None.
+
+        Returns
+        -------
+        None.
+
+        """
+        file = self._parse_filepath(filename, filepath)
+        self._instructions.append(f'PROGRAM 0 LOAD "{file}"\n')
+        self._loaded_files.append(file.stem)
+
+    def farcall(self, filename: str):
+        """
+        FARCALL MODULE.
+
+
+        Parameters
+        ----------
+        filename : str
+            DESCRIPTION.
+        filepath : str, optional
+            DESCRIPTION. The default is None.
+
+        Returns
+        -------
+        None.
+
+        """
+        file = self._parse_filepath(filename)
+        assert file.stem in self._loaded_files, \
+            (f'{file} not loaded. Cannot load it.')
+        self._instructions.append(f'FARCALL "{file}"\n')
+        self._instructions.append('PROGRAM 0 STOP\n')
+
     def point_to_instruction(self, M: pd.core.frame.DataFrame):
         """
         POINT TO INSTRUCTION.
@@ -395,9 +474,8 @@ class PGMCompiler:
             self.filename += '.pgm'
 
         # write instruction to file
-        f = open(self.filename, "w")
-        f.write(''.join(self._instructions))
-        f.close()
+        with open(self.filename, 'w') as f:
+            f.write(''.join(self._instructions))
         print('G-code compilation completed.')
 
     # Private interface
@@ -470,6 +548,42 @@ class PGMCompiler:
                                                    digits=self.output_digits))
         args = ' '.join(args)
         return args
+
+    def _parse_filepath(self,
+                        filename: str,
+                        filepath: str = None,
+                        extension: str = None) -> pathlib.WindowsPath:
+        """
+        PARSE FILEPATH.
+
+        The fuction takes a filename and (optional) filepath. It merges the
+        two and check if the file exists in the system.
+        An extension parameter can be given as input. In that case the
+        function also checks weather the filename has the correct extension.
+
+        Parameters
+        ----------
+        filename : str
+            Name of the file that have to be loaded.
+        filepath : str, optional
+            Path of the folder containing the file. The default is None.
+        extension : str, optional
+            File extension. The default is None.
+
+        Returns
+        -------
+        file : pathlib.Path
+            Complete path of the file (filepath + filename).
+
+        """
+        if extension is not None:
+            assert filename.endswith(extension), \
+                ('Given filename has wrong extension.' +
+                 f'Given {filename}, required .{extension}.')
+
+        file = Path(filepath) / filename if filepath is not None else filename
+        assert filename.exist(), f'{file} does not exist.'
+        return file
 
 
 if __name__ == '__main__':
