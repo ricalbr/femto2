@@ -552,7 +552,7 @@ class PGMCompiler:
     def _parse_filepath(self,
                         filename: str,
                         filepath: str = None,
-                        extension: str = None) -> pathlib.WindowsPath:
+                        extension: str = None) -> Path:
         """
         PARSE FILEPATH.
 
