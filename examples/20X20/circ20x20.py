@@ -4,8 +4,8 @@ from femto.compiler.PGMCompiler import PGMCompiler
 import param as p
 import matplotlib.pyplot as plt
 import time
-from IPython import get_ipython
-get_ipython().run_line_magic('matplotlib', 'inline')
+# from IPython import get_ipython
+# get_ipython().run_line_magic('matplotlib', 'inline')
 # get_ipython().run_line_magic('matplotlib', 'qt5')
 
 t = time.perf_counter()
@@ -41,7 +41,6 @@ for wg in circ['waveguide']:
 
 for c in circ['marker']:
     ax.plot(c.M['x'][:-1], c.M['y'][:-1], '-k', linewidth=1)
-plt.show()
 
 # Compilation
 # # OPTICAL CIRCUIT
@@ -65,3 +64,4 @@ for i, c in enumerate(circ['marker']):
 gc.compile_pgm()
 
 print(f'Elapsed time: {time.perf_counter() - t:.2f} s.')
+plt.show()
