@@ -1,7 +1,6 @@
-# <img src="https://pixelartmaker-data-78746291193.nyc3.digitaloceanspaces.com/image/a30797c1c303a03.png" alt="femto" width="40"/>femto
+# <img src="https://user-images.githubusercontent.com/45992199/165091557-b2d92d74-9052-4645-969f-26dcb1dcb032.png" alt="femto" width="40"/> femto
 
-
-Python scripts for Femtosecond Laser waveguide writing.
+Python suite for design and fabrication of femtosecond laser written integrated photonic circuits.
 
 ### Installation
 #### GitHub Desktop + Spyder
