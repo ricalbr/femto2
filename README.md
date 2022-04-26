@@ -1,8 +1,12 @@
-# <img src="https://user-images.githubusercontent.com/45992199/165091557-b2d92d74-9052-4645-969f-26dcb1dcb032.png" alt="femto" width="40"/> femto
+<img class="marginauto" src="https://user-images.githubusercontent.com/45992199/165287798-08b8e983-5729-4ae1-9b95-3d28f9ade5e1.png" alt="femto" width="540"/>
 
-Python suite for design and fabrication of femtosecond laser written integrated photonic circuits.
+Python library for design and fabrication of femtosecond laser written integrated photonic circuits.
+The library present classes for
+- Optical waveguides;
+- Markers and superficial ablations;
+- Isolation trenches;
 
-### Installation
+## Installation
 #### GitHub Desktop + Spyder
 
 Run the following command in the Spyder console
@@ -17,3 +21,5 @@ git clone git@github.com:ricalbr/femto.git
 cd femto
 pip install -e .
 ```
+
+## Usage
