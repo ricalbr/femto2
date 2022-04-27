@@ -28,6 +28,57 @@ class Waveguide:
         """
         return self._unique_points()
 
+    @property
+    def x(self) -> np.ndarray:
+        """
+        X-COORDINATE.
+
+        The getter returns the x-coordinate vector as a numpy array. The
+        subsequent identical points in the vector are removed.
+
+        Returns
+        -------
+        numpy.ndarray
+            Array of the x-coordinates.
+
+        """
+        df = self._unique_points()
+        return df['x'].to_numpy()
+
+    @property
+    def y(self) -> np.ndarray:
+        """
+        Y-COORDINATE.
+
+        The getter returns the y-coordinate vector as a numpy array. The
+        subsequent identical points in the vector are removed.
+
+        Returns
+        -------
+        numpy.ndarray
+            Array of the y-coordinates.
+
+        """
+        df = self._unique_points()
+        return df['y'].to_numpy()
+
+    @property
+    def z(self) -> np.ndarray:
+        """
+        Z-COORDINATE.
+
+        The getter returns the z-coordinate vector as a numpy array. The
+        subsequent identical points in the vector are removed.
+
+        Returns
+        -------
+        numpy.ndarray
+            Array of the z-coordinates.
+
+        """
+        df = self._unique_points()
+        return df['z'].to_numpy()
+
     # Methods
     def start(self, init_pos: List[float]):
         """
