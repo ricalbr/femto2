@@ -137,7 +137,7 @@ if __name__ == '__main__':
     for i, wg in enumerate(coup):
         wg.start([-2, i*pitch, 0.035])
         wg.sin_acc((-1)**(-i+1)*d_bend, radius=15, speed=20, N=250)
-        x_mid = wg.M['x'].iloc[-1]
+        x_mid = wg.x[-1]
         wg.sin_acc((-1)**(-i+1)*d_bend, radius=15, speed=20, N=250)
         wg.end()
 
@@ -146,9 +146,10 @@ if __name__ == '__main__':
                        y_max=19*pitch+0.1)
     TC1.get_trench(coup)
 
-    b = TC1.trench_list
     fig, ax = plt.subplots()
-    for t in b:
+    for wg in coup:
+        ax.plot(wg.x[:-1], wg.y[:-1],'b')
+    for t in TC1.trench_list:
         xt, yt = t.floor
         ax.plot(xt, yt, 'k', lw=0.5)
     ax.set_aspect('equal')

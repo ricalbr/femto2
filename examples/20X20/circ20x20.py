@@ -24,11 +24,11 @@ for i, wg in enumerate(circ['waveguide']):
     wg.sin_bend((-1)**(i % 2+1)*p.d1, p.radius, p.speed)
     for j in range(p.NN-1):
         wg.sin_bend((-1)**(j+i % 2)*p.d1, p.radius, speed=p.speed)
-        if i == p.NN-1: circ['marker'][j].cross([wg.M['x'].iloc[-1], wg.M['y'].iloc[-1]-.2])
+        if i == p.NN-1: circ['marker'][j].cross([wg.x[-1], wg.y[-1]-.2])
         wg.sin_bend((-1)**(j+i % 2+1)*p.d1, p.radius, speed=p.speed)
         wg.sin_bend((-1)**(j+i % 2)*p.d2, p.radius, p.speed)
     wg.sin_bend((-1)**(j+i % 2+1)*p.d1, p.radius, p.speed)
-    if i == p.NN-1: circ['marker'][j+1].cross([wg.M['x'].iloc[-1], wg.M['y'].iloc[-1]-.2])
+    if i == p.NN-1: circ['marker'][j+1].cross([wg.x[-1], wg.y[-1]-.2])
     wg.sin_acc((-1)**(j+i % 2)*p.d1, p.radius, speed=p.speed)
     wg.linear(p.increment, p.speed)
     wg.end()
@@ -36,11 +36,11 @@ for i, wg in enumerate(circ['waveguide']):
 # Plot
 fig, ax = plt.subplots()
 for wg in circ['waveguide']:
-    ax.plot(wg.M['x'][:-1], wg.M['y'][:-1], '-b', linewidth=2.5)
-    ax.plot(wg.M['x'][-2:], wg.M['y'][-2:], ':k', linewidth=1)
+    ax.plot(wg.x[:-1], wg.y[:-1], '-b', linewidth=2.5)
+    ax.plot(wg.x[-2:], wg.y[-2:], ':k', linewidth=1)
 
 for c in circ['marker']:
-    ax.plot(c.M['x'][:-1], c.M['y'][:-1], '-k', linewidth=1)
+    ax.plot(c.x[:-1], c.y[:-1], '-k', linewidth=1)
 
 # Compilation
 # # OPTICAL CIRCUIT
