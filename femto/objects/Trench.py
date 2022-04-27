@@ -143,7 +143,7 @@ if __name__ == '__main__':
         wg.end()
 
     TC1 = TrenchColumn(x_c=x_mid,
-                       y_min=-.1,
+                       y_min=-0.1,
                        y_max=19*pitch+0.1)
     TC1.get_trench(coup)
 
