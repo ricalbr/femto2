@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 # from descartes import PolygonPatch
 from typing import List
-import itertools
+from itertools import chain
 import warnings
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -26,21 +26,22 @@ class Trench:
         self.adj_bridge = (self.bridge_width
                            + self.beam_size*2
                            - self.round_corner)/2
-        self._wall = {}
-        self._floor = {}
+        self._wall = None
+        self._floor = None
         self._get_paths()
 
     @property
     def center(self):
-        return self.trench_block.centroid.coords
+        return np.asarray([self.trench_block.centroid.x,
+                           self.trench_block.centroid.y])
 
     @property
     def border(self):
-        return self._wall.T
+        return self._wall
 
     @property
     def floor(self):
-        return self._floor.T
+        return self._floor
 
     # Private interface
     def _buffer_polygon(self, polygon, inset=True):
@@ -68,8 +69,8 @@ class Trench:
             elif inset_polygon:
                 raise ValueError('Unhandled geometry type: '
                                  f'{inset_polygon.type}')
-        self._wall = np.asarray(list(self.trench_block.exterior.coords))
-        self._floor = np.asarray(list(itertools.chain.from_iterable(insets)))
+        self._wall = np.asarray(list(self.trench_block.exterior.coords)).T
+        self._floor = np.asarray(list(chain.from_iterable(insets))).T
 
 
 class TrenchColumn:
@@ -136,9 +137,9 @@ if __name__ == '__main__':
     coup = [Waveguide(num_scan=6) for _ in range(20)]
     for i, wg in enumerate(coup):
         wg.start([-2, i*pitch, 0.035])
-        wg.sin_acc((-1)**(-i+1)*d_bend, radius=15, speed=20, N=250)
+        wg.sin_acc((-1)**i*d_bend, radius=15, speed=20, N=250)
         x_mid = wg.x[-1]
-        wg.sin_acc((-1)**(-i+1)*d_bend, radius=15, speed=20, N=250)
+        wg.sin_acc((-1)**i*d_bend, radius=15, speed=20, N=250)
         wg.end()
 
     TC1 = TrenchColumn(x_c=x_mid,
