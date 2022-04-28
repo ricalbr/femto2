@@ -1,7 +1,8 @@
 from femto.objects.Waveguide import Waveguide
 from femto.compiler.PGMCompiler import PGMCompiler
-import param as p
 import matplotlib.pyplot as plt
+import param as p
+
 
 # Simple script for fabricate a MZI interferometer
 
@@ -22,8 +23,7 @@ print(wg.M)
 # Plot
 fig, ax = plt.subplots()
 for wg in mzi:
-    x = wg.M['x']; y = wg.M['y']
-    ax.plot(x[:-1], y[:-1], color='k', linewidth=2.5)
+    ax.plot(wg.x[:-1], wg.y[:-1], color='k', linewidth=2.5)
 plt.show()
 
 # Compilation
