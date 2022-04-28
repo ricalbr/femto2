@@ -1,7 +1,7 @@
 from femto.objects.Waveguide import Waveguide
 import numpy as np
 import matplotlib.pyplot as plt
-# from descartes import PolygonPatch
+from descartes import PolygonPatch
 from typing import List
 from itertools import chain
 import warnings
@@ -28,7 +28,6 @@ class Trench:
                            - self.round_corner)/2
         self._wall = None
         self._floor = None
-        self._get_paths()
 
     @property
     def center(self):
@@ -37,21 +36,25 @@ class Trench:
 
     @property
     def border(self):
+        if self._wall is None:
+            self.get_paths()
         return self._wall
 
     @property
     def floor(self):
+        if self._floor is None:
+            self.get_paths()
         return self._floor
 
-    # Private interface
-    def _buffer_polygon(self, polygon, inset=True):
-        if inset:
-            new_polygon = polygon.buffer(-self.delta_floor)
-        else:
-            new_polygon = polygon.buffer(self.delta_floor)
-        return new_polygon if new_polygon.is_valid else None
+    @property
+    def patch(self, fc='k', ec='k', alpha=0.5, zorder=1):
+        return PolygonPatch(self.trench_block,
+                            fc=fc,
+                            ec=ec,
+                            alpha=alpha,
+                            zorder=zorder)
 
-    def _get_paths(self):
+    def get_paths(self):
         # Initialization
         polygon_list = [self.trench_block]
         insets = []
@@ -72,12 +75,20 @@ class Trench:
         self._wall = np.asarray(list(self.trench_block.exterior.coords)).T
         self._floor = np.asarray(list(chain.from_iterable(insets))).T
 
+    # Private interface
+    def _buffer_polygon(self, polygon, inset=True):
+        if inset:
+            new_polygon = polygon.buffer(-self.delta_floor)
+        else:
+            new_polygon = polygon.buffer(self.delta_floor)
+        return new_polygon if new_polygon.is_valid else None
+
 
 class TrenchColumn:
     def __init__(self,
-                 x_c: float,
-                 y_min: float,
-                 y_max: float,
+                 x_c: float = None,
+                 y_min: float = None,
+                 y_max: float = None,
                  length: float = 1.0,
                  delta_floor: float = 0.001,
                  bridge_width: float = 0.026,
@@ -85,13 +96,12 @@ class TrenchColumn:
                  round_corner: float = 0.005):
 
         self.trench_list = []
-        self.x_c = x_c
-        self.y_min = y_min
-        self.y_max = y_max
         self.length = length
+        self._x_c = x_c
+        self._y_min = y_min
+        self._y_max = y_max
 
-        self._rect = box(self.x_c - self.length/2, self.y_min,
-                         self.x_c + self.length/2, self.y_max)
+        self._rect = self._make_box()
 
         self.delta_floor = delta_floor
         self.bridge_width = bridge_width
@@ -100,6 +110,46 @@ class TrenchColumn:
         self.adj_bridge = (self.bridge_width
                            + self.beam_size*2
                            - self.round_corner)/2
+
+    # # add gettere and setters for x_c, y_min, y_max, length
+    @property
+    def x_c(self):
+        return self._x_c
+
+    @x_c.setter
+    def x_c(self, x_center):
+        self._x_c = x_center
+        if x_center is not None:
+            self._rect = self._make_box()
+
+    @property
+    def y_min(self):
+        return self._y_min
+
+    @y_min.setter
+    def y_min(self, y_min):
+        self._y_min = y_min
+        if y_min is not None:
+            self._rect = self._make_box()
+
+    @property
+    def y_max(self):
+        return self._y_max
+
+    @y_max.setter
+    def y_max(self, y_max):
+        self._y_max = y_max
+        if y_max is not None:
+            self._rect = self._make_box()
+
+    def _make_box(self):
+        if (self._x_c is not None and
+           self._y_min is not None and
+           self._y_max is not None):
+            return box(self._x_c - self.length/2, self._y_min,
+                       self._x_c + self.length/2, self._y_max)
+        else:
+            return None
 
     def get_trench(self, circuit: List):
 
@@ -114,7 +164,9 @@ class TrenchColumn:
 
         for block in list(self._rect):
             block = polygon.orient(block)
-            block = block.buffer(round_corner, resolution=150, cap_style=1)
+            block = block.buffer(self.round_corner,
+                                 resolution=150,
+                                 cap_style=1)
             trench = Trench(block,
                             self.delta_floor,
                             self.bridge_width,
@@ -156,4 +208,4 @@ if __name__ == '__main__':
         xt, yt = t.floor
         ax.plot(xt, yt, 'k', lw=0.5)
     ax.set_aspect('equal')
-    plt.show()
+    # plt.show()
