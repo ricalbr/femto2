@@ -65,8 +65,12 @@ class Marker(Waveguide):
         self.linear([0, -ly/2, 0], speed=speed_pos, shutter=0)
         self.end(speed_pos)
 
-    def ruler(self, y_ticks, speed=1, speed_pos=5):
-        pass
+    def ruler(self, y_ticks, lx, speed=1, speed_pos=5):
+        self.start([-2, 0, 0])
+        self.linear(lx, 0, 0)
+        for i in range(len(y_ticks)):
+            self.start(-2, 0, 0)
+            self.linear(0.7*lx, 0, 0)
 
 
 if __name__ == '__main__':
