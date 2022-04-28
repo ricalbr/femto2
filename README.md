@@ -1,4 +1,4 @@
-<img class="marginauto" src="https://user-images.githubusercontent.com/45992199/165287798-08b8e983-5729-4ae1-9b95-3d28f9ade5e1.png" alt="femto" width="540"/>
+<img class="marginauto" src="https://user-images.githubusercontent.com/45992199/165799034-ef1062b1-91dd-49ca-a4c3-f0f7ea5a202c.png" alt="femto" width="640"/>
 
 Python library for design and fabrication of femtosecond laser written integrated photonic circuits.
 The library present classes for
