@@ -75,20 +75,24 @@ class Trench:
 
 class TrenchColumn:
     def __init__(self,
-                x_c: float,
-                y_min: float,
-                y_max: float,
-                length: float = 1.0,
-                delta_floor: float = 0.001,
-                bridge_width: float = 0.026,
-                beam_size: float = 0.004,
-                round_corner: float = 0.005):
+                 x_c: float,
+                 y_min: float,
+                 y_max: float,
+                 length: float = 1.0,
+                 delta_floor: float = 0.001,
+                 bridge_width: float = 0.026,
+                 beam_size: float = 0.004,
+                 round_corner: float = 0.005):
 
         self.trench_list = []
         self.x_c = x_c
         self.y_min = y_min
         self.y_max = y_max
         self.length = length
+
+        self._rect = box(self.x_c - self.length/2, self.y_min,
+                         self.x_c + self.length/2, self.y_max)
+
         self.delta_floor = delta_floor
         self.bridge_width = bridge_width
         self.beam_size = beam_size
@@ -96,8 +100,6 @@ class TrenchColumn:
         self.adj_bridge = (self.bridge_width
                            + self.beam_size*2
                            - self.round_corner)/2
-        self._rect = box(self.x_c - self.length/2, self.y_min,
-                         self.x_c + self.length/2, self.y_max)
 
     def get_trench(self, circuit: List):
 
@@ -149,7 +151,7 @@ if __name__ == '__main__':
 
     fig, ax = plt.subplots()
     for wg in coup:
-        ax.plot(wg.x[:-1], wg.y[:-1],'b')
+        ax.plot(wg.x[:-1], wg.y[:-1], 'b')
     for t in TC1.trench_list:
         xt, yt = t.floor
         ax.plot(xt, yt, 'k', lw=0.5)
