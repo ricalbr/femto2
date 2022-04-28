@@ -154,3 +154,4 @@ if __name__ == '__main__':
         xt, yt = t.floor
         ax.plot(xt, yt, 'k', lw=0.5)
     ax.set_aspect('equal')
+    plt.show()
