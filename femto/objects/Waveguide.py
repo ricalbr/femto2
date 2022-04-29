@@ -138,6 +138,25 @@ class Waveguide:
         self._M['f'].extend([self._M['f'][-1], speed])
         self._M['s'].extend([0, 0])
 
+    def lastpt(self)-> np.ndarray():
+        """
+        LAST POINT.
+
+        The function return the last point of the waveguide.
+
+        Returns
+        -------
+        numpy.ndarray
+            Final point [x, y, z].
+
+        """
+        if self._M:
+            return np.array([self._M['x'][-1],
+                             self._M['y'][-1],
+                             self._M['z'][-1]])
+        else:
+            return []
+
     def linear(self,
                increment: List[float],
                mode: str = 'INC',
