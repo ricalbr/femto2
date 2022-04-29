@@ -295,27 +295,28 @@ class Waveguide:
             self.circ(np.pi*(3/2),
                       np.pi*(3/2)+a,
                       radius,
-                      speed,
-                      shutter,
-                      np.round(N/2))
+                      speed=speed,
+                      shutter=shutter,
+                      N=np.round(N/2))
             self.circ(np.pi*(1/2)+a,
                       np.pi*(1/2),
-                      radius, speed,
-                      shutter,
-                      np.round(N/2))
+                      radius,
+                      speed=speed,
+                      shutter=shutter,
+                      N=np.round(N/2))
         else:
             self.circ(np.pi*(1/2),
                       np.pi*(1/2)-a,
                       radius,
-                      speed,
-                      shutter,
-                      np.round(N/2))
+                      speed=speed,
+                      shutter=shutter,
+                      N=np.round(N/2))
             self.circ(np.pi*(3/2)-a,
                       np.pi*(3/2),
                       radius,
-                      speed,
-                      shutter,
-                      np.round(N/2))
+                      speed=speed,
+                      shutter=shutter,
+                      N=np.round(N/2))
 
     def arc_acc(self,
                 D: float,
@@ -355,9 +356,15 @@ class Waveguide:
         None.
 
         """
-        self.arc_bend(D, radius, speed, shutter, N/2)
-        self.linear([arm_length, 0, 0], speed, shutter)
-        self.arc_bend(-D, radius, speed, shutter, N/2)
+        self.arc_bend(D, radius,
+                      speed=speed,
+                      shutter=shutter,
+                      N=N/2)
+        self.linear([arm_length, 0, 0], speed=speed, shutter=shutter)
+        self.arc_bend(-D, radius,
+                      speed=speed,
+                      shutter=shutter,
+                      N=N/2)
 
     def arc_mzi(self,
                 D: float,
@@ -400,9 +407,17 @@ class Waveguide:
         None.
 
         """
-        self.arc_acc(D, radius, arm_length, speed, shutter, N/2)
-        self.linear([int_length, 0, 0], speed, shutter)
-        self.arc_acc(D, radius, arm_length, speed, shutter, N/2)
+        self.arc_acc(D, radius,
+                     arm_length=arm_length,
+                     speed=speed,
+                     shutter=shutter,
+                     N=N/2)
+        self.linear([int_length, 0, 0], speed=speed, shutter=shutter)
+        self.arc_acc(D, radius,
+                     arm_length=arm_length,
+                     speed=speed,
+                     shutter=shutter,
+                     N=N/2)
 
     def sin_bend(self,
                  D: float,
@@ -512,9 +527,9 @@ class Waveguide:
         None.
 
         """
-        self.sin_bend(D, radius, speed, shutter, N/2)
-        self.linear([arm_length, 0, 0], speed, shutter)
-        self.sin_bend(-D, radius, speed, shutter, N/2)
+        self.sin_bend(D, radius, speed=speed, shutter=shutter, N=N/2)
+        self.linear([arm_length, 0, 0], speed=speed, shutter=shutter)
+        self.sin_bend(-D, radius, speed=speed, shutter=shutter, N=N/2)
 
     def sin_mzi(self,
                 D: float,
@@ -557,9 +572,17 @@ class Waveguide:
         None.
 
         """
-        self.sin_acc(D, radius, int_length, speed, shutter, N/2)
-        self.linear([arm_length, 0, 0], speed, shutter)
-        self.sin_acc(D, radius, int_length, speed, shutter, N/2)
+        self.sin_acc(D, radius,
+                     int_length=int_length,
+                     speed=speed,
+                     shutter=shutter,
+                     N=N/2)
+        self.linear([arm_length, 0, 0], speed=speed, shutter=shutter)
+        self.sin_acc(D, radius,
+                     int_length=int_length,
+                     speed=speed,
+                     shutter=shutter,
+                     N=N/2)
 
     def curvature(self) -> np.ndarray:
         """
