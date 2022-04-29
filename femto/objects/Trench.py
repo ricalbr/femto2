@@ -163,10 +163,10 @@ class TrenchColumn:
             self._rect = self._rect.difference(dilated)
 
         for block in list(self._rect):
-            block = polygon.orient(block)
-            block = block.buffer(self.round_corner,
-                                 resolution=150,
-                                 cap_style=1)
+            block = (polygon.orient(block)
+                            .buffer(self.round_corner,
+                                    resolution=150,
+                                    cap_style=1))
             trench = Trench(block,
                             self.delta_floor,
                             self.bridge_width,
