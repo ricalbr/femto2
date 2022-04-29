@@ -7,7 +7,7 @@ from itertools import chain
 import warnings
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=DeprecationWarning)
-    from shapely.geometry import LineString, Polygon, box, polygon
+    from shapely.geometry import LineString, Polygon, MultiPolygon, box, polygon
 
 
 class Trench:
@@ -142,14 +142,14 @@ class TrenchColumn:
         if y_max is not None:
             self._rect = self._make_box()
 
-    def _make_box(self):
-        if (self._x_c is not None and
-           self._y_min is not None and
-           self._y_max is not None):
-            return box(self._x_c - self.length/2, self._y_min,
-                       self._x_c + self.length/2, self._y_max)
-        else:
-            return None
+    @property
+    def patch(self, fc='k', ec='k', alpha=0.5, zorder=1):
+        if isinstance(self._rect, MultiPolygon):
+            return PolygonPatch(self._rect,
+                                fc=fc,
+                                ec=ec,
+                                alpha=alpha,
+                                zorder=zorder)
 
     def get_trench(self, circuit: List):
 
@@ -173,6 +173,16 @@ class TrenchColumn:
                             self.beam_size,
                             self.round_corner)
             self.trench_list.append(trench)
+
+    # Private interface
+    def _make_box(self):
+        if (self._x_c is not None and
+           self._y_min is not None and
+           self._y_max is not None):
+            return box(self._x_c - self.length/2, self._y_min,
+                       self._x_c + self.length/2, self._y_max)
+        else:
+            return None
 
 
 if __name__ == '__main__':
