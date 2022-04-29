@@ -32,4 +32,4 @@ n_scan = 6
 ind_glass = 1.5
 ind_water = 1.33
 ind_env = ind_glass/ind_water
-angle = math.radians(1.35)
+angle = 1.35
