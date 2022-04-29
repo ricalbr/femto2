@@ -5,8 +5,8 @@ from femto.compiler.PGMCompiler import PGMCompiler
 import matplotlib.pyplot as plt
 import param as p
 import time
-# from IPython import get_ipython
-# get_ipython().run_line_magic('matplotlib', 'inline')
+from IPython import get_ipython
+get_ipython().run_line_magic('matplotlib', 'inline')
 # get_ipython().run_line_magic('matplotlib', 'qt5')
 
 t0 = time.perf_counter()
@@ -15,8 +15,8 @@ t0 = time.perf_counter()
 circ = {
     'waveguide': [Waveguide() for _ in range(p.MM)],
     'marker': [Marker() for _ in range(p.MM)],
-    'trench': [TrenchColumn(y_min=p.y0-(p.MM-1-0.5*(p.MM+1))*p.pitch - 0.1,
-                            y_max=p.y0-(-0.5*(p.MM+1))*p.pitch + 0.1)
+    'trench': [TrenchColumn(y_min=p.y0-0.5*(p.MM+1)*p.pitch - 0.1,
+                            y_max=p.y0+(p.MM-1-0.5*(p.MM+1))*p.pitch + 0.1)
                 for _ in range(p.NN)]
     }
 
@@ -26,21 +26,21 @@ for i, wg in enumerate(circ['waveguide']):
 
     wg.start([xi, yi, zi])
     wg.linear(p.increment, speed=p.speed)
-    wg.sin_bend((-1)**(i % 2+1)*p.d1, p.radius, speed=p.speed, N=200)
+    wg.sin_bend((-1)**(i % 2)*p.d1, p.radius, speed=p.speed, N=200)
     for j in range(p.NN-1):
-        wg.sin_bend((-1)**(j+i % 2)*p.d1, p.radius, speed=p.speed, N=200)
+        wg.sin_bend((-1)**(j+i % 2+1)*p.d1, p.radius, speed=p.speed, N=200)
         if i == 0:
             xl, yl, _ = wg.lastpt
             circ['marker'][j].cross([xl, yl-0.2], p.lx, p.ly)
             x_trench.append(xl)
-        wg.sin_bend((-1)**(j+i % 2+1)*p.d1, p.radius, speed=p.speed, N=200)
-        wg.sin_bend((-1)**(j+i % 2)*p.d2, p.radius, speed=p.speed, N=200)
-    wg.sin_bend((-1)**(j+i % 2+1)*p.d1, p.radius, speed=p.speed, N=200)
+        wg.sin_bend((-1)**(j+i % 2)*p.d1, p.radius, speed=p.speed, N=200)
+        wg.sin_bend((-1)**(j+i % 2+1)*p.d2, p.radius, speed=p.speed, N=200)
+    wg.sin_bend((-1)**(j+i % 2)*p.d1, p.radius, speed=p.speed, N=200)
     if i == 0:
         xl, yl, _ = wg.lastpt
         circ['marker'][j+1].cross([xl, yl-0.2], p.lx, p.ly)
         x_trench.append(xl)
-    wg.sin_acc((-1)**(j+i % 2)*p.d1, p.radius, speed=p.speed, N=200)
+    wg.sin_acc((-1)**(j+i % 2+1)*p.d1, p.radius, speed=p.speed, N=200)
     wg.linear(p.increment, speed=p.speed)
     wg.end()
 
