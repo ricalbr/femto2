@@ -14,30 +14,32 @@ t0 = time.perf_counter()
 # 20x20 circuit
 circ = {
     'waveguide': [Waveguide() for _ in range(p.MM)],
-    'marker': [Marker(p.lx, p.ly) for _ in range(p.MM)],
+    'marker': [Marker() for _ in range(p.MM)],
     'trench': [TrenchColumn(y_min=p.y0-(p.MM-1-0.5*(p.MM+1))*p.pitch - 0.1,
                             y_max=p.y0-(-0.5*(p.MM+1))*p.pitch + 0.1)
-               for _ in range(p.NN)]
+                for _ in range(p.NN)]
     }
 
 x_trench = []
 for i, wg in enumerate(circ['waveguide']):
-    [xi, yi, zi] = [p.x0, p.y0-(i-0.5*(p.MM+1))*p.pitch, p.depth]
+    [xi, yi, zi] = [p.x0, p.y0+(i-0.5*(p.MM+1))*p.pitch, p.depth]
 
     wg.start([xi, yi, zi])
     wg.linear(p.increment, speed=p.speed)
     wg.sin_bend((-1)**(i % 2+1)*p.d1, p.radius, speed=p.speed, N=200)
     for j in range(p.NN-1):
         wg.sin_bend((-1)**(j+i % 2)*p.d1, p.radius, speed=p.speed, N=200)
-        if i == p.NN-1:
-            circ['marker'][j].cross([wg.x[-1], wg.y[-1]-.2])
-            x_trench.append(wg.x[-1])
+        if i == 0:
+            xl, yl, _ = wg.lastpt()
+            circ['marker'][j].cross([xl, yl-0.2], p.lx, p.ly)
+            x_trench.append(xl)
         wg.sin_bend((-1)**(j+i % 2+1)*p.d1, p.radius, speed=p.speed, N=200)
         wg.sin_bend((-1)**(j+i % 2)*p.d2, p.radius, speed=p.speed, N=200)
     wg.sin_bend((-1)**(j+i % 2+1)*p.d1, p.radius, speed=p.speed, N=200)
-    if i == p.NN-1:
-        circ['marker'][j+1].cross([wg.x[-1], wg.y[-1]-.2])
-        x_trench.append(wg.x[-1])
+    if i == 0:
+        xl, yl, _ = wg.lastpt()
+        circ['marker'][j+1].cross([xl, yl-0.2], p.lx, p.ly)
+        x_trench.append(xl)
     wg.sin_acc((-1)**(j+i % 2)*p.d1, p.radius, speed=p.speed, N=200)
     wg.linear(p.increment, speed=p.speed)
     wg.end()
