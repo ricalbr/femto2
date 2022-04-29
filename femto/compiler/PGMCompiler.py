@@ -25,8 +25,8 @@ class PGMCompiler:
         self.ind_rif = ind_rif
         self.angle = radians(angle % 360)
         if angle != 0:
-            print('***\nBEWARE ANGLES MUST BE IN DEGREE!!\n'
-                  f'Given alpha = {angle % 360}.\n***\n\n')
+            print('\n***\n\nBEWARE ANGLES MUST BE IN DEGREE!!\n',
+                  f'Given alpha = {angle % 360} deg.\n\n***\n\n')
 
         self.output_digits = output_digits
 
