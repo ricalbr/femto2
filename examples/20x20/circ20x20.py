@@ -5,8 +5,8 @@ from femto.compiler.PGMCompiler import PGMCompiler
 import matplotlib.pyplot as plt
 import param as p
 import time
-from IPython import get_ipython
-get_ipython().run_line_magic('matplotlib', 'inline')
+# from IPython import get_ipython
+# get_ipython().run_line_magic('matplotlib', 'inline')
 # get_ipython().run_line_magic('matplotlib', 'qt5')
 
 t0 = time.perf_counter()
