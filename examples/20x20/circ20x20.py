@@ -30,14 +30,14 @@ for i, wg in enumerate(circ['waveguide']):
     for j in range(p.NN-1):
         wg.sin_bend((-1)**(j+i % 2)*p.d1, p.radius, speed=p.speed, N=200)
         if i == 0:
-            xl, yl, _ = wg.lastpt()
+            xl, yl, _ = wg.lastpt
             circ['marker'][j].cross([xl, yl-0.2], p.lx, p.ly)
             x_trench.append(xl)
         wg.sin_bend((-1)**(j+i % 2+1)*p.d1, p.radius, speed=p.speed, N=200)
         wg.sin_bend((-1)**(j+i % 2)*p.d2, p.radius, speed=p.speed, N=200)
     wg.sin_bend((-1)**(j+i % 2+1)*p.d1, p.radius, speed=p.speed, N=200)
     if i == 0:
-        xl, yl, _ = wg.lastpt()
+        xl, yl, _ = wg.lastpt
         circ['marker'][j+1].cross([xl, yl-0.2], p.lx, p.ly)
         x_trench.append(xl)
     wg.sin_acc((-1)**(j+i % 2)*p.d1, p.radius, speed=p.speed, N=200)
