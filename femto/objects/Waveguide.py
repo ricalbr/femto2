@@ -140,6 +140,7 @@ class Waveguide:
 
     def linear(self,
                increment: List[float],
+               mode: str = 'INC',
                speed: float = 0.0,
                shutter: int = 1):
         """
@@ -152,25 +153,43 @@ class Waveguide:
         Parameters
         ----------
         increment : List[float]
-            Ordered list of coordinate that specifies the increment [mm].
-            increment[0] -> dX
-            increment[1] -> dY
-            increment[2] -> dZ
+            Ordered list of coordinate that specifies the increment if mode
+            is INC or new position if mode is ABS. Units are [mm].
+            increment[0] -> X-coord
+            increment[1] -> Y-coord
+            increment[2] -> Z-coord
+        mode : str, optional
+            Select incremental or absolute mode. The default is 'INC'.
         speed : float, optional
             Transition speed [mm/s]. The default is 0.0.
         shutter : int, optional
             State of the shutter [0: 'OFF', 1: 'ON']. The default is 1.
+
+        Raises
+        ------
+        ValueError
+            Mode is neither INC nor ABS.
 
         Returns
         -------
         None.
 
         """
-        self._M['x'].append(self._M['x'][-1] + increment[0])
-        self._M['y'].append(self._M['y'][-1] + increment[1])
-        self._M['z'].append(self._M['z'][-1] + increment[2])
-        self._M['f'].append(speed)
-        self._M['s'].append(shutter)
+        if mode.upper() not in ['ABS', 'INC']:
+            raise ValueError('Mode should be either ABS or INC.',
+                             f'{mode.upper()} was given.')
+        if mode.upper() == 'ABS':
+            self._M['x'].append(increment[0])
+            self._M['y'].append(increment[1])
+            self._M['z'].append(increment[2])
+            self._M['f'].append(speed)
+            self._M['s'].append(shutter)
+        else:
+            self._M['x'].append(self._M['x'][-1] + increment[0])
+            self._M['y'].append(self._M['y'][-1] + increment[1])
+            self._M['z'].append(self._M['z'][-1] + increment[2])
+            self._M['f'].append(speed)
+            self._M['s'].append(shutter)
 
     def circ(self,
              initial_angle: float,
