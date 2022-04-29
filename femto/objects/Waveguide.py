@@ -492,7 +492,7 @@ class Waveguide:
     def sin_acc(self,
                 D: float,
                 radius: float,
-                arm_length: float = 0.0,
+                int_length: float = 0.0,
                 speed: float = 0.0,
                 shutter: int = 1,
                 N: int = 50):
@@ -513,7 +513,7 @@ class Waveguide:
             Amplitude of the coupler along the y-direction [mm].
         radius : float
             Effective curvature radius of the coupler's bends [mm].
-        arm_length : float, optional
+        int_length : float, optional
             Length of the coupler straight arm [mm]. The default is 0.0.
         speed : float, optional
             Transition speed [mm/s]. The default is 0.0.
@@ -528,7 +528,7 @@ class Waveguide:
 
         """
         self.sin_bend(D, radius, speed=speed, shutter=shutter, N=N/2)
-        self.linear([arm_length, 0, 0], speed=speed, shutter=shutter)
+        self.linear([int_length, 0, 0], speed=speed, shutter=shutter)
         self.sin_bend(-D, radius, speed=speed, shutter=shutter, N=N/2)
 
     def sin_mzi(self,
