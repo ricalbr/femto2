@@ -1,6 +1,6 @@
 from femto.objects.Waveguide import Waveguide
-# from femto.compiler.PGMCompiler import PGMCompiler
-# import numpy as np
+from femto.compiler.PGMCompiler import PGMCompiler
+import numpy as np
 # import pandas as pd
 # import matplotlib.pyplot as plt
 import warnings
@@ -65,14 +65,32 @@ class Marker(Waveguide):
         self.linear([0, -ly/2, 0], speed=speed_pos, shutter=0)
         self.end(speed_pos)
 
-    def ruler(self, y_ticks, lx, speed=1, speed_pos=5):
-        self.start([-2, 0, 0])
-        self.linear(lx, 0, 0)
-        for i in range(len(y_ticks)):
-            self.start(-2, 0, 0)
-            self.linear(0.7*lx, 0, 0)
+    def ruler(self,
+              y_ticks: List,
+              lx: float,
+              x_init: float = -2,
+              speed_pos: float = 5):
+
+        tick_len = 0.75*lx*np.ones_like(y_ticks)
+        tick_len[0] = lx
+
+        self.start([x_init, y_ticks[0], self.depth])
+        for y, tlen in zip(y_ticks, tick_len):
+            self.linear([x_init, y, self.depth],
+                        speed=self.speed,
+                        mode='ABS',
+                        shutter=0)
+            self.linear([tlen, 0, 0], speed=self.speed)
+            self.linear([0, 0, 0], speed=self.speed, shutter=0)
+        self.end(speed_pos)
 
 
 if __name__ == '__main__':
     c = Marker()
-    c.cross([5, 5, 0], 1, 0.60)
+    c.ruler(range(3), 5, 3.5)
+    print(c.M)
+
+    gc = PGMCompiler('testPGMcompiler', ind_rif=1.5, angle=0.)
+    gc.header()
+    gc.point_to_instruction(c.M)
+    gc.compile_pgm()
