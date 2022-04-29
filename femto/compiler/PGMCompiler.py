@@ -1,7 +1,9 @@
 from femto.objects.Waveguide import Waveguide
+from math import radians
 import numpy as np
 import pandas as pd
 import os
+import warnings
 from pathlib import Path
 from typing import List
 
@@ -22,8 +24,10 @@ class PGMCompiler:
         self.short_pause = short_pause
 
         self.ind_rif = ind_rif
-        # angle in radians
-        self.angle = angle
+        self.angle = radians(angle % 360)
+        if angle != 0:
+            print('***\nBEWARE ANGLES MUST BE IN DEGREE!!\n'
+                  f'Given alpha = {angle % 360}.\n***\n\n')
 
         self.output_digits = output_digits
 
@@ -526,6 +530,11 @@ class PGMCompiler:
         f : float, optional
             Value of the F rate [mm/s]. The default is None.
 
+        Raises
+        ------
+        ValueError
+            Check F is not 0 mm/s.
+
         Returns
         -------
         str
@@ -533,6 +542,7 @@ class PGMCompiler:
                 'X<value> Y<value> Z<value> F<value>'.
 
         """
+
         args = []
         if x is not None:
             args.append('{0}{1:.{digits}f}'.format('X', x,
@@ -544,6 +554,9 @@ class PGMCompiler:
             args.append('{0}{1:.{digits}f}'.format('Z', z,
                                                    digits=self.output_digits))
         if f is not None:
+            if f < 1e-6:
+                raise ValueError('Try to move with F = 0.0 mm/s.',
+                                 'Check speed parameter.')
             args.append('{0}{1:.{digits}f}'.format('F', f,
                                                    digits=self.output_digits))
         args = ' '.join(args)
@@ -591,7 +604,7 @@ if __name__ == '__main__':
     # Data
     pitch = 0.080
     int_dist = 0.007
-    angle = np.radians(1)
+    angle = 1
     ind_rif = 1.5/1.33
 
     d_bend = 0.5*(pitch-int_dist)
