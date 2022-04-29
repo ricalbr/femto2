@@ -25,21 +25,21 @@ for i, wg in enumerate(circ['waveguide']):
     [xi, yi, zi] = [p.x0, p.y0-(i-0.5*(p.MM+1))*p.pitch, p.depth]
 
     wg.start([xi, yi, zi])
-    wg.linear(p.increment, p.speed)
-    wg.sin_bend((-1)**(i % 2+1)*p.d1, p.radius, p.speed, N=200)
+    wg.linear(p.increment, speed=p.speed)
+    wg.sin_bend((-1)**(i % 2+1)*p.d1, p.radius, speed=p.speed, N=200)
     for j in range(p.NN-1):
         wg.sin_bend((-1)**(j+i % 2)*p.d1, p.radius, speed=p.speed, N=200)
         if i == p.NN-1:
             circ['marker'][j].cross([wg.x[-1], wg.y[-1]-.2])
             x_trench.append(wg.x[-1])
         wg.sin_bend((-1)**(j+i % 2+1)*p.d1, p.radius, speed=p.speed, N=200)
-        wg.sin_bend((-1)**(j+i % 2)*p.d2, p.radius, p.speed, N=200)
-    wg.sin_bend((-1)**(j+i % 2+1)*p.d1, p.radius, p.speed, N=200)
+        wg.sin_bend((-1)**(j+i % 2)*p.d2, p.radius, speed=p.speed, N=200)
+    wg.sin_bend((-1)**(j+i % 2+1)*p.d1, p.radius, speed=p.speed, N=200)
     if i == p.NN-1:
         circ['marker'][j+1].cross([wg.x[-1], wg.y[-1]-.2])
         x_trench.append(wg.x[-1])
     wg.sin_acc((-1)**(j+i % 2)*p.d1, p.radius, speed=p.speed, N=200)
-    wg.linear(p.increment, p.speed)
+    wg.linear(p.increment, speed=p.speed)
     wg.end()
 
 # Trench
