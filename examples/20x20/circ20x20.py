@@ -15,7 +15,7 @@ circ = {
     'marker': [Marker() for _ in range(p.MM)],
     'trench': [TrenchColumn(y_min=p.y0-0.5*(p.MM+1)*p.pitch - 0.1,
                             y_max=p.y0+(p.MM-1-0.5*(p.MM+1))*p.pitch + 0.1)
-                for _ in range(p.NN)]
+               for _ in range(p.NN)]
     }
 
 x_trench = []
