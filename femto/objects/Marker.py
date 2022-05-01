@@ -68,10 +68,13 @@ class Marker(Waveguide):
     def ruler(self,
               y_ticks: List,
               lx: float,
+              lx_short: float = None,
               x_init: float = -2,
               speed_pos: float = 5):
 
-        tick_len = 0.75*lx*np.ones_like(y_ticks)
+        if lx_short is None:
+            lx_short = 0.75*lx
+        tick_len = lx_short*np.ones_like(y_ticks)
         tick_len[0] = lx
 
         self.start([x_init, y_ticks[0], self.depth])
