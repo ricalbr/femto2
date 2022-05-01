@@ -1,5 +1,3 @@
-import math
-
 # %% GEOMETRICAL DATA
 MM = 20
 NN = 20
