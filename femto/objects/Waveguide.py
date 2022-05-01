@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 from typing import List
 
 
@@ -739,6 +738,8 @@ class Waveguide:
 
 
 if __name__ == '__main__':
+
+    import matplotlib.pyplot as plt
 
     # Data
     pitch = 0.080

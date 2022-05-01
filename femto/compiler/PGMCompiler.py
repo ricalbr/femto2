@@ -1,8 +1,7 @@
-from femto.objects.Waveguide import Waveguide
 from math import radians
 import numpy as np
-import pandas as pd
 import os
+import pandas as pd
 from pathlib import Path
 from typing import List
 
@@ -599,6 +598,8 @@ class PGMCompiler:
 
 
 if __name__ == '__main__':
+
+    from femto.objects import Waveguide
 
     # Data
     pitch = 0.080

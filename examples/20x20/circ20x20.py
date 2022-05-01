@@ -1,7 +1,5 @@
-from femto.objects.Waveguide import Waveguide
-from femto.objects.Trench import TrenchColumn
-from femto.objects.Marker import Marker
-from femto.compiler.PGMCompiler import PGMCompiler
+from femto.objects import Waveguide, TrenchColumn, Marker
+from femto.compiler import PGMCompiler
 import matplotlib.pyplot as plt
 import param as p
 import time

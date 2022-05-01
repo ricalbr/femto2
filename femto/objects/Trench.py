@@ -1,9 +1,7 @@
-from femto.objects.Waveguide import Waveguide
-import numpy as np
-import matplotlib.pyplot as plt
 from descartes import PolygonPatch
-from typing import List
 from itertools import chain
+import numpy as np
+from typing import List
 import warnings
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -186,6 +184,8 @@ class TrenchColumn:
 
 
 if __name__ == '__main__':
+    from femto.objects import Waveguide
+    import matplotlib.pyplot as plt
 
     # Data
     pitch = 0.080
