@@ -108,7 +108,7 @@ class TrenchColumn:
         self.round_corner = round_corner
         self.adj_bridge = (self.bridge_width
                            + self.beam_size*2
-                           - self.round_corner)/2
+                           + self.round_corner)/2
 
     # # add gettere and setters for x_c, y_min, y_max, length
     @property
@@ -146,7 +146,7 @@ class TrenchColumn:
         if isinstance(self._rect, MultiPolygon):
             return PolygonPatch(self._rect,
                                 fc=fc,
-                                ec=ec,
+                                ec=None,
                                 alpha=alpha,
                                 zorder=zorder)
 
