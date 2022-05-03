@@ -13,6 +13,7 @@ length_arm = 0.0
 speed = 20
 swg_length = 3
 increment = [swg_length, 0.0, 0.0]
+N = 150
 
 x0 = -2.0
 y0 = 0.0
