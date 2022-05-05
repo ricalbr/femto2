@@ -13,7 +13,7 @@ class Trench:
     def __init__(self,
                  trench_block: Polygon,
                  delta_floor: float = 0.001,
-                 bridge_width: float = 0.026,
+                 bridge_width: float = 0.025,
                  beam_size: float = 0.004,
                  round_corner: float = 0.005):
 
@@ -90,7 +90,7 @@ class TrenchColumn:
                  y_max: float = None,
                  length: float = 1.0,
                  delta_floor: float = 0.001,
-                 bridge_width: float = 0.026,
+                 bridge_width: float = 0.025,
                  beam_size: float = 0.004,
                  round_corner: float = 0.005):
 
@@ -108,7 +108,7 @@ class TrenchColumn:
         self.round_corner = round_corner
         self.adj_bridge = (self.bridge_width
                            + self.beam_size*2
-                           + self.round_corner)/2
+                           + self.round_corner*2)/2
 
     # # add gettere and setters for x_c, y_min, y_max, length
     @property
@@ -185,7 +185,6 @@ class TrenchColumn:
 
 
 if __name__ == '__main__':
-    from femto.objects import Waveguide
     import matplotlib.pyplot as plt
 
     # Data
