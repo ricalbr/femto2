@@ -1,9 +1,12 @@
+from itertools import zip_longest
 from math import radians
 import numpy as np
 import os
 import pandas as pd
 from pathlib import Path
 from typing import List
+from collections.abc import Iterable
+import glob
 
 CWD = os.path.dirname(os.path.abspath(__file__))
 
@@ -83,7 +86,7 @@ class PGMCompiler:
 
         """
         args = ' '.join(["${}"]*len(variables)).format(*variables)
-        self._instructions.append(f'DVAR {args}\n')
+        self._instructions.insert(0, f'DVAR {args}\n')
 
     def comment(self, comstring: str):
         """
@@ -363,9 +366,32 @@ class PGMCompiler:
         None.
 
         """
-        file = self._parse_filepath(filename, filepath)
+        file = self._parse_filepath(filename, extension='pgm')
         self._instructions.append(f'PROGRAM 0 LOAD "{file}"\n')
         self._loaded_files.append(file.stem)
+
+    def remove(self, filename: str, filepath: str = None):
+        """
+        REMOVE PROGRAM.
+
+        Add the instruction to REMOVE a program from memory buffer in a G-Code
+        file.
+
+        Parameters
+        ----------
+        filename : str
+            Name of the file that have to be loaded.
+        filepath : str, optional
+            Path of the folder containing the file. The default is None.
+
+        Returns
+        -------
+        None.
+
+        """
+        file = self._parse_filepath(filename, extension='pgm')
+        self._instructions.append(f'REMOVEPROGRAM "{file}"\n')
+        self._loaded_files.remove(file.stem)
 
     def farcall(self, filename: str):
         """
@@ -447,7 +473,93 @@ class PGMCompiler:
                 self._instructions.append(f'LINEAR {args}\n')
         return (x, y, z, f, s)
 
-    def compile_pgm(self):
+    def make_trench(self,
+                    col,
+                    col_index,
+                    base_folder,
+                    dirname: str = 's-trench',
+                    hbox: float = 0.075,
+                    zoff: float = 0.020,
+                    nboxz: int = 4,
+                    deltaz: float = 0.0015,
+                    angle: float = 0.0,
+                    tspeed: float = 4,
+                    ind_rif: float = 1.5/1.33,
+                    speed_pos: float = 5,
+                    pause: float = 0.5):
+
+        trench_directory = os.path.join(dirname, f'trenchCol{col_index:03}')
+
+        col_dir = os.path.join(os.getcwd(), trench_directory)
+        os.makedirs(col_dir, exist_ok=True)
+
+        # Export paths
+        for t_index, trench in enumerate(col.trench_list):
+            wall_filename = os.path.join(col_dir, f'trench{t_index+1:03}_wall')
+            floor_filename = os.path.join(col_dir, f'trench{t_index+1:03}_floor')
+
+            # Export wall
+            t_gc = PGMCompiler(wall_filename, ind_rif=ind_rif, angle=angle)
+            t_gc.export_array(*trench.border, f=tspeed)
+            del t_gc
+
+            # Export floor
+            t_gc = PGMCompiler(floor_filename, ind_rif=ind_rif, angle=angle)
+            t_gc.export_array(*trench.floor, f=tspeed)
+            del t_gc
+
+        self.dvar(['ZCURR'])
+        for file in glob.glob(os.path.join(col_dir, "*.pgm")):
+            lab_filename = os.path.join(base_folder,
+                                        trench_directory,
+                                        os.path.basename(file))
+            self.load(lab_filename)
+        self.dwell(pause)
+
+        for i in range(nboxz):
+            for t_index, trench in enumerate(col.trench_list):
+                # load filenames (wall/floor)
+                wall_filename = f'trench{t_index+1:03}_wall.pgm'
+                floor_filename = f'trench{t_index+1:03}_floor.pgm'
+
+                self.comment(f'+--- TRENCH #{t_index+1}, LEVEL {i+1} ---+')
+                self.shutter('OFF')
+                x0, y0 = trench.border[:, 0]
+                z0 = (i*hbox - zoff)/ind_rif
+                self.move_to([x0, y0, z0], speed_pos=speed_pos)
+
+                self.instruction(f'$ZCURR = {z0:.6f}')
+                self.shutter('ON')
+                self.rpt(int(np.ceil((hbox+zoff)/deltaz)))
+                self.farcall(wall_filename)
+                self.instruction(f'$ZCURR = $ZCURR + {deltaz/ind_rif:.6f}')
+                self.instruction('LINEAR Z$ZCURR')
+                self.endrpt()
+
+                self.farcall(floor_filename)
+                self.shutter('OFF')
+                self.dwell(pause)
+        for file in glob.glob(os.path.join(col_dir, "*.pgm")):
+            self.remove(os.path.basename(file))
+        self.dwell(pause)
+
+    def instruction(self, instr: str):
+        if instr.endswith('\n'):
+            self._instructions.append(instr)
+        else:
+            self._instructions.append(instr+'\n')
+
+    def export_array(self,
+                     x: List = [],
+                     y: List = [],
+                     z: List = [],
+                     f: List = []):
+        args = self._format_array(x, y, z, f)
+        for line in args:
+            self._instructions.append(f'LINEAR {line}\n')
+        self.compile_pgm()
+
+    def compile_pgm(self, verbose=False):
         """
         COMPILE PGM.
 
@@ -478,7 +590,8 @@ class PGMCompiler:
         # write instruction to file
         with open(self.filename, 'w') as f:
             f.write(''.join(self._instructions))
-        print('G-code compilation completed.')
+        if verbose:
+            print('G-code compilation completed.')
 
     # Private interface
     def _compute_t_matrix(self) -> np.ndarray:
@@ -560,6 +673,22 @@ class PGMCompiler:
         args = ' '.join(args)
         return args
 
+    def _format_array(self,
+                      x_array: List = [],
+                      y_array: List = [],
+                      z_array: List = [],
+                      f_array: List = []) -> List:
+
+        if not isinstance(x_array, Iterable): x_array = [x_array]
+        if not isinstance(y_array, Iterable): y_array = [y_array]
+        if not isinstance(z_array, Iterable): z_array = [z_array]
+        if not isinstance(f_array, Iterable): f_array = [f_array]
+
+        args_array = []
+        for (x, y, z, f) in zip_longest(x_array, y_array, z_array, f_array):
+            args_array.append(self._format_args(x, y, z, f))
+        return args_array
+
     def _parse_filepath(self,
                         filename: str,
                         filepath: str = None,
@@ -592,8 +721,10 @@ class PGMCompiler:
                 ('Given filename has wrong extension.' +
                  f'Given {filename}, required .{extension}.')
 
-        file = Path(filepath) / filename if filepath is not None else filename
-        assert filename.exist(), f'{file} does not exist.'
+        if filepath is not None:
+            file = Path(filepath) / filename
+        else:
+            file = Path(filename)
         return file
 
 
