@@ -6,6 +6,7 @@ import pandas as pd
 from pathlib import Path
 from typing import List
 from collections.abc import Iterable
+from collections import deque
 import glob
 
 CWD = os.path.dirname(os.path.abspath(__file__))
@@ -38,7 +39,7 @@ class PGMCompiler:
         self._shutter_on = False
         self._loaded_files = []
 
-        self._instructions = []
+        self._instructions = deque()
 
     # Methods
     def header(self, fabbrication_line: str = 'CAPABLE'):
@@ -86,7 +87,7 @@ class PGMCompiler:
 
         """
         args = ' '.join(["${}"]*len(variables)).format(*variables)
-        self._instructions.insert(0, f'DVAR {args}\n')
+        self._instructions.appendleft(f'DVAR {args}\n')
 
     def comment(self, comstring: str):
         """
