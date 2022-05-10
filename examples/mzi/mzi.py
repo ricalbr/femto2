@@ -1,5 +1,4 @@
-from femto.objects.Waveguide import Waveguide
-from femto.compiler.PGMCompiler import PGMCompiler
+from femto import Waveguide, PGMCompiler
 import matplotlib.pyplot as plt
 import param as p
 

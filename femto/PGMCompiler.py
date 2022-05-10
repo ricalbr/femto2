@@ -79,10 +79,10 @@ class PGMCompiler:
              f'Given {self.fabrication_line.upper()}.')
 
         if self.fabrication_line.upper() == 'CAPABLE':
-            with open(os.path.join(CWD, 'header_capable.txt')) as fd:
+            with open(os.path.join(CWD, 'utils', 'header_capable.txt')) as fd:
                 self._instructions.extend(fd.readlines())
         else:
-            with open(os.path.join(CWD, 'header_fire.txt')) as fd:
+            with open(os.path.join(CWD, 'utils', 'header_fire.txt')) as fd:
                 self._instructions.extend(fd.readlines())
 
     def dvar(self, variables: List[str]):
@@ -744,7 +744,7 @@ class PGMCompiler:
 
 if __name__ == '__main__':
 
-    from femto.objects import Waveguide
+    from femto import Waveguide
 
     # Data
     pitch = 0.080

@@ -1,4 +1,4 @@
-from femto.objects import Waveguide
+from femto import Waveguide
 import numpy as np
 # import pandas as pd
 # import matplotlib.pyplot as plt
@@ -88,7 +88,7 @@ class Marker(Waveguide):
 
 if __name__ == '__main__':
 
-    from femto.compiler import PGMCompiler
+    from femto import PGMCompiler
 
     c = Marker()
     c.ruler(range(3), 5, 3.5)

@@ -1,4 +1,4 @@
-from femto.objects import Waveguide
+from femto import Waveguide
 from descartes import PolygonPatch
 from itertools import chain
 import numpy as np
