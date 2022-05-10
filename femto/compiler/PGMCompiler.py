@@ -149,10 +149,10 @@ class PGMCompiler:
 
         if state.upper() == 'ON' and self._shutter_on is False:
             self._shutter_on = True
-            self._instructions.append('PSOCONTROL X ON\n')
+            self._instructions.append('\nPSOCONTROL X ON\n')
         elif state.upper() == 'OFF' and self._shutter_on is True:
             self._shutter_on = False
-            self._instructions.append('PSOCONTROL X OFF\n')
+            self._instructions.append('\nPSOCONTROL X OFF\n')
         else:
             pass
 
@@ -364,7 +364,7 @@ class PGMCompiler:
         self._instructions.append('MSGDISPLAY 1, "---------------------"\n')
         self._instructions.append('MSGDISPLAY 1, " "\n\n')
 
-    def load(self, filename: str, filepath: str = None):
+    def load_program(self, filename: str, filepath: str = None):
         """
         LOAD PROGRAM.
 
@@ -386,7 +386,7 @@ class PGMCompiler:
         self._instructions.append(f'PROGRAM 0 LOAD "{file}"\n')
         self._loaded_files.append(file.stem)
 
-    def remove(self, filename: str, filepath: str = None):
+    def remove_program(self, filename: str, filepath: str = None):
         """
         REMOVE PROGRAM.
 
@@ -478,12 +478,12 @@ class PGMCompiler:
             args = self._format_args(x[i], y[i], z[i], f[i])
             if s[i] == 0 and self._shutter_on is False:
                 self._instructions.append(f'LINEAR {args}\n')
-                self.dwell(self.long_pause)
             elif s[i] == 0 and self._shutter_on is True:
                 self.shutter('OFF')
-                self.dwell(self.short_pause)
+                self.dwell(self.long_pause)
             elif s[i] == 1 and self._shutter_on is False:
                 self.shutter('ON')
+                self.dwell(self.long_pause)
                 self._instructions.append(f'LINEAR {args}\n')
             else:
                 self._instructions.append(f'LINEAR {args}\n')
@@ -751,7 +751,7 @@ if __name__ == '__main__':
     # Data
     pitch = 0.080
     int_dist = 0.007
-    angle = 1
+    angle = 0.0
     ind_rif = 1.5/1.33
 
     d_bend = 0.5*(pitch-int_dist)
@@ -762,7 +762,7 @@ if __name__ == '__main__':
     for i, wg in enumerate(coup):
         wg.start([-2, -pitch/2 + i*pitch, 0.035])
         wg.linear(increment, speed=20)
-        wg.sin_mzi((-1)**i*d_bend, radius=15, arm_length=1.0, speed=20, N=50)
+        wg.sin_mzi((-1)**i*d_bend, radius=15, arm_length=1.0, speed=20, N=5)
         wg.linear(increment, speed=20)
         wg.end()
 
