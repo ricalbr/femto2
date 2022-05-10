@@ -17,11 +17,13 @@ class PGMCompiler:
                  filename: str,
                  ind_rif: float,
                  angle: float = 0.0,
+                 fabrication_line: str = 'CAPABLE',
                  long_pause: float = 0.25,
                  short_pause: float = 0.15,
                  output_digits: int = 6):
 
         self.filename = filename
+        self.fabrication_line = fabrication_line
         self.long_pause = long_pause
         self.short_pause = short_pause
 
@@ -41,29 +43,42 @@ class PGMCompiler:
 
         self._instructions = deque()
 
+    def __enter__(self):
+        """
+        Context manager entry
+
+        Can use like:
+        with femto.G(filename, ind_rif) as g:
+            <code block>
+        """
+        self.header()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """
+        Context manager exit
+        """
+        self.compile_pgm()
+
     # Methods
-    def header(self, fabbrication_line: str = 'CAPABLE'):
+    def header(self):
         """
         HEADER.
 
         The function print the header file of the G-Code file. The user can
-        specify the fabrication line to work in CAPABLE or FIRE LINE1.
-
-        Parameters
-        ----------
-        fabbrication_line : str, optional
-            Name of the fabrication line. The default is 'CAPABLE'.
+        specify the fabrication line to work in CAPABLE or FIRE LINE1 as
+        parameter when the G-Code Compiler object is instantiated.
 
         Returns
         -------
         None.
 
         """
-        assert fabbrication_line.upper() in ['CAPABLE', 'FIRE'], \
+        assert self.fabrication_line.upper() in ['CAPABLE', 'FIRE'], \
             ('Specified fabrication line is neither CAPABLE nor FIRE. '
-             f'Given {fabbrication_line.upper()}.')
+             f'Given {fabrication_line.upper()}.')
 
-        if fabbrication_line.upper() == 'CAPABLE':
+        if self.fabrication_line.upper() == 'CAPABLE':
             with open(os.path.join(CWD, 'header_capable.txt')) as fd:
                 self._instructions.extend(fd.readlines())
         else:
@@ -743,7 +758,7 @@ if __name__ == '__main__':
     increment = [4, 0, 0]
 
     # Calculations
-    coup = [Waveguide(num_scan=6) for _ in range(2)]
+    coup = [Waveguide(num_scan=6) for _ in range(7)]
     for i, wg in enumerate(coup):
         wg.start([-2, -pitch/2 + i*pitch, 0.035])
         wg.linear(increment, speed=20)
@@ -752,14 +767,12 @@ if __name__ == '__main__':
         wg.end()
 
     # Compilation
-    gc = PGMCompiler('testPGMcompiler', ind_rif=ind_rif, angle=angle)
-    gc.header()
-    gc.rpt(wg.num_scan)
-    for i, wg in enumerate(coup):
-        gc.comment(f'Modo: {i}')
-        gc.point_to_instruction(wg.M)
-    gc.endrpt()
-    gc.move_to([None, 0, 0.1])
-    gc.set_home([0, 0, 0])
-    gc.homing()
-    gc.compile_pgm()
+    with PGMCompiler('testPGMcompiler', ind_rif=ind_rif, angle=angle) as gc:
+        gc.rpt(wg.num_scan)
+        for i, wg in enumerate(coup):
+            gc.comment(f'Modo: {i}')
+            gc.point_to_instruction(wg.M)
+        gc.endrpt()
+        gc.move_to([None, 0, 0.1])
+        gc.set_home([0, 0, 0])
+        gc.homing()
