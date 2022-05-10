@@ -30,8 +30,8 @@ class PGMCompiler:
         self.ind_rif = ind_rif
         self.angle = radians(angle % 360)
         if angle != 0:
-            print('\n***\n\nBEWARE ANGLES MUST BE IN DEGREE!!\n',
-                  f'Given alpha = {angle % 360} deg.\n\n***\n\n')
+            print(' BEWARE ANGLES MUST BE IN DEGREE!! '.center(39, "*"))
+            print(f' Given alpha = {angle % 360:.3f} deg. '.center(39, "*"))
 
         self.output_digits = output_digits
 
@@ -48,7 +48,7 @@ class PGMCompiler:
         Context manager entry
 
         Can use like:
-        with femto.G(filename, ind_rif) as g:
+        with femto.PGMCompiler(filename, ind_rif) as gc:
             <code block>
         """
         self.header()
@@ -758,7 +758,7 @@ if __name__ == '__main__':
     increment = [4, 0, 0]
 
     # Calculations
-    coup = [Waveguide(num_scan=6) for _ in range(7)]
+    coup = [Waveguide(num_scan=6) for _ in range(2)]
     for i, wg in enumerate(coup):
         wg.start([-2, -pitch/2 + i*pitch, 0.035])
         wg.linear(increment, speed=20)
