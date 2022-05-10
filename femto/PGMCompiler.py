@@ -502,7 +502,7 @@ class PGMCompiler:
                     speed_pos: float = 5,
                     pause: float = 0.5):
 
-        trench_directory = os.path.join(dirname, f'trenchCol{col_index:03}')
+        trench_directory = os.path.join(dirname, f'trenchCol{col_index+1:03}')
 
         col_dir = os.path.join(os.getcwd(), trench_directory)
         os.makedirs(col_dir, exist_ok=True)
@@ -527,7 +527,7 @@ class PGMCompiler:
             lab_filename = os.path.join(base_folder,
                                         trench_directory,
                                         os.path.basename(file))
-            self.load(lab_filename)
+            self.load_program(lab_filename)
         self.dwell(pause)
 
         for nbox in range(nboxz):
@@ -554,7 +554,7 @@ class PGMCompiler:
                 self.shutter('OFF')
                 self.dwell(pause)
         for file in glob.glob(os.path.join(col_dir, "*.pgm")):
-            self.remove(os.path.basename(file))
+            self.remove_program(os.path.basename(file))
         self.dwell(pause)
 
     def instruction(self, instr: str):
