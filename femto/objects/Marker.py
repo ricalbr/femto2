@@ -82,8 +82,8 @@ class Marker(Waveguide):
                         speed=speed_pos,
                         mode='ABS',
                         shutter=0)
-            self.linear([tlen, 0, 0], speed=self.speed)
-            self.linear([0, 0, 0], speed=self.speed, shutter=0)
+            self.linear([tlen, 0, 0], speed=self.speed, shutter=1)
+            # self.linear([0, 0, 0], speed=self.speed, shutter=0)
         self.end(speed_pos)
 
 
@@ -95,7 +95,5 @@ if __name__ == '__main__':
     c.ruler(range(3), 5, 3.5)
     print(c.M)
 
-    gc = PGMCompiler('testPGMcompiler', ind_rif=1.5, angle=0.)
-    gc.header()
-    gc.point_to_instruction(c.M)
-    gc.compile_pgm()
+    with PGMCompiler('testPGMcompiler', ind_rif=1.5) as gc:
+        gc.point_to_instruction(c.M)

@@ -477,16 +477,14 @@ class PGMCompiler:
         for i in range(len(x)):
             args = self._format_args(x[i], y[i], z[i], f[i])
             if s[i] == 0 and self._shutter_on is False:
-                self._instructions.append(f'LINEAR {args}\n')
+                pass
             elif s[i] == 0 and self._shutter_on is True:
                 self.shutter('OFF')
                 self.dwell(self.long_pause)
             elif s[i] == 1 and self._shutter_on is False:
                 self.shutter('ON')
                 self.dwell(self.long_pause)
-                self._instructions.append(f'LINEAR {args}\n')
-            else:
-                self._instructions.append(f'LINEAR {args}\n')
+            self._instructions.append(f'LINEAR {args}\n')
         return (x, y, z, f, s)
 
     def make_trench(self,
@@ -762,7 +760,7 @@ if __name__ == '__main__':
     for i, wg in enumerate(coup):
         wg.start([-2, -pitch/2 + i*pitch, 0.035])
         wg.linear(increment, speed=20)
-        wg.sin_mzi((-1)**i*d_bend, radius=15, arm_length=1.0, speed=20, N=5)
+        wg.sin_mzi((-1)**i*d_bend, radius=15, arm_length=1.0, speed=20, N=50)
         wg.linear(increment, speed=20)
         wg.end()
 
