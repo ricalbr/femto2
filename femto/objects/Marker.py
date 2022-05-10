@@ -83,7 +83,6 @@ class Marker(Waveguide):
                         mode='ABS',
                         shutter=0)
             self.linear([tlen, 0, 0], speed=self.speed, shutter=1)
-            # self.linear([0, 0, 0], speed=self.speed, shutter=0)
         self.end(speed_pos)
 
 
