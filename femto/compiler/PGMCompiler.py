@@ -76,7 +76,7 @@ class PGMCompiler:
         """
         assert self.fabrication_line.upper() in ['CAPABLE', 'FIRE'], \
             ('Specified fabrication line is neither CAPABLE nor FIRE. '
-             f'Given {fabrication_line.upper()}.')
+             f'Given {self.fabrication_line.upper()}.')
 
         if self.fabrication_line.upper() == 'CAPABLE':
             with open(os.path.join(CWD, 'header_capable.txt')) as fd:
@@ -510,9 +510,9 @@ class PGMCompiler:
         os.makedirs(col_dir, exist_ok=True)
 
         # Export paths
-        for t_index, trench in enumerate(col.trench_list):
-            wall_filename = os.path.join(col_dir, f'trench{t_index+1:03}_wall')
-            floor_filename = os.path.join(col_dir, f'trench{t_index+1:03}_floor')
+        for i, trench in enumerate(col.trench_list):
+            wall_filename = os.path.join(col_dir, f'trench{i+1:03}_wall')
+            floor_filename = os.path.join(col_dir, f'trench{i+1:03}_floor')
 
             # Export wall
             t_gc = PGMCompiler(wall_filename, ind_rif=ind_rif, angle=angle)
@@ -532,7 +532,7 @@ class PGMCompiler:
             self.load(lab_filename)
         self.dwell(pause)
 
-        for i in range(nboxz):
+        for nbox in range(nboxz):
             for t_index, trench in enumerate(col.trench_list):
                 # load filenames (wall/floor)
                 wall_filename = f'trench{t_index+1:03}_wall.pgm'
@@ -541,7 +541,7 @@ class PGMCompiler:
                 self.comment(f'+--- TRENCH #{t_index+1}, LEVEL {i+1} ---+')
                 self.shutter('OFF')
                 x0, y0 = trench.border[:, 0]
-                z0 = (i*hbox - zoff)/ind_rif
+                z0 = (nbox*hbox - zoff)/ind_rif
                 self.move_to([x0, y0, z0], speed_pos=speed_pos)
 
                 self.instruction(f'$ZCURR = {z0:.6f}')
