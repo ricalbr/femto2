@@ -79,7 +79,7 @@ class Marker(Waveguide):
         self.start([x_init, y_ticks[0], self.depth])
         for y, tlen in zip(y_ticks, tick_len):
             self.linear([x_init, y, self.depth],
-                        speed=self.speed,
+                        speed=speed_pos,
                         mode='ABS',
                         shutter=0)
             self.linear([tlen, 0, 0], speed=self.speed)
