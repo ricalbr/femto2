@@ -58,7 +58,7 @@ class Trench:
         polygon_list = [self.trench_block]
         insets = []
         while polygon_list:
-            current_poly = polygon.orient(polygon_list.pop(0))
+            current_poly = polygon_list.pop(0)
             inset_polygon = self._buffer_polygon(current_poly)
             if inset_polygon and inset_polygon.type == 'MultiPolygon':
                 # add each polygon to the list as a single Polygon object
