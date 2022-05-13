@@ -491,6 +491,7 @@ class PGMCompiler:
                     col,
                     col_index,
                     base_folder,
+                    u = None,
                     dirname: str = 's-trench',
                     hbox: float = 0.075,
                     zoff: float = 0.020,
@@ -523,20 +524,28 @@ class PGMCompiler:
             del t_gc
 
         self.dvar(['ZCURR'])
-        for file in glob.glob(os.path.join(col_dir, "*.pgm")):
-            lab_filename = os.path.join(base_folder,
-                                        trench_directory,
-                                        os.path.basename(file))
-            self.load_program(lab_filename)
-        self.dwell(pause)
+        # for file in glob.glob(os.path.join(col_dir, "*.pgm")):
+        #     lab_filename = os.path.join(base_folder,
+        #                                 trench_directory,
+        #                                 os.path.basename(file))
+        #     self.load_program(lab_filename)
+        # self.dwell(pause)
 
         for nbox in range(nboxz):
             for t_index, trench in enumerate(col.trench_list):
                 # load filenames (wall/floor)
                 wall_filename = f'trench{t_index+1:03}_wall.pgm'
                 floor_filename = f'trench{t_index+1:03}_floor.pgm'
+                load_wall = os.path.join(base_folder,
+                                            trench_directory,
+                                            wall_filename)
+                load_floor = os.path.join(base_folder,
+                                            trench_directory,
+                                            floor_filename)
 
                 self.comment(f'+--- TRENCH #{t_index+1}, LEVEL {i+1} ---+')
+                self.load_program(load_wall)
+                self.load_program(load_floor)
                 self.shutter('OFF')
                 x0, y0 = trench.border[:, 0]
                 z0 = (nbox*hbox - zoff)/ind_rif
@@ -550,11 +559,18 @@ class PGMCompiler:
                 self.instruction('LINEAR Z$ZCURR')
                 self.endrpt()
 
+                if u is not None:
+                    self.instruction(f'LINEAR U{u[1]:.6f}')
+                self.dwell(pause)
                 self.farcall(floor_filename)
                 self.shutter('OFF')
-                self.dwell(pause)
-        for file in glob.glob(os.path.join(col_dir, "*.pgm")):
-            self.remove_program(os.path.basename(file))
+                if u is not None:
+                    self.instruction(f'LINEAR U{u[0]:.6f}')
+
+                self.remove_program(load_wall)
+                self.remove_program(load_floor)
+        # for file in glob.glob(os.path.join(col_dir, "*.pgm")):
+        #     self.remove_program(os.path.basename(file))
         self.dwell(pause)
 
     def instruction(self, instr: str):
@@ -670,20 +686,16 @@ class PGMCompiler:
 
         args = []
         if x is not None:
-            args.append('{0}{1:.{digits}f}'.format('X', x,
-                                                   digits=self.output_digits))
+            args.append(f'X{x:.{self.output_digits}f}')
         if y is not None:
-            args.append('{0}{1:.{digits}f}'.format('Y', y,
-                                                   digits=self.output_digits))
+            args.append(f'Y{y:.{self.output_digits}f}')
         if z is not None:
-            args.append('{0}{1:.{digits}f}'.format('Z', z,
-                                                   digits=self.output_digits))
+            args.append(f'Z{z:.{self.output_digits}f}')
         if f is not None:
             if f < 1e-6:
                 raise ValueError('Try to move with F = 0.0 mm/s.',
                                  'Check speed parameter.')
-            args.append('{0}{1:.{digits}f}'.format('F', f,
-                                                   digits=self.output_digits))
+            args.append(f'F{f:.{self.output_digits}f}')
         args = ' '.join(args)
         return args
 
@@ -693,15 +705,20 @@ class PGMCompiler:
                       z_array: List = [],
                       f_array: List = []) -> List:
 
-        if not isinstance(x_array, Iterable): x_array = [x_array]
-        if not isinstance(y_array, Iterable): y_array = [y_array]
-        if not isinstance(z_array, Iterable): z_array = [z_array]
-        if not isinstance(f_array, Iterable): f_array = [f_array]
+        if not isinstance(x_array, Iterable):
+            x_array = [x_array]
+        if not isinstance(y_array, Iterable):
+            y_array = [y_array]
+        if not isinstance(z_array, Iterable):
+            z_array = [z_array]
+        if not isinstance(f_array, Iterable):
+            f_array = [f_array]
 
-        args_array = []
-        for (x, y, z, f) in zip_longest(x_array, y_array, z_array, f_array):
-            args_array.append(self._format_args(x, y, z, f))
-        return args_array
+        return [self._format_args(x, y, z, f)
+                for (x, y, z, f) in zip_longest(x_array,
+                                                y_array,
+                                                z_array,
+                                                f_array)]
 
     def _parse_filepath(self,
                         filename: str,
