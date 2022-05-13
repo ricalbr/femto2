@@ -576,7 +576,7 @@ class PGMCompiler:
             self._instructions.append(f'LINEAR {line}\n')
         self.compile_pgm()
 
-    def compile_pgm(self, verbose=False):
+    def compile_pgm(self, filename: str = None, verbose: bool = False):
         """
         COMPILE PGM.
 
@@ -585,12 +585,20 @@ class PGMCompiler:
         The filename is specified during the class instatiation. If no
         extension is present, the proper one is automatically added.
 
+        Parameters
+        ----------
+        filename : str, optional
+            Different filename. The default is None, using self.filename.
+        verbose : bool, optional
+            Print when G-Code export is finished. The default is False.
+
         Returns
         -------
         None.
 
         """
-        assert self.filename is not None, 'No filename given.'
+        if filename is None:
+            assert self.filename is not None, 'No filename given.'
         assert self._num_repeat == 0, \
             (f'Missing {np.abs(self._num_repeat)} ' +
              f'{"END REPEAT" if self._num_repeat >0 else "REPEAT"} ' +
@@ -600,12 +608,16 @@ class PGMCompiler:
              f'{"NEXT" if self._num_for >0 else "FOR"} ' +
              f'instruction{"s" if np.abs(self._num_for) != 1 else ""}.')
 
+        if filename:
+            pgm_filename = filename
+        else:
+            pgm_filename = self.filename
         # if not present in the filename, add the proper file extension
-        if not self.filename.endswith('.pgm'):
-            self.filename += '.pgm'
+        if not pgm_filename.endswith('.pgm'):
+            pgm_filename += '.pgm'
 
         # write instruction to file
-        with open(self.filename, 'w') as f:
+        with open(pgm_filename, 'w') as f:
             f.write(''.join(self._instructions))
         if verbose:
             print('G-code compilation completed.')
