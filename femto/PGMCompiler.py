@@ -465,27 +465,23 @@ class PGMCompiler:
             Values for the S coordinate.
 
         """
-        c = np.column_stack((M['x'], M['y'], M['z']))
-        c_rot = np.dot(self._compute_t_matrix(), c.T).T
 
-        x = c_rot[:, 0]
-        y = c_rot[:, 1]
-        z = c_rot[:, 2]
-        f = M['f'].to_numpy()
-        s = M['s'].to_numpy()
+        cols = M.columns[1:]
+        x_c, y_c, z_c, f_c, s_c = (M[cols].dot(self._compute_t_matrix())
+                                          .T
+                                          .to_numpy())
 
-        for i in range(len(x)):
-            args = self._format_args(x[i], y[i], z[i], f[i])
-            if s[i] == 0 and self._shutter_on is False:
+        for (x, y, z, f, s) in zip_longest(x_c, y_c, z_c, f_c, s_c):
+            args = self._format_args(x, y, z, f)
+            if s == 0 and self._shutter_on is False:
                 pass
-            elif s[i] == 0 and self._shutter_on is True:
+            elif s == 0 and self._shutter_on is True:
                 self.shutter('OFF')
                 self.dwell(self.long_pause)
-            elif s[i] == 1 and self._shutter_on is False:
+            elif s == 1 and self._shutter_on is False:
                 self.shutter('ON')
                 self.dwell(self.long_pause)
             self._instructions.append(f'LINEAR {args}\n')
-        return (x, y, z, f, s)
 
     def make_trench(self,
                     col,
@@ -638,12 +634,16 @@ class PGMCompiler:
             Transformation matrix: TM = SM*RM
 
         """
-        RM = np.array([[np.cos(self.angle), -np.sin(self.angle), 0],
-                       [np.sin(self.angle), np.cos(self.angle), 0],
-                       [0, 0, 1]])
-        SM = np.array([[1, 0, 0],
-                       [0, 1, 0],
-                       [0, 0, 1/self.ind_rif]])
+        RM = np.array([[np.cos(self.angle), -np.sin(self.angle), 0, 0, 0],
+                       [np.sin(self.angle), np.cos(self.angle), 0, 0, 0],
+                       [0, 0, 1, 0, 0],
+                       [0, 0, 0, 1, 0],
+                       [0, 0, 0, 0, 1]])
+        SM = np.array([[1, 0, 0, 0, 0],
+                       [0, 1, 0, 0, 0],
+                       [0, 0, 1/self.ind_rif, 0, 0],
+                       [0, 0, 0, 1, 0],
+                       [0, 0, 0, 0, 1]])
         return np.dot(SM, RM)
 
     def _format_args(self,
