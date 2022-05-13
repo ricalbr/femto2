@@ -487,7 +487,7 @@ class PGMCompiler:
                     col,
                     col_index,
                     base_folder,
-                    u = None,
+                    u: List = None,
                     dirname: str = 's-trench',
                     hbox: float = 0.075,
                     zoff: float = 0.020,
