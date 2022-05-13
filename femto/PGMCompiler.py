@@ -466,10 +466,8 @@ class PGMCompiler:
 
         """
 
-        cols = M.columns[1:]
-        x_c, y_c, z_c, f_c, s_c = (M[cols].dot(self._compute_t_matrix())
-                                          .T
-                                          .to_numpy())
+        x_c, y_c, z_c, f_c, s_c = (M.dot(self._compute_t_matrix()).T
+                                    .to_numpy())
         args = [self._format_args(x, y, z, f)
                 for (x, y, z, f) in zip_longest(x_c, y_c, z_c, f_c)]
         for (arg, s) in zip_longest(args, s_c):
@@ -571,9 +569,8 @@ class PGMCompiler:
                      y: List = [],
                      z: List = [],
                      f: List = []):
-        args = self._format_array(x, y, z, f)
-        for line in args:
-            self._instructions.append(f'LINEAR {line}\n')
+        self._instructions.extend([f'LINEAR {line}\n'
+                                   for line in self._format_array(x, y, z, f)])
         self.compile_pgm()
 
     def compile_pgm(self, filename: str = None, verbose: bool = False):

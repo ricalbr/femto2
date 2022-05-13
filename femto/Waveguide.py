@@ -729,7 +729,7 @@ class Waveguide:
                     .sum(axis=1)        # col-wise sum
                     .astype('bool'))    # cast to bool
         mask[0] = True
-        return data[mask].reset_index()
+        return data[mask].reset_index(drop=True)
 
     def _compute_number_points(self):
         # TODO: write method that compute the optimal number of points given

@@ -44,20 +44,20 @@ for xt, col in zip(x_trench, circ['trench']):
     col.y_max = p.y0 + 0.5*p.MM*p.pitch
     col.get_trench(circ['waveguide'])
 
-# Plot
-fig, ax = plt.subplots()
-for wg in circ['waveguide']:
-    ax.plot(wg.x[:-1], wg.y[:-1], '-b', linewidth=0.5) # shutter on
-    ax.plot(wg.x[-2:], wg.y[-2:], ':k', linewidth=0.5) # shutter off
+# # Plot
+# fig, ax = plt.subplots()
+# for wg in circ['waveguide']:
+#     ax.plot(wg.x[:-1], wg.y[:-1], '-b', linewidth=0.5) # shutter on
+#     ax.plot(wg.x[-2:], wg.y[-2:], ':k', linewidth=0.5) # shutter off
 
-for c in circ['marker']:
-    ax.plot(c.x[:-1], c.y[:-1], '-k', linewidth=1.25)
+# for c in circ['marker']:
+#     ax.plot(c.x[:-1], c.y[:-1], '-k', linewidth=1.25)
 
-for col in circ['trench']:
-    for t in col.trench_list:
-        ax.add_patch(t.patch)
-plt.tight_layout(pad=0)
-plt.show()
+# for col in circ['trench']:
+#     for t in col.trench_list:
+#         ax.add_patch(t.patch)
+# plt.tight_layout(pad=0)
+# plt.show()
 
 # Compilation
 # # OPTICAL CIRCUIT
