@@ -470,9 +470,9 @@ class PGMCompiler:
         x_c, y_c, z_c, f_c, s_c = (M[cols].dot(self._compute_t_matrix())
                                           .T
                                           .to_numpy())
-
-        for (x, y, z, f, s) in zip_longest(x_c, y_c, z_c, f_c, s_c):
-            args = self._format_args(x, y, z, f)
+        args = [self._format_args(x, y, z, f)
+                for (x, y, z, f) in zip_longest(x_c, y_c, z_c, f_c)]
+        for (arg, s) in zip_longest(args, s_c):
             if s == 0 and self._shutter_on is False:
                 pass
             elif s == 0 and self._shutter_on is True:
@@ -481,7 +481,7 @@ class PGMCompiler:
             elif s == 1 and self._shutter_on is False:
                 self.shutter('ON')
                 self.dwell(self.long_pause)
-            self._instructions.append(f'LINEAR {args}\n')
+            self._instructions.append(f'LINEAR {arg}\n')
 
     def make_trench(self,
                     col,
@@ -520,12 +520,6 @@ class PGMCompiler:
             del t_gc
 
         self.dvar(['ZCURR'])
-        # for file in glob.glob(os.path.join(col_dir, "*.pgm")):
-        #     lab_filename = os.path.join(base_folder,
-        #                                 trench_directory,
-        #                                 os.path.basename(file))
-        #     self.load_program(lab_filename)
-        # self.dwell(pause)
 
         for nbox in range(nboxz):
             for t_index, trench in enumerate(col.trench_list):
@@ -565,9 +559,6 @@ class PGMCompiler:
 
                 self.remove_program(load_wall)
                 self.remove_program(load_floor)
-        # for file in glob.glob(os.path.join(col_dir, "*.pgm")):
-        #     self.remove_program(os.path.basename(file))
-        self.dwell(pause)
 
     def instruction(self, instr: str):
         if instr.endswith('\n'):
