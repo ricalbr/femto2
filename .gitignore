@@ -115,5 +115,5 @@ dmypy.json
 fit_stress_test.py
 
 # G-Code files
-*.pgm 
+*.pgm
 *.ogm
