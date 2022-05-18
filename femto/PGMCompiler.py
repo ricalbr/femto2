@@ -299,7 +299,7 @@ class PGMCompiler:
         self._instructions.append(f'NEXT ${var}\n\n')
         self._num_for -= 1
 
-    def rpt(self, num: int):
+    def repeat(self, num: int):
         """
         REPEAT.
 
@@ -318,7 +318,7 @@ class PGMCompiler:
         self._instructions.append(f'REPEAT {num}\n')
         self._num_repeat += 1
 
-    def endrpt(self):
+    def end_repeat(self):
         """
         END REPEAT.
 
@@ -432,7 +432,7 @@ class PGMCompiler:
         self._instructions.append(f'FARCALL "{file}"\n')
         self._instructions.append('PROGRAM 0 STOP\n')
 
-    def point_to_instruction(self, M: pd.core.frame.DataFrame):
+    def write(self, points: np.ndarray):
         """
         POINT TO INSTRUCTION.
 
@@ -447,8 +447,8 @@ class PGMCompiler:
 
         Parameters
         ----------
-        M : pandas DataFrame
-            DataFrame containing the values of the tuple [X,Y,Z,F,S]
+        points : numpy ndarray
+            Numpy matrix containing the values of the tuple [X,Y,Z,F,S]
             coordinates.
 
         Returns
@@ -466,8 +466,7 @@ class PGMCompiler:
 
         """
 
-        x_c, y_c, z_c, f_c, s_c = (M.dot(self._compute_t_matrix()).T
-                                    .to_numpy())
+        x_c, y_c, z_c, f_c, s_c = (np.matmul(points, self._t_matrix).T)
         args = [self._format_args(x, y, z, f)
                 for (x, y, z, f) in zip_longest(x_c, y_c, z_c, f_c)]
         for (arg, s) in zip_longest(args, s_c):
@@ -525,11 +524,11 @@ class PGMCompiler:
                 wall_filename = f'trench{t_index+1:03}_wall.pgm'
                 floor_filename = f'trench{t_index+1:03}_floor.pgm'
                 load_wall = os.path.join(base_folder,
-                                            trench_directory,
-                                            wall_filename)
+                                         trench_directory,
+                                         wall_filename)
                 load_floor = os.path.join(base_folder,
-                                            trench_directory,
-                                            floor_filename)
+                                          trench_directory,
+                                          floor_filename)
 
                 self.comment(f'+--- TRENCH #{t_index+1}, LEVEL {i+1} ---+')
                 self.load_program(load_wall)
@@ -620,7 +619,8 @@ class PGMCompiler:
             print('G-code compilation completed.')
 
     # Private interface
-    def _compute_t_matrix(self) -> np.ndarray:
+    @property
+    def _t_matrix(self) -> np.ndarray:
         """
         COMPUTE TRANSFORMATION MATRIX.
 
@@ -783,11 +783,11 @@ if __name__ == '__main__':
 
     # Compilation
     with PGMCompiler('testPGMcompiler', ind_rif=ind_rif, angle=angle) as gc:
-        gc.rpt(wg.num_scan)
+        gc.repeat(wg.num_scan)
         for i, wg in enumerate(coup):
             gc.comment(f'Modo: {i}')
-            gc.point_to_instruction(wg.M)
-        gc.endrpt()
+            gc.write(wg.points)
+        gc.end_repeat()
         gc.move_to([None, 0, 0.1])
         gc.set_home([0, 0, 0])
         gc.homing()
