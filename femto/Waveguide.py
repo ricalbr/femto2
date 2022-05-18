@@ -94,7 +94,7 @@ class Waveguide:
             Final point [x, y, z].
 
         """
-        if self._x:
+        if self._x.size > 0:
             return np.array([self._x[-1],
                              self._y[-1],
                              self._z[-1]])
