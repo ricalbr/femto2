@@ -14,7 +14,7 @@ class Waveguide:
         self._s = np.asarray([])
 
     @property
-    def M(self) -> np.ndarray:
+    def points(self) -> np.ndarray:
         """
         COORDINATES MATRIX GETTER.
 
@@ -764,7 +764,7 @@ if __name__ == '__main__':
         wg.linear(increment, speed=20)
         wg.end()
 
-    print(wg.M)
+    print(wg.points)
 
     # Plot
     fig, ax = plt.subplots()
