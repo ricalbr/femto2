@@ -76,9 +76,7 @@ with PGMCompiler(f'{p.MM}x{p.NN}MARKERS.pgm',
                  angle=p.angle) as gc:
     for i, c in enumerate(circ['marker']):
         gc.comment(f' +--- Croce: {i+1} ---+')
-        gc.rpt(c.num_scan)
         gc.point_to_instruction(c.M)
-        gc.endrpt()
 
 # # TRENCH
 for col_index, col in enumerate(circ['trench']):
