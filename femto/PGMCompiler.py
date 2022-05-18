@@ -540,11 +540,11 @@ class PGMCompiler:
 
                 self.instruction(f'$ZCURR = {z0:.6f}')
                 self.shutter('ON')
-                self.rpt(int(np.ceil((hbox+zoff)/deltaz)))
+                self.repeat(int(np.ceil((hbox+zoff)/deltaz)))
                 self.farcall(wall_filename)
                 self.instruction(f'$ZCURR = $ZCURR + {deltaz/ind_rif:.6f}')
                 self.instruction('LINEAR Z$ZCURR')
-                self.endrpt()
+                self.end_repeat()
 
                 if u is not None:
                     self.instruction(f'LINEAR U{u[1]:.6f}')
