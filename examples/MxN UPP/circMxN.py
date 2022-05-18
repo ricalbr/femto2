@@ -64,11 +64,11 @@ for xt, col in zip(x_trench, circ['trench']):
 with PGMCompiler(f'{p.MM}x{p.NN}CIRC.pgm',
                  ind_rif=p.ind_env,
                  angle=p.angle) as gc:
-    gc.rpt(circ['waveguide'][0].num_scan)
+    gc.repeat(circ['waveguide'][0].num_scan)
     for i, wg in enumerate(circ['waveguide']):
         gc.comment(f' +--- Modo: {i+1} ---+')
-        gc.point_to_instruction(wg.M)
-    gc.endrpt()
+        gc.write(wg.points)
+    gc.end_repeat()
 
 # # MARKERS
 with PGMCompiler(f'{p.MM}x{p.NN}MARKERS.pgm',
@@ -76,7 +76,7 @@ with PGMCompiler(f'{p.MM}x{p.NN}MARKERS.pgm',
                  angle=p.angle) as gc:
     for i, c in enumerate(circ['marker']):
         gc.comment(f' +--- Croce: {i+1} ---+')
-        gc.point_to_instruction(c.M)
+        gc.write(c.points)
 
 # # TRENCH
 for col_index, col in enumerate(circ['trench']):
