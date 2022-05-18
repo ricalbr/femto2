@@ -141,7 +141,6 @@ class TrenchColumn:
         if y_max is not None:
             self._rect = self._make_box()
 
-    @property
     def patch(self, fc='k', ec='k', alpha=0.5, zorder=1):
         if isinstance(self._rect, MultiPolygon):
             return PolygonPatch(self._rect,
@@ -156,7 +155,7 @@ class TrenchColumn:
             'Objects in circuit list are not of type Waveguide.'
 
         for wg in circuit:
-            x, y = np.array(wg.M['x'][:-2]), np.array(wg.M['y'][:-2])
+            x, y = wg.x[:-2], wg.y[:-2]
             dilated = LineString(list(zip(x, y))).buffer(self.adj_bridge,
                                                          cap_style=1)
             self._rect = self._rect.difference(dilated)
