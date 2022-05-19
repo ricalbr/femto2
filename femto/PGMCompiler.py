@@ -2,12 +2,10 @@ from itertools import zip_longest
 from math import radians
 import numpy as np
 import os
-import pandas as pd
 from pathlib import Path
 from typing import List
 from collections.abc import Iterable
 from collections import deque
-import glob
 
 CWD = os.path.dirname(os.path.abspath(__file__))
 
@@ -28,10 +26,10 @@ class PGMCompiler:
         self.short_pause = short_pause
 
         self.ind_rif = ind_rif
-        self.angle = radians(angle % 360)
         if angle != 0:
             print(' BEWARE ANGLES MUST BE IN DEGREE!! '.center(39, "*"))
             print(f' Given alpha = {angle % 360:.3f} deg. '.center(39, "*"))
+        self.angle = radians(angle % 360)
 
         self.output_digits = output_digits
 
@@ -58,7 +56,8 @@ class PGMCompiler:
         """
         Context manager exit
         """
-        self.compile_pgm()
+        self.homing()
+        self.close()
 
     # Methods
     def header(self):
@@ -206,8 +205,7 @@ class PGMCompiler:
             ('Given final position is not valid. ' +
              f'3 values are required, {np.size(home_pos)} were given.')
 
-        x, y, z = home_pos
-        args = self._format_args(x, y, z)
+        args = self._format_args(*home_pos)
         self._instructions.append(f'G92 {args}\n')
 
     def homing(self):
@@ -253,9 +251,7 @@ class PGMCompiler:
         if self._shutter_on is True:
             self.shutter('OFF')
 
-        x, y, z = position
-        args = self._format_args(x, y, z, speed_pos)
-
+        args = self._format_args(*position, speed_pos)
         self._instructions.append(f'LINEAR {args}\n')
         self.dwell(self.long_pause)
 
@@ -468,7 +464,7 @@ class PGMCompiler:
 
         x_c, y_c, z_c, f_c, s_c = (np.matmul(points, self._t_matrix).T)
         args = [self._format_args(x, y, z, f)
-                for (x, y, z, f) in zip_longest(x_c, y_c, z_c, f_c)]
+                for (x, y, z, f) in zip(x_c, y_c, z_c, f_c)]
         for (arg, s) in zip_longest(args, s_c):
             if s == 0 and self._shutter_on is False:
                 pass
@@ -570,9 +566,9 @@ class PGMCompiler:
                      f: List = []):
         self._instructions.extend([f'LINEAR {line}\n'
                                    for line in self._format_array(x, y, z, f)])
-        self.compile_pgm()
+        self.close()
 
-    def compile_pgm(self, filename: str = None, verbose: bool = False):
+    def close(self, filename: str = None, verbose: bool = False):
         """
         COMPILE PGM.
 
@@ -644,7 +640,7 @@ class PGMCompiler:
                        [0, 0, 1/self.ind_rif, 0, 0],
                        [0, 0, 0, 1, 0],
                        [0, 0, 0, 0, 1]])
-        return np.dot(SM, RM)
+        return np.matmul(SM, RM)
 
     def _format_args(self,
                      x: float = None,
@@ -766,7 +762,7 @@ if __name__ == '__main__':
     # Data
     pitch = 0.080
     int_dist = 0.007
-    angle = 0.0
+    angle = 0.3
     ind_rif = 1.5/1.33
 
     d_bend = 0.5*(pitch-int_dist)
