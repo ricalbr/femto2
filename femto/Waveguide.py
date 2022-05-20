@@ -731,11 +731,11 @@ class Waveguide:
                          self._y,
                          self._z,
                          self._f,
-                         self._s), axis=-1)
+                         self._s), axis=-1).astype(np.float32)
         mask = np.diff(data, axis=0)
         mask = np.sum(np.abs(mask), axis=1, dtype=bool)
         mask = np.insert(mask, 0, True)
-        return np.delete(data, np.where(mask is False), 0)
+        return np.delete(data, np.where(mask is False), 0).astype(np.float32)
 
     def _compute_number_points(self):
         # TODO: write method that compute the optimal number of points given
