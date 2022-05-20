@@ -4,7 +4,6 @@ import numpy as np
 import os
 from pathlib import Path
 from typing import List
-from collections.abc import Iterable
 from collections import deque
 
 CWD = os.path.dirname(os.path.abspath(__file__))
@@ -461,8 +460,9 @@ class PGMCompiler:
             Values for the S coordinate.
 
         """
-
-        x_c, y_c, z_c, f_c, s_c = (np.matmul(points, self._t_matrix).T)
+        x, y, z, f_c, s_c = points.T
+        sub_points = np.stack((x, y, z), axis=-1).astype(np.float32)
+        x_c, y_c, z_c = (np.matmul(sub_points, self._t_matrix()).T)
         args = [self._format_args(x, y, z, f)
                 for (x, y, z, f) in zip(x_c, y_c, z_c, f_c)]
         for (arg, s) in zip_longest(args, s_c):
@@ -476,97 +476,28 @@ class PGMCompiler:
                 self.dwell(self.long_pause)
             self._instructions.append(f'LINEAR {arg}\n')
 
-    def make_trench(self,
-                    col,
-                    col_index,
-                    base_folder,
-                    u: List = None,
-                    dirname: str = 's-trench',
-                    hbox: float = 0.075,
-                    zoff: float = 0.020,
-                    nboxz: int = 4,
-                    deltaz: float = 0.0015,
-                    angle: float = 0.0,
-                    tspeed: float = 4,
-                    ind_rif: float = 1.5/1.33,
-                    speed_pos: float = 5,
-                    pause: float = 0.5):
-
-        trench_directory = os.path.join(dirname, f'trenchCol{col_index+1:03}')
-
-        col_dir = os.path.join(os.getcwd(), trench_directory)
-        os.makedirs(col_dir, exist_ok=True)
-
-        # Export paths
-        for i, trench in enumerate(col.trench_list):
-            wall_filename = os.path.join(col_dir, f'trench{i+1:03}_wall')
-            floor_filename = os.path.join(col_dir, f'trench{i+1:03}_floor')
-
-            # Export wall
-            t_gc = PGMCompiler(wall_filename, ind_rif=ind_rif, angle=angle)
-            t_gc.export_array(*trench.border, f=tspeed)
-            del t_gc
-
-            # Export floor
-            t_gc = PGMCompiler(floor_filename, ind_rif=ind_rif, angle=angle)
-            t_gc.export_array(*trench.floor, f=tspeed)
-            del t_gc
-
-        self.dvar(['ZCURR'])
-
-        for nbox in range(nboxz):
-            for t_index, trench in enumerate(col.trench_list):
-                # load filenames (wall/floor)
-                wall_filename = f'trench{t_index+1:03}_wall.pgm'
-                floor_filename = f'trench{t_index+1:03}_floor.pgm'
-                load_wall = os.path.join(base_folder,
-                                         trench_directory,
-                                         wall_filename)
-                load_floor = os.path.join(base_folder,
-                                          trench_directory,
-                                          floor_filename)
-
-                self.comment(f'+--- TRENCH #{t_index+1}, LEVEL {i+1} ---+')
-                self.load_program(load_wall)
-                self.load_program(load_floor)
-                self.shutter('OFF')
-                x0, y0 = trench.border[:, 0]
-                z0 = (nbox*hbox - zoff)/ind_rif
-                self.move_to([x0, y0, z0], speed_pos=speed_pos)
-
-                self.instruction(f'$ZCURR = {z0:.6f}')
-                self.shutter('ON')
-                self.repeat(int(np.ceil((hbox+zoff)/deltaz)))
-                self.farcall(wall_filename)
-                self.instruction(f'$ZCURR = $ZCURR + {deltaz/ind_rif:.6f}')
-                self.instruction('LINEAR Z$ZCURR')
-                self.end_repeat()
-
-                if u is not None:
-                    self.instruction(f'LINEAR U{u[1]:.6f}')
-                self.dwell(pause)
-                self.farcall(floor_filename)
-                self.shutter('OFF')
-                if u is not None:
-                    self.instruction(f'LINEAR U{u[0]:.6f}')
-
-                self.remove_program(load_wall)
-                self.remove_program(load_floor)
-
     def instruction(self, instr: str):
+        """
+        ADD INSTRUCTION.
+
+        The function add a G-Code instruction passed as parameter to the PGM
+        file.
+
+        Parameters
+        ----------
+        instr : str
+            Instruction line to be added to the PGM file. The '\n' character
+            is optional.
+
+        Returns
+        -------
+        None.
+
+        """
         if instr.endswith('\n'):
             self._instructions.append(instr)
         else:
             self._instructions.append(instr+'\n')
-
-    def export_array(self,
-                     x: List = [],
-                     y: List = [],
-                     z: List = [],
-                     f: List = []):
-        self._instructions.extend([f'LINEAR {line}\n'
-                                   for line in self._format_array(x, y, z, f)])
-        self.close()
 
     def close(self, filename: str = None, verbose: bool = False):
         """
@@ -615,8 +546,7 @@ class PGMCompiler:
             print('G-code compilation completed.')
 
     # Private interface
-    @property
-    def _t_matrix(self) -> np.ndarray:
+    def _t_matrix(self, dim: int = 3) -> np.ndarray:
         """
         COMPUTE TRANSFORMATION MATRIX.
 
@@ -624,23 +554,31 @@ class PGMCompiler:
         compute the transformation matrix as composition of rotatio matrix (RM)
         and a homothety matrix (SM).
 
+        Parameters
+        ----------
+        dim : int, optional
+            Dimension of the transformation matrix. The default is 3.
+
         Returns
         -------
         np.array
             Transformation matrix: TM = SM*RM
 
         """
-        RM = np.array([[np.cos(self.angle), -np.sin(self.angle), 0, 0, 0],
-                       [np.sin(self.angle), np.cos(self.angle), 0, 0, 0],
-                       [0, 0, 1, 0, 0],
-                       [0, 0, 0, 1, 0],
-                       [0, 0, 0, 0, 1]])
-        SM = np.array([[1, 0, 0, 0, 0],
-                       [0, 1, 0, 0, 0],
-                       [0, 0, 1/self.ind_rif, 0, 0],
-                       [0, 0, 0, 1, 0],
-                       [0, 0, 0, 0, 1]])
-        return np.matmul(SM, RM)
+
+        RM = np.array([[np.cos(self.angle), -np.sin(self.angle), 0],
+                       [np.sin(self.angle), np.cos(self.angle), 0],
+                       [0, 0, 1]])
+        SM = np.array([[1, 0, 0],
+                       [0, 1, 0],
+                       [0, 0, 1/self.ind_rif]])
+        t_mat = SM @ RM
+        if dim == 3:
+            return t_mat
+        else:
+            # export xy-submatrix
+            ixgrid = np.ix_([0, 1], [0, 1])
+            return t_mat[ixgrid]
 
     def _format_args(self,
                      x: float = None,
@@ -694,27 +632,6 @@ class PGMCompiler:
             args.append(f'F{f:.{self.output_digits}f}')
         args = ' '.join(args)
         return args
-
-    def _format_array(self,
-                      x_array: List = [],
-                      y_array: List = [],
-                      z_array: List = [],
-                      f_array: List = []) -> List:
-
-        if not isinstance(x_array, Iterable):
-            x_array = [x_array]
-        if not isinstance(y_array, Iterable):
-            y_array = [y_array]
-        if not isinstance(z_array, Iterable):
-            z_array = [z_array]
-        if not isinstance(f_array, Iterable):
-            f_array = [f_array]
-
-        return [self._format_args(x, y, z, f)
-                for (x, y, z, f) in zip_longest(x_array,
-                                                y_array,
-                                                z_array,
-                                                f_array)]
 
     def _parse_filepath(self,
                         filename: str,
