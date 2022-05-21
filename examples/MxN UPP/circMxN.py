@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 import param as p
 import time
 import os
-from femto.helper import make_trench
 
 t0 = time.perf_counter()
 
@@ -81,14 +80,10 @@ with PGMCompiler(f'{p.MM}x{p.NN}MARKERS.pgm',
 
 # # TRENCH
 for col_index, col in enumerate(circ['trench']):
-    col_filename = os.path.join(os.getcwd(),
-                                's-trench',
+    col_filename = os.path.join(os.getcwd(), 's-trench',
                                 f'FARCALL_COLONNA{col_index+1:03}')
     with PGMCompiler(col_filename, ind_rif=p.ind_env, angle=p.angle) as gc:
-        make_trench(gc, col, col_index,
-                    base_folder=p.base_folder,
-                    u=[31.7, 38.4])
+        gc.trench(col, col_index, base_folder=p.base_folder, u=[31.7, 38.4])
         gc.homing()
-
 
 print(f'Elapsed time: {time.perf_counter() - t0:.2f} s.')
