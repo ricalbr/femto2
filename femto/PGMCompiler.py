@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import List
 from collections import deque
 from collections.abc import Iterable
+from femto import Trench
 
 CWD = os.path.dirname(os.path.abspath(__file__))
 
@@ -689,7 +690,30 @@ class PGMCompiler:
         return file
 
 
-def export_array(gc: PGMCompiler, points: np.ndarray, f_array: List = []):
+def write_array(gc: PGMCompiler, points: np.ndarray, f_array: List = []):
+    """
+    WRITE ARRAY.
+
+    Helper function that produces a PGM file for a 3D matrix of points at a
+    given traslation speed, without shuttering operations.
+    The function parse the points input matrix, applies the rotation and
+    homothety transformations and parse all the LINEAR instructions.
+
+    Parameters
+    ----------
+    gc : PGMCompiler
+        Instance of a PGMCompiler for compilation of a G-Code file.
+    points : np.ndarray
+        3D points matrix. If the points matrix is 2D it is intended as [x,y]
+        coordinates.
+    f_array : List, optional
+        List of traslation speed values. The default is [].
+
+    Returns
+    -------
+    None.
+
+    """
     if points.shape[-1] == 2:
         x_array, y_array = np.matmul(points, gc._t_matrix(dim=2)).T
         z_array = [None]
@@ -707,32 +731,54 @@ def export_array(gc: PGMCompiler, points: np.ndarray, f_array: List = []):
     gc._instructions = [f'LINEAR {line}\n' for line in instructions]
 
 
-def export_column(trench_directory, col, ind_rif, angle, tspeed):
-    col_dir = os.path.join(os.getcwd(), trench_directory)
-    os.makedirs(col_dir, exist_ok=True)
+def export_trench_path(trench: Trench,
+                       filename: str,
+                       ind_rif: float,
+                       angle: float,
+                       tspeed: float = 4):
+    """
+    Helper function for the export of the wall and floor instruction of a
+    Trench object.
 
-    # Export paths
-    for i, trench in enumerate(col.trench_list):
-        wall_filename = os.path.join(col_dir, f'trench{i+1:03}_wall')
-        floor_filename = os.path.join(col_dir, f'trench{i+1:03}_floor')
+    Parameters
+    ----------
+    trench : Trench
+        Trench object to export.
+    filename : str
+        Base filename for the wall.pgm and floor.pgm files. If the filename
+        ends with the '.pgm' extension, the latter it is stripped and replaced
+        with '_wall.pgm' and '_floor.pgm' to differentiate the two paths.
+    ind_rif : float
+        Refractive index.
+    angle : float
+        Rotation angle for the fabrication.
+    tspeed : float, optional
+        Traslation speed during fabrication [mm/s]. The default is 4 [mm/s].
 
-        # Export wall
-        t_gc = PGMCompiler(wall_filename, ind_rif=ind_rif, angle=angle)
-        export_array(t_gc, np.stack((trench.border), axis=-1), f_array=tspeed)
-        t_gc.close()
-        del t_gc
+    Returns
+    -------
+    None.
 
-        # Export floor
-        t_gc = PGMCompiler(floor_filename, ind_rif=ind_rif, angle=angle)
-        export_array(t_gc, np.stack((trench.floor), axis=-1), f_array=tspeed)
-        t_gc.close()
-        del t_gc
+    """
+
+    if filename.endswith('.pgm'):
+        filename = filename.split('.')[0]
+
+    t_gc = PGMCompiler(filename + '_wall', ind_rif=ind_rif, angle=angle)
+    write_array(t_gc, np.stack((trench.border), axis=-1), f_array=tspeed)
+    t_gc.close()
+    del t_gc
+
+    t_gc = PGMCompiler(filename + '_floor', ind_rif=ind_rif, angle=angle)
+    write_array(t_gc, np.stack((trench.floor), axis=-1), f_array=tspeed)
+    t_gc.close()
+    del t_gc
 
 
 def make_trench(gc: PGMCompiler,
                 col: List,
-                col_index: int,
-                base_folder,
+                base_folder: str,
+                col_index: int = None,
                 dirname: str = 's-trench',
                 u: List = None,
                 nboxz: int = 4,
@@ -742,9 +788,71 @@ def make_trench(gc: PGMCompiler,
                 tspeed: float = 4,
                 speed_pos: float = 5,
                 pause: float = 0.5):
+    """
+    MAKE TRENCH.
 
-    trench_directory = os.path.join(dirname, f'trenchCol{col_index+1:03}')
-    export_column(trench_directory, col, gc.ind_rif, gc.angle, tspeed)
+    Helper function for the compilation of trench columns.
+    For each trench in the column, the function first compile a PGM file for
+    border (or wall) and for the floor inside a directory given by the user
+    (base_folder).
+    Secondly, the function produce a FARCALL.pgm program to fabricate all the
+    trenches in the column.
+
+    Parameters
+    ----------
+    gc : PGMCompiler
+        Instance of a PGMCompiler for compilation of a G-Code file.
+    col : List
+        TrenchColumn object containing the list of trench blocks to compile.
+    base_folder : str
+        String of the full PATH (in the lab computer) of the directory
+        containig all the scripts for the fabrication.
+    col_index : int
+        Index of the column, used for organize the code in folders. The default
+        is None, trench directories will not be indexed.
+    dirname : str, optional
+        DESCRIPTION. The default is 's-trench'.
+    u : List, optional
+        List of two values of U-coordinate for fabrication of wall and floor
+        of the trench.
+        u[0] -> U-coordinate for the wall
+        u[1] -> U-coordinate for the floor
+        The default is None.
+    nboxz : int, optional
+        Number of sub-box along z-direction in which the trench is divided.
+        The default is 4.
+    hbox : float, optional
+        Height along z-direction [mm] of the single sub-box. Units in [mm].
+        The default is 0.075 [mm].
+    zoff : float, optional
+        Offset in the z-direction for the starting the inscription of the
+        trench wall. Units in [mm].
+        The default is 0.020 [mm].
+    deltaz : float, optional
+        Distanze along z-direction between different wall planes.
+        Units in [mm]. The default is 0.0015 [mm].
+    tspeed : float, optional
+        Traslation speed during fabrication [mm/s]. The default is 4 [mm/s].
+    speed_pos : float, optional
+        Positioning speed [mm/s]. The default is 5[mm/s].
+    pause : float, optional
+        Value of pause. Units in [s]. The default is 0.5 [s].
+
+    Returns
+    -------
+    None.
+
+    """
+    if col_index:
+        trench_directory = os.path.join(dirname, f'trenchCol{col_index+1:03}')
+    else:
+        trench_directory = os.path.join(dirname, 'trenchCol')
+
+    col_dir = os.path.join(os.getcwd(), trench_directory)
+    os.makedirs(col_dir, exist_ok=True)
+    for i, trench in enumerate(col.trench_list):
+        filename = os.path.join(col_dir, f'trench{i+1:03}_')
+        export_trench_path(trench, filename, gc.ind_rif, gc.angle, tspeed)
 
     gc.dvar(['ZCURR'])
 
