@@ -311,7 +311,7 @@ class Waveguide:
         None.
 
         """
-        (a, _) = self._get_sbend_parameter(D, radius)
+        (a, _) = self.get_sbend_parameter(D, radius)
 
         if D > 0:
             self.circ(np.pi*(3/2),
@@ -488,7 +488,7 @@ class Waveguide:
         None.
 
         """
-        (a, dx) = self._get_sbend_parameter(D, radius)
+        (a, dx) = self.get_sbend_parameter(D, radius)
 
         new_x = np.arange(self._x[-1], self._x[-1] + dx, dx/(N - 1))
         new_y = self._y[-1] + \
@@ -672,9 +672,8 @@ class Waveguide:
         cmd_rate = np.divide(v, dt, out=default_zero, where=(v != 0))
         return cmd_rate
 
-    # Private interface
     @staticmethod
-    def _get_sbend_parameter(D: float, radius: float) -> tuple:
+    def get_sbend_parameter(D: float, radius: float) -> tuple:
         """
         GET S-BEND PARAMETERS.
 
@@ -699,6 +698,7 @@ class Waveguide:
         dx = 2*radius*np.sin(a)
         return (a, dx)
 
+    # Private interface
     def _unique_points(self):
         """
         REMOVE ALL CONSECUTIVE DUPLICATES.
