@@ -19,10 +19,12 @@
 ## Features
 femto is an open-source package for the design of integrated optical circuits. It allows to define optical components and to compile a .pgm file for the microfabrication of the circuit. The library consists of growing list of parts, which can be composed into larger circuits.
 The following components are implemented:
-* A waveguide class, allowing easy chaining of bends and straight waveguides
-* Directional couplers
-* Mach-Zehnder interferometers
-* Different types of markers
+* Waveguide class, allowing easy chaining of bends and straight segments. Including:
+  * Circular and sinusoidal arcs
+  * Directional couplers 
+  * Mach-Zehnder interferometers
+* Class for different markers
+* Trench class, allowing easy path generation for trenches with various geometries
 * G-Code compiler class
 
 <p align="right">(<a href="#top">back to top</a>)</p>
@@ -84,12 +86,11 @@ Export the G-Code with the following commands
 ```python
 # Waveguide G-Code
 with PGMCompiler('MZIs.pgm', ind_rif=1.5/1.33, angle=0.01) as gc:
-    gc.rpt(6)
+    gc.repeat(6)
     for wg in waveguides:
         gc.comment(f' +--- Modo: {i+1} ---+')
-        gc.point_to_instruction(wg.M)
-    gc.endrpt()
-    gc.homing()
+        gc.write(wg.M)
+    gc.end_repeat()
 ```
 Other example files can be found [here](https://github.com/ricalbr/femto/tree/main/examples)
 
