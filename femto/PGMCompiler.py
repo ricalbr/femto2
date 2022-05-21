@@ -549,8 +549,8 @@ class PGMCompiler:
 
     def trench(self,
                col: List,
-               col_index: int,
-               base_folder,
+               col_index: int = None,
+               base_folder: str = r'C:\Users\Capable\Desktop',
                dirname: str = 's-trench',
                u: List = None,
                nboxz: int = 4,
@@ -777,8 +777,8 @@ def export_trench_path(trench: Trench,
 
 def make_trench(gc: PGMCompiler,
                 col: List,
-                base_folder: str,
                 col_index: int = None,
+                base_folder: str = r'C:\Users\Capable\Desktop',
                 dirname: str = 's-trench',
                 u: List = None,
                 nboxz: int = 4,
@@ -844,6 +844,7 @@ def make_trench(gc: PGMCompiler,
 
     """
     if col_index:
+        print(f'trenchCol{col_index+1:03}')
         trench_directory = os.path.join(dirname, f'trenchCol{col_index+1:03}')
     else:
         trench_directory = os.path.join(dirname, 'trenchCol')
