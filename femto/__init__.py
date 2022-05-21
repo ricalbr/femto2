@@ -15,9 +15,11 @@ __all__ = [
     'Trench',
     'TrenchColumn',
     'PGMCompiler',
+    'helper'
 ]
 
 from .Waveguide import Waveguide
 from .Marker import Marker
 from .Trench import Trench, TrenchColumn
 from .PGMCompiler import PGMCompiler
+from .helper import *

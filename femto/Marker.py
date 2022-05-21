@@ -15,7 +15,6 @@ class Marker(Waveguide):
 
         self.depth = depth
         self.speed = speed
-        self._M = {}
 
     def cross(self,
               position: List[float],
@@ -92,7 +91,7 @@ if __name__ == '__main__':
 
     c = Marker()
     c.ruler(range(3), 5, 3.5)
-    print(c.M)
+    print(c.points)
 
     with PGMCompiler('testPGMcompiler', ind_rif=1.5) as gc:
-        gc.point_to_instruction(c.M)
+        gc.write(c.points)

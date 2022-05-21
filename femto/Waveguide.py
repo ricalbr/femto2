@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 from typing import List
 
 
@@ -8,20 +7,24 @@ class Waveguide:
 
         self.num_scan = num_scan
         self.c_max = c_max
-        self._M = {}
+        self._x = np.asarray([])
+        self._y = np.asarray([])
+        self._z = np.asarray([])
+        self._f = np.asarray([])
+        self._s = np.asarray([])
 
     @property
-    def M(self) -> pd.core.frame.DataFrame:
+    def points(self) -> np.ndarray:
         """
         COORDINATES MATRIX GETTER.
 
-        The getter returns the coordinates matrix as a pandas.DataFrame object.
+        The getter returns the coordinates matrix as a numpy.ndarray matrix.
         The dataframe is parsed through a unique functions that removes all the
         subsequent identical points in the set.
 
         Returns
         -------
-        pandas.DataFrame
+        numpy.ndarray
             [X, Y, Z, F, S] unique point matrix.
 
         """
@@ -41,8 +44,8 @@ class Waveguide:
             Array of the x-coordinates.
 
         """
-        df = self._unique_points()
-        return df['x'].to_numpy()
+        coords = self._unique_points().T
+        return coords[0]
 
     @property
     def y(self) -> np.ndarray:
@@ -58,8 +61,8 @@ class Waveguide:
             Array of the y-coordinates.
 
         """
-        df = self._unique_points()
-        return df['y'].to_numpy()
+        coords = self._unique_points().T
+        return coords[1]
 
     @property
     def z(self) -> np.ndarray:
@@ -75,8 +78,8 @@ class Waveguide:
             Array of the z-coordinates.
 
         """
-        df = self._unique_points()
-        return df['z'].to_numpy()
+        coords = self._unique_points().T
+        return coords[1]
 
     @property
     def lastpt(self) -> np.ndarray:
@@ -91,15 +94,15 @@ class Waveguide:
             Final point [x, y, z].
 
         """
-        if self._M:
-            return np.array([self._M['x'][-1],
-                             self._M['y'][-1],
-                             self._M['z'][-1]])
+        if self._x.size > 0:
+            return np.array([self._x[-1],
+                             self._y[-1],
+                             self._z[-1]])
         else:
             return []
 
     # Methods
-    def start(self, init_pos: List[float]):
+    def start(self, init_pos: List[float], speed: float = 5):
         """
         START.
 
@@ -116,6 +119,8 @@ class Waveguide:
             init_pos[0] -> X
             init_pos[1] -> Y
             init_pos[2] -> Z
+        speed : float, optional
+            Translation speed. The default is 5.
 
         Returns
         -------
@@ -125,15 +130,16 @@ class Waveguide:
         assert np.size(init_pos) == 3, \
             ('Given initial position is not valid. 3 values are required. '
              f'{np.size(init_pos)} were given.')
-        assert bool(self._M) is False, \
+        assert self._x.size == 0, \
             ('Coordinate matrix is not empty. '
              'Cannot start a new waveguide in this point.')
 
-        self._M['x'] = [init_pos[0]]
-        self._M['y'] = [init_pos[1]]
-        self._M['z'] = [init_pos[2]]
-        self._M['f'] = [5]
-        self._M['s'] = [0]
+        x0, y0, z0 = init_pos
+        self._x = np.append(self._x, x0)
+        self._y = np.append(self._y, y0)
+        self._z = np.append(self._z, z0)
+        self._f = np.append(self._f, speed)
+        self._s = np.append(self._s, 0)
 
     def end(self, speed: float = 75):
         """
@@ -144,18 +150,18 @@ class Waveguide:
         Parameters
         ----------
         speed : float, optional
-            DESCRIPTION. The default is 75.
+            Traslation speed. The default is 75.
 
         Returns
         -------
         None.
 
         """
-        self._M['x'].extend([self._M['x'][-1], self._M['x'][0]])
-        self._M['y'].extend([self._M['y'][-1], self._M['y'][0]])
-        self._M['z'].extend([self._M['z'][-1], self._M['z'][0]])
-        self._M['f'].extend([self._M['f'][-1], speed])
-        self._M['s'].extend([0, 0])
+        self._x = np.append(self._x, [self._x[-1], self._x[0]])
+        self._y = np.append(self._y, [self._y[-1], self._y[0]])
+        self._z = np.append(self._z, [self._z[-1], self._z[0]])
+        self._f = np.append(self._f, [self._f[-1], speed])
+        self._s = np.append(self._s, [0, 0])
 
     def linear(self,
                increment: List[float],
@@ -197,18 +203,17 @@ class Waveguide:
         if mode.upper() not in ['ABS', 'INC']:
             raise ValueError('Mode should be either ABS or INC.',
                              f'{mode.upper()} was given.')
+        x_inc, y_inc, z_inc = increment
         if mode.upper() == 'ABS':
-            self._M['x'].append(increment[0])
-            self._M['y'].append(increment[1])
-            self._M['z'].append(increment[2])
-            self._M['f'].append(speed)
-            self._M['s'].append(shutter)
+            self._x = np.append(self._x, x_inc)
+            self._y = np.append(self._y, y_inc)
+            self._z = np.append(self._z, z_inc)
         else:
-            self._M['x'].append(self._M['x'][-1] + increment[0])
-            self._M['y'].append(self._M['y'][-1] + increment[1])
-            self._M['z'].append(self._M['z'][-1] + increment[2])
-            self._M['f'].append(speed)
-            self._M['s'].append(shutter)
+            self._x = np.append(self._x, self._x[-1] + x_inc)
+            self._y = np.append(self._y, self._y[-1] + y_inc)
+            self._z = np.append(self._z, self._z[-1] + z_inc)
+        self._f = np.append(self._f, speed)
+        self._s = np.append(self._s, shutter)
 
     def circ(self,
              initial_angle: float,
@@ -251,27 +256,25 @@ class Waveguide:
 
         """
         t = np.linspace(initial_angle, final_angle, N)
-        new_x = self._M['x'][-1] - radius*np.cos(initial_angle) + \
-            radius*np.cos(t)
-        new_y = self._M['y'][-1] - radius*np.sin(initial_angle) + \
-            radius*np.sin(t)
-        new_z = self._M['z'][-1]*np.ones(new_x.shape)
+        new_x = self._x[-1] - radius*np.cos(initial_angle) + radius*np.cos(t)
+        new_y = self._y[-1] - radius*np.sin(initial_angle) + radius*np.sin(t)
+        new_z = self._z[-1]*np.ones(new_x.shape)
 
         # update coordinates
-        self._M['x'].extend(new_x)
-        self._M['y'].extend(new_y)
-        self._M['z'].extend(new_z)
+        self._x = np.append(self._x, new_x)
+        self._y = np.append(self._y, new_y)
+        self._z = np.append(self._z, new_z)
 
         # update speed array
         if np.size(speed) == 1:
-            self._M['f'].extend(speed*np.ones(new_x.shape))
+            self._f = np.append(self._f, speed*np.ones(new_x.shape))
         elif np.size(speed) == np.size(new_x):
-            self._M['f'].extend(speed)
+            self._f = np.append(self._f, speed)
         else:
             raise ValueError('Speed array is neither a single value nor ',
                              'array of appropriate size.')
 
-        self._M['s'].extend(shutter*np.ones(new_x.shape))
+        self._s = np.append(self._s, shutter*np.ones(new_x.shape))
 
     def arc_bend(self,
                  D: float,
@@ -308,7 +311,7 @@ class Waveguide:
         None.
 
         """
-        (a, _) = self._get_sbend_parameter(D, radius)
+        (a, _) = self.get_sbend_parameter(D, radius)
 
         if D > 0:
             self.circ(np.pi*(3/2),
@@ -485,28 +488,28 @@ class Waveguide:
         None.
 
         """
-        (a, dx) = self._get_sbend_parameter(D, radius)
+        (a, dx) = self.get_sbend_parameter(D, radius)
 
-        new_x = np.arange(self._M['x'][-1], self._M['x'][-1] + dx, dx/(N - 1))
-        new_y = self._M['y'][-1] + \
-            0.5*D*(1 - np.cos(np.pi/dx*(new_x - self._M['x'][-1])))
-        new_z = self._M['z'][-1]*np.ones(new_x.shape)
+        new_x = np.arange(self._x[-1], self._x[-1] + dx, dx/(N - 1))
+        new_y = self._y[-1] + \
+            0.5*D*(1 - np.cos(np.pi/dx*(new_x - self._x[-1])))
+        new_z = self._z[-1]*np.ones(new_x.shape)
 
         # update coordinates
-        self._M['x'].extend(new_x)
-        self._M['y'].extend(new_y)
-        self._M['z'].extend(new_z)
+        self._x = np.append(self._x, new_x)
+        self._y = np.append(self._y, new_y)
+        self._z = np.append(self._z, new_z)
 
         # update speed array
         if np.size(speed) == 1:
-            self._M['f'].extend(speed*np.ones(new_x.shape))
+            self._f = np.append(self._f, speed*np.ones(new_x.shape))
         elif np.size(speed) == np.size(new_x):
-            self._M['f'].extend(speed)
+            self._f = np.append(self._f, speed)
         else:
             raise ValueError('Speed array is neither a single value nor ',
                              'array of appropriate size.')
 
-        self._M['s'].extend(shutter*np.ones(new_x.shape))
+        self._s = np.append(self._s, shutter*np.ones(new_x.shape))
 
     def sin_acc(self,
                 D: float,
@@ -669,8 +672,8 @@ class Waveguide:
         cmd_rate = np.divide(v, dt, out=default_zero, where=(v != 0))
         return cmd_rate
 
-    # Private interface
-    def _get_sbend_parameter(self, D: float, radius: float) -> tuple:
+    @staticmethod
+    def get_sbend_parameter(D: float, radius: float) -> tuple:
         """
         GET S-BEND PARAMETERS.
 
@@ -695,6 +698,7 @@ class Waveguide:
         dx = 2*radius*np.sin(a)
         return (a, dx)
 
+    # Private interface
     def _unique_points(self):
         """
         REMOVE ALL CONSECUTIVE DUPLICATES.
@@ -723,13 +727,15 @@ class Waveguide:
 
         """
 
-        data = pd.DataFrame.from_dict(self._M)
-        mask = (data.diff()             # row-wise diff
-                    .abs()              # abs of each element
-                    .sum(axis=1)        # col-wise sum
-                    .astype('bool'))    # cast to bool
-        mask[0] = True
-        return data[mask].reset_index(drop=True)
+        data = np.stack((self._x,
+                         self._y,
+                         self._z,
+                         self._f,
+                         self._s), axis=-1).astype(np.float32)
+        mask = np.diff(data, axis=0)
+        mask = np.sum(np.abs(mask), axis=1, dtype=bool)
+        mask = np.insert(mask, 0, True)
+        return np.delete(data, np.where(mask is False), 0).astype(np.float32)
 
     def _compute_number_points(self):
         # TODO: write method that compute the optimal number of points given
@@ -758,11 +764,11 @@ if __name__ == '__main__':
         wg.linear(increment, speed=20)
         wg.end()
 
-    print(wg.M)
+    print(wg.points)
 
     # Plot
     fig, ax = plt.subplots()
     for wg in mzi:
-        ax.plot(wg.M['x'][:-1], wg.M['y'][:-1], '-k', linewidth=2.5)
-        ax.plot(wg.M['x'][-2:], wg.M['y'][-2:], ':b', linewidth=1.0)
+        ax.plot(wg.x[:-1], wg.y[:-1], '-k', linewidth=2.5)
+        ax.plot(wg.x[-2:], wg.y[-2:], ':b', linewidth=1.0)
     plt.show()
