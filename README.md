@@ -3,10 +3,9 @@
 <br />
 <div align="center">
   <a href="https://github.com/github_username/repo_name">
-    <img src="https://user-images.githubusercontent.com/45992199/165799034-ef1062b1-91dd-49ca-a4c3-f0f7ea5a202c.png" alt="femto" width="480">
+    <img src="https://user-images.githubusercontent.com/45992199/169652121-93f71629-d72a-4acd-a089-d0f327572bf1.png" alt="femto" width="480">
   </a>
 </div>
-
 
 > Python library for design and fabrication of femtosecond laser written integrated photonic circuits.
 
