@@ -114,6 +114,9 @@ dmypy.json
 .pyre/
 fit_stress_test.py
 
+# Linter
+.pylint.d/
+
 # G-Code files
 *.pgm
 *.ogm
