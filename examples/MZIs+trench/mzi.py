@@ -5,14 +5,6 @@ import os
 
 # %% GEOMETRICAL DATA
 
-
-# Util function
-def get_sbend_par(D, R):
-    dy = np.abs(D/2)
-    a = np.arccos(1-(dy/R))
-    return 2*R*np.sin(a)
-
-
 # Circuit
 glass_height = 25
 glass_length = 25
@@ -76,7 +68,7 @@ wg.end()
 circ['waveguide'].append(wg)
 
 # MZI
-delta_x = get_sbend_par(d1, R)
+_, delta_x = wg.get_sbend_parameter(d1, R)
 l_x = (glass_length + 4 - delta_x*4)/2
 for i in range(6):
     wg = Waveguide()
@@ -118,18 +110,16 @@ plt.show()
 
 # Waveguide G-Code
 with PGMCompiler('MZIs.pgm', ind_rif=ind_env, angle=angle) as gc:
-    gc.rpt(n_scan)
+    gc.repeat(n_scan)
     for wg in circ['waveguide']:
         gc.comment(f' +--- Modo: {i+1} ---+')
-        gc.point_to_instruction(wg.M)
-    gc.endrpt()
-    gc.homing()
+        gc.write(wg.points)
+    gc.end_repeat()
 
-# Waveguide G-Code
+# Marker G-Code
 with PGMCompiler('Markers.pgm', ind_rif=ind_env, angle=angle) as gc:
-    for wg in circ['marker']:
-        gc.point_to_instruction(wg.M)
-    gc.homing()
+    for mk in circ['marker']:
+        gc.write(mk.points)
 
 # Trench G-Code
 for col_index, col in enumerate(circ['trench']):
@@ -138,5 +128,4 @@ for col_index, col in enumerate(circ['trench']):
                                 's-trench',
                                 f'FARCALL{col_index:03}')
     with PGMCompiler(col_filename, ind_rif=ind_env, angle=angle) as gc:
-        gc.make_trench(col, col_index, base_folder=base_folder)
-        gc.homing()
+        gc.trench(col, col_index, base_folder=base_folder)
