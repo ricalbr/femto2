@@ -19,10 +19,12 @@
 ## Features
 femto is an open-source package for the design of integrated optical circuits. It allows to define optical components and to compile a .pgm file for the microfabrication of the circuit. The library consists of growing list of parts, which can be composed into larger circuits.
 The following components are implemented:
-* A waveguide class, allowing easy chaining of bends and straight waveguides
-* Directional couplers
-* Mach-Zehnder interferometers
-* Different types of markers
+* Waveguide class, allowing easy chaining of bends and straight segments. Including:
+  * Circular and sinusoidal arcs
+  * Directional couplers 
+  * Mach-Zehnder interferometers
+* Class for different markers
+* Trench class, allowing easy path generation for trenches with various geometries
 * G-Code compiler class
 
 <p align="right">(<a href="#top">back to top</a>)</p>
