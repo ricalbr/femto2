@@ -690,7 +690,7 @@ class PGMCompiler:
         return file
 
 
-def write_array(gc: PGMCompiler, points: np.ndarray, f_array: List = []):
+def write_array(gc: PGMCompiler, points: np.ndarray, f_array: List = None):
     """
     WRITE ARRAY.
 

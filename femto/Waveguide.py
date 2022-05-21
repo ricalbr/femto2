@@ -98,8 +98,7 @@ class Waveguide:
             return np.array([self._x[-1],
                              self._y[-1],
                              self._z[-1]])
-        else:
-            return []
+        return []
 
     # Methods
     def start(self, init_pos: List[float], speed: float = 5):
@@ -488,7 +487,7 @@ class Waveguide:
         None.
 
         """
-        (a, dx) = self.get_sbend_parameter(D, radius)
+        (_, dx) = self.get_sbend_parameter(D, radius)
 
         new_x = np.arange(self._x[-1], self._x[-1] + dx, dx/(N - 1))
         new_y = self._y[-1] + \
