@@ -84,12 +84,11 @@ Export the G-Code with the following commands
 ```python
 # Waveguide G-Code
 with PGMCompiler('MZIs.pgm', ind_rif=1.5/1.33, angle=0.01) as gc:
-    gc.rpt(6)
+    gc.repeat(6)
     for wg in waveguides:
         gc.comment(f' +--- Modo: {i+1} ---+')
-        gc.point_to_instruction(wg.M)
-    gc.endrpt()
-    gc.homing()
+        gc.write(wg.M)
+    gc.end_repeat()
 ```
 Other example files can be found [here](https://github.com/ricalbr/femto/tree/main/examples)
 
