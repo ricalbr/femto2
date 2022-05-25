@@ -2,7 +2,7 @@ from femto import Waveguide, PGMCompiler
 import matplotlib.pyplot as plt
 import param as p
 import numpy as np
-np.set_printoptions(formatter={'float': "\t{: 0.2f}".format})
+np.set_printoptions(formatter={'float': "\t{: 0.6f}".format})
 
 
 # Simple script for fabricate a MZI interferometer
