@@ -29,8 +29,7 @@ plt.show()
 
 # Compilation
 with PGMCompiler('MZImultiscan.pgm', ind_rif=p.ind_rif) as gc:
-    gc.repeat(wg.num_scan)
-    for i, wg in enumerate(mzi):
-        gc.comment(f'Modo: {i+1}')
-        gc.write(wg.points)
-    gc.end_repeat()
+    with gc.repeat(circ['waveguide'][0].num_scan):
+        for i, wg in enumerate(mzi):
+            gc.comment(f'Modo: {i+1}')
+            gc.write(wg.points)

@@ -7,6 +7,7 @@ from typing import List
 from collections import deque
 from collections.abc import Iterable
 from femto import Trench
+from contextlib import contextmanager
 
 CWD = os.path.dirname(os.path.abspath(__file__))
 
@@ -34,8 +35,6 @@ class PGMCompiler:
 
         self.output_digits = output_digits
 
-        self._num_repeat = 0
-        self._num_for = 0
         self._total_dwell_time = 0.0
         self._shutter_on = False
         self._loaded_files = []
@@ -256,6 +255,7 @@ class PGMCompiler:
         self._instructions.append(f'LINEAR {args}\n')
         self.dwell(self.long_pause)
 
+    @contextmanager
     def for_loop(self, var: str, num: int):
         """
         FOR LOOP.
@@ -275,27 +275,12 @@ class PGMCompiler:
 
         """
         self._instructions.append(f'FOR ${var} = 0 TO {num-1}\n')
-        self._num_for += 1
+        try:
+            yield
+        finally:
+            self._instructions.append(f'NEXT ${var}\n\n')
 
-    def end_for(self, var: str):
-        """
-        END FOOR LOOP.
-
-        Add the NEXT instruction to a G-Code file.
-
-        Parameters
-        ----------
-        var : str
-            Name of the variable used for the corresponding FOR loop.
-
-        Returns
-        -------
-        None.
-
-        """
-        self._instructions.append(f'NEXT ${var}\n\n')
-        self._num_for -= 1
-
+    @contextmanager
     def repeat(self, num: int):
         """
         REPEAT.
@@ -313,21 +298,10 @@ class PGMCompiler:
 
         """
         self._instructions.append(f'REPEAT {num}\n')
-        self._num_repeat += 1
-
-    def end_repeat(self):
-        """
-        END REPEAT.
-
-        Add the END REPEAT instruction to a G-Code file.
-
-        Returns
-        -------
-        None.
-
-        """
-        self._instructions.append('ENDREPEAT\n\n')
-        self._num_repeat -= 1
+        try:
+            yield
+        finally:
+            self._instructions.append('ENDREPEAT\n\n')
 
     def tic(self):
         """
@@ -524,14 +498,6 @@ class PGMCompiler:
         """
         if filename is None:
             assert self.filename is not None, 'No filename given.'
-        assert self._num_repeat == 0, \
-            (f'Missing {np.abs(self._num_repeat)} ' +
-             f'{"END REPEAT" if self._num_repeat >0 else "REPEAT"} ' +
-             f'instruction{"s" if np.abs(self._num_repeat) != 1 else ""}.')
-        assert self._num_for == 0, \
-            (f'Missing {np.abs(self._num_for)} ' +
-             f'{"NEXT" if self._num_for >0 else "FOR"} ' +
-             f'instruction{"s" if np.abs(self._num_for) != 1 else ""}.')
 
         if filename:
             pgm_filename = filename
@@ -878,11 +844,10 @@ def make_trench(gc: PGMCompiler,
 
             gc.instruction(f'$ZCURR = {z0:.6f}')
             gc.shutter('ON')
-            gc.repeat(int(np.ceil((hbox+zoff)/deltaz)))
-            gc.farcall(wall_filename)
-            gc.instruction(f'$ZCURR = $ZCURR + {deltaz/gc.ind_rif:.6f}')
-            gc.instruction('LINEAR Z$ZCURR')
-            gc.end_repeat()
+            with gc.repeat(int(np.ceil((hbox+zoff)/deltaz))):
+                gc.farcall(wall_filename)
+                gc.instruction(f'$ZCURR = $ZCURR + {deltaz/gc.ind_rif:.6f}')
+                gc.instruction('LINEAR Z$ZCURR')
 
             if u is not None:
                 gc.instruction(f'LINEAR U{u[-1]:.6f}')
@@ -919,12 +884,11 @@ if __name__ == '__main__':
         wg.end()
 
     # Compilation
-    with PGMCompiler('testPGMcompiler', ind_rif=ind_rif, angle=angle) as gc:
-        gc.repeat(wg.num_scan)
-        for i, wg in enumerate(coup):
-            gc.comment(f'Modo: {i}')
-            gc.write(wg.points)
-        gc.end_repeat()
-        gc.move_to([None, 0, 0.1])
-        gc.set_home([0, 0, 0])
-        gc.homing()
+    with PGMCompiler('testPGMcompiler', ind_rif=ind_rif, angle=angle) as G:
+        G.set_home([0, 0, 0])
+        with G.repeat(wg.num_scan):
+            for i, wg in enumerate(coup):
+                G.comment(f'Modo: {i}')
+                G.write(wg.points)
+        G.move_to([None, 0, 0.1])
+        G.set_home([0, 0, 0])

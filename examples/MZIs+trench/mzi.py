@@ -110,11 +110,10 @@ plt.show()
 
 # Waveguide G-Code
 with PGMCompiler('MZIs.pgm', ind_rif=ind_env, angle=angle) as gc:
-    gc.repeat(n_scan)
-    for wg in circ['waveguide']:
-        gc.comment(f' +--- Modo: {i+1} ---+')
-        gc.write(wg.points)
-    gc.end_repeat()
+    with gc.repeat(circ['waveguide'][0].num_scan):
+        for wg in circ['waveguide']:
+            gc.comment(f' +--- Modo: {i+1} ---+')
+            gc.write(wg.points)
 
 # Marker G-Code
 with PGMCompiler('Markers.pgm', ind_rif=ind_env, angle=angle) as gc:
