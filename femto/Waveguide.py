@@ -1,5 +1,7 @@
 import numpy as np
 from typing import List
+from scipy.interpolate import CubicSpline, InterpolatedUnivariateSpline
+from functools import partialmethod
 
 
 class Waveguide:
@@ -79,7 +81,7 @@ class Waveguide:
 
         """
         coords = self._unique_points().T
-        return coords[1]
+        return coords[2]
 
     @property
     def lastpt(self) -> np.ndarray:
@@ -440,25 +442,30 @@ class Waveguide:
                      shutter=shutter,
                      N=N/2)
 
-    def sin_bend(self,
-                 D: float,
-                 radius: float,
-                 speed: float = 0.0,
-                 shutter: int = 1,
-                 N: int = 25):
+    def sin_bridge(self,
+                   Dy: float,
+                   radius: float,
+                   Dz: float = None,
+                   speed: float = 0.0,
+                   shutter: int = 1,
+                   N: int = 25):
         """
-        SINUSOIDAL BEND.
+        SINUSOIDAL BRIDGE.
 
-        The function compute the points in the xy-plane of a Sin-bend curve.
+        The function compute the points in the xy-plane of a Sin-bend curve
+        and the points in the xz-plane of a Sin-bridge of height Dz.
         The distance between the initial and final point is the same of the
         equivalent (circular) S-bend of given radius.
         The user can specify the amplitude of the Sin-bend (height in the y
         direction) and the curvature radius as well as the transition speed,
         the shutter state during the movement and the number of points of the
         arc.
-        The sign of D encodes the direction of the Sin-bend:
-            - D > 0, upward S-bend
-            - D < 0, downward S-bend
+        The sign of Dy encodes the direction of the Sin-bend:
+            - Dy > 0, upward S-bend
+            - Dy < 0, downward S-bend
+        The sign of Dz encodes the direction of the Sin-bridge:
+            - Dz > 0, top bridge
+            - Dz < 0, under bridge
 
         NB: the radius is an effective radius. The radius of curvature of the
             overall curve will be lower (in general) than the specified
@@ -466,10 +473,13 @@ class Waveguide:
 
         Parameters
         ----------
-        D : float
-            Amplitude of the Sin-bend along the y direction [mm].
+        Dy : float
+            Amplitude of the Sin-bend along the y-direction [mm].
         radius : float
             Effective curvature radius of the Sin-bend [mm].
+        Dz : float, optional
+            Height of the Sin-bridge alogn the z-direction [mm].
+            The default is None.
         speed : float, optional
             Transition speed [mm/s]. The default is 0.0.
         shutter : int, optional
@@ -487,12 +497,16 @@ class Waveguide:
         None.
 
         """
-        (_, dx) = self.get_sbend_parameter(D, radius)
+        (_, dx) = self.get_sbend_parameter(Dy, radius)
 
         new_x = np.arange(self._x[-1], self._x[-1] + dx, dx/(N - 1))
         new_y = self._y[-1] + \
-            0.5*D*(1 - np.cos(np.pi/dx*(new_x - self._x[-1])))
-        new_z = self._z[-1]*np.ones(new_x.shape)
+            0.5*Dy*(1 - np.cos(np.pi/dx*(new_x - self._x[-1])))
+        if Dz:
+            new_z = self._z[-1] + \
+                0.5*Dz*(1 - np.cos(2*np.pi/dx*(new_x - self._x[-1])))
+        else:
+            new_z = self._z[-1]*np.ones(new_x.shape)
 
         # update coordinates
         self._x = np.append(self._x, new_x)
@@ -510,8 +524,10 @@ class Waveguide:
 
         self._s = np.append(self._s, shutter*np.ones(new_x.shape))
 
+    sin_bend = partialmethod(sin_bridge, Dz=None)
+
     def sin_acc(self,
-                D: float,
+                Dy: float,
                 radius: float,
                 int_length: float = 0.0,
                 speed: float = 0.0,
@@ -524,13 +540,13 @@ class Waveguide:
         sinusoidal directional coupler.
         The user can specify the amplitude of the coupler (height in the y
         direction) and the effective curvature radius.
-        The sign of D encodes the direction of the coupler:
-            - D > 0, upward Sin-bend
-            - D < 0, downward Sin-bend
+        The sign of Dy encodes the direction of the coupler:
+            - Dy > 0, upward Sin-bend
+            - Dy < 0, downward Sin-bend
 
         Parameters
         ----------
-        D : float
+        Dy : float
             Amplitude of the coupler along the y-direction [mm].
         radius : float
             Effective curvature radius of the coupler's bends [mm].
@@ -548,12 +564,12 @@ class Waveguide:
         None.
 
         """
-        self.sin_bend(D, radius, speed=speed, shutter=shutter, N=N/2)
+        self.sin_bend(Dy, radius, speed=speed, shutter=shutter, N=N/2)
         self.linear([int_length, 0, 0], speed=speed, shutter=shutter)
-        self.sin_bend(-D, radius, speed=speed, shutter=shutter, N=N/2)
+        self.sin_bend(-Dy, radius, speed=speed, shutter=shutter, N=N/2)
 
     def sin_mzi(self,
-                D: float,
+                Dy: float,
                 radius: float,
                 int_length: float = 0.0,
                 arm_length: float = 0.0,
@@ -567,13 +583,13 @@ class Waveguide:
         of a sinusoidal MZI.
         The user can specify the amplitude of the coupler (height in the y
         direction) and the curvature radius.
-        The sign of D encodes the direction of the coupler:
-            - D > 0, upward S-bend
-            - D < 0, downward S-bend
+        The sign of Dy encodes the direction of the coupler:
+            - Dy > 0, upward S-bend
+            - Dy < 0, downward S-bend
 
         Parameters
         ----------
-        D : float
+        Dy : float
             Amplitude of the MZI along the y-direction [mm].
         radius : float
             Effective curvature radius of the coupler's bends [mm].
@@ -593,13 +609,13 @@ class Waveguide:
         None.
 
         """
-        self.sin_acc(D, radius,
+        self.sin_acc(Dy, radius,
                      int_length=int_length,
                      speed=speed,
                      shutter=shutter,
                      N=N/2)
         self.linear([arm_length, 0, 0], speed=speed, shutter=shutter)
-        self.sin_acc(D, radius,
+        self.sin_acc(Dy, radius,
                      int_length=int_length,
                      speed=speed,
                      shutter=shutter,
@@ -618,11 +634,8 @@ class Waveguide:
             Array of the curvature radii computed at each point of the curve.
 
         """
-        data = self._unique_points()
 
-        x = np.array(data['x'])
-        y = np.array(data['y'])
-        z = np.array(data['z'])
+        (x, y, z, _, _) = self._unique_points().T
 
         dx_dt = np.gradient(x)
         dy_dt = np.gradient(y)
@@ -653,23 +666,19 @@ class Waveguide:
             Array of the command rates computed at each point of the curve.
 
         """
-        data = self._unique_points()
 
         # exclude last point, it's there just to close the shutter
-        x = np.array(data['x'][:-1])
-        y = np.array(data['y'][:-1])
-        z = np.array(data['z'][:-1])
-        v = np.array(data['f'][:-1])
+        (x, y, z, f, _) = self._unique_points()[:-1, :].T
 
         dx_dt = np.gradient(x)
         dy_dt = np.gradient(y)
         dz_dt = np.gradient(z)
         dt = np.sqrt(dx_dt**2 + dy_dt**2 + dz_dt**2)
 
-        default_zero = np.ones(np.size(dt))*np.inf
+        default_zero = np.zeros(np.size(dt))
         # only divide nonzeros else Inf
-        cmd_rate = np.divide(v, dt, out=default_zero, where=(v != 0))
-        return cmd_rate
+        cmd_rate = np.divide(f, dt, out=default_zero, where=(dt != 0))
+        return np.mean(cmd_rate)
 
     @staticmethod
     def get_sbend_parameter(D: float, radius: float) -> tuple:
@@ -745,6 +754,7 @@ class Waveguide:
 if __name__ == '__main__':
 
     import matplotlib.pyplot as plt
+    np.set_printoptions(formatter={'float': "\t{: 0.6f}".format})
 
     # Data
     pitch = 0.080
