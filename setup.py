@@ -12,10 +12,8 @@ setup(
     install_requires=[
         'matplotlib',
         'numpy',
-        'openpyxl',
         'pandas',
         'plotly',
-        'pyclipper',
         'scipy',
     ],
 )
