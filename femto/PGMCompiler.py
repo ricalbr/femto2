@@ -274,6 +274,9 @@ class PGMCompiler:
         None.
 
         """
+        if num is None:
+            raise ValueError('Number of iterations is None.',
+                             'Set the num_scan attribute in Waveguide object.')
         self._instructions.append(f'FOR ${var} = 0 TO {num-1}\n')
         try:
             yield
@@ -297,6 +300,9 @@ class PGMCompiler:
         None.
 
         """
+        if num is None:
+            raise ValueError('Number of iterations is None.',
+                             'Set the num_scan attribute in Waveguide object.')
         self._instructions.append(f'REPEAT {num}\n')
         try:
             yield
