@@ -23,6 +23,7 @@ The following components are implemented:
   * Circular and sinusoidal arcs
   * Directional couplers 
   * Mach-Zehnder interferometers
+  * Spline segments and 3D bridges
 * Class for different markers
 * Trench class, allowing easy path generation for trenches with various geometries
 * G-Code compiler class
