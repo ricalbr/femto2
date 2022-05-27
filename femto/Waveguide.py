@@ -621,9 +621,149 @@ class Waveguide:
                      shutter=shutter,
                      N=N/2)
 
+    def spline(self,
+               Dy: float,
+               Dz: float,
+               init_pos: list = None,
+               radius: float = 20,
+               dispx: float = 0,
+               speed: float = 0,
+               shutter: int = 1,
+               bc_y: tuple = ((1, 0.0), (1, 0.0)),
+               bc_z: tuple = ((1, 0.0), (1, 0.0))):
+        """
+        SPLINE
+
+        Function wrapper. It computes the x,y,z coordinates of spline curve
+        starting from init_pos with Dy and Dz displacements.
+        See :func:`~femto.Waveguide._get_spline_points`.
+        The points are then appended to the Waveguide coordinate list.
+
+        Returns
+        -------
+        None.
+
+        """
+        x_spl, y_spl, z_spl = self._get_spline_points(locals())
+
+        # update coordinates or return
+        self._x = np.append(self._x, x_spl)
+        self._y = np.append(self._y, y_spl)
+        self._z = np.append(self._z, z_spl)
+
+        # update speed array
+        if np.size(speed) == 1:
+            self._f = np.append(self._f, speed*np.ones(x_spl.shape))
+        elif np.size(speed) == np.size(x_spl):
+            self._f = np.append(self._f, speed)
+        else:
+            raise ValueError('Speed array is neither a single value nor ',
+                             'array of appropriate size.')
+
+        self._s = np.append(self._s, shutter*np.ones(x_spl.shape))
+
+    def spline_bridge(self,
+                      Dy: float,
+                      Dz: float,
+                      init_pos: list = None,
+                      radius: float = 20,
+                      dispx: float = 0,
+                      speed: float = 0,
+                      shutter: int = 1):
+        """
+        SPLINE BRIDGE.
+
+        Compute a spline bridge as a sequence of two spline segments. Dy is
+        the total displacement along the y-direction of the bridge and Dz is
+        the height of the bridge along z.
+        First, the function computes the Dx-displacement of the planar spline
+        curve with a Dy displacement. This datum is used to compute the value
+        of the first derivative along the y-coordinate for the costruction of
+        the spline bridge such that
+            df(x, y)/dx = Dy/Dx
+        in the peak point of the bridge.
+
+        The cubic spline bridge obtained in this way has a first derivatives
+        df(x, y)/dx, df(x, z)/dx which are zero (for construction) in the
+        initial and final point.
+        However, the second derivatives are not null in principle. To cope with
+        this the spline points are fitted with a spline of the 5-th order.
+        In this way the final curve has second derivatives close to zero
+        (~1e-4) while maintaining the first derivative to zero.
+
+        Parameters
+        ----------
+        Dy : float
+            Displacement along y-direction [mm].
+        Dz : float
+            Displacement along z-direction [mm].
+        init_pos : list, optional
+            Initial position, if None the initial position is the last point
+            of the waveguide. The default is None.
+        radius : float, optional
+            Radius for computing the displacement along x-direction [mm].
+            The default is 20.
+        dispx : float, optional
+            Length of the curve. The default is 0.
+        speed : float, optional
+            Transition speed [mm/s]. The default is 0.0.
+        shutter : int, optional
+            State of the shutter [0: 'OFF', 1: 'ON']. The default is 1.
+
+        Raises
+        ------
+        ValueError
+            Speed values has the wrong shape.
+
+        Returns
+        -------
+        None.
+
+        """
+        if init_pos is None:
+            init_pos = self.lastpt
+            xl, yl, zl = init_pos
+        else:
+            xl, yl, zl = init_pos
+
+        Dx, *_, L = self.get_spline_parameter(init_pos, Dy, 0, radius, dispx)
+
+        x1, y1, z1 = self._get_spline_points(Dy/2, Dz, init_pos, radius,
+                                             speed=speed,
+                                             bc_y=((1, 0.0), (1, Dy/Dx)),
+                                             bc_z=((1, 0.0), (1, 0.0)))
+        init_pos2 = np.array([x1[-1], y1[-1], z1[-1]])
+        x2, y2, z2 = self._get_spline_points(Dy/2, -Dz, init_pos2, radius,
+                                             speed=speed,
+                                             bc_y=((1, Dy/Dx), (1, 0.0)),
+                                             bc_z=((1, 0.0), (1, 0.0)))
+        x = np.append(x1[:-1], x2)
+        y = np.append(y1[:-1], y2)
+        z = np.append(z1[:-1], z2)
+
+        # Use CubicSpline as control point for higher order spline.
+        us_y = InterpolatedUnivariateSpline(x, y, k=5)
+        us_z = InterpolatedUnivariateSpline(x, z, k=5)
+
+        # update coordinates or return
+        self._x = np.append(self._x, x)
+        self._y = np.append(self._y, us_y(x))
+        self._z = np.append(self._z, us_z(x))
+
+        # update speed array
+        if np.size(speed) == 1:
+            self._f = np.append(self._f, speed*np.ones(x.shape))
+        elif np.size(speed) == np.size(x):
+            self._f = np.append(self._f, speed)
+        else:
+            raise ValueError('Speed array is neither a single value nor ',
+                             'array of appropriate size.')
+
+        self._s = np.append(self._s, shutter*np.ones(x.shape))
+
     def curvature(self) -> np.ndarray:
         """
-        CURVARURE.
+        CURVATURE.
 
         Compute the 3D point-to-point curvature radius of the waveguide
         shape.
@@ -706,6 +846,52 @@ class Waveguide:
         dx = 2*radius*np.sin(a)
         return (a, dx)
 
+    @staticmethod
+    def get_spline_parameter(init_pos: list,
+                             Dy: float,
+                             Dz: float,
+                             radius: float = 20,
+                             dispx: float = 0) -> tuple:
+        """
+        GET SPLINE PARAMETERS.
+
+        The function computes the delta displacements along x-, y- and
+        z-direction and the total lenght of the curve.
+
+        Parameters
+        ----------
+        init_pos : list
+            Initial position of the curve.
+        Dy : float
+            Displacement along y-direction [mm].
+        Dz : float
+            Displacement along z-direction [mm].
+        radius : float, optional
+            Curvature radius of the S-bend [mm]. The default is 20.
+        dispx : float, optional
+            Displacement along x-direction [mm]. The default is 0.
+
+        Returns
+        -------
+        tuple
+            (deltax [mm], deltay [mm], deltaz [mm], curve length [mm]).
+
+        """
+        xl, yl, zl = init_pos
+        final_pos = np.array([yl + Dy, zl + Dz])
+        if dispx != 0:
+            final_pos = np.insert(final_pos, 0, xl+dispx)
+            pos_diff = np.subtract(final_pos, init_pos)
+            L = np.sqrt(np.sum(pos_diff**2))
+        else:
+            final_pos = np.insert(final_pos, 0, xl)
+            pos_diff = np.subtract(final_pos, init_pos)
+            ang = np.arccos(1 - np.sqrt(pos_diff[1]**2 + pos_diff[2]**2) /
+                            (2*radius))
+            pos_diff[0] = 2*radius*np.sin(ang)
+            L = 2*ang*radius
+        return (pos_diff[0], pos_diff[1], pos_diff[2], L)
+
     # Private interface
     def _unique_points(self):
         """
@@ -735,15 +921,124 @@ class Waveguide:
 
         """
 
-        data = np.stack((self._x,
-                         self._y,
-                         self._z,
-                         self._f,
-                         self._s), axis=-1).astype(np.float32)
+        data = np.stack((self._x, self._y, self._z,
+                         self._f, self._s), axis=-1).astype(np.float32)
         mask = np.diff(data, axis=0)
         mask = np.sum(np.abs(mask), axis=1, dtype=bool)
         mask = np.insert(mask, 0, True)
         return np.delete(data, np.where(mask is False), 0).astype(np.float32)
+
+    def _get_spline_points(self,
+                           Dy: float,
+                           Dz: float,
+                           init_pos: list = None,
+                           radius: float = 20,
+                           dispx: float = 0,
+                           speed: float = 0,
+                           shutter: int = 1,
+                           bc_y: tuple = ((1, 0.0), (1, 0.0)),
+                           bc_z: tuple = ((1, 0.0), (1, 0.0))) -> tuple:
+        """
+        GET SPLINE POINTS.
+
+        Function for the generation of a 3D spline curve. Starting from
+        init_point the function compute a 3D spline with a displacemente Dy
+        in y-direction and Dz in z-direction.
+        The user can specify the length of the curve or (alternatively) provide
+        a curvature radius that is used to compute the displacement along
+        x-direction as the displacement of the equivalent circular S-bend.
+
+        User can provide the boundary conditions for the derivatives in the
+        y- and z-directions. Boundary conditions are a tuple of tuples in which
+        we have:
+            bc = ((initial point), (final point))
+        where the (initial point) and (final point) tuples are specified as
+        follow:
+            (derivative order, value of derivative)
+        the derivative order can be either 0, 1, 2.
+
+
+        Parameters
+        ----------
+        Dy : float
+            y-displacement [mm].
+        Dz : float
+            z-displacement [mm].
+        init_pos : list, optional
+            Initial position, if None the initial position is the last point
+            of the waveguide. The default is None.
+        radius : float, optional
+            Radius for computing the displacement along x-direction [mm].
+            The default is 20.
+        dispx : float, optional
+            Length of the curve. The default is 0.
+        speed : float, optional
+            Transition speed [mm/s]. The default is 0.0.
+        shutter : int, optional
+            State of the shutter [0: 'OFF', 1: 'ON']. The default is 1.
+        bc_y : tuple, optional
+            Boundary conditions for the y-coordinates.
+            The default is ((1, 0.0), (1, 0.0)).
+        bc_z : tuple, optional
+            Boundary conditions for the z-coordinates.
+            The default is ((1, 0.0), (1, 0.0)).
+
+        Returns
+        -------
+        numpy.ndarry
+            x-coordinates of the spline curve.
+        numpy.ndarry
+            y-coordinates of the spline curve.
+        numpy.ndarry
+            z-coordinates of the spline curve.
+
+        """
+        xd, yd, zd, L = self.get_spline_parameter(init_pos, Dy, Dz,
+                                                  radius, dispx)
+        num = self._get_num(L, speed)
+
+        xcoord = np.linspace(0, xd, num)
+        cs_y = CubicSpline((0.0, xd), (0.0, yd), bc_type=bc_y)
+        cs_z = CubicSpline((0.0, xd), (0.0, zd), bc_type=bc_z)
+        return (xcoord+init_pos[0],
+                cs_y(xcoord)+init_pos[1],
+                cs_z(xcoord)+init_pos[2])
+
+    def _get_num(self, L: float = 0, speed: float = 0) -> int:
+        """
+        GET NUM POINTS
+
+        Utility function that, given the lenght of a segment and the
+        fabrication speed, computes the number of points required to work at
+        the maximum command rate (attribute of Waveguide object).
+
+        Parameters
+        ----------
+        L : float, optional
+            Length of the waveguide segment. Units in [mm]. The default is 0.
+        speed : float, optional
+            Fabrication speed. Units in [mm/s]. The default is 0.
+
+        Raises
+        ------
+        ValueError
+            Speed is set too low.
+
+        Returns
+        -------
+        int
+            Number of subdivisions.
+
+        """
+        if speed < 1e-6:
+            raise ValueError('Speed set to 0.0 mm/s. Check speed parameter.')
+
+        dL = speed/self.c_max
+        num = int(np.ceil(L/dL))
+        if num <= 1:
+            print('I had to add use an higher instruction rate.\n')
+            return 3
+        return num
 
     def _compute_number_points(self):
         # TODO: write method that compute the optimal number of points given
@@ -754,6 +1049,7 @@ class Waveguide:
 if __name__ == '__main__':
 
     import matplotlib.pyplot as plt
+    from mpl_toolkits.mplot3d import Axes3D
     np.set_printoptions(formatter={'float': "\t{: 0.6f}".format})
 
     # Data
@@ -770,14 +1066,23 @@ if __name__ == '__main__':
         wg.start([xi, yi, zi])
         wg.linear(increment, speed=20)
         wg.sin_mzi((-1)**index*d_bend, radius=15, speed=20)
+        wg.spline_bridge((-1)**index*0.08, (-1)**index*0.015, speed=20)
+        wg.sin_mzi((-1)**(index+1)*d_bend, radius=15, speed=20)
         wg.linear(increment, speed=20)
         wg.end()
 
     print(wg.points)
 
     # Plot
-    fig, ax = plt.subplots()
+    fig = plt.figure()
+    fig.clf()
+    ax = Axes3D(fig, auto_add_to_figure=False)
+    fig.add_axes(ax)
+    ax.set_xlabel('X [mm]')
+    ax.set_ylabel('Y [mm]')
+    ax.set_zlabel('Z [mm]')
     for wg in mzi:
-        ax.plot(wg.x[:-1], wg.y[:-1], '-k', linewidth=2.5)
-        ax.plot(wg.x[-2:], wg.y[-2:], ':b', linewidth=1.0)
+        ax.plot(wg.x[:-1], wg.y[:-1], wg.z[:-1], '-k', linewidth=2.5)
+        ax.plot(wg.x[-2:], wg.y[-2:], wg.z[-2:], ':b', linewidth=1.0)
+    ax.set_box_aspect(aspect=(3, 1, 0.5))
     plt.show()
