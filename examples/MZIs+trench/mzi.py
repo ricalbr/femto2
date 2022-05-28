@@ -101,9 +101,8 @@ for c in circ['marker']:
     ax.plot(c.x[:-1], c.y[:-1], '-k', linewidth=1.25)
 
 for col in circ['trench']:
-    for t in col.trench_list:
-        patch = t.patch
-        ax.add_patch(patch)
+    for t in col:
+        ax.add_patch(t.patch)
 plt.tight_layout(pad=0)
 ax.set_aspect(10)
 plt.show()
