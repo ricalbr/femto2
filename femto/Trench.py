@@ -1,6 +1,5 @@
 from femto import Waveguide
 from descartes import PolygonPatch
-from itertools import chain
 import numpy as np
 from typing import List
 import warnings
@@ -11,13 +10,13 @@ with warnings.catch_warnings():
 
 class Trench:
     def __init__(self,
-                 trench_block: Polygon,
+                 block: Polygon,
                  delta_floor: float = 0.001,
                  bridge_width: float = 0.025,
                  beam_size: float = 0.004,
                  round_corner: float = 0.005):
 
-        self.trench_block = trench_block
+        self.block = block
         self.delta_floor = delta_floor
         self.bridge_width = bridge_width
         self.beam_size = beam_size
@@ -25,54 +24,34 @@ class Trench:
         self.adj_bridge = (self.bridge_width
                            + self.beam_size*2
                            - self.round_corner)/2
-        self._wall = None
-        self._floor = None
 
     @property
     def center(self):
-        return np.asarray([self.trench_block.centroid.x,
-                           self.trench_block.centroid.y])
-
-    @property
-    def border(self):
-        if self._wall is None:
-            self.get_paths()
-        return self._wall
-
-    @property
-    def floor(self):
-        if self._floor is None:
-            self.get_paths()
-        return self._floor
+        return np.asarray([self.block.centroid.x, self.block.centroid.y])
 
     @property
     def patch(self, fc='k', ec='k', alpha=0.5, zorder=1):
-        return PolygonPatch(self.trench_block,
+        return PolygonPatch(self.block,
                             fc=fc,
                             ec=ec,
                             alpha=alpha,
                             zorder=zorder)
 
-    def get_paths(self):
-        # Initialization
-        polygon_list = [self.trench_block]
-        insets = []
+    def trench_paths(self):
+        polygon_list = [self.block]
         while polygon_list:
             current_poly = polygon_list.pop(0)
             inset_polygon = self._buffer_polygon(current_poly)
             if inset_polygon and inset_polygon.type == 'MultiPolygon':
-                # add each polygon to the list as a single Polygon object
                 polygon_list.extend(list(inset_polygon))
                 for poly in list(inset_polygon):
-                    insets.append(list(poly.exterior.coords))
+                    yield np.array(poly.exterior.coords).T
             elif inset_polygon and inset_polygon.type == 'Polygon':
                 polygon_list.append(inset_polygon)
-                insets.append(list(inset_polygon.exterior.coords))
+                yield np.array(inset_polygon.exterior.coords).T
             elif inset_polygon:
-                raise ValueError('Unhandled geometry type: '
-                                 f'{inset_polygon.type}')
-        self._wall = np.asarray(list(self.trench_block.exterior.coords)).T
-        self._floor = np.asarray(list(chain.from_iterable(insets))).T
+                raise ValueError('Trench block should be either Polygon or',
+                                 f'Multipolygon. Given {inset_polygon.type}')
 
     # Private interface
     def _buffer_polygon(self, polygon, inset=True):
@@ -94,8 +73,8 @@ class TrenchColumn:
                  beam_size: float = 0.004,
                  round_corner: float = 0.005):
 
-        self.trench_list = []
         self.length = length
+        self.trench_list = []
         self._x_c = x_c
         self._y_min = y_min
         self._y_max = y_max
@@ -110,7 +89,9 @@ class TrenchColumn:
                            + self.beam_size*2
                            + self.round_corner*2)/2
 
-    # # add gettere and setters for x_c, y_min, y_max, length
+    def __iter__(self):
+        return iter(self.trench_list)
+
     @property
     def x_c(self):
         return self._x_c
@@ -150,9 +131,8 @@ class TrenchColumn:
                                 zorder=zorder)
 
     def get_trench(self, circuit: List):
-
-        assert all([isinstance(wg, Waveguide) for wg in circuit]), \
-            'Objects in circuit list are not of type Waveguide.'
+        if not all([isinstance(wg, Waveguide) for wg in circuit]):
+            raise TypeError('Elements circuit list must be of type Waveguide.')
 
         for wg in circuit:
             x, y = wg.x[:-2], wg.y[:-2]
@@ -205,16 +185,13 @@ if __name__ == '__main__':
         wg.sin_acc((-1)**i*d_bend, radius=15, speed=20, N=250)
         wg.end()
 
-    TC1 = TrenchColumn(x_c=x_mid,
-                       y_min=-0.1,
-                       y_max=19*pitch+0.1)
-    TC1.get_trench(coup)
+    trench_col = TrenchColumn(x_c=x_mid, y_min=-0.1, y_max=19*pitch+0.1)
+    trench_col.get_trench(coup)
 
     fig, ax = plt.subplots()
     for wg in coup:
         ax.plot(wg.x[:-1], wg.y[:-1], 'b')
-    for t in TC1.trench_list:
-        xt, yt = t.floor
-        ax.plot(xt, yt, 'k', lw=0.5)
+    for t in trench_col.trench_list:
+        ax.add_patch(t.patch)
     ax.set_aspect('equal')
     # plt.show()

@@ -700,7 +700,7 @@ def write_array(gc: PGMCompiler, points: np.ndarray, f_array: List = None):
                                                     y_array,
                                                     z_array,
                                                     f_array)]
-    gc._instructions = [f'LINEAR {line}\n' for line in instructions]
+    gc._instructions.extend([f'LINEAR {line}\n' for line in instructions])
 
 
 def export_trench_path(trench: Trench,
@@ -736,15 +736,16 @@ def export_trench_path(trench: Trench,
     if filename.endswith('.pgm'):
         filename = filename.split('.')[0]
 
-    t_gc = PGMCompiler(filename + '_wall', ind_rif=ind_rif, angle=angle)
-    write_array(t_gc, np.stack((trench.border), axis=-1), f_array=tspeed)
-    t_gc.close()
-    del t_gc
+    G = PGMCompiler(filename + '_wall.pgm', ind_rif=ind_rif, angle=angle)
+    write_array(G, np.array(trench.block.exterior.coords.xy).T, f_array=tspeed)
+    G.close()
+    del G
 
-    t_gc = PGMCompiler(filename + '_floor', ind_rif=ind_rif, angle=angle)
-    write_array(t_gc, np.stack((trench.floor), axis=-1), f_array=tspeed)
-    t_gc.close()
-    del t_gc
+    G = PGMCompiler(filename + '_floor.pgm', ind_rif=ind_rif, angle=angle)
+    for path in trench.trench_paths():
+        write_array(G, np.stack((path), axis=-1), f_array=tspeed)
+    G.close()
+    del G
 
 
 def make_trench(gc: PGMCompiler,
@@ -822,14 +823,14 @@ def make_trench(gc: PGMCompiler,
 
     col_dir = os.path.join(os.getcwd(), trench_directory)
     os.makedirs(col_dir, exist_ok=True)
-    for i, trench in enumerate(col.trench_list):
+    for i, trench in enumerate(col):
         filename = os.path.join(col_dir, f'trench{i+1:03}_')
         export_trench_path(trench, filename, gc.ind_rif, gc.angle, tspeed)
 
     gc.dvar(['ZCURR'])
 
     for nbox in range(nboxz):
-        for t_index, trench in enumerate(col.trench_list):
+        for t_index, trench in enumerate(col):
             # load filenames (wall/floor)
             wall_filename = f'trench{t_index+1:03}_wall.pgm'
             floor_filename = f'trench{t_index+1:03}_floor.pgm'
@@ -840,7 +841,7 @@ def make_trench(gc: PGMCompiler,
                                       trench_directory,
                                       floor_filename)
 
-            x0, y0 = trench.border[:, 0]
+            x0, y0 = trench.block.exterior.coords[0]
             z0 = (nbox*hbox - zoff)/gc.ind_rif
             gc.comment(f'+--- TRENCH #{t_index+1}, LEVEL {nbox+1} ---+')
             gc.load_program(wall_path)
