@@ -30,7 +30,7 @@ class Trench:
         return np.asarray([self.block.centroid.x, self.block.centroid.y])
 
     @property
-    def patch(self, fc='k', ec='k', alpha=0.5, zorder=1):
+    def patch(self, fc='k', ec='k', alpha=1, zorder=1):
         return PolygonPatch(self.block,
                             fc=fc,
                             ec=ec,
@@ -74,7 +74,7 @@ class TrenchColumn:
                  round_corner: float = 0.005):
 
         self.length = length
-        self.trench_list = []
+        self._trench_list = []
         self._x_c = x_c
         self._y_min = y_min
         self._y_max = y_max
@@ -90,7 +90,7 @@ class TrenchColumn:
                            + self.round_corner*2)/2
 
     def __iter__(self):
-        return iter(self.trench_list)
+        return iter(self._trench_list)
 
     @property
     def x_c(self):
@@ -150,7 +150,7 @@ class TrenchColumn:
                             self.bridge_width,
                             self.beam_size,
                             self.round_corner)
-            self.trench_list.append(trench)
+            self._trench_list.append(trench)
 
     # Private interface
     def _make_box(self):
@@ -191,7 +191,7 @@ if __name__ == '__main__':
     fig, ax = plt.subplots()
     for wg in coup:
         ax.plot(wg.x[:-1], wg.y[:-1], 'b')
-    for t in trench_col.trench_list:
+    for t in trench_col:
         ax.add_patch(t.patch)
     ax.set_aspect('equal')
     # plt.show()

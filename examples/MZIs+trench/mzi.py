@@ -100,8 +100,8 @@ for wg in circ['waveguide']:
 for c in circ['marker']:
     ax.plot(c.x[:-1], c.y[:-1], '-k', linewidth=1.25)
 
-for col in circ['trench']:
-    for t in col:
+for col_trench in circ['trench']:
+    for t in col_trench:
         ax.add_patch(t.patch)
 plt.tight_layout(pad=0)
 ax.set_aspect(10)
@@ -120,10 +120,10 @@ with PGMCompiler('Markers.pgm', ind_rif=ind_env, angle=angle) as gc:
         gc.write(mk.points)
 
 # Trench G-Code
-for col_index, col in enumerate(circ['trench']):
+for col_index, col_trench in enumerate(circ['trench']):
     # Generate G-Code for the column
     col_filename = os.path.join(os.getcwd(),
                                 's-trench',
                                 f'FARCALL{col_index:03}')
     with PGMCompiler(col_filename, ind_rif=ind_env, angle=angle) as gc:
-        gc.trench(col, col_index, base_folder=base_folder)
+        gc.trench(col_trench, col_index, base_folder=base_folder)
