@@ -8,7 +8,7 @@ t0 = time.perf_counter()
 
 # MxN circuit
 circ = {
-    'waveguide': [Waveguide() for _ in range(p.MM)],
+    'waveguide': [Waveguide(num_scan=p.n_scan) for _ in range(p.MM)],
     'marker': [Marker() for _ in range(p.NN)],
     'trench': [TrenchColumn() for _ in range(p.NN)]
     }
