@@ -61,7 +61,7 @@ circ = {
     }
 
 # Guida dritta
-wg = Waveguide()
+wg = Waveguide(num_scan=n_scan)
 wg.start([x0, y0, z0])
 wg.linear([glass_length+4, 0.0, 0.0], speed=speed)
 wg.end()
@@ -71,7 +71,7 @@ circ['waveguide'].append(wg)
 _, delta_x = wg.get_sbend_parameter(d1, R)
 l_x = (glass_length + 4 - delta_x*4)/2
 for i in range(6):
-    wg = Waveguide()
+    wg = Waveguide(num_scan=n_scan)
     wg.start([x0, ymzi+i*pitch, z0])
     wg.linear([l_x, 0, 0], speed=speed)
     wg.arc_mzi((-1)**(i)*d1, R, speed=speed)

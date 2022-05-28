@@ -6,7 +6,7 @@ np.set_printoptions(formatter={'float': "\t{: 0.6f}".format})
 
 
 # Simple script for fabricate a MZI interferometer
-mzi = [Waveguide() for _ in range(2)]
+mzi = [Waveguide(num_scan=p.n_scan) for _ in range(2)]
 increment = [p.swg_length, 0.0, 0.0]
 
 for i, wg in enumerate(mzi):
@@ -29,7 +29,7 @@ plt.show()
 
 # Compilation
 with PGMCompiler('MZImultiscan.pgm', ind_rif=p.ind_rif) as gc:
-    with gc.repeat(circ['waveguide'][0].num_scan):
+    with gc.repeat(mzi[0].num_scan):
         for i, wg in enumerate(mzi):
             gc.comment(f'Modo: {i+1}')
             gc.write(wg.points)
