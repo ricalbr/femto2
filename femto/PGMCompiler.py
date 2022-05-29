@@ -816,10 +816,10 @@ def make_trench(gc: PGMCompiler,
     None.
 
     """
-    if col_index:
-        trench_directory = os.path.join(dirname, f'trenchCol{col_index+1:03}')
-    else:
+    if col_index is None:
         trench_directory = os.path.join(dirname, 'trenchCol')
+    else:
+        trench_directory = os.path.join(dirname, f'trenchCol{col_index+1:03}')
 
     col_dir = os.path.join(os.getcwd(), trench_directory)
     os.makedirs(col_dir, exist_ok=True)

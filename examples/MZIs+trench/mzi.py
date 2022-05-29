@@ -124,6 +124,6 @@ for col_index, col_trench in enumerate(circ['trench']):
     # Generate G-Code for the column
     col_filename = os.path.join(os.getcwd(),
                                 's-trench',
-                                f'FARCALL{col_index:03}')
+                                f'FARCALL{col_index+1:03}')
     with PGMCompiler(col_filename, ind_rif=ind_env, angle=angle) as gc:
         gc.trench(col_trench, col_index, base_folder=base_folder)
