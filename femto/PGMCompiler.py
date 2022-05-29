@@ -73,9 +73,9 @@ class PGMCompiler:
         None.
 
         """
-        assert self.fabrication_line.upper() in ['CAPABLE', 'FIRE'], \
-            ('Specified fabrication line is neither CAPABLE nor FIRE. '
-             f'Given {self.fabrication_line.upper()}.')
+        if self.fabrication_line.upper() not in ['CAPABLE', 'FIRE']:
+            raise ValueError('Fabrication line should be CAPABLE or FIRE.'
+                             f'Given {self.fabrication_line.upper()}.')
 
         if self.fabrication_line.upper() == 'CAPABLE':
             with open(os.path.join(CWD, 'utils', 'header_capable.txt')) as fd:
@@ -142,9 +142,9 @@ class PGMCompiler:
         None.
 
         """
-        assert state.upper() in ['ON', 'OFF'], \
-            ('Specified shutter state is neither ON nor OFF. '
-             f'Given {state.upper()}.')
+        if state.upper() not in ['ON', 'OFF']:
+            raise ValueError('Shutter state should be ON or OFF. '
+                             f'Given {state.upper()}.')
 
         if state.upper() == 'ON' and self._shutter_on is False:
             self._shutter_on = True
@@ -200,10 +200,11 @@ class PGMCompiler:
         None.
 
         """
-        assert self._shutter_on is False, 'Try to move with shutter OPEN.'
-        assert np.size(home_pos) == 3, \
-            ('Given final position is not valid. ' +
-             f'3 values are required, {np.size(home_pos)} were given.')
+        if self._shutter_on is True:
+            raise ValueError('Try to move with shutter OPEN.')
+        if np.size(home_pos) != 3:
+            raise ValueError('Given final position is not valid. ' +
+                             f'3 values required, given {np.size(home_pos)}.')
 
         args = self._format_args(*home_pos)
         self._instructions.append(f'G92 {args}\n')
@@ -244,9 +245,9 @@ class PGMCompiler:
         None.
 
         """
-        assert np.size(position) == 3, \
-            ('Given final position is not valid. ' +
-             f'3 values are required, {np.size(position)} were given.')
+        if np.size(position) != 3:
+            raise ValueError('Given final position is not valid. ' +
+                             f'3 values required, given {np.size(position)}.')
 
         if self._shutter_on is True:
             self.shutter('OFF')
@@ -404,8 +405,8 @@ class PGMCompiler:
 
         """
         file = self._parse_filepath(filename)
-        assert file.stem in self._loaded_files, \
-            (f'{file} not loaded. Cannot load it.')
+        if file.stem not in self._loaded_files:
+            raise FileNotFoundError(f'{file} not loaded. Cannot load it.')
         self._instructions.append(f'FARCALL "{file}"\n')
         self._instructions.append('PROGRAM 0 STOP\n')
 
@@ -502,8 +503,11 @@ class PGMCompiler:
         None.
 
         """
-        if filename is None:
-            assert self.filename is not None, 'No filename given.'
+
+        # filename overrides self.filename. If not present, self.filename must
+        # not be None.
+        if filename is None and self.filename is None:
+            raise ValueError('No filename given.')
 
         if filename:
             pgm_filename = filename
@@ -650,10 +654,9 @@ class PGMCompiler:
             Complete path of the file (filepath + filename).
 
         """
-        if extension is not None:
-            assert filename.endswith(extension), \
-                ('Given filename has wrong extension.' +
-                 f'Given {filename}, required .{extension}.')
+        if extension is not None and not filename.endswith(extension):
+            raise ValueError('Given filename has wrong extension.' +
+                             f'Given {filename}, required .{extension}.')
 
         if filepath is not None:
             file = Path(filepath) / filename

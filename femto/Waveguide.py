@@ -128,12 +128,12 @@ class Waveguide:
         None.
 
         """
-        assert np.size(init_pos) == 3, \
-            ('Given initial position is not valid. 3 values are required. '
-             f'{np.size(init_pos)} were given.')
-        assert self._x.size == 0, \
-            ('Coordinate matrix is not empty. '
-             'Cannot start a new waveguide in this point.')
+        if np.size(init_pos) != 3:
+            raise ValueError('Given initial position is not valid.',
+                             f'3 values required. {np.size(init_pos)} given.')
+        if self._x.size != 0:
+            raise ValueError('Coordinate matrix is not empty. ',
+                             'Cannot start a new waveguide in this point.')
 
         x0, y0, z0 = init_pos
         self._x = np.append(self._x, x0)
