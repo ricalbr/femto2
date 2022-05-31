@@ -1050,8 +1050,7 @@ class Waveguide:
         pass
 
 
-if __name__ == '__main__':
-
+def _example():
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
     np.set_printoptions(formatter={'float': "\t{: 0.6f}".format})
@@ -1059,19 +1058,19 @@ if __name__ == '__main__':
     # Data
     pitch = 0.080
     int_dist = 0.007
-    d_bend = 0.5*(pitch-int_dist)
+    d_bend = 0.5 * (pitch - int_dist)
     increment = [4, 0, 0]
 
     # Calculations
     mzi = [Waveguide() for _ in range(2)]
     for index, wg in enumerate(mzi):
-        [xi, yi, zi] = [-2, -pitch/2 + index*pitch, 0.035]
+        [xi, yi, zi] = [-2, -pitch / 2 + index * pitch, 0.035]
 
         wg.start([xi, yi, zi])
         wg.linear(increment, speed=20)
-        wg.sin_mzi((-1)**index*d_bend, radius=15, speed=20)
-        wg.spline_bridge((-1)**index*0.08, (-1)**index*0.015, speed=20)
-        wg.sin_mzi((-1)**(index+1)*d_bend, radius=15, speed=20)
+        wg.sin_mzi((-1) ** index * d_bend, radius=15, speed=20)
+        wg.spline_bridge((-1) ** index * 0.08, (-1) ** index * 0.015, speed=20)
+        wg.sin_mzi((-1) ** (index + 1) * d_bend, radius=15, speed=20)
         wg.linear(increment, speed=20)
         wg.end()
 
@@ -1088,3 +1087,8 @@ if __name__ == '__main__':
         ax.plot(wg.x[-2:], wg.y[-2:], wg.z[-2:], ':b', linewidth=1.0)
     ax.set_box_aspect(aspect=(3, 1, 0.5))
     plt.show()
+
+
+if __name__ == '__main__':
+    _example()
+

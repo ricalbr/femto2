@@ -55,12 +55,12 @@ class Marker(Waveguide):
             raise ValueError('Given invalid position.')
 
         self.start(position)
-        self.linear([-lx/2, 0, 0], speed=speed_pos, shutter=0)
+        self.linear([-lx / 2, 0, 0], speed=speed_pos, shutter=0)
         self.linear([lx, 0, 0], speed=self.speed)
-        self.linear([-lx/2, 0, 0], speed=speed_pos, shutter=0)
-        self.linear([0, -ly/2, 0], speed=speed_pos, shutter=0)
+        self.linear([-lx / 2, 0, 0], speed=speed_pos, shutter=0)
+        self.linear([0, -ly / 2, 0], speed=speed_pos, shutter=0)
         self.linear([0, ly, 0], speed=self.speed)
-        self.linear([0, -ly/2, 0], speed=speed_pos, shutter=0)
+        self.linear([0, -ly / 2, 0], speed=speed_pos, shutter=0)
         self.end(speed_pos)
 
     def ruler(self,
@@ -71,8 +71,8 @@ class Marker(Waveguide):
               speed_pos: float = 5):
 
         if lx_short is None:
-            lx_short = 0.75*lx
-        tick_len = lx_short*np.ones_like(y_ticks)
+            lx_short = 0.75 * lx
+        tick_len = lx_short * np.ones_like(y_ticks)
         tick_len[0] = lx
 
         self.start([x_init, y_ticks[0], self.depth])
@@ -86,7 +86,6 @@ class Marker(Waveguide):
 
 
 if __name__ == '__main__':
-
     from femto import PGMCompiler
 
     c = Marker()

@@ -3,6 +3,7 @@ from descartes import PolygonPatch
 import numpy as np
 from typing import List
 import warnings
+
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=DeprecationWarning)
     from shapely.geometry import LineString, Polygon, MultiPolygon, box, polygon
@@ -22,8 +23,8 @@ class Trench:
         self.beam_size = beam_size
         self.round_corner = round_corner
         self.adj_bridge = (self.bridge_width
-                           + self.beam_size*2
-                           - self.round_corner)/2
+                           + self.beam_size * 2
+                           - self.round_corner) / 2
 
     @property
     def center(self):
@@ -86,8 +87,8 @@ class TrenchColumn:
         self.beam_size = beam_size
         self.round_corner = round_corner
         self.adj_bridge = (self.bridge_width
-                           + self.beam_size*2
-                           + self.round_corner*2)/2
+                           + self.beam_size * 2
+                           + self.round_corner * 2) / 2
 
     def __iter__(self):
         return iter(self._trench_list)
@@ -142,9 +143,9 @@ class TrenchColumn:
 
         for block in list(self._rect):
             block = (polygon.orient(block)
-                            .buffer(self.round_corner,
-                                    resolution=150,
-                                    cap_style=1))
+                     .buffer(self.round_corner,
+                             resolution=150,
+                             cap_style=1))
             trench = Trench(block,
                             self.delta_floor,
                             self.bridge_width,
@@ -155,37 +156,37 @@ class TrenchColumn:
     # Private interface
     def _make_box(self):
         if (self._x_c is not None and
-           self._y_min is not None and
-           self._y_max is not None):
-            return box(self._x_c - self.length/2, self._y_min,
-                       self._x_c + self.length/2, self._y_max)
+                self._y_min is not None and
+                self._y_max is not None):
+            return box(self._x_c - self.length / 2, self._y_min,
+                       self._x_c + self.length / 2, self._y_max)
         else:
             return None
 
 
-if __name__ == '__main__':
+def _example():
     import matplotlib.pyplot as plt
 
     # Data
     pitch = 0.080
     int_dist = 0.007
-    d_bend = 0.5*(pitch-int_dist)
+    d_bend = 0.5 * (pitch - int_dist)
     delta_floor = 0.001
     bridge = 0.026
     beam_size = 0.004
     round_corner = 0.005
-    adj_bridge = (bridge + beam_size)/2 - round_corner
+    adj_bridge = (bridge + beam_size) / 2 - round_corner
 
     # Calculations
     coup = [Waveguide(num_scan=6) for _ in range(20)]
     for i, wg in enumerate(coup):
-        wg.start([-2, i*pitch, 0.035])
-        wg.sin_acc((-1)**i*d_bend, radius=15, speed=20, N=250)
+        wg.start([-2, i * pitch, 0.035])
+        wg.sin_acc((-1) ** i * d_bend, radius=15, speed=20, N=250)
         x_mid = wg.x[-1]
-        wg.sin_acc((-1)**i*d_bend, radius=15, speed=20, N=250)
+        wg.sin_acc((-1) ** i * d_bend, radius=15, speed=20, N=250)
         wg.end()
 
-    trench_col = TrenchColumn(x_c=x_mid, y_min=-0.1, y_max=19*pitch+0.1)
+    trench_col = TrenchColumn(x_c=x_mid, y_min=-0.1, y_max=19 * pitch + 0.1)
     trench_col.get_trench(coup)
 
     fig, ax = plt.subplots()
@@ -194,4 +195,8 @@ if __name__ == '__main__':
     for t in trench_col:
         ax.add_patch(t.patch)
     ax.set_aspect('equal')
-    # plt.show()
+    plt.show()
+
+
+if __name__ == '__main__':
+    _example()
