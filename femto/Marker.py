@@ -90,7 +90,7 @@ if __name__ == '__main__':
     from femto import PGMCompiler
 
     c = Marker()
-    c.ruler(range(3), 5, 3.5)
+    c.ruler([0, 1, 2], 5, 3.5)
     print(c.points)
 
     with PGMCompiler('testPGMcompiler', ind_rif=1.5) as gc:
