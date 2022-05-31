@@ -12,6 +12,7 @@ __keywords__ = 'python g-code integrated-circuits quantum-optics'
 __all__ = [
     'Waveguide',
     'Marker',
+    'Parameters',
     'Trench',
     'TrenchColumn',
     'PGMCompiler',
