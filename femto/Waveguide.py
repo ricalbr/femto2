@@ -1,5 +1,9 @@
 import numpy as np
 from typing import List
+try:
+    from typing import Self
+except ImportError:
+    from typing_extensions import Self
 from scipy.interpolate import CubicSpline, InterpolatedUnivariateSpline
 from functools import partialmethod
 
@@ -20,7 +24,7 @@ class Waveguide:
         """
         COORDINATES MATRIX GETTER.
 
-        The getter returns the coordinates matrix as a numpy.ndarray matrix.
+        The getter returns the coordinates' matrix as a numpy.ndarray matrix.
         The dataframe is parsed through a unique functions that removes all the
         subsequent identical points in the set.
 
@@ -100,7 +104,7 @@ class Waveguide:
             return np.array([self._x[-1],
                              self._y[-1],
                              self._z[-1]])
-        return []
+        return np.array([])
 
     # Methods
     def start(self, init_pos: List[float], speed: float = 5):
@@ -168,7 +172,7 @@ class Waveguide:
                increment: List[float],
                mode: str = 'INC',
                speed: float = 0.0,
-               shutter: int = 1):
+               shutter: int = 1) -> Self:
         """
         LINEAR.
 
@@ -215,6 +219,7 @@ class Waveguide:
             self._z = np.append(self._z, self._z[-1] + z_inc)
         self._f = np.append(self._f, speed)
         self._s = np.append(self._s, shutter)
+        return self
 
     def circ(self,
              initial_angle: float,
@@ -222,7 +227,7 @@ class Waveguide:
              radius: float,
              speed: float = 0.0,
              shutter: int = 1,
-             N: int = 25):
+             N: int = 25) -> Self:
         """
         CIRC.
 
@@ -276,13 +281,14 @@ class Waveguide:
                              'array of appropriate size.')
 
         self._s = np.append(self._s, shutter*np.ones(new_x.shape))
+        return self
 
     def arc_bend(self,
-                 D: float,
+                 dy: float,
                  radius: float,
                  speed: float = 0.0,
                  shutter: int = 1,
-                 N: int = 25):
+                 N: int = 25) -> Self:
         """
         CIRCULAR BEND.
 
@@ -296,7 +302,7 @@ class Waveguide:
 
         Parameters
         ----------
-        D : float
+        dy : float
             Amplitude of the S-bend along the y direction [mm].
         radius : float
             Curvature radius of the S-bend [mm].
@@ -312,9 +318,9 @@ class Waveguide:
         None.
 
         """
-        (a, _) = self.get_sbend_parameter(D, radius)
+        (a, _) = self.get_sbend_parameter(dy, radius)
 
-        if D > 0:
+        if dy > 0:
             self.circ(np.pi*(3/2),
                       np.pi*(3/2)+a,
                       radius,
@@ -340,14 +346,15 @@ class Waveguide:
                       speed=speed,
                       shutter=shutter,
                       N=np.round(N/2))
+            return self
 
     def arc_acc(self,
-                D: float,
+                dy: float,
                 radius: float,
                 arm_length: float = 0.0,
                 speed: float = 0.0,
                 shutter: int = 1,
-                N: int = 50):
+                N: int = 50) -> Self:
         """
         CIRCULAR COUPLER.
 
@@ -361,7 +368,7 @@ class Waveguide:
 
         Parameters
         ----------
-        D : float
+        dy : float
             Amplitude of the coupler along the y-direction [mm].
         radius : float
             Curvature radius of the coupler's bends [mm].
@@ -379,24 +386,25 @@ class Waveguide:
         None.
 
         """
-        self.arc_bend(D, radius,
+        self.arc_bend(dy, radius,
                       speed=speed,
                       shutter=shutter,
                       N=N/2)
         self.linear([arm_length, 0, 0], speed=speed, shutter=shutter)
-        self.arc_bend(-D, radius,
+        self.arc_bend(-dy, radius,
                       speed=speed,
                       shutter=shutter,
                       N=N/2)
+        return self
 
     def arc_mzi(self,
-                D: float,
+                dy: float,
                 radius: float,
                 int_length: float = 0.0,
                 arm_length: float = 0.0,
                 speed: float = 0.0,
                 shutter: int = 1,
-                N: int = 100):
+                N: int = 100) -> Self:
         """
         CIRCULAR MACH-ZEHNDER INTERFEROMETER (MZI).
 
@@ -410,7 +418,7 @@ class Waveguide:
 
         Parameters
         ----------
-        D : float
+        dy : float
             Amplitude of the MZI along the y-direction [mm].
         radius : float
             Curvature radius of the MZI's bends [mm].
@@ -430,25 +438,26 @@ class Waveguide:
         None.
 
         """
-        self.arc_acc(D, radius,
+        self.arc_acc(dy, radius,
                      arm_length=arm_length,
                      speed=speed,
                      shutter=shutter,
                      N=N/2)
         self.linear([int_length, 0, 0], speed=speed, shutter=shutter)
-        self.arc_acc(D, radius,
+        self.arc_acc(dy, radius,
                      arm_length=arm_length,
                      speed=speed,
                      shutter=shutter,
                      N=N/2)
+        return self
 
     def sin_bridge(self,
-                   Dy: float,
+                   dy: float,
                    radius: float,
-                   Dz: float = None,
+                   dz: float = None,
                    speed: float = 0.0,
                    shutter: int = 1,
-                   N: int = 25):
+                   N: int = 25) -> Self:
         """
         SINUSOIDAL BRIDGE.
 
@@ -473,12 +482,12 @@ class Waveguide:
 
         Parameters
         ----------
-        Dy : float
+        dy : float
             Amplitude of the Sin-bend along the y-direction [mm].
         radius : float
             Effective curvature radius of the Sin-bend [mm].
-        Dz : float, optional
-            Height of the Sin-bridge alogn the z-direction [mm].
+        dz : float, optional
+            Height of the Sin-bridge along the z-direction [mm].
             The default is None.
         speed : float, optional
             Transition speed [mm/s]. The default is 0.0.
@@ -497,14 +506,12 @@ class Waveguide:
         None.
 
         """
-        (_, dx) = self.get_sbend_parameter(Dy, radius)
+        (_, dx) = self.get_sbend_parameter(dy, radius)
 
         new_x = np.arange(self._x[-1], self._x[-1] + dx, dx/(N - 1))
-        new_y = self._y[-1] + \
-            0.5*Dy*(1 - np.cos(np.pi/dx*(new_x - self._x[-1])))
-        if Dz:
-            new_z = self._z[-1] + \
-                0.5*Dz*(1 - np.cos(2*np.pi/dx*(new_x - self._x[-1])))
+        new_y = self._y[-1] + 0.5 * dy * (1 - np.cos(np.pi / dx * (new_x - self._x[-1])))
+        if dz:
+            new_z = self._z[-1] + 0.5 * dz * (1 - np.cos(2 * np.pi / dx * (new_x - self._x[-1])))
         else:
             new_z = self._z[-1]*np.ones(new_x.shape)
 
@@ -523,16 +530,17 @@ class Waveguide:
                              'array of appropriate size.')
 
         self._s = np.append(self._s, shutter*np.ones(new_x.shape))
+        return self
 
-    sin_bend = partialmethod(sin_bridge, Dz=None)
+    sin_bend = partialmethod(sin_bridge, dz=None)
 
     def sin_acc(self,
-                Dy: float,
+                dy: float,
                 radius: float,
                 int_length: float = 0.0,
                 speed: float = 0.0,
                 shutter: int = 1,
-                N: int = 50):
+                N: int = 50) -> Self:
         """
         SINUSOIDAL COUPLER.
 
@@ -546,7 +554,7 @@ class Waveguide:
 
         Parameters
         ----------
-        Dy : float
+        dy : float
             Amplitude of the coupler along the y-direction [mm].
         radius : float
             Effective curvature radius of the coupler's bends [mm].
@@ -564,18 +572,19 @@ class Waveguide:
         None.
 
         """
-        self.sin_bend(Dy, radius, speed=speed, shutter=shutter, N=N/2)
+        self.sin_bend(dy, radius, speed=speed, shutter=shutter, N=N / 2)
         self.linear([int_length, 0, 0], speed=speed, shutter=shutter)
-        self.sin_bend(-Dy, radius, speed=speed, shutter=shutter, N=N/2)
+        self.sin_bend(-dy, radius, speed=speed, shutter=shutter, N=N / 2)
+        return self
 
     def sin_mzi(self,
-                Dy: float,
+                dy: float,
                 radius: float,
                 int_length: float = 0.0,
                 arm_length: float = 0.0,
                 speed: float = 0.0,
                 shutter: int = 1,
-                N: float = 100):
+                N: float = 100) -> Self:
         """
         SINUSOIDAL MACH-ZEHNDER INTERFEROMETER (MZI).
 
@@ -589,7 +598,7 @@ class Waveguide:
 
         Parameters
         ----------
-        Dy : float
+        dy : float
             Amplitude of the MZI along the y-direction [mm].
         radius : float
             Effective curvature radius of the coupler's bends [mm].
@@ -609,28 +618,29 @@ class Waveguide:
         None.
 
         """
-        self.sin_acc(Dy, radius,
+        self.sin_acc(dy, radius,
                      int_length=int_length,
                      speed=speed,
                      shutter=shutter,
                      N=N/2)
         self.linear([arm_length, 0, 0], speed=speed, shutter=shutter)
-        self.sin_acc(Dy, radius,
+        self.sin_acc(dy, radius,
                      int_length=int_length,
                      speed=speed,
                      shutter=shutter,
                      N=N/2)
+        return self
 
     def spline(self,
-               Dy: float,
-               Dz: float,
-               init_pos: list = None,
+               dy: float,
+               dz: float,
+               init_pos: np.ndarray = None,
                radius: float = 20,
-               dispx: float = 0,
+               disp_x: float = 0,
                speed: float = 0,
                shutter: int = 1,
                bc_y: tuple = ((1, 0.0), (1, 0.0)),
-               bc_z: tuple = ((1, 0.0), (1, 0.0))):
+               bc_z: tuple = ((1, 0.0), (1, 0.0))) -> Self:
         """
         SPLINE
 
@@ -661,26 +671,27 @@ class Waveguide:
                              'array of appropriate size.')
 
         self._s = np.append(self._s, shutter*np.ones(x_spl.shape))
+        return self
 
     def spline_bridge(self,
-                      Dy: float,
-                      Dz: float,
+                      dy: float,
+                      dz: float,
                       init_pos: list = None,
                       radius: float = 20,
-                      dispx: float = 0,
+                      disp_x: float = 0,
                       speed: float = 0,
-                      shutter: int = 1):
+                      shutter: int = 1) -> Self:
         """
         SPLINE BRIDGE.
 
         Compute a spline bridge as a sequence of two spline segments. Dy is
         the total displacement along the y-direction of the bridge and Dz is
         the height of the bridge along z.
-        First, the function computes the Dx-displacement of the planar spline
+        First, the function computes the dx-displacement of the planar spline
         curve with a Dy displacement. This datum is used to compute the value
         of the first derivative along the y-coordinate for the costruction of
         the spline bridge such that
-            df(x, y)/dx = Dy/Dx
+            df(x, y)/dx = Dy/dx
         in the peak point of the bridge.
 
         The cubic spline bridge obtained in this way has a first derivatives
@@ -693,9 +704,9 @@ class Waveguide:
 
         Parameters
         ----------
-        Dy : float
+        dy : float
             Displacement along y-direction [mm].
-        Dz : float
+        dz : float
             Displacement along z-direction [mm].
         init_pos : list, optional
             Initial position, if None the initial position is the last point
@@ -703,7 +714,7 @@ class Waveguide:
         radius : float, optional
             Radius for computing the displacement along x-direction [mm].
             The default is 20.
-        dispx : float, optional
+        disp_x : float, optional
             Length of the curve. The default is 0.
         speed : float, optional
             Transition speed [mm/s]. The default is 0.0.
@@ -722,20 +733,17 @@ class Waveguide:
         """
         if init_pos is None:
             init_pos = self.lastpt
-            xl, yl, zl = init_pos
-        else:
-            xl, yl, zl = init_pos
 
-        Dx, *_, L = self.get_spline_parameter(init_pos, Dy, 0, radius, dispx)
+        dx, *_, l_curve = self.get_spline_parameter(init_pos, dy, 0, radius, disp_x)
 
-        x1, y1, z1 = self._get_spline_points(Dy/2, Dz, init_pos, radius,
+        x1, y1, z1 = self._get_spline_points(dy / 2, dz, init_pos, radius,
                                              speed=speed,
-                                             bc_y=((1, 0.0), (1, Dy/Dx)),
+                                             bc_y=((1, 0.0), (1, dy / dx)),
                                              bc_z=((1, 0.0), (1, 0.0)))
         init_pos2 = np.array([x1[-1], y1[-1], z1[-1]])
-        x2, y2, z2 = self._get_spline_points(Dy/2, -Dz, init_pos2, radius,
+        x2, y2, z2 = self._get_spline_points(dy / 2, -dz, init_pos2, radius,
                                              speed=speed,
-                                             bc_y=((1, Dy/Dx), (1, 0.0)),
+                                             bc_y=((1, dy / dx), (1, 0.0)),
                                              bc_z=((1, 0.0), (1, 0.0)))
         x = np.append(x1[:-1], x2)
         y = np.append(y1[:-1], y2)
@@ -760,6 +768,7 @@ class Waveguide:
                              'array of appropriate size.')
 
         self._s = np.append(self._s, shutter*np.ones(x.shape))
+        return self
 
     def curvature(self) -> np.ndarray:
         """
@@ -821,7 +830,7 @@ class Waveguide:
         return np.mean(cmd_rate)
 
     @staticmethod
-    def get_sbend_parameter(D: float, radius: float) -> tuple:
+    def get_sbend_parameter(dy: float, radius: float) -> tuple:
         """
         GET S-BEND PARAMETERS.
 
@@ -830,7 +839,7 @@ class Waveguide:
 
         Parameters
         ----------
-        D : float
+        dy : float
             Displacement along y-direction [mm].
         radius : float
             Curvature radius of the S-bend [mm]..
@@ -841,17 +850,17 @@ class Waveguide:
             (final angle, x-displacement), ([radians], [mm]).
 
         """
-        dy = np.abs(D/2)
+        dy = np.abs(dy / 2)
         a = np.arccos(1 - (dy/radius))
         dx = 2*radius*np.sin(a)
-        return (a, dx)
+        return a, dx
 
     @staticmethod
-    def get_spline_parameter(init_pos: list,
-                             Dy: float,
-                             Dz: float,
+    def get_spline_parameter(init_pos: np.ndarray,
+                             dy: float,
+                             dz: float,
                              radius: float = 20,
-                             dispx: float = 0) -> tuple:
+                             disp_x: float = 0) -> tuple:
         """
         GET SPLINE PARAMETERS.
 
@@ -862,13 +871,13 @@ class Waveguide:
         ----------
         init_pos : list
             Initial position of the curve.
-        Dy : float
+        dy : float
             Displacement along y-direction [mm].
-        Dz : float
+        dz : float
             Displacement along z-direction [mm].
         radius : float, optional
             Curvature radius of the S-bend [mm]. The default is 20.
-        dispx : float, optional
+        disp_x : float, optional
             Displacement along x-direction [mm]. The default is 0.
 
         Returns
@@ -878,19 +887,19 @@ class Waveguide:
 
         """
         xl, yl, zl = init_pos
-        final_pos = np.array([yl + Dy, zl + Dz])
-        if dispx != 0:
-            final_pos = np.insert(final_pos, 0, xl+dispx)
+        final_pos = np.array([yl + dy, zl + dz])
+        if disp_x != 0:
+            final_pos = np.insert(final_pos, 0, xl + disp_x)
             pos_diff = np.subtract(final_pos, init_pos)
-            L = np.sqrt(np.sum(pos_diff**2))
+            l_curve = np.sqrt(np.sum(pos_diff**2))
         else:
             final_pos = np.insert(final_pos, 0, xl)
             pos_diff = np.subtract(final_pos, init_pos)
             ang = np.arccos(1 - np.sqrt(pos_diff[1]**2 + pos_diff[2]**2) /
                             (2*radius))
             pos_diff[0] = 2*radius*np.sin(ang)
-            L = 2*ang*radius
-        return (pos_diff[0], pos_diff[1], pos_diff[2], L)
+            l_curve = 2*ang*radius
+        return pos_diff[0], pos_diff[1], pos_diff[2], l_curve
 
     # Private interface
     def _unique_points(self):
@@ -900,7 +909,7 @@ class Waveguide:
         At least one coordinate (X,Y,Z,F,S) have to change between two
         consecutive lines.
 
-        Duplicates can be selected by crating a boolean index mask as follow:
+        Duplicates can be selected by crating a boolean index mask as follows:
             - make a row-wise diff operation (data.diff)
             - compute absolute value of all elements in order to work only
                 with positive numbers
@@ -911,13 +920,11 @@ class Waveguide:
         index mask can be retrieved.
         The first element is set to True by default since it is lost by the
         diff operation.
-        Also indexes are reset to the new dataframe (with less element, in
-        principle).
 
         Returns
         -------
-        pandas DataFrame
-            Coordinate dataframe (x, y, z, f, s).
+        numpy.ndarray
+            Coordinate matrix (x, y, z, f, s).
 
         """
 
@@ -929,21 +936,20 @@ class Waveguide:
         return np.delete(data, np.where(mask is False), 0).astype(np.float32)
 
     def _get_spline_points(self,
-                           Dy: float,
-                           Dz: float,
-                           init_pos: list = None,
+                           dy: float,
+                           dz: float,
+                           init_pos: np.ndarray = None,
                            radius: float = 20,
-                           dispx: float = 0,
+                           disp_x: float = 0,
                            speed: float = 0,
-                           shutter: int = 1,
                            bc_y: tuple = ((1, 0.0), (1, 0.0)),
                            bc_z: tuple = ((1, 0.0), (1, 0.0))) -> tuple:
         """
         GET SPLINE POINTS.
 
         Function for the generation of a 3D spline curve. Starting from
-        init_point the function compute a 3D spline with a displacemente Dy
-        in y-direction and Dz in z-direction.
+        init_point the function compute a 3D spline with a displacement dy
+        in y-direction and dz in z-direction.
         The user can specify the length of the curve or (alternatively) provide
         a curvature radius that is used to compute the displacement along
         x-direction as the displacement of the equivalent circular S-bend.
@@ -953,16 +959,16 @@ class Waveguide:
         we have:
             bc = ((initial point), (final point))
         where the (initial point) and (final point) tuples are specified as
-        follow:
+        follows:
             (derivative order, value of derivative)
         the derivative order can be either 0, 1, 2.
 
 
         Parameters
         ----------
-        Dy : float
+        dy : float
             y-displacement [mm].
-        Dz : float
+        dz : float
             z-displacement [mm].
         init_pos : list, optional
             Initial position, if None the initial position is the last point
@@ -970,12 +976,10 @@ class Waveguide:
         radius : float, optional
             Radius for computing the displacement along x-direction [mm].
             The default is 20.
-        dispx : float, optional
+        disp_x : float, optional
             Length of the curve. The default is 0.
         speed : float, optional
             Transition speed [mm/s]. The default is 0.0.
-        shutter : int, optional
-            State of the shutter [0: 'OFF', 1: 'ON']. The default is 1.
         bc_y : tuple, optional
             Boundary conditions for the y-coordinates.
             The default is ((1, 0.0), (1, 0.0)).
@@ -993,9 +997,9 @@ class Waveguide:
             z-coordinates of the spline curve.
 
         """
-        xd, yd, zd, L = self.get_spline_parameter(init_pos, Dy, Dz,
-                                                  radius, dispx)
-        num = self._get_num(L, speed)
+        xd, yd, zd, l_curve = self.get_spline_parameter(init_pos, dy, dz,
+                                                        radius, disp_x)
+        num = self._get_num(l_curve, speed)
 
         xcoord = np.linspace(0, xd, num)
         cs_y = CubicSpline((0.0, xd), (0.0, yd), bc_type=bc_y)
@@ -1004,17 +1008,17 @@ class Waveguide:
                 cs_y(xcoord)+init_pos[1],
                 cs_z(xcoord)+init_pos[2])
 
-    def _get_num(self, L: float = 0, speed: float = 0) -> int:
+    def _get_num(self, l_curve: float = 0, speed: float = 0) -> int:
         """
         GET NUM POINTS
 
-        Utility function that, given the lenght of a segment and the
+        Utility function that, given the length of a segment and the
         fabrication speed, computes the number of points required to work at
         the maximum command rate (attribute of Waveguide object).
 
         Parameters
         ----------
-        L : float, optional
+        l_curve : float, optional
             Length of the waveguide segment. Units in [mm]. The default is 0.
         speed : float, optional
             Fabrication speed. Units in [mm/s]. The default is 0.
@@ -1033,8 +1037,8 @@ class Waveguide:
         if speed < 1e-6:
             raise ValueError('Speed set to 0.0 mm/s. Check speed parameter.')
 
-        dL = speed/self.c_max
-        num = int(np.ceil(L/dL))
+        dl = speed/self.c_max
+        num = int(np.ceil(l_curve / dl))
         if num <= 1:
             print('I had to add use an higher instruction rate.\n')
             return 3
@@ -1070,8 +1074,6 @@ if __name__ == '__main__':
         wg.sin_mzi((-1)**(index+1)*d_bend, radius=15, speed=20)
         wg.linear(increment, speed=20)
         wg.end()
-
-    print(wg.points)
 
     # Plot
     fig = plt.figure()
