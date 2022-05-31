@@ -1,5 +1,7 @@
-import numpy as np
 from typing import List
+
+import numpy as np
+
 try:
     from typing import Self
 except ImportError:
@@ -262,9 +264,9 @@ class Waveguide:
 
         """
         t = np.linspace(initial_angle, final_angle, N)
-        new_x = self._x[-1] - radius*np.cos(initial_angle) + radius*np.cos(t)
-        new_y = self._y[-1] - radius*np.sin(initial_angle) + radius*np.sin(t)
-        new_z = self._z[-1]*np.ones(new_x.shape)
+        new_x = self._x[-1] - radius * np.cos(initial_angle) + radius * np.cos(t)
+        new_y = self._y[-1] - radius * np.sin(initial_angle) + radius * np.sin(t)
+        new_z = self._z[-1] * np.ones(new_x.shape)
 
         # update coordinates
         self._x = np.append(self._x, new_x)
@@ -273,14 +275,14 @@ class Waveguide:
 
         # update speed array
         if np.size(speed) == 1:
-            self._f = np.append(self._f, speed*np.ones(new_x.shape))
+            self._f = np.append(self._f, speed * np.ones(new_x.shape))
         elif np.size(speed) == np.size(new_x):
             self._f = np.append(self._f, speed)
         else:
             raise ValueError('Speed array is neither a single value nor ',
                              'array of appropriate size.')
 
-        self._s = np.append(self._s, shutter*np.ones(new_x.shape))
+        self._s = np.append(self._s, shutter * np.ones(new_x.shape))
         return self
 
     def arc_bend(self,
@@ -321,31 +323,31 @@ class Waveguide:
         (a, _) = self.get_sbend_parameter(dy, radius)
 
         if dy > 0:
-            self.circ(np.pi*(3/2),
-                      np.pi*(3/2)+a,
+            self.circ(np.pi * (3 / 2),
+                      np.pi * (3 / 2) + a,
                       radius,
                       speed=speed,
                       shutter=shutter,
-                      N=np.round(N/2))
-            self.circ(np.pi*(1/2)+a,
-                      np.pi*(1/2),
+                      N=np.round(N / 2))
+            self.circ(np.pi * (1 / 2) + a,
+                      np.pi * (1 / 2),
                       radius,
                       speed=speed,
                       shutter=shutter,
-                      N=np.round(N/2))
+                      N=np.round(N / 2))
         else:
-            self.circ(np.pi*(1/2),
-                      np.pi*(1/2)-a,
+            self.circ(np.pi * (1 / 2),
+                      np.pi * (1 / 2) - a,
                       radius,
                       speed=speed,
                       shutter=shutter,
-                      N=np.round(N/2))
-            self.circ(np.pi*(3/2)-a,
-                      np.pi*(3/2),
+                      N=np.round(N / 2))
+            self.circ(np.pi * (3 / 2) - a,
+                      np.pi * (3 / 2),
                       radius,
                       speed=speed,
                       shutter=shutter,
-                      N=np.round(N/2))
+                      N=np.round(N / 2))
             return self
 
     def arc_acc(self,
@@ -389,12 +391,12 @@ class Waveguide:
         self.arc_bend(dy, radius,
                       speed=speed,
                       shutter=shutter,
-                      N=N/2)
+                      N=N / 2)
         self.linear([arm_length, 0, 0], speed=speed, shutter=shutter)
         self.arc_bend(-dy, radius,
                       speed=speed,
                       shutter=shutter,
-                      N=N/2)
+                      N=N / 2)
         return self
 
     def arc_mzi(self,
@@ -442,13 +444,13 @@ class Waveguide:
                      arm_length=arm_length,
                      speed=speed,
                      shutter=shutter,
-                     N=N/2)
+                     N=N / 2)
         self.linear([int_length, 0, 0], speed=speed, shutter=shutter)
         self.arc_acc(dy, radius,
                      arm_length=arm_length,
                      speed=speed,
                      shutter=shutter,
-                     N=N/2)
+                     N=N / 2)
         return self
 
     def sin_bridge(self,
@@ -508,12 +510,12 @@ class Waveguide:
         """
         (_, dx) = self.get_sbend_parameter(dy, radius)
 
-        new_x = np.arange(self._x[-1], self._x[-1] + dx, dx/(N - 1))
+        new_x = np.arange(self._x[-1], self._x[-1] + dx, dx / (N - 1))
         new_y = self._y[-1] + 0.5 * dy * (1 - np.cos(np.pi / dx * (new_x - self._x[-1])))
         if dz:
             new_z = self._z[-1] + 0.5 * dz * (1 - np.cos(2 * np.pi / dx * (new_x - self._x[-1])))
         else:
-            new_z = self._z[-1]*np.ones(new_x.shape)
+            new_z = self._z[-1] * np.ones(new_x.shape)
 
         # update coordinates
         self._x = np.append(self._x, new_x)
@@ -522,14 +524,14 @@ class Waveguide:
 
         # update speed array
         if np.size(speed) == 1:
-            self._f = np.append(self._f, speed*np.ones(new_x.shape))
+            self._f = np.append(self._f, speed * np.ones(new_x.shape))
         elif np.size(speed) == np.size(new_x):
             self._f = np.append(self._f, speed)
         else:
             raise ValueError('Speed array is neither a single value nor ',
                              'array of appropriate size.')
 
-        self._s = np.append(self._s, shutter*np.ones(new_x.shape))
+        self._s = np.append(self._s, shutter * np.ones(new_x.shape))
         return self
 
     sin_bend = partialmethod(sin_bridge, dz=None)
@@ -622,13 +624,13 @@ class Waveguide:
                      int_length=int_length,
                      speed=speed,
                      shutter=shutter,
-                     N=N/2)
+                     N=N / 2)
         self.linear([arm_length, 0, 0], speed=speed, shutter=shutter)
         self.sin_acc(dy, radius,
                      int_length=int_length,
                      speed=speed,
                      shutter=shutter,
-                     N=N/2)
+                     N=N / 2)
         return self
 
     def spline(self,
@@ -663,14 +665,14 @@ class Waveguide:
 
         # update speed array
         if np.size(speed) == 1:
-            self._f = np.append(self._f, speed*np.ones(x_spl.shape))
+            self._f = np.append(self._f, speed * np.ones(x_spl.shape))
         elif np.size(speed) == np.size(x_spl):
             self._f = np.append(self._f, speed)
         else:
             raise ValueError('Speed array is neither a single value nor ',
                              'array of appropriate size.')
 
-        self._s = np.append(self._s, shutter*np.ones(x_spl.shape))
+        self._s = np.append(self._s, shutter * np.ones(x_spl.shape))
         return self
 
     def spline_bridge(self,
@@ -760,14 +762,14 @@ class Waveguide:
 
         # update speed array
         if np.size(speed) == 1:
-            self._f = np.append(self._f, speed*np.ones(x.shape))
+            self._f = np.append(self._f, speed * np.ones(x.shape))
         elif np.size(speed) == np.size(x):
             self._f = np.append(self._f, speed)
         else:
             raise ValueError('Speed array is neither a single value nor ',
                              'array of appropriate size.')
 
-        self._s = np.append(self._s, shutter*np.ones(x.shape))
+        self._s = np.append(self._s, shutter * np.ones(x.shape))
         return self
 
     def curvature(self) -> np.ndarray:
@@ -794,11 +796,11 @@ class Waveguide:
         d2y_dt2 = np.gradient(dy_dt)
         d2z_dt2 = np.gradient(dz_dt)
 
-        num = (dx_dt**2 + dy_dt**2 + dz_dt**2)**1.5
-        den = np.sqrt((d2z_dt2*dy_dt - d2y_dt2*dz_dt)**2 +
-                      (d2x_dt2*dz_dt - d2z_dt2*dx_dt)**2 +
-                      (d2y_dt2*dx_dt - d2x_dt2*dy_dt)**2)
-        default_zero = np.ones(np.size(num))*np.inf
+        num = (dx_dt ** 2 + dy_dt ** 2 + dz_dt ** 2) ** 1.5
+        den = np.sqrt((d2z_dt2 * dy_dt - d2y_dt2 * dz_dt) ** 2 +
+                      (d2x_dt2 * dz_dt - d2z_dt2 * dx_dt) ** 2 +
+                      (d2y_dt2 * dx_dt - d2x_dt2 * dy_dt) ** 2)
+        default_zero = np.ones(np.size(num)) * np.inf
         # only divide nonzeros else Inf
         curvature = np.divide(num, den, out=default_zero, where=(den != 0))
         return curvature
@@ -822,7 +824,7 @@ class Waveguide:
         dx_dt = np.gradient(x)
         dy_dt = np.gradient(y)
         dz_dt = np.gradient(z)
-        dt = np.sqrt(dx_dt**2 + dy_dt**2 + dz_dt**2)
+        dt = np.sqrt(dx_dt ** 2 + dy_dt ** 2 + dz_dt ** 2)
 
         default_zero = np.zeros(np.size(dt))
         # only divide nonzeros else Inf
@@ -851,8 +853,8 @@ class Waveguide:
 
         """
         dy = np.abs(dy / 2)
-        a = np.arccos(1 - (dy/radius))
-        dx = 2*radius*np.sin(a)
+        a = np.arccos(1 - (dy / radius))
+        dx = 2 * radius * np.sin(a)
         return a, dx
 
     @staticmethod
@@ -891,14 +893,14 @@ class Waveguide:
         if disp_x != 0:
             final_pos = np.insert(final_pos, 0, xl + disp_x)
             pos_diff = np.subtract(final_pos, init_pos)
-            l_curve = np.sqrt(np.sum(pos_diff**2))
+            l_curve = np.sqrt(np.sum(pos_diff ** 2))
         else:
             final_pos = np.insert(final_pos, 0, xl)
             pos_diff = np.subtract(final_pos, init_pos)
-            ang = np.arccos(1 - np.sqrt(pos_diff[1]**2 + pos_diff[2]**2) /
-                            (2*radius))
-            pos_diff[0] = 2*radius*np.sin(ang)
-            l_curve = 2*ang*radius
+            ang = np.arccos(1 - np.sqrt(pos_diff[1] ** 2 + pos_diff[2] ** 2) /
+                            (2 * radius))
+            pos_diff[0] = 2 * radius * np.sin(ang)
+            l_curve = 2 * ang * radius
         return pos_diff[0], pos_diff[1], pos_diff[2], l_curve
 
     # Private interface
@@ -1004,9 +1006,9 @@ class Waveguide:
         xcoord = np.linspace(0, xd, num)
         cs_y = CubicSpline((0.0, xd), (0.0, yd), bc_type=bc_y)
         cs_z = CubicSpline((0.0, xd), (0.0, zd), bc_type=bc_z)
-        return (xcoord+init_pos[0],
-                cs_y(xcoord)+init_pos[1],
-                cs_z(xcoord)+init_pos[2])
+        return (xcoord + init_pos[0],
+                cs_y(xcoord) + init_pos[1],
+                cs_z(xcoord) + init_pos[2])
 
     def _get_num(self, l_curve: float = 0, speed: float = 0) -> int:
         """
@@ -1037,7 +1039,7 @@ class Waveguide:
         if speed < 1e-6:
             raise ValueError('Speed set to 0.0 mm/s. Check speed parameter.')
 
-        dl = speed/self.c_max
+        dl = speed / self.c_max
         num = int(np.ceil(l_curve / dl))
         if num <= 1:
             print('I had to add use an higher instruction rate.\n')
@@ -1091,4 +1093,3 @@ def _example():
 
 if __name__ == '__main__':
     _example()
-

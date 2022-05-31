@@ -1,8 +1,10 @@
-from femto import Waveguide
-from descartes import PolygonPatch
-import numpy as np
-from typing import List
 import warnings
+from typing import List
+
+import numpy as np
+from descartes import PolygonPatch
+
+from femto import Waveguide
 
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=DeprecationWarning)

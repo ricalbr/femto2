@@ -1,9 +1,11 @@
-from femto import Waveguide
-import numpy as np
 # import pandas as pd
 # import matplotlib.pyplot as plt
 import warnings
 from typing import List
+
+import numpy as np
+
+from femto import Waveguide
 
 
 class Marker(Waveguide):
