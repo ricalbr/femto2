@@ -10,9 +10,10 @@ __keywords__ = 'python g-code integrated-circuits quantum-optics'
 # @see: https://stackoverflow.com/a/41895257
 # @see: https://stackoverflow.com/a/35710527
 __all__ = [
+    'Parameters',
+    'LaserPath',
     'Waveguide',
     'Marker',
-    'Parameters',
     'Trench',
     'TrenchColumn',
     'PGMCompiler',
