@@ -28,10 +28,7 @@ int_distance = 0.007
 int_length = 0.0
 length_arm = 0.0
 
-ymzi = 0.08
-
 d1 = 0.5 * (pitch - int_distance)
-d2 = pitch - int_distance
 
 # Markers
 lx = 1
