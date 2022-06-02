@@ -1,6 +1,12 @@
 import os
+import pickle
+from itertools import product
 from math import ceil
 from typing import Tuple
+
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy.interpolate import interp2d
 
 
 class GcodeParameters:
@@ -8,7 +14,7 @@ class GcodeParameters:
                  filename: str = None,
                  samplesize: Tuple[float, float] = (None, None),
                  lab: str = 'CAPABLE',
-                 fwarp_flag: bool = False,
+                 warp_flag: bool = False,
                  n_glass: float = 1.50,
                  n_environment: float = 1.33,
                  angle: float = 0.0,
@@ -17,10 +23,12 @@ class GcodeParameters:
                  output_digits: int = 6):
 
         self.filename = filename
+        self.CWD = os.path.dirname(os.path.abspath(__file__))
         self.samplesize = samplesize
         self.lab = lab
-        self.fwarp_flag = fwarp_flag
-        self.tshutter = self.set_shutter()
+        self.warp_flag = warp_flag
+        self.fwarp = self.antiwarp_management(self.warp_flag)
+        self.tshutter = self.set_tshutter()
         self.long_pause = long_pause
         self.short_pause = short_pause
         self.output_digits = output_digits
@@ -32,7 +40,7 @@ class GcodeParameters:
         self.neff = self.nglass / self.nenv
         self.xsample, self.ysample = self.samplesize
 
-    def set_shutter(self) -> float:
+    def set_tshutter(self) -> float:
         if self.lab.upper() not in ['CAPABLE', 'DIAMOND', 'FIRE']:
             raise ValueError('Lab can be only CAPABLE, DIAMOND or FIRE',
                              f'Given {self.lab}.')
@@ -40,6 +48,79 @@ class GcodeParameters:
             return 0.000
         else:
             return 0.005
+
+    def antiwarp_management(self, opt: bool):
+        """
+        It fetches an antiwarp function in the current folder.
+        If it doesn't exist, it lets you create a new one.
+
+        Parameters
+        ----------
+        opt : bool
+            if True apply antiwarp.
+
+        Returns
+        -------
+        fwarp : TYPE
+            DESCRIPTION.
+
+        """
+
+        if opt:
+            if any(x is None for x in self.samplesize):
+                raise ValueError('Wrong sample size dimensions.',
+                                 f'Given ({self.samplesize[0]}, {self.samplesize[1]}).')
+            function_pickle = os.path.join(self.CWD, "fwarp.pkl")
+            if os.path.exists(function_pickle):
+                fwarp = pickle.load(open(function_pickle, "rb"))
+            else:
+                fwarp = self.antiwarp_generation(self.samplesize, 16)
+                pickle.dump(fwarp, open(function_pickle, "wb"))
+        else:
+            def fwarp(x, y): return 0
+        return fwarp
+
+    @staticmethod
+    def antiwarp_generation(samplesize, num_tot, *, margin=2):
+        """
+        It helps you to generate the antiwarp function.
+        The minimum number of data points required is (k+1)**2,
+        with k=1 for linear, k=3 for cubic and k=5 for quintic interpolation.
+        """
+        if num_tot < 4**2:
+            raise ValueError('I need more values to compute the interpolation.')
+
+        num_side = int(np.ceil(np.sqrt(num_tot)))
+        xpos = np.linspace(margin, samplesize[0]-margin, num_side)
+        ypos = np.linspace(margin, samplesize[1]-margin, num_side)
+        xlist = []
+        ylist = []
+        zlist = []
+
+        print('Focus height in um (!!!) at:')
+        for pos in list(product(xpos, ypos)):
+            xlist.append(pos[0])
+            ylist.append(pos[1])
+            zlist.append(float(input('X={:.1f} Y={:.1f}: \t'.format(pos[0],
+                                                                    pos[1])))/1000)
+            if zlist[-1] == '':
+                raise ValueError('You have missed the last value.')
+
+        # surface interpolation
+        func_antiwarp = interp2d(xlist, ylist, zlist, kind='cubic')
+
+        # plot the surface
+        xprobe = np.linspace(-3, samplesize[0]+3)
+        yprobe = np.linspace(-3, samplesize[1]+3)
+        zprobe = func_antiwarp(xprobe, yprobe)
+        ax = plt.axes(projection='3d')
+        ax.contour3D(xprobe, yprobe, zprobe, 200, cmap='viridis')
+        ax.set_xlabel('X [mm]')
+        ax.set_ylabel('Y [mm]')
+        ax.set_zlabel('Z [mm]')
+        plt.show()
+
+        return func_antiwarp
 
 
 class WaveguideParameters:
