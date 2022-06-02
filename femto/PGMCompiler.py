@@ -2,6 +2,7 @@ import os
 from collections import deque
 from collections.abc import Iterable
 from contextlib import contextmanager
+from copy import deepcopy
 from itertools import zip_longest
 from math import radians
 from pathlib import Path
@@ -12,8 +13,6 @@ import numpy as np
 from femto import Trench, TrenchColumn
 from femto.Parameters import GcodeParameters, WaveguideParameters
 
-CWD = os.path.dirname(os.path.abspath(__file__))
-
 
 class PGMCompiler:
     def __init__(self, param: GcodeParameters):
@@ -23,7 +22,9 @@ class PGMCompiler:
         else:
             self.filename = param.filename
         self.lab = param.lab
-        self.fwarp_flag = param.fwarp_flag
+        self.cwd = param.CWD
+        self.warp_flag = param.warp_flag
+        self.fwarp = param.fwarp
         self.long_pause = param.long_pause
         self.short_pause = param.short_pause
 
@@ -78,10 +79,10 @@ class PGMCompiler:
                              f'Given {self.lab.upper()}.')
 
         if self.lab.upper() == 'CAPABLE':
-            with open(os.path.join(CWD, 'utils', 'header_capable.txt')) as fd:
+            with open(os.path.join(self.cwd, 'utils', 'header_capable.txt')) as fd:
                 self._instructions.extend(fd.readlines())
         else:
-            with open(os.path.join(CWD, 'utils', 'header_fire.txt')) as fd:
+            with open(os.path.join(self.cwd, 'utils', 'header_fire.txt')) as fd:
                 self._instructions.extend(fd.readlines())
 
     def dvar(self, variables: List[str]):
@@ -439,7 +440,11 @@ class PGMCompiler:
         """
         x, y, z, f_c, s_c = points.T
         sub_points = np.stack((x, y, z), axis=-1).astype(np.float32)
-        x_c, y_c, z_c = np.matmul(sub_points, self._t_matrix()).T
+        if self.warp_flag:
+            sub_points = np.matmul(sub_points, self._t_matrix())
+            x_c, y_c, z_c = self.compensate(sub_points).T
+        else:
+            x_c, y_c, z_c = np.matmul(sub_points, self._t_matrix()).T
         args = [self._format_args(x, y, z, f)
                 for (x, y, z, f) in zip(x_c, y_c, z_c, f_c)]
         for (arg, s) in zip_longest(args, s_c):
@@ -532,6 +537,22 @@ class PGMCompiler:
                pause: float = 0.5):
         make_trench(self, col, col_index, base_folder, dirname, u,
                     nboxz, hbox, zoff, deltaz, tspeed, speed_pos, pause)
+
+    def compensate(self, pts):
+        """
+        pts : [X,Y,Z] matrix or just a single point
+        It returns the points compensated along Z
+        for the refractive index, the offset and the glass warp.
+        """
+        pts_comp = deepcopy(np.array(pts))
+
+        if pts_comp.size > 3:
+            zwarp = [float(self.fwarp(x, y)) for x, y in zip(pts_comp[:, 0], pts_comp[:, 1])]
+            zwarp = np.array(zwarp)
+            pts_comp[:, 2] = (pts_comp[:, 2] + zwarp / self.ind_rif)
+        else:
+            pts_comp[2] = (pts_comp[2] + self.fwarp(pts_comp[0], pts_comp[1]) / self.ind_rif)
+        return pts_comp
 
     # Private interface
     def _t_matrix(self, dim: int = 3) -> np.ndarray:
@@ -747,7 +768,7 @@ def export_trench_path(trench: Trench,
     TEMP_GC.filename = filename + '_floor.pgm'
     G = PGMCompiler(TEMP_GC)
     for path in trench.trench_paths():
-        write_array(G, np.stack((path), axis=-1), f_array=[tspeed])
+        write_array(G, np.stack(path, axis=-1), f_array=[tspeed])
     G.close()
     del G
 
@@ -891,7 +912,8 @@ def _example():
         filename='testPGMcompiler.pgm',
         lab='CAPABLE',
         samplesize=(25, 25),
-        angle=0.0
+        angle=0.0,
+        warp_flag=True,
     )
 
     # Calculations

@@ -116,28 +116,6 @@ class LaserPath:
         linelength = np.linalg.norm(np.diff(points))
         self.twriting = linelength * (1 / self.param.speed + 1 / self.param.speed) * self.param.scan
 
-    def compensate(self, pts):
-        """
-        pts : [X,Y,Z] matrix or just a single point
-        It returns the points compensated along Z
-        for the refractive index, the offset and the glass warp.
-        """
-        pts = np.array(pts)
-        pts_comp = deepcopy(pts)
-
-        if pts_comp.size > 3:
-            zwarp = [float(self.param.fwarp(x, y)) for x, y
-                     in zip(pts_comp[:, 0], pts_comp[:, 1])]
-            zwarp = np.array(zwarp)
-            pts_comp[:, 2] = (pts_comp[:, 2] / self.param.neff
-                              + self.param.zoff
-                              + zwarp)
-        else:
-            pts_comp[2] = (pts_comp[2] / self.param.neff
-                           + self.param.zoff
-                           + self.param.fwarp(pts_comp[0], pts_comp[1]))
-        return pts_comp
-
     # Private interface
     def _unique_points(self):
         """
