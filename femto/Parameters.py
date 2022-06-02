@@ -1,26 +1,21 @@
 import os
-from typing import List
 from math import ceil
+from typing import Tuple
 
 
 class GcodeParameters:
     def __init__(self,
                  lab: str,
-                 samplesize: List[float],
-                 shutter: str,
-                 fwarp,
+                 samplesize: Tuple[float, float],
+                 fwarp_flag: bool,
                  n_glass: float,
                  n_environment: float,
                  angle: float):
         self.lab = lab
         self.samplesize = samplesize
-        self.fwarp = fwarp
-        self.shutter = shutter
-        self.tshutter = None
-        self.set_shutter()
+        self.fwarp_flag = fwarp_flag
+        self.tshutter = self.set_shutter()
 
-        self.max_cmd_rate = 1200
-        self.accmax = 500
         self.nglass = n_glass
         self.nenv = n_environment
         self.angle = angle
@@ -28,39 +23,30 @@ class GcodeParameters:
         self.neff = self.nglass / self.nenv
         self.xsample, self.ysample = self.samplesize
 
-    def set_shutter(self):
-        if self.shutter.upper() not in ['MECHANIC', 'ELECTRO']:
-            raise ValueError('Shutter can be only MECHANIC or ELECTRO',
-                             f'Given {self.shutter}.')
-        if self.shutter.upper() == 'MECHANIC':
-            print('Pay attention to set the MECHANIC shutter (I) on AUTO')
-            self.tshutter = 0.005
-        else:
-            if self.lab.upper() in ['DIAMOND', 'FIRE']:
-                raise ValueError('You cannot use the ELECTRO-optic shutter in DIAMOND\n')
+    def set_shutter(self) -> float:
+        if self.lab.upper() not in ['CAPABLE', 'DIAMOND', 'FIRE']:
+            raise ValueError('Lab can be only CAPABLE, DIAMOND or FIRE',
+                             f'Given {self.lab}.')
+        if self.lab.upper() == 'CAPABLE':
             print('Pay attention to set the ELECTRO-optic shutter (III) on AUTO')
-            self.tshutter = 0.000
+            return 0.000
+        else:
+            print('Pay attention to set the MECHANIC shutter (I) on AUTO')
+            return 0.005
 
 
-class WaveguideParameters(GcodeParameters):
+class WaveguideParameters:
 
-    def __init__(self, *,
-                 lab: str,
-                 samplesize: List[float],
-                 shutter: str,
-                 fwarp,
-                 n_glass: float,
-                 n_environment: float,
-                 angle: float,
-                 speed: float,
+    def __init__(self,
                  scan: int,
-                 radius: float,
-                 speedpos: float,
-                 dwelltime: float,
-                 dsafe: float,
-                 margin: float = 1.0):
-        super().__init__(lab, samplesize, shutter, fwarp, n_glass, n_environment, angle)
-
+                 speed: float,
+                 radius: float = 15,
+                 speedpos: float = 40,
+                 dwelltime: float = 0.5,
+                 dsafe: float = 0.015,
+                 margin: float = 1.0,
+                 cmd_rate_max: float = 1200,
+                 acc_max: float = 500):
         if not isinstance(scan, int):
             raise ValueError('Number of scan must be integer.')
 
@@ -71,51 +57,57 @@ class WaveguideParameters(GcodeParameters):
         self.speedpos = speedpos
         self.dwelltime = dwelltime
 
+        self.cmd_rate_max = cmd_rate_max
+        self.acc_max = acc_max
+
         self.dsafe = dsafe
         self.margin = margin
 
-        # Computed parameters:
+        # # Computed parameters:
         # length needed to acquire the writing speed [mm]
-        self.lvelo = 3 * (0.5 * self.speed ** 2 / self.accmax)
+        self.lvelo = 3 * (0.5 * self.speed ** 2 / self.acc_max)
 
         # minimum separation between two points [mm]
-        self.dl = self.speed / self.max_cmd_rate
+        self.dl = self.speed / self.cmd_rate_max
 
         # distance between points for the warp compensation [mm]
         self.lwarp = 10 * self.dl
 
-        # equivalent length of the shutter opening/closing delay
-        self.lshutter = self.speed * self.tshutter
 
-
-class TrenchParameters(GcodeParameters):
+class TrenchParameters:
 
     def __init__(self, *,
-                 lab: str,
-                 samplesize: List[float],
-                 shutter: str,
-                 fwarp,
-                 n_glass: float,
-                 n_environment: float,
-                 angle: float,
-                 lenght: float,
-                 speed: float,
-                 speedpos: float,
-                 nboxz: int,
-                 deltaz: float,
-                 z_off: float,
-                 h_box: float,
-                 base_folder: str):
-        super().__init__(lab, samplesize, shutter, fwarp, n_glass, n_environment, angle)
-
+                 x_center: float = None,
+                 y_min: float = None,
+                 y_max: float = None,
+                 bridge: float = 0.026,
+                 lenght: float = 1,
+                 nboxz: int = 4,
+                 z_off: float = 0.020,
+                 h_box: float = 0.075,
+                 base_folder: str = r'C:\Users\Capable\Desktop',
+                 deltaz: float = 0.0015,
+                 delta_floor: float = 0.001,
+                 beam_waist: float = 0.004,
+                 round_corner: float = 0.005,
+                 speed: float = 4,
+                 speedpos: float = 5):
+        self.x_center = x_center
+        self.y_min = y_min
+        self.y_max = y_max
+        self.bridge = bridge
         self.length = lenght
-        self.speed = speed
-        self.speedpos = speedpos
         self.nboxz = nboxz
-        self.deltaz = deltaz
         self.z_off = z_off
         self.h_box = h_box
+        self.deltaz = deltaz
+        self.delta_floor = delta_floor
+        self.beam_waist = beam_waist
+        self.round_corner = round_corner
+        self.speed = speed
+        self.speedpos = speedpos
 
+        self.adj_bridge = self.bridge / 2 + self.beam_waist + self.round_corner
         self.n_repeat = int(ceil((self.h_box + self.z_off) / self.deltaz))
 
         # FARCALL directories
