@@ -5,16 +5,25 @@ from typing import Tuple
 
 class GcodeParameters:
     def __init__(self,
-                 lab: str,
-                 samplesize: Tuple[float, float],
-                 fwarp_flag: bool,
-                 n_glass: float,
-                 n_environment: float,
-                 angle: float):
-        self.lab = lab
+                 filename: str = None,
+                 samplesize: Tuple[float, float] = (None, None),
+                 lab: str = 'CAPABLE',
+                 fwarp_flag: bool = False,
+                 n_glass: float = 1.50,
+                 n_environment: float = 1.33,
+                 angle: float = 0.0,
+                 long_pause: float = 0.5,
+                 short_pause: float = 0.25,
+                 output_digits: int = 6):
+
+        self.filename = filename
         self.samplesize = samplesize
+        self.lab = lab
         self.fwarp_flag = fwarp_flag
         self.tshutter = self.set_shutter()
+        self.long_pause = long_pause
+        self.short_pause = short_pause
+        self.output_digits = output_digits
 
         self.nglass = n_glass
         self.nenv = n_environment
@@ -28,10 +37,8 @@ class GcodeParameters:
             raise ValueError('Lab can be only CAPABLE, DIAMOND or FIRE',
                              f'Given {self.lab}.')
         if self.lab.upper() == 'CAPABLE':
-            print('Pay attention to set the ELECTRO-optic shutter (III) on AUTO')
             return 0.000
         else:
-            print('Pay attention to set the MECHANIC shutter (I) on AUTO')
             return 0.005
 
 
@@ -40,6 +47,7 @@ class WaveguideParameters:
     def __init__(self,
                  scan: int,
                  speed: float,
+                 depth: float = 0.035,
                  radius: float = 15,
                  speedpos: float = 40,
                  dwelltime: float = 0.5,
@@ -47,12 +55,14 @@ class WaveguideParameters:
                  margin: float = 1.0,
                  cmd_rate_max: float = 1200,
                  acc_max: float = 500):
+
         if not isinstance(scan, int):
             raise ValueError('Number of scan must be integer.')
 
         # input parameters:
-        self.speed = speed
         self.scan = scan
+        self.speed = speed
+        self.depth = depth
         self.radius = radius
         self.speedpos = speedpos
         self.dwelltime = dwelltime
