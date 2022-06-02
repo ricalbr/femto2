@@ -4,7 +4,8 @@ from typing import List
 import numpy as np
 from descartes import PolygonPatch
 
-from femto import Waveguide
+from femto.Parameters import TrenchParameters, WaveguideParameters
+from femto.Waveguide import Waveguide
 
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -14,19 +15,10 @@ with warnings.catch_warnings():
 class Trench:
     def __init__(self,
                  block: Polygon,
-                 delta_floor: float = 0.001,
-                 bridge_width: float = 0.025,
-                 beam_size: float = 0.004,
-                 round_corner: float = 0.005):
+                 delta_floor: float = 0.001):
 
         self.block = block
         self.delta_floor = delta_floor
-        self.bridge_width = bridge_width
-        self.beam_size = beam_size
-        self.round_corner = round_corner
-        self.adj_bridge = (self.bridge_width
-                           + self.beam_size * 2
-                           - self.round_corner) / 2
 
     @property
     def center(self):
@@ -57,40 +49,24 @@ class Trench:
                                  f'Multipolygon. Given {inset_polygon.type}')
 
     # Private interface
-    def _buffer_polygon(self, polygon, inset=True):
+    def _buffer_polygon(self, shape: Polygon, inset=True):
         if inset:
-            new_polygon = polygon.buffer(-self.delta_floor)
+            new_polygon = shape.buffer(-self.delta_floor)
         else:
-            new_polygon = polygon.buffer(self.delta_floor)
+            new_polygon = shape.buffer(self.delta_floor)
         return new_polygon if new_polygon.is_valid else None
 
 
 class TrenchColumn:
-    def __init__(self,
-                 x_c: float = None,
-                 y_min: float = None,
-                 y_max: float = None,
-                 length: float = 1.0,
-                 delta_floor: float = 0.001,
-                 bridge_width: float = 0.025,
-                 beam_size: float = 0.004,
-                 round_corner: float = 0.005):
+    def __init__(self, param: TrenchParameters):
 
-        self.length = length
+        self.param = param
         self._trench_list = []
-        self._x_c = x_c
-        self._y_min = y_min
-        self._y_max = y_max
+        self._x_c = self.param.x_center
+        self._y_min = self.param.y_min
+        self._y_max = self.param.y_max
 
         self._rect = self._make_box()
-
-        self.delta_floor = delta_floor
-        self.bridge_width = bridge_width
-        self.beam_size = beam_size
-        self.round_corner = round_corner
-        self.adj_bridge = (self.bridge_width
-                           + self.beam_size * 2
-                           + self.round_corner * 2) / 2
 
     def __iter__(self):
         return iter(self._trench_list)
@@ -125,11 +101,10 @@ class TrenchColumn:
         if y_max is not None:
             self._rect = self._make_box()
 
-    def patch(self, fc='k', ec='k', alpha=0.5, zorder=1):
+    def patch(self, fc='k', ec=None, alpha=1, zorder=1):
         if isinstance(self._rect, MultiPolygon):
             return PolygonPatch(self._rect,
-                                fc=fc,
-                                ec=None,
+                                fc=fc, ec=ec,
                                 alpha=alpha,
                                 zorder=zorder)
 
@@ -139,20 +114,15 @@ class TrenchColumn:
 
         for wg in circuit:
             x, y = wg.x[:-2], wg.y[:-2]
-            dilated = LineString(list(zip(x, y))).buffer(self.adj_bridge,
-                                                         cap_style=1)
+            dilated = (LineString(list(zip(x, y)))
+                       .buffer(self.param.adj_bridge, cap_style=1))
             self._rect = self._rect.difference(dilated)
 
         for block in list(self._rect):
             block = (polygon.orient(block)
-                     .buffer(self.round_corner,
-                             resolution=150,
-                             cap_style=1))
-            trench = Trench(block,
-                            self.delta_floor,
-                            self.bridge_width,
-                            self.beam_size,
-                            self.round_corner)
+                     .buffer(self.param.round_corner,
+                             resolution=150, cap_style=1))
+            trench = Trench(block, self.param.delta_floor)
             self._trench_list.append(trench)
 
     # Private interface
@@ -160,8 +130,8 @@ class TrenchColumn:
         if (self._x_c is not None and
                 self._y_min is not None and
                 self._y_max is not None):
-            return box(self._x_c - self.length / 2, self._y_min,
-                       self._x_c + self.length / 2, self._y_max)
+            return box(self._x_c - self.param.length / 2, self._y_min,
+                       self._x_c + self.param.length / 2, self._y_max)
         else:
             return None
 
@@ -173,22 +143,33 @@ def _example():
     pitch = 0.080
     int_dist = 0.007
     d_bend = 0.5 * (pitch - int_dist)
-    delta_floor = 0.001
-    bridge = 0.026
-    beam_size = 0.004
-    round_corner = 0.005
-    adj_bridge = (bridge + beam_size) / 2 - round_corner
+    x_mid = None
+
+    PARAMETERS_TC = TrenchParameters(
+        lenght=1.0,
+        nboxz=4,
+        deltaz=0.0015,
+        h_box=0.075,
+        base_folder=r'C:\Users\Capable\Desktop\RiccardoA'
+    )
+
+    PARAMETERS_WG = WaveguideParameters(
+        scan=6,
+        speed=20,
+        radius=15
+    )
 
     # Calculations
-    coup = [Waveguide(num_scan=6) for _ in range(20)]
+    coup = [Waveguide(PARAMETERS_WG) for _ in range(20)]
     for i, wg in enumerate(coup):
-        wg.start([-2, i * pitch, 0.035])
-        wg.sin_acc((-1) ** i * d_bend, radius=15, speed=20, N=250)
+        wg.start([-2, i * pitch, 0.035]).sin_acc((-1) ** i * d_bend)
         x_mid = wg.x[-1]
-        wg.sin_acc((-1) ** i * d_bend, radius=15, speed=20, N=250)
-        wg.end()
+        wg.sin_acc((-1) ** i * d_bend).end()
 
-    trench_col = TrenchColumn(x_c=x_mid, y_min=-0.1, y_max=19 * pitch + 0.1)
+    PARAMETERS_TC.x_center = x_mid
+    PARAMETERS_TC.y_min = -0.1
+    PARAMETERS_TC.y_max = 19 * pitch + 0.1
+    trench_col = TrenchColumn(PARAMETERS_TC)
     trench_col.get_trench(coup)
 
     fig, ax = plt.subplots()
