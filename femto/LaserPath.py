@@ -102,12 +102,6 @@ class LaserPath:
                              self._z[-1]])
         return np.array([])
 
-    def fabrication_time(self):
-        """ It computes the time needed to travel along the line."""
-        points = np.stack((self._x, self._y, self._z), axis=-1).astype(np.float32)
-        linelength = np.linalg.norm(np.diff(points))
-        self.twriting = linelength * (1 / self.param.speed + 1 / self.param.speed) * self.param.scan
-
     def add_path(self, x: np.ndarray, y: np.ndarray, z: np.ndarray, f: np.ndarray, s: np.ndarray):
         """ It takes a LaserPath object and it adds it to itself """
         self._x = np.append(self._x, x)
@@ -115,6 +109,12 @@ class LaserPath:
         self._z = np.append(self._z, z)
         self._f = np.append(self._f, f)
         self._s = np.append(self._s, s)
+
+    def fabrication_time(self):
+        """ It computes the time needed to travel along the line."""
+        points = np.stack((self._x, self._y, self._z), axis=-1).astype(np.float32)
+        linelength = np.linalg.norm(np.diff(points))
+        self.twriting = linelength * (1 / self.param.speed + 1 / self.param.speed) * self.param.scan
 
     def compensate(self, pts):
         """
@@ -137,6 +137,40 @@ class LaserPath:
                            + self.param.zoff
                            + self.param.fwarp(pts_comp[0], pts_comp[1]))
         return pts_comp
+
+    # Private interface
+    def _unique_points(self):
+        """
+        REMOVE ALL CONSECUTIVE DUPLICATES.
+
+        At least one coordinate (X,Y,Z,F,S) have to change between two
+        consecutive lines.
+
+        Duplicates can be selected by crating a boolean index mask as follows:
+            - make a row-wise diff operation (data.diff)
+            - compute absolute value of all elements in order to work only
+                with positive numbers
+            - make a column-wise sum (.sum(axis=1))
+        In this way consecutive duplicates correspond to a 0.0 value in the
+        latter array.
+        Converting this array to boolean (all non-zero values are True) the
+        index mask can be retrieved.
+        The first element is set to True by default since it is lost by the
+        diff operation.
+
+        Returns
+        -------
+        numpy.ndarray
+            Coordinate matrix (x, y, z, f, s).
+
+        """
+
+        data = np.stack((self._x, self._y, self._z,
+                         self._f, self._s), axis=-1).astype(np.float32)
+        mask = np.diff(data, axis=0)
+        mask = np.sum(np.abs(mask), axis=1, dtype=bool)
+        mask = np.insert(mask, 0, True)
+        return np.delete(data, np.where(mask is False), 0).astype(np.float32)
 
     # def linear(self, pos_fin, shutter='ON', *, mode='INC'):
     # linelength = np.sqrt(np.sum(np.square(pos_fin-pos_ini)))
