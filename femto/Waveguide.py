@@ -747,39 +747,6 @@ class Waveguide(LaserPath):
         return pos_diff[0], pos_diff[1], pos_diff[2], l_curve
 
     # Private interface
-    def _unique_points(self):
-        """
-        REMOVE ALL CONSECUTIVE DUPLICATES.
-
-        At least one coordinate (X,Y,Z,F,S) have to change between two
-        consecutive lines.
-
-        Duplicates can be selected by crating a boolean index mask as follows:
-            - make a row-wise diff operation (data.diff)
-            - compute absolute value of all elements in order to work only
-                with positive numbers
-            - make a column-wise sum (.sum(axis=1))
-        In this way consecutive duplicates correspond to a 0.0 value in the
-        latter array.
-        Converting this array to boolean (all non-zero values are True) the
-        index mask can be retrieved.
-        The first element is set to True by default since it is lost by the
-        diff operation.
-
-        Returns
-        -------
-        numpy.ndarray
-            Coordinate matrix (x, y, z, f, s).
-
-        """
-
-        data = np.stack((self._x, self._y, self._z,
-                         self._f, self._s), axis=-1).astype(np.float32)
-        mask = np.diff(data, axis=0)
-        mask = np.sum(np.abs(mask), axis=1, dtype=bool)
-        mask = np.insert(mask, 0, True)
-        return np.delete(data, np.where(mask is False), 0).astype(np.float32)
-
     def _get_spline_points(self,
                            dy: float,
                            dz: float,
