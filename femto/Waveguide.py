@@ -213,6 +213,8 @@ class Waveguide(LaserPath):
         None.
 
         """
+        if radius is None:
+            radius = self.param.radius
         (a, _) = self.get_sbend_parameter(dy, radius)
 
         if dy > 0:
@@ -323,12 +325,14 @@ class Waveguide(LaserPath):
         None.
 
         """
-        self.arc_acc(dy, radius,
+        self.arc_acc(dy,
+                     radius=radius,
                      arm_length=arm_length,
                      speed=speed,
                      shutter=shutter)
         self.linear([int_length, 0, 0], speed=speed, shutter=shutter)
-        self.arc_acc(dy, radius,
+        self.arc_acc(dy,
+                     radius=radius,
                      arm_length=arm_length,
                      speed=speed,
                      shutter=shutter)
