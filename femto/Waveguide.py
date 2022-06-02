@@ -8,108 +8,16 @@ except ImportError:
     from typing_extensions import Self
 from scipy.interpolate import CubicSpline, InterpolatedUnivariateSpline
 from functools import partialmethod
+from femto.Parameters import WaveguideParameters
+from femto.LaserPath import LaserPath
 
 
-class Waveguide:
-    def __init__(self, num_scan: int = None, c_max: int = 1200):
-
-        self.num_scan = num_scan
-        self.c_max = c_max
-        self._x = np.asarray([])
-        self._y = np.asarray([])
-        self._z = np.asarray([])
-        self._f = np.asarray([])
-        self._s = np.asarray([])
-
-    @property
-    def points(self) -> np.ndarray:
-        """
-        COORDINATES MATRIX GETTER.
-
-        The getter returns the coordinates' matrix as a numpy.ndarray matrix.
-        The dataframe is parsed through a unique functions that removes all the
-        subsequent identical points in the set.
-
-        Returns
-        -------
-        numpy.ndarray
-            [X, Y, Z, F, S] unique point matrix.
-
-        """
-        return self._unique_points()
-
-    @property
-    def x(self) -> np.ndarray:
-        """
-        X-COORDINATE.
-
-        The getter returns the x-coordinate vector as a numpy array. The
-        subsequent identical points in the vector are removed.
-
-        Returns
-        -------
-        numpy.ndarray
-            Array of the x-coordinates.
-
-        """
-        coords = self._unique_points().T
-        return coords[0]
-
-    @property
-    def y(self) -> np.ndarray:
-        """
-        Y-COORDINATE.
-
-        The getter returns the y-coordinate vector as a numpy array. The
-        subsequent identical points in the vector are removed.
-
-        Returns
-        -------
-        numpy.ndarray
-            Array of the y-coordinates.
-
-        """
-        coords = self._unique_points().T
-        return coords[1]
-
-    @property
-    def z(self) -> np.ndarray:
-        """
-        Z-COORDINATE.
-
-        The getter returns the z-coordinate vector as a numpy array. The
-        subsequent identical points in the vector are removed.
-
-        Returns
-        -------
-        numpy.ndarray
-            Array of the z-coordinates.
-
-        """
-        coords = self._unique_points().T
-        return coords[2]
-
-    @property
-    def lastpt(self) -> np.ndarray:
-        """
-        LAST POINT.
-
-        The function return the last point of the waveguide.
-
-        Returns
-        -------
-        numpy.ndarray
-            Final point [x, y, z].
-
-        """
-        if self._x.size > 0:
-            return np.array([self._x[-1],
-                             self._y[-1],
-                             self._z[-1]])
-        return np.array([])
+class Waveguide(LaserPath):
+    def __init__(self, param: WaveguideParameters):
+        super().__init__(param)
 
     # Methods
-    def start(self, init_pos: List[float], speed: float = 5):
+    def start(self, init_pos: List[float], speedpos: float = 5) -> Self:
         """
         START.
 
@@ -126,7 +34,7 @@ class Waveguide:
             init_pos[0] -> X
             init_pos[1] -> Y
             init_pos[2] -> Z
-        speed : float, optional
+        speedpos : float, optional
             Translation speed. The default is 5.
 
         Returns
@@ -142,13 +50,12 @@ class Waveguide:
                              'Cannot start a new waveguide in this point.')
 
         x0, y0, z0 = init_pos
-        self._x = np.append(self._x, x0)
-        self._y = np.append(self._y, y0)
-        self._z = np.append(self._z, z0)
-        self._f = np.append(self._f, speed)
-        self._s = np.append(self._s, 0)
+        f0 = np.asarray(speedpos, dtype=np.float32)
+        s0 = np.asarray(0.0, dtype=np.float32)
+        self.add_path(x0, y0, z0, f0, s0)
+        return self
 
-    def end(self, speed: float = 75):
+    def end(self, speedpos: float = 75):
         """
         END.
 
@@ -156,7 +63,7 @@ class Waveguide:
 
         Parameters
         ----------
-        speed : float, optional
+        speedpos : float, optional
             Traslation speed. The default is 75.
 
         Returns
@@ -164,17 +71,18 @@ class Waveguide:
         None.
 
         """
-        self._x = np.append(self._x, [self._x[-1], self._x[0]])
-        self._y = np.append(self._y, [self._y[-1], self._y[0]])
-        self._z = np.append(self._z, [self._z[-1], self._z[0]])
-        self._f = np.append(self._f, [self._f[-1], speed])
-        self._s = np.append(self._s, [0, 0])
+        x = np.array([self._x[-1], self._x[0]]).astype(np.float32)
+        y = np.array([self._y[-1], self._y[0]]).astype(np.float32)
+        z = np.array([self._z[-1], self._z[0]]).astype(np.float32)
+        f = np.array([self._f[-1], speedpos]).astype(np.float32)
+        s = np.array([0, 0]).astype(np.float32)
+        self.add_path(x, y, z, f, s)
 
     def linear(self,
                increment: List[float],
                mode: str = 'INC',
-               speed: float = 0.0,
-               shutter: int = 1) -> Self:
+               shutter: int = 1,
+               speed: float = None) -> Self:
         """
         LINEAR.
 
@@ -211,25 +119,20 @@ class Waveguide:
             raise ValueError('Mode should be either ABS or INC.',
                              f'{mode.upper()} was given.')
         x_inc, y_inc, z_inc = increment
+        f = self.param.speed if speed is None else speed
         if mode.upper() == 'ABS':
-            self._x = np.append(self._x, x_inc)
-            self._y = np.append(self._y, y_inc)
-            self._z = np.append(self._z, z_inc)
+            self.add_path(x_inc, y_inc, z_inc, f, np.asarray(shutter, dtype=np.float32))
         else:
-            self._x = np.append(self._x, self._x[-1] + x_inc)
-            self._y = np.append(self._y, self._y[-1] + y_inc)
-            self._z = np.append(self._z, self._z[-1] + z_inc)
-        self._f = np.append(self._f, speed)
-        self._s = np.append(self._s, shutter)
+            self.add_path(self._x[-1] + x_inc, self._y[-1] + y_inc, self._z[-1] + z_inc, f,
+                          np.asarray(shutter, dtype=np.float32))
         return self
 
     def circ(self,
              initial_angle: float,
              final_angle: float,
-             radius: float,
-             speed: float = 0.0,
+             radius: float = None,
              shutter: int = 1,
-             N: int = 25) -> Self:
+             speed: float = None) -> Self:
         """
         CIRC.
 
@@ -250,8 +153,6 @@ class Waveguide:
             Transition speed [mm/s]. The default is 0.0.
         shutter : int, optional
             State of the shutter [0: 'OFF', 1: 'ON']. The default is 1.
-        N : int, optional
-            Number of points. The default is 25.
 
         Raises
         ------
@@ -263,34 +164,28 @@ class Waveguide:
         None.
 
         """
-        t = np.linspace(initial_angle, final_angle, N)
+        if radius is None:
+            radius = self.param.radius
+        f = self.param.speed if speed is None else speed
+
+        delta_angle = abs(final_angle - initial_angle)
+        num = self._get_num(delta_angle * radius, f)
+
+        t = np.linspace(initial_angle, final_angle, num)
+
         new_x = self._x[-1] - radius * np.cos(initial_angle) + radius * np.cos(t)
         new_y = self._y[-1] - radius * np.sin(initial_angle) + radius * np.sin(t)
         new_z = self._z[-1] * np.ones(new_x.shape)
 
         # update coordinates
-        self._x = np.append(self._x, new_x)
-        self._y = np.append(self._y, new_y)
-        self._z = np.append(self._z, new_z)
-
-        # update speed array
-        if np.size(speed) == 1:
-            self._f = np.append(self._f, speed * np.ones(new_x.shape))
-        elif np.size(speed) == np.size(new_x):
-            self._f = np.append(self._f, speed)
-        else:
-            raise ValueError('Speed array is neither a single value nor ',
-                             'array of appropriate size.')
-
-        self._s = np.append(self._s, shutter * np.ones(new_x.shape))
+        self.add_path(new_x, new_y, new_z, f * np.ones(new_x.shape), shutter * np.ones(new_x.shape))
         return self
 
     def arc_bend(self,
                  dy: float,
-                 radius: float,
-                 speed: float = 0.0,
+                 radius: float = None,
                  shutter: int = 1,
-                 N: int = 25) -> Self:
+                 speed: float = None) -> Self:
         """
         CIRCULAR BEND.
 
@@ -312,8 +207,6 @@ class Waveguide:
             Transition speed [mm/s]. The default is 0.0.
         shutter : int, optional
             State of the shutter [0: 'OFF', 1: 'ON']. The default is 1.
-        N : int, optional
-            Number of points. The default is 25.
 
         Returns
         -------
@@ -325,38 +218,33 @@ class Waveguide:
         if dy > 0:
             self.circ(np.pi * (3 / 2),
                       np.pi * (3 / 2) + a,
-                      radius,
+                      radius=radius,
                       speed=speed,
-                      shutter=shutter,
-                      N=np.round(N / 2))
+                      shutter=shutter)
             self.circ(np.pi * (1 / 2) + a,
                       np.pi * (1 / 2),
-                      radius,
+                      radius=radius,
                       speed=speed,
-                      shutter=shutter,
-                      N=np.round(N / 2))
+                      shutter=shutter)
         else:
             self.circ(np.pi * (1 / 2),
                       np.pi * (1 / 2) - a,
-                      radius,
+                      radius=radius,
                       speed=speed,
-                      shutter=shutter,
-                      N=np.round(N / 2))
+                      shutter=shutter)
             self.circ(np.pi * (3 / 2) - a,
                       np.pi * (3 / 2),
-                      radius,
+                      radius=radius,
                       speed=speed,
-                      shutter=shutter,
-                      N=np.round(N / 2))
+                      shutter=shutter)
             return self
 
     def arc_acc(self,
                 dy: float,
-                radius: float,
+                radius: float = None,
                 arm_length: float = 0.0,
-                speed: float = 0.0,
                 shutter: int = 1,
-                N: int = 50) -> Self:
+                speed: float = None) -> Self:
         """
         CIRCULAR COUPLER.
 
@@ -380,33 +268,30 @@ class Waveguide:
             Transition speed [mm/s]. The default is 0.0.
         shutter : int, optional
             State of the shutter [0: 'OFF', 1: 'ON']. The default is 1.
-        N : int, optional
-            Number of points. The default is 50.
 
         Returns
         -------
         None.
 
         """
-        self.arc_bend(dy, radius,
+        self.arc_bend(dy,
+                      radius=radius,
                       speed=speed,
-                      shutter=shutter,
-                      N=N / 2)
+                      shutter=shutter)
         self.linear([arm_length, 0, 0], speed=speed, shutter=shutter)
-        self.arc_bend(-dy, radius,
+        self.arc_bend(-dy,
+                      radius=radius,
                       speed=speed,
-                      shutter=shutter,
-                      N=N / 2)
+                      shutter=shutter)
         return self
 
     def arc_mzi(self,
                 dy: float,
-                radius: float,
+                radius: float = None,
                 int_length: float = 0.0,
                 arm_length: float = 0.0,
-                speed: float = 0.0,
                 shutter: int = 1,
-                N: int = 100) -> Self:
+                speed: float = None) -> Self:
         """
         CIRCULAR MACH-ZEHNDER INTERFEROMETER (MZI).
 
@@ -432,8 +317,6 @@ class Waveguide:
             Transition speed [mm/s]. The default is 0.0.
         shutter : int, optional
             State of the shutter [0: 'OFF', 1: 'ON']. The default is 1.
-        N : int, optional
-            Number of points. The default is 100.
 
         Returns
         -------
@@ -443,23 +326,20 @@ class Waveguide:
         self.arc_acc(dy, radius,
                      arm_length=arm_length,
                      speed=speed,
-                     shutter=shutter,
-                     N=N / 2)
+                     shutter=shutter)
         self.linear([int_length, 0, 0], speed=speed, shutter=shutter)
         self.arc_acc(dy, radius,
                      arm_length=arm_length,
                      speed=speed,
-                     shutter=shutter,
-                     N=N / 2)
+                     shutter=shutter)
         return self
 
     def sin_bridge(self,
                    dy: float,
-                   radius: float,
+                   radius: float = None,
                    dz: float = None,
-                   speed: float = 0.0,
                    shutter: int = 1,
-                   N: int = 25) -> Self:
+                   speed: float = None) -> Self:
         """
         SINUSOIDAL BRIDGE.
 
@@ -495,8 +375,6 @@ class Waveguide:
             Transition speed [mm/s]. The default is 0.0.
         shutter : int, optional
             State of the shutter [0: 'OFF', 1: 'ON']. The default is 1.
-        N : int, optional
-            Number of points. The default is 25.
 
         Raises
         ------
@@ -508,9 +386,15 @@ class Waveguide:
         None.
 
         """
-        (_, dx) = self.get_sbend_parameter(dy, radius)
 
-        new_x = np.arange(self._x[-1], self._x[-1] + dx, dx / (N - 1))
+        if radius is None:
+            radius = self.param.radius
+        f = self.param.speed if speed is None else speed
+
+        _, dx = self.get_sbend_parameter(dy, radius)
+        num = self._get_num(dx, f)
+
+        new_x = np.arange(self._x[-1], self._x[-1] + dx, dx / (num - 1))
         new_y = self._y[-1] + 0.5 * dy * (1 - np.cos(np.pi / dx * (new_x - self._x[-1])))
         if dz:
             new_z = self._z[-1] + 0.5 * dz * (1 - np.cos(2 * np.pi / dx * (new_x - self._x[-1])))
@@ -518,31 +402,17 @@ class Waveguide:
             new_z = self._z[-1] * np.ones(new_x.shape)
 
         # update coordinates
-        self._x = np.append(self._x, new_x)
-        self._y = np.append(self._y, new_y)
-        self._z = np.append(self._z, new_z)
-
-        # update speed array
-        if np.size(speed) == 1:
-            self._f = np.append(self._f, speed * np.ones(new_x.shape))
-        elif np.size(speed) == np.size(new_x):
-            self._f = np.append(self._f, speed)
-        else:
-            raise ValueError('Speed array is neither a single value nor ',
-                             'array of appropriate size.')
-
-        self._s = np.append(self._s, shutter * np.ones(new_x.shape))
+        self.add_path(new_x, new_y, new_z, f * np.ones(new_x.shape), shutter * np.ones(new_x.shape))
         return self
 
     sin_bend = partialmethod(sin_bridge, dz=None)
 
     def sin_acc(self,
                 dy: float,
-                radius: float,
+                radius: float = None,
                 int_length: float = 0.0,
-                speed: float = 0.0,
                 shutter: int = 1,
-                N: int = 50) -> Self:
+                speed: float = None) -> Self:
         """
         SINUSOIDAL COUPLER.
 
@@ -566,27 +436,23 @@ class Waveguide:
             Transition speed [mm/s]. The default is 0.0.
         shutter : int, optional
             State of the shutter [0: 'OFF', 1: 'ON']. The default is 1.
-        N : int, optional
-            Number of points. The default is 50.
-
         Returns
         -------
         None.
 
         """
-        self.sin_bend(dy, radius, speed=speed, shutter=shutter, N=N / 2)
+        self.sin_bend(dy, radius=radius, speed=speed, shutter=shutter)
         self.linear([int_length, 0, 0], speed=speed, shutter=shutter)
-        self.sin_bend(-dy, radius, speed=speed, shutter=shutter, N=N / 2)
+        self.sin_bend(-dy, radius=radius, speed=speed, shutter=shutter)
         return self
 
     def sin_mzi(self,
                 dy: float,
-                radius: float,
+                radius: float = None,
                 int_length: float = 0.0,
                 arm_length: float = 0.0,
-                speed: float = 0.0,
                 shutter: int = 1,
-                N: float = 100) -> Self:
+                speed: float = None) -> Self:
         """
         SINUSOIDAL MACH-ZEHNDER INTERFEROMETER (MZI).
 
@@ -612,8 +478,6 @@ class Waveguide:
             Transition speed [mm/s]. The default is 0.0.
         shutter : int, optional
             State of the shutter [0: 'OFF', 1: 'ON']. The default is 1.
-        N : int, optional
-            Number of points. The default is 100.
 
         Returns
         -------
@@ -622,25 +486,23 @@ class Waveguide:
         """
         self.sin_acc(dy, radius,
                      int_length=int_length,
-                     speed=speed,
                      shutter=shutter,
-                     N=N / 2)
-        self.linear([arm_length, 0, 0], speed=speed, shutter=shutter)
+                     speed=speed)
+        self.linear([arm_length, 0, 0], shutter=shutter, speed=speed)
         self.sin_acc(dy, radius,
                      int_length=int_length,
-                     speed=speed,
                      shutter=shutter,
-                     N=N / 2)
+                     speed=speed)
         return self
 
     def spline(self,
                dy: float,
                dz: float,
                init_pos: np.ndarray = None,
-               radius: float = 20,
+               radius: float = None,
                disp_x: float = 0,
-               speed: float = 0,
                shutter: int = 1,
+               speed: float = None,
                bc_y: tuple = ((1, 0.0), (1, 0.0)),
                bc_z: tuple = ((1, 0.0), (1, 0.0))) -> Self:
         """
@@ -656,33 +518,23 @@ class Waveguide:
         None.
 
         """
-        x_spl, y_spl, z_spl = self._get_spline_points(locals())
+        if radius is None:
+            radius = self.param.radius
+        x_spl, y_spl, z_spl = self._get_spline_points(**locals())
+        f = self.param.speed if speed is None else speed
 
         # update coordinates or return
-        self._x = np.append(self._x, x_spl)
-        self._y = np.append(self._y, y_spl)
-        self._z = np.append(self._z, z_spl)
-
-        # update speed array
-        if np.size(speed) == 1:
-            self._f = np.append(self._f, speed * np.ones(x_spl.shape))
-        elif np.size(speed) == np.size(x_spl):
-            self._f = np.append(self._f, speed)
-        else:
-            raise ValueError('Speed array is neither a single value nor ',
-                             'array of appropriate size.')
-
-        self._s = np.append(self._s, shutter * np.ones(x_spl.shape))
+        self.add_path(x_spl, y_spl, z_spl, f * np.ones(x_spl.shape), shutter * np.ones(x_spl.shape))
         return self
 
     def spline_bridge(self,
                       dy: float,
                       dz: float,
                       init_pos: list = None,
-                      radius: float = 20,
+                      radius: float = None,
                       disp_x: float = 0,
-                      speed: float = 0,
-                      shutter: int = 1) -> Self:
+                      shutter: int = 1,
+                      speed: float = None) -> Self:
         """
         SPLINE BRIDGE.
 
@@ -735,6 +587,8 @@ class Waveguide:
         """
         if init_pos is None:
             init_pos = self.lastpt
+        if radius is None:
+            radius = self.param.radius
 
         dx, *_, l_curve = self.get_spline_parameter(init_pos, dy, 0, radius, disp_x)
 
@@ -755,21 +609,10 @@ class Waveguide:
         us_y = InterpolatedUnivariateSpline(x, y, k=5)
         us_z = InterpolatedUnivariateSpline(x, z, k=5)
 
-        # update coordinates or return
-        self._x = np.append(self._x, x)
-        self._y = np.append(self._y, us_y(x))
-        self._z = np.append(self._z, us_z(x))
+        f = self.param.speed if speed is None else speed
 
         # update speed array
-        if np.size(speed) == 1:
-            self._f = np.append(self._f, speed * np.ones(x.shape))
-        elif np.size(speed) == np.size(x):
-            self._f = np.append(self._f, speed)
-        else:
-            raise ValueError('Speed array is neither a single value nor ',
-                             'array of appropriate size.')
-
-        self._s = np.append(self._s, shutter * np.ones(x.shape))
+        self.add_path(x, us_y(x), us_z(x), f * np.ones(x.shape), shutter * np.ones(x.shape))
         return self
 
     def curvature(self) -> np.ndarray:
@@ -943,7 +786,7 @@ class Waveguide:
                            init_pos: np.ndarray = None,
                            radius: float = 20,
                            disp_x: float = 0,
-                           speed: float = 0,
+                           speed: float = None,
                            bc_y: tuple = ((1, 0.0), (1, 0.0)),
                            bc_z: tuple = ((1, 0.0), (1, 0.0))) -> tuple:
         """
@@ -1001,7 +844,8 @@ class Waveguide:
         """
         xd, yd, zd, l_curve = self.get_spline_parameter(init_pos, dy, dz,
                                                         radius, disp_x)
-        num = self._get_num(l_curve, speed)
+        f = self.param.speed if speed is None else speed
+        num = self._get_num(l_curve, f)
 
         xcoord = np.linspace(0, xd, num)
         cs_y = CubicSpline((0.0, xd), (0.0, yd), bc_type=bc_y)
@@ -1036,44 +880,45 @@ class Waveguide:
             Number of subdivisions.
 
         """
-        if speed < 1e-6:
+        f = self.param.speed if speed is None else speed
+        if f < 1e-6:
             raise ValueError('Speed set to 0.0 mm/s. Check speed parameter.')
 
-        dl = speed / self.c_max
+        dl = f / self.param.cmd_rate_max
         num = int(np.ceil(l_curve / dl))
         if num <= 1:
             print('I had to add use an higher instruction rate.\n')
             return 3
         return num
 
-    def _compute_number_points(self):
-        # TODO: write method that compute the optimal number of points given
-        #       the max value of cmd rate
-        pass
-
 
 def _example():
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
-    np.set_printoptions(formatter={'float': "\t{: 0.6f}".format})
 
     # Data
     pitch = 0.080
     int_dist = 0.007
-    d_bend = 0.5 * (pitch - int_dist)
+    dy_bend = 0.5 * (pitch - int_dist)
     increment = [4, 0, 0]
 
+    PARAMETERS_WG = WaveguideParameters(
+        scan=6,
+        speed=20,
+        radius=15
+    )
+
     # Calculations
-    mzi = [Waveguide() for _ in range(2)]
+    mzi = [Waveguide(PARAMETERS_WG) for _ in range(2)]
     for index, wg in enumerate(mzi):
         [xi, yi, zi] = [-2, -pitch / 2 + index * pitch, 0.035]
 
-        wg.start([xi, yi, zi])
-        wg.linear(increment, speed=20)
-        wg.sin_mzi((-1) ** index * d_bend, radius=15, speed=20)
-        wg.spline_bridge((-1) ** index * 0.08, (-1) ** index * 0.015, speed=20)
-        wg.sin_mzi((-1) ** (index + 1) * d_bend, radius=15, speed=20)
-        wg.linear(increment, speed=20)
+        wg.start([xi, yi, zi]) \
+            .linear(increment) \
+            .sin_mzi((-1) ** index * dy_bend) \
+            .spline_bridge((-1) ** index * 0.08, (-1) ** index * 0.015) \
+            .sin_mzi((-1) ** (index + 1) * dy_bend) \
+            .linear(increment)
         wg.end()
 
     # Plot
