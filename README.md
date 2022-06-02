@@ -54,8 +54,8 @@ Here a brief example on how to use the library.
 
 First, import all the required packages
 ```python
-from femto import Waveguide, TrenchColumn, Marker, PGMCompiler
-import matplotlib.pyplot as plt
+from femto import PGMCompiler, Waveguide
+from femto.Parameters import GcodeParameters, WaveguideParameters
 ```
 
 Define a circuit as a list of waveguides
@@ -63,22 +63,39 @@ Define a circuit as a list of waveguides
 waveguides = []
 ```
 
+Set waveguide and farbication parameters
+```python
+PARAMETERS_WG = WaveguideParameters(
+    scan=6,
+    speed=20,
+    depth=0.035,
+    radius=15,
+)
+
+PARAMETERS_GC = GcodeParameters(
+    filename='MZIs.pgm',
+    lab='CAPABLE',
+    samplesize=(25, 25),
+    angle=0.0
+)
+```
+
 Start by adding waveguides to the circuit
 ```python
 # SWG
-wg = Waveguide()
+wg = Waveguide(PARAMETERS_WG)
 wg.start([-2, 0, 0.035])
-wg.linear([25, 0.0, 0.0], speed=speed)
+wg.linear([25, 0.0, 0.0])
 wg.end()
 waveguides.append(wg)
 
 # MZI
 for i in range(6):
-    wg = Waveguide()
-    wg.start([-2, 0.3+i*0.08, 0.035])
-    wg.linear([1.48, 0, 0], speed=20)
-    wg.arc_mzi((-1)**(i)*0.037, 15, speed=20)
-    wg.linear([1.48, 0, 0], speed=20)
+    wg = Waveguide(PARAMETERS_WG)
+    wg.start([-2, 0.3 + i * 0.08, 0.035]) \
+        .linear([1.48, 0, 0]) \
+        .arc_mzi((-1) ** (i) * 0.037) \
+        .linear([1.48, 0, 0])
     wg.end()
     waveguides.append(wg)
 ```
@@ -86,11 +103,11 @@ for i in range(6):
 Export the G-Code with the following commands
 ```python
 # Waveguide G-Code
-with PGMCompiler('MZIs.pgm', ind_rif=1.5/1.33, angle=0.01) as gc:
+with PGMCompiler(PARAMETERS_GC) as gc:
     with gc.repeat(6):
-      for wg in waveguides:
-          gc.comment(f' +--- Modo: {i+1} ---+')
-          gc.write(wg.points)
+        for wg in waveguides:
+            gc.comment(f' +--- Modo: {i + 1} ---+')
+            gc.write(wg.points)
 ```
 Other example files can be found [here](https://github.com/ricalbr/femto/tree/main/examples)
 
