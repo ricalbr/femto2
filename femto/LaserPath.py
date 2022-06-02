@@ -1,7 +1,7 @@
-
 from copy import deepcopy
 
 import numpy as np
+
 
 class LaserPath:
     def __init__(self, param):
@@ -139,18 +139,18 @@ class LaserPath:
         return pts_comp
 
     # def linear(self, pos_fin, shutter='ON', *, mode='INC'):
-        # linelength = np.sqrt(np.sum(np.square(pos_fin-pos_ini)))
-        # num = int(linelength/self.param.lwarp)
+    # linelength = np.sqrt(np.sum(np.square(pos_fin-pos_ini)))
+    # num = int(linelength/self.param.lwarp)
 
-        # # long line case (a lot of points)
-        # if num > 3 and shutter == 'ON':
-        #     points = np.vstack((np.linspace(pos_ini[0], pos_fin[0], num),
-        #                         np.linspace(pos_ini[1], pos_fin[1], num),
-        #                         np.linspace(pos_ini[2], pos_fin[2], num))).T
-        #     points_comp = self.compensate(points)
-        # # short line case (just 2 points)
-        # else:
-        #     num = 2
-        #     pmid = (pos_fin+pos_ini)/2
-        #     points = np.vstack((pmid, pos_fin))
-        #     points_comp = self.compensate(points)
+    # # long line case (a lot of points)
+    # if num > 3 and shutter == 'ON':
+    #     points = np.vstack((np.linspace(pos_ini[0], pos_fin[0], num),
+    #                         np.linspace(pos_ini[1], pos_fin[1], num),
+    #                         np.linspace(pos_ini[2], pos_fin[2], num))).T
+    #     points_comp = self.compensate(points)
+    # # short line case (just 2 points)
+    # else:
+    #     num = 2
+    #     pmid = (pos_fin+pos_ini)/2
+    #     points = np.vstack((pmid, pos_fin))
+    #     points_comp = self.compensate(points)
