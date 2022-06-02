@@ -1,20 +1,30 @@
-# %% GEOMETRICAL DATA
+from femto.Parameters import GcodeParameters, WaveguideParameters
 
-radius = 15
-pitch = 0.080
-depth = 0.035
-int_distance = 0.007
-int_length = 0.0
-length_arm = 0.0
-speed = 20
-swg_length = 0.5
+# GEOMETRICAL DATA
+
+PARAMETERS_WG = WaveguideParameters(
+    scan=6,
+    speed=20,
+    radius=15
+)
 
 x0 = -2.0
 y0 = 0.0
-z0 = depth
+z0 = PARAMETERS_WG.depth
+swg_length = 3
+increment = [swg_length, 0.0, 0.0]
 
-d = 0.5*(pitch-int_distance)
+pitch = 0.080
+pitch_fa = 0.127
+int_distance = 0.007
+int_length = 0.0
+length_arm = 0.0
 
-# %% G-CODE DATA
-n_scan = 6
-ind_rif = 1.5/1.33
+d = 0.5 * (pitch - int_distance)
+
+# G-CODE DATA
+PARAMETERS_GC = GcodeParameters(
+    lab='CAPABLE',
+    samplesize=(25, 25),
+    angle=0.0
+)

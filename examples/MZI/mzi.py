@@ -6,16 +6,16 @@ np.set_printoptions(formatter={'float': "\t{: 0.6f}".format})
 
 
 # Simple script for fabricate a MZI interferometer
-mzi = [Waveguide(num_scan=p.n_scan) for _ in range(2)]
+mzi = [Waveguide(p.PARAMETERS_WG) for _ in range(2)]
 increment = [p.swg_length, 0.0, 0.0]
 
 for i, wg in enumerate(mzi):
-    [xi, yi, zi] = [p.x0, p.y0-(0.5-i)*p.pitch, p.depth]
+    [xi, yi, zi] = [p.x0, p.y0-(0.5-i)*p.pitch, p.z0]
 
-    wg.start([xi, yi, zi])
-    wg.linear(increment, speed=p.speed)
-    wg.sin_mzi((-1)**i*p.d, p.radius, arm_length=p.length_arm, speed=p.speed)
-    wg.linear(increment, speed=p.speed)
+    wg.start([xi, yi, zi])\
+        .linear(increment)\
+        .sin_mzi((-1)**i*p.d, arm_length=p.length_arm)\
+        .linear(increment)
     wg.end()
 
 print(wg.points)
@@ -28,8 +28,9 @@ for wg in mzi:
 plt.show()
 
 # Compilation
-with PGMCompiler('MZImultiscan.pgm', ind_rif=p.ind_rif) as gc:
-    with gc.repeat(mzi[0].num_scan):
+p.PARAMETERS_GC.filename = 'MZImultiscan.pgm'
+with PGMCompiler(p.PARAMETERS_GC) as gc:
+    with gc.repeat(p.PARAMETERS_WG.scan):
         for i, wg in enumerate(mzi):
             gc.comment(f'Modo: {i+1}')
             gc.write(wg.points)
