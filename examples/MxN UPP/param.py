@@ -19,6 +19,7 @@ NN = 20
 PARAMETERS_WG = WaveguideParameters(
     scan=6,
     speed=20,
+    depth=0.035,
     radius=15
 )
 
