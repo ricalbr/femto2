@@ -121,3 +121,6 @@ fit_stress_test.py
 # G-Code files
 *.pgm
 *.ogm
+
+# Pickle functions
+*.pkl
