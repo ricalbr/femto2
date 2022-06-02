@@ -150,7 +150,9 @@ def _example():
         nboxz=4,
         deltaz=0.0015,
         h_box=0.075,
-        base_folder=r'C:\Users\Capable\Desktop\RiccardoA'
+        base_folder=r'C:\Users\Capable\Desktop\RiccardoA',
+        y_min=-0.1,
+        y_max=19 * pitch + 0.1
     )
 
     PARAMETERS_WG = WaveguideParameters(
@@ -167,8 +169,6 @@ def _example():
         wg.sin_acc((-1) ** i * d_bend).end()
 
     PARAMETERS_TC.x_center = x_mid
-    PARAMETERS_TC.y_min = -0.1
-    PARAMETERS_TC.y_max = 19 * pitch + 0.1
     trench_col = TrenchColumn(PARAMETERS_TC)
     trench_col.get_trench(coup)
 
