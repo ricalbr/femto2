@@ -71,7 +71,7 @@ _, delta_x = wg.get_sbend_parameter(d1, PARAMETERS_WG.radius)
 l_x = (PARAMETERS_GC.xsample + 4 - delta_x * 4) / 2
 for i in range(6):
     wg = Waveguide(PARAMETERS_WG) \
-        .start([x0, ymzi + i * pitch, z0]) \
+        .start([x0, (1 + i) * pitch, z0]) \
         .linear([l_x, 0, 0]) \
         .arc_mzi((-1) ** i * d1) \
         .linear([l_x, 0, 0])
