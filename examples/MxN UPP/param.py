@@ -55,8 +55,6 @@ PARAMETERS_TC = TrenchParameters(
     deltaz=0.0015,
     h_box=0.075,
     base_folder=r'C:\Users\Capable\Desktop\RiccardoA',
-    y_min=-0.1,
-    y_max=19 * 0.08 + 0.1
 )
 
 # G-CODE DATA
