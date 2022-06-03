@@ -1,7 +1,8 @@
 import warnings
-from typing import List
+from typing import Generator, Iterator, List
 
 import numpy as np
+import shapely.geometry
 from descartes import PolygonPatch
 
 from femto.Parameters import TrenchParameters, WaveguideParameters
@@ -9,10 +10,14 @@ from femto.Waveguide import Waveguide
 
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=DeprecationWarning)
-    from shapely.geometry import LineString, Polygon, MultiPolygon, box, polygon
+    from shapely.geometry import LineString, Polygon, box, polygon
 
 
 class Trench:
+    """
+    Class representing a single trench block.
+    """
+
     def __init__(self,
                  block: Polygon,
                  delta_floor: float = 0.001):
@@ -21,18 +26,52 @@ class Trench:
         self.delta_floor = delta_floor
 
     @property
-    def center(self):
+    def center(self) -> np.ndarray:
+        """
+        Returns the (x, y) coordinates of the trench block baricenter point.
+
+        :return: (x, y) coordinates of the block's center point
+        :rtype: np.ndarray
+        """
         return np.asarray([self.block.centroid.x, self.block.centroid.y])
 
     @property
-    def patch(self, fc='k', ec='k', alpha=1, zorder=1):
-        return PolygonPatch(self.block,
-                            fc=fc,
-                            ec=ec,
-                            alpha=alpha,
-                            zorder=zorder)
+    def patch(self, fc: str = 'k', ec: str = 'k', alpha: float = 1, zorder: int = 1) -> PolygonPatch:
+        """
+        Return a Patch object representing the trench block for plotting.
 
-    def trench_paths(self):
+        :param fc:  Patch face colour. Can be specified with HEX code, e.g. '#9a9a9a'
+        :type fc: str
+        :param ec: Patch edge colour. Can be specified with HEX code, e.g. '#9a9a9a'
+        :type ec: str
+        :param alpha: Patch transparency coefficient. Value should be between 0 and 1.
+        :type alpha: float
+        :param zorder: Overlapping order in 2D plot. Higher values are on top.
+        :type zorder: int
+        :return: Patch object for plotting the trench block
+        :rtype: descartes.PolygonPatch
+        """
+        return PolygonPatch(self.block, fc=fc, ec=ec, alpha=alpha, zorder=zorder)
+
+    def trench_paths(self) -> Generator[np.ndarray, None, None]:
+        """
+        Generator of the inset paths of the trench block.
+
+        First, the outer trench polygon object is insert in the trench ``polygon_list``. While the list is not empty
+        we can extract the outer polygon from the list and compute the ``inset_polygon`` and insert it back to the list.
+        ``inset_polygon`` can be:
+        ``Polygon`` object
+            The object is appended to the ``inset_polygon`` list and the exterior (x, y) coordinates are yielded.
+        ``MultiPolygon`` object
+            All the single ``Polygon`` objects composing the ``MultiPolygon`` are appended to the ``inset_polygon``
+            list as ``Polygon`` objects and the exterior (x, y) coordinates are yielded.
+        ``None``
+            In this case, we cannot extract a ``inset_polygon`` from the ``Polygon`` object extracted from the
+            ``inset_polygon``. Nothing is appended to the ``polygon_list`` and its size is reduced.
+
+        :return: (x, y) coordinates of the inset path.
+        :rtype: Generator[numpy.ndarray]
+        """
         polygon_list = [self.block]
         while polygon_list:
             current_poly = polygon_list.pop(0)
@@ -45,11 +84,30 @@ class Trench:
                 polygon_list.append(inset_polygon)
                 yield np.array(inset_polygon.exterior.coords).T
             elif inset_polygon:
-                raise ValueError('Trench block should be either Polygon or',
-                                 f'Multipolygon. Given {inset_polygon.type}')
+                raise ValueError(f'Trench block should be either Polygon or Multipolygon. Given {inset_polygon.type}')
 
     # Private interface
-    def _buffer_polygon(self, shape: Polygon, inset=True):
+    def _buffer_polygon(self, shape: Polygon, inset: bool = True) -> shapely.geometry.shape:
+        """
+        Compute a buffer operation of shapely ``Polygon`` object.
+
+        :param shape: ``Polygon`` of the trench block
+        :type shape: shapely.geometry.Polygon
+        :param inset: If ``True`` the eroded polygon is computed (inset), if ``False`` the dilated polygon is
+        computed (outset).
+        :type inset: bool
+        :return: Buffered polygon
+        :rtype: shapely.geometry.shape
+
+        .. note::
+        The buffer operation returns a polygonal result. The new polygon is checked for validity using
+        ``object.is_valid`` in the sense of [#]_.
+
+        For a reference, read the buffer operations `here
+        <https://shapely.readthedocs.io/en/stable/manual.html#constructive-methods>`_
+        .. [#] John R. Herring, Ed., “OpenGIS Implementation Specification for Geographic information - Simple feature
+        access - Part 1: Common architecture,” Oct. 2006
+        """
         if inset:
             new_polygon = shape.buffer(-self.delta_floor)
         else:
@@ -58,8 +116,11 @@ class Trench:
 
 
 class TrenchColumn:
-    def __init__(self, param: TrenchParameters):
+    """
+    Class representing a column of trenches.
+    """
 
+    def __init__(self, param: TrenchParameters):
         self.param = param
         self._trench_list = []
         self._x_c = self.param.x_center
@@ -68,51 +129,101 @@ class TrenchColumn:
 
         self._rect = self._make_box()
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Trench]:
+        """
+        Iterator that yields the single trench blocks of the column.
+
+        :return: Trench object of the trench column
+        :rtype: Trench
+        """
         return iter(self._trench_list)
 
     @property
-    def x_c(self):
+    def x_c(self) -> float:
+        """
+        Getter for the x-coordinate of the trench column center.
+
+        :return: center x-coordinate of the trench block
+        :rtype: float
+        """
         return self._x_c
 
     @x_c.setter
-    def x_c(self, x_center):
+    def x_c(self, x_center: float):
+        """
+        Setter for the x-coordinate of the center of the trench column.
+
+        :param x_center: center x-coordinate of the trench block
+        :type x_center: float
+        """
         self._x_c = x_center
         if x_center is not None:
             self._rect = self._make_box()
 
     @property
-    def y_min(self):
+    def y_min(self) -> float:
+        """
+        Getter for the lower y-coordinate of the trench column.
+
+        :return: y-coordinate of the lower border of trench column rectangle.
+        :rtype: float
+        """
         return self._y_min
 
     @y_min.setter
-    def y_min(self, y_min):
+    def y_min(self, y_min: float):
+        """
+        Setter for the y-coordinate of the lower border of the trench column.
+
+        :param y_min: y-coordinate of the trench block lower border
+        :type y_min: float
+        """
         self._y_min = y_min
         if y_min is not None:
             self._rect = self._make_box()
 
     @property
-    def y_max(self):
+    def y_max(self) -> float:
+        """
+        Getter for the upper y-coordinate of the trench column.
+
+        :return: y-coordinate of the upper border of trench column rectangle.
+        :rtype: float
+        """
         return self._y_max
 
     @y_max.setter
     def y_max(self, y_max):
+        """
+        Setter for the y-coordinate of the upper border of the trench column.
+
+        :param y_max: y-coordinate of the trench block upper border
+        :type y_max: float
+        """
         self._y_max = y_max
         if y_max is not None:
             self._rect = self._make_box()
 
-    def patch(self, fc='k', ec=None, alpha=1, zorder=1):
-        if isinstance(self._rect, MultiPolygon):
-            return PolygonPatch(self._rect,
-                                fc=fc, ec=ec,
-                                alpha=alpha,
-                                zorder=zorder)
+    def get_trench(self, waveguides: List[Waveguide]):
+        """
+        Compute the trench blocks from the waveguide of the optical circuit.
+        To get the trench blocks, the waveguides are used as mold matrix for the trenches. The waveguides are
+        converted to ``LineString`` and buffered to be as large as the adjusted bridge width.
 
-    def get_trench(self, circuit: List):
-        if not all([isinstance(wg, Waveguide) for wg in circuit]):
+        Using polygon difference, the rectangle (minx, miny, maxx, maxy) = (x_c - l, y_min, x_c + l, y_max) is cut
+        obtaining a ``MultiPolygon`` with all the trench blocks.
+
+        All the blocks are treated individually. Each block is then buffered to obtain an outset polygon with rounded
+        corners a Trench object is created with the new polygon box and the trenches are appended to the
+        ``trench_list``.
+
+        :param waveguides: List of the waveguides composing the optical circuit.
+        :type waveguides: List[Waveguide]
+        """
+        if not all([isinstance(wg, Waveguide) for wg in waveguides]):
             raise TypeError('Elements circuit list must be of type Waveguide.')
 
-        for wg in circuit:
+        for wg in waveguides:
             x, y = wg.x[:-2], wg.y[:-2]
             dilated = (LineString(list(zip(x, y)))
                        .buffer(self.param.adj_bridge, cap_style=1))
@@ -121,15 +232,28 @@ class TrenchColumn:
         for block in list(self._rect):
             block = (polygon.orient(block)
                      .buffer(self.param.round_corner,
-                             resolution=150, cap_style=1))
+                             resolution=250, cap_style=1))
             trench = Trench(block, self.param.delta_floor)
             self._trench_list.append(trench)
 
     # Private interface
-    def _make_box(self):
-        if (self._x_c is not None and
-                self._y_min is not None and
-                self._y_max is not None):
+    def _make_box(self) -> shapely.geometry.box:
+        """
+        Create the rectangular box for the whole trench column. If the ``x_c``, ``y_min`` and ``y_max`` are set we
+        create a rectangular polygon that will be used to create the single trench blocks.
+
+        ::
+            +-------+  -> y_max
+            |       |
+            |       |
+            |       |
+            +-------+  -> y_min
+                x_c
+
+        :return: Rectangular box centered in ``x_c`` and y-borders at ``y_min`` and ``y_max``.
+        :rtype: shapely.geometry.box
+        """
+        if self._x_c is not None and self._y_min is not None and self._y_max is not None:
             return box(self._x_c - self.param.length / 2, self._y_min,
                        self._x_c + self.param.length / 2, self._y_max)
         else:

@@ -1,98 +1,114 @@
-# import pandas as pd
-# import matplotlib.pyplot as plt
 import warnings
 from typing import List
 
 import numpy as np
 
 from femto import Waveguide
+from femto.Parameters import WaveguideParameters
 
 
 class Marker(Waveguide):
-    def __init__(self,
-                 depth: float = 0.001,
-                 speed: float = 1,
-                 num_scan: int = 1):
-        super(Marker, self).__init__(num_scan)
+    """
+    Class representing an ablation marker.
+    """
 
-        self.depth = depth
-        self.speed = speed
+    def __init__(self, param: WaveguideParameters):
+        super(Marker, self).__init__(param)
 
-    def cross(self,
-              position: List[float],
-              lx: float = 1,
-              ly: float = 0.05,
-              speed_pos: float = 5):
+    def cross(self, position: List[float], lx: float = 1, ly: float = 0.05, speedpos: float = None):
         """
-        CROSS MARKER.
+        Computes the points of a cross marker of given widht along x- and y-direction.
 
-        The function computes the point of a cross marker of given widht along
-        x- and y-direction.
-
-        Parameters
-        ----------
-        position : List[float]
-        2D ordered coordinate list that specifies the cross position [mm].
+        :param position: 2D ordered coordinate list that specifies the cross position [mm].
             position[0] -> X
             position[1] -> Y
-        lx : float
-            Length of the cross marker along x [mm]. The default is 1.
-        ly : float
-            Length of the cross marker along y [mm]. The default is 0.05.
-        speed_pos : float, optional
-            Shutter closed transition speed [mm/s]. The default is 5.
-
-        Returns
-        -------
-        None.
-
+        :type position: List[float]
+        :param lx: Length of the cross marker along x [mm]. The default is 1 mm.
+        :type lx: float
+        :param ly: Length of the cross marker along y [mm]. The default is 0.05 mm.
+        :type ly: float
+        :param speedpos: Transition speed with the shutter closes [mm/s]. The default is self.param.speed.
+        :type speedpos: float
+        :return: None
         """
         if len(position) == 2:
-            position.append(self.depth)
+            position.append(self.param.depth)
         elif len(position) == 3:
-            position[2] = self.depth
-            warnings.warn('Given 3D coordinate list. ' +
-                          f'Z-coordinate is overwritten to {self.depth} mm.')
+            position[2] = self.param.depth
+            warnings.warn(f'Given 3D coordinate list. Z-coordinate is overwritten to {self.param.depth} mm.')
         else:
             raise ValueError('Given invalid position.')
 
-        self.start(position)
-        self.linear([-lx / 2, 0, 0], speed=speed_pos, shutter=0)
-        self.linear([lx, 0, 0], speed=self.speed)
-        self.linear([-lx / 2, 0, 0], speed=speed_pos, shutter=0)
-        self.linear([0, -ly / 2, 0], speed=speed_pos, shutter=0)
-        self.linear([0, ly, 0], speed=self.speed)
-        self.linear([0, -ly / 2, 0], speed=speed_pos, shutter=0)
-        self.end(speed_pos)
+        if speedpos is None:
+            speedpos = self.param.speedpos
 
-    def ruler(self,
-              y_ticks: List,
-              lx: float,
-              lx_short: float = None,
-              x_init: float = -2,
-              speed_pos: float = 5):
+        self.start(position) \
+            .linear([-lx / 2, 0, 0], speed=speedpos, shutter=0) \
+            .linear([lx, 0, 0], speed=self.param.speed) \
+            .linear([-lx / 2, 0, 0], speed=speedpos, shutter=0) \
+            .linear([0, -ly / 2, 0], speed=speedpos, shutter=0) \
+            .linear([0, ly, 0], speed=self.param.speed) \
+            .linear([0, -ly / 2, 0], speed=speedpos, shutter=0)
+        self.end(speedpos)
+
+    def ruler(self, y_ticks: List, lx: float, lx_short: float = None, x_init: float = -2, speedpos: float = None):
+        """
+        Computes the points of a ruler marker. The y-coordinates of the ticks are specified by the user as well as
+        the length of the ticks in the x-direction.
+
+        :param y_ticks: y-coordinates of the ruler's ticks [mm]
+        :type y_ticks: List[float]
+        :param lx: Long tick length along x [mm]. The default is 1 mm.
+        :type lx: float
+        :param lx_short: Short tick length along x [mm]. The default is 0.75 mm.
+        :type lx_short: float
+        :param x_init: Starting x-coordinate of the laser [mm]. The default is -2 mm.
+        :type x_init: float
+        :param speedpos: Transition speed with the shutter closes [mm/s]. The default is self.param.speed.
+        :type speedpos: float
+        :return: None
+        """
+
+        if speedpos is None:
+            speedpos = self.param.speedpos
 
         if lx_short is None:
             lx_short = 0.75 * lx
         tick_len = lx_short * np.ones_like(y_ticks)
         tick_len[0] = lx
 
-        self.start([x_init, y_ticks[0], self.depth])
+        self.start([x_init, y_ticks[0], self.param.depth])
         for y, tlen in zip(y_ticks, tick_len):
-            self.linear([x_init, y, self.depth],
-                        speed=speed_pos,
-                        mode='ABS',
-                        shutter=0)
-            self.linear([tlen, 0, 0], speed=self.speed, shutter=1)
-        self.end(speed_pos)
+            self.linear([x_init, y, self.param.depth], speed=speedpos, mode='ABS', shutter=0)
+            self.linear([tlen, 0, 0], speed=self.param.speed, shutter=1)
+        self.end(speedpos)
 
 
-if __name__ == '__main__':
+def _example():
     from femto import PGMCompiler
+    from femto.Parameters import GcodeParameters, WaveguideParameters
 
-    c = Marker()
+    PARAMETERS_MK = WaveguideParameters(
+        scan=1,
+        speed=4,
+        speedpos=5,
+        depth=0.001
+    )
+
+    PARAMETERS_GC = GcodeParameters(
+        filename='testMarker.pgm',
+        lab='CAPABLE',
+        samplesize=(25, 25),
+        angle=0.0,
+    )
+
+    c = Marker(PARAMETERS_MK)
     c.ruler([0, 1, 2], 5, 3.5)
     print(c.points)
 
-    with PGMCompiler('testPGMcompiler', ind_rif=1.5) as gc:
+    with PGMCompiler(PARAMETERS_GC) as gc:
         gc.write(c.points)
+
+
+if __name__ == '__main__':
+    _example()

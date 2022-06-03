@@ -10,6 +10,10 @@ from scipy.interpolate import interp2d
 
 
 class GcodeParameters:
+    """
+    Class containing the parameters for the G-Code file compiler.
+    """
+
     def __init__(self,
                  filename: str = None,
                  samplesize: Tuple[float, float] = (None, None),
@@ -41,6 +45,12 @@ class GcodeParameters:
         self.xsample, self.ysample = self.samplesize
 
     def set_tshutter(self) -> float:
+        """
+        Function that set the shuttering time given the fabrication laboratory.
+
+        :return: shuttering time
+        :rtype: float
+        """
         if self.lab.upper() not in ['CAPABLE', 'DIAMOND', 'FIRE']:
             raise ValueError('Lab can be only CAPABLE, DIAMOND or FIRE',
                              f'Given {self.lab}.')
@@ -49,12 +59,15 @@ class GcodeParameters:
         else:
             return 0.005
 
-    def antiwarp_management(self, opt: bool) -> interp2d:
+    def antiwarp_management(self, opt: bool, num: int = 16) -> interp2d:
         """
-        It fetches an antiwarp function in the current folder.
-        If it doesn't exist, it lets you create a new one.
+        It fetches an antiwarp function in the current working direcoty. If it doesn't exist, it lets you create a new
+        one. The number of sampling points can be specified.
 
-        :param bool opt: if True apply antiwarp.
+        :param opt: if True apply antiwarp.
+        :type opt: bool
+        :param num: number of sampling points
+        :type num: int
         :return: warp function, `f(x, y)`
         :rtype: scipy.interpolate.interp2d
         """
@@ -67,7 +80,7 @@ class GcodeParameters:
             if os.path.exists(function_pickle):
                 fwarp = pickle.load(open(function_pickle, "rb"))
             else:
-                fwarp = self.antiwarp_generation(self.samplesize, 16)
+                fwarp = self.antiwarp_generation(self.samplesize, num)
                 pickle.dump(fwarp, open(function_pickle, "wb"))
         else:
             def fwarp(x, y):
@@ -75,12 +88,22 @@ class GcodeParameters:
         return fwarp
 
     @staticmethod
-    def antiwarp_generation(samplesize, num_tot, *, margin=2):
+    def antiwarp_generation(samplesize: Tuple[float, float], num_tot: int, *, margin: float = 2) -> interp2d:
         """
-        It helps you to generate the antiwarp function.
-        The minimum number of data points required is (k+1)**2,
-        with k=1 for linear, k=3 for cubic and k=5 for quintic interpolation.
+        Helper for the generation of antiwarp function.
+        The minimum number of data points required is (k+1)**2, with k=1 for linear, k=3 for cubic and k=5 for quintic
+        interpolation.
+
+        :param samplesize: glass substrate dimensions, (x-dim, y-dim)
+        :type samplesize: Tuple(float, float)
+        :param num_tot: number of sampling points
+        :type num_tot: int
+        :param margin: margin [mm] from the borders of the glass samples
+        :type margin: float
+        :return: warp function, `f(x, y)`
+        :rtype: scipy.interpolate.interp2d
         """
+
         if num_tot < 4 ** 2:
             raise ValueError('I need more values to compute the interpolation.')
 
@@ -91,7 +114,7 @@ class GcodeParameters:
         ylist = []
         zlist = []
 
-        print('Focus height in um (!!!) at:')
+        print('Focus height in µm (!!!) at:')
         for pos in list(product(xpos, ypos)):
             xlist.append(pos[0])
             ylist.append(pos[1])
@@ -118,6 +141,9 @@ class GcodeParameters:
 
 
 class WaveguideParameters:
+    """
+    Class containing the parameters for the waveguide fabrication.
+    """
 
     def __init__(self,
                  scan: int,
@@ -147,18 +173,15 @@ class WaveguideParameters:
         self.dsafe = dsafe
         self.margin = margin
 
-        # # Computed parameters:
-        # length needed to acquire the writing speed [mm]
-        self.lvelo = 3 * (0.5 * self.speed ** 2 / self.acc_max)
-
-        # minimum separation between two points [mm]
-        self.dl = self.speed / self.cmd_rate_max
-
-        # distance between points for the warp compensation [mm]
-        self.lwarp = 10 * self.dl
+        # Compute parameters:
+        self.lvelo = 3 * (0.5 * self.speed ** 2 / self.acc_max)  # length needed to acquire the writing speed [mm]
+        self.dl = self.speed / self.cmd_rate_max  # minimum separation between two points [mm]
 
 
 class TrenchParameters:
+    """
+    Class containing the parameters for trench fabrication.
+    """
 
     def __init__(self, *,
                  x_center: float = None,
@@ -191,6 +214,7 @@ class TrenchParameters:
         self.speed = speed
         self.speedpos = speedpos
 
+        # adjust bridge size considering the size of the laser focus [mm]
         self.adj_bridge = self.bridge / 2 + self.beam_waist + self.round_corner
         self.n_repeat = int(ceil((self.h_box + self.z_off) / self.deltaz))
 
