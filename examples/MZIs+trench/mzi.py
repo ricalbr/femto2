@@ -103,7 +103,7 @@ for col_trench in circ['trench']:
         ax.add_patch(t.patch)
 plt.tight_layout(pad=0)
 ax.set_aspect(10)
-# plt.show()
+plt.show()
 
 # Waveguide G-Code
 PARAMETERS_GC.filename = 'MZIs.pgm'
