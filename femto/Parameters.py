@@ -49,21 +49,14 @@ class GcodeParameters:
         else:
             return 0.005
 
-    def antiwarp_management(self, opt: bool):
+    def antiwarp_management(self, opt: bool) -> interp2d:
         """
         It fetches an antiwarp function in the current folder.
         If it doesn't exist, it lets you create a new one.
 
-        Parameters
-        ----------
-        opt : bool
-            if True apply antiwarp.
-
-        Returns
-        -------
-        fwarp : TYPE
-            DESCRIPTION.
-
+        :param bool opt: if True apply antiwarp.
+        :return: warp function, `f(x, y)`
+        :rtype: scipy.interpolate.interp2d
         """
 
         if opt:
@@ -77,7 +70,8 @@ class GcodeParameters:
                 fwarp = self.antiwarp_generation(self.samplesize, 16)
                 pickle.dump(fwarp, open(function_pickle, "wb"))
         else:
-            def fwarp(x, y): return 0
+            def fwarp(x, y):
+                return 0
         return fwarp
 
     @staticmethod
@@ -87,12 +81,12 @@ class GcodeParameters:
         The minimum number of data points required is (k+1)**2,
         with k=1 for linear, k=3 for cubic and k=5 for quintic interpolation.
         """
-        if num_tot < 4**2:
+        if num_tot < 4 ** 2:
             raise ValueError('I need more values to compute the interpolation.')
 
         num_side = int(np.ceil(np.sqrt(num_tot)))
-        xpos = np.linspace(margin, samplesize[0]-margin, num_side)
-        ypos = np.linspace(margin, samplesize[1]-margin, num_side)
+        xpos = np.linspace(margin, samplesize[0] - margin, num_side)
+        ypos = np.linspace(margin, samplesize[1] - margin, num_side)
         xlist = []
         ylist = []
         zlist = []
@@ -102,7 +96,7 @@ class GcodeParameters:
             xlist.append(pos[0])
             ylist.append(pos[1])
             zlist.append(float(input('X={:.1f} Y={:.1f}: \t'.format(pos[0],
-                                                                    pos[1])))/1000)
+                                                                    pos[1]))) / 1000)
             if zlist[-1] == '':
                 raise ValueError('You have missed the last value.')
 
@@ -110,8 +104,8 @@ class GcodeParameters:
         func_antiwarp = interp2d(xlist, ylist, zlist, kind='cubic')
 
         # plot the surface
-        xprobe = np.linspace(-3, samplesize[0]+3)
-        yprobe = np.linspace(-3, samplesize[1]+3)
+        xprobe = np.linspace(-3, samplesize[0] + 3)
+        yprobe = np.linspace(-3, samplesize[1] + 3)
         zprobe = func_antiwarp(xprobe, yprobe)
         ax = plt.axes(projection='3d')
         ax.contour3D(xprobe, yprobe, zprobe, 200, cmap='viridis')
@@ -136,7 +130,6 @@ class WaveguideParameters:
                  margin: float = 1.0,
                  cmd_rate_max: float = 1200,
                  acc_max: float = 500):
-
         if not isinstance(scan, int):
             raise ValueError('Number of scan must be integer.')
 

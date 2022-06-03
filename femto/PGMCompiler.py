@@ -538,7 +538,7 @@ class PGMCompiler:
         make_trench(self, col, col_index, base_folder, dirname, u,
                     nboxz, hbox, zoff, deltaz, tspeed, speed_pos, pause)
 
-    def compensate(self, pts):
+    def compensate(self, pts: np.ndarray) -> np.ndarray:
         """
         pts : [X,Y,Z] matrix or just a single point
         It returns the points compensated along Z
