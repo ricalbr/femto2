@@ -124,3 +124,6 @@ fit_stress_test.py
 
 # Pickle functions
 *.pkl
+
+# Documentation
+docs/*
