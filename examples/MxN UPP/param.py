@@ -39,6 +39,12 @@ d1 = 0.5 * (pitch - int_distance)
 d2 = pitch - int_distance
 
 # Markers
+PARAMETERS_MK = WaveguideParameters(
+    scan=1,
+    speed=4,
+    depth=0.001,
+    speedpos=5,
+)
 lx = 1
 ly = 0.05
 

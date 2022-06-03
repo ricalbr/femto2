@@ -11,7 +11,7 @@ t0 = time.perf_counter()
 # MxN circuit
 circ = {
     'waveguide': [Waveguide(p.PARAMETERS_WG) for _ in range(p.MM)],
-    'marker': [Marker() for _ in range(p.NN)],
+    'marker': [Marker(p.PARAMETERS_MK) for _ in range(p.NN)],
     'trench': [TrenchColumn(p.PARAMETERS_TC) for _ in range(p.NN)]
 }
 
