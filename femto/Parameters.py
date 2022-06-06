@@ -9,6 +9,141 @@ import numpy as np
 from scipy.interpolate import interp2d
 
 
+class WaveguideParameters:
+    """
+    Class containing the parameters for the waveguide fabrication.
+    """
+
+    def __init__(self,
+                 scan: int,
+                 speed: float,
+                 depth: float = 0.035,
+                 radius: float = 15,
+                 pitch: float = 0.080,
+                 pitch_fa: float = 0.127,
+                 int_dist: float = None,
+                 int_length: float = 0.0,
+                 length_arm: float = 0.0,
+                 speedpos: float = 40,
+                 dwelltime: float = 0.5,
+                 lsafe: float = 4.0,
+                 dsafe: float = 0.015,
+                 margin: float = 1.0,
+                 cmd_rate_max: float = 1200,
+                 acc_max: float = 500):
+        if not isinstance(scan, int):
+            raise ValueError('Number of scan must be integer.')
+
+        # input parameters:
+        self.scan = scan
+        self._speed = speed
+        self.depth = depth
+        self.radius = radius
+        self._pitch = pitch
+        self.pitch_fa = pitch_fa
+        self._int_dist = int_dist
+        self.int_length = int_length
+        self.length_arm = length_arm
+
+        self.lsafe = lsafe
+        self.dsafe = dsafe
+        self.margin = margin
+        self.speedpos = speedpos
+        self.dwelltime = dwelltime
+
+        self.cmd_rate_max = cmd_rate_max
+        self.acc_max = acc_max
+
+        # Computed parameters
+        self.lvelo = None
+        self.dl = None
+        self.dy_bend = None
+        self._compute_parameters()
+
+    @property
+    def speed(self) -> float:
+        return self._speed
+
+    @speed.setter
+    def speed(self, value: float):
+        self._speed = value
+        self._compute_parameters()
+
+    @property
+    def int_dist(self):
+        return self._int_dist
+
+    @int_dist.setter
+    def int_dist(self, value):
+        self._int_dist = value
+        self.dy_bend = self._calc_dbend()
+
+    @property
+    def pitch(self):
+        return self._pitch
+
+    @pitch.setter
+    def pitch(self, value):
+        self._pitch = value
+        self.dy_bend = self._calc_dbend()
+
+    # Private interface
+    def _calc_dbend(self):
+        if self._pitch is not None and self._int_dist is not None:
+            return 0.5 * (self._pitch - self._int_dist)
+        else:
+            return None
+
+    def _compute_parameters(self):
+        self.lvelo = 3 * (0.5 * self.speed ** 2 / self.acc_max)  # length needed to acquire the writing speed [mm]
+        self.dl = self.speed / self.cmd_rate_max  # minimum separation between two points [mm]
+
+
+class TrenchParameters:
+    """
+    Class containing the parameters for trench fabrication.
+    """
+
+    def __init__(self,
+                 x_center: float = None,
+                 y_min: float = None,
+                 y_max: float = None,
+                 bridge: float = 0.026,
+                 lenght: float = 1,
+                 nboxz: int = 4,
+                 z_off: float = 0.020,
+                 h_box: float = 0.075,
+                 base_folder: str = r'C:\Users\Capable\Desktop',
+                 deltaz: float = 0.0015,
+                 delta_floor: float = 0.001,
+                 beam_waist: float = 0.004,
+                 round_corner: float = 0.005,
+                 speed: float = 4,
+                 speedpos: float = 5):
+        self.x_center = x_center
+        self.y_min = y_min
+        self.y_max = y_max
+        self.bridge = bridge
+        self.length = lenght
+        self.nboxz = nboxz
+        self.z_off = z_off
+        self.h_box = h_box
+        self.deltaz = deltaz
+        self.delta_floor = delta_floor
+        self.beam_waist = beam_waist
+        self.round_corner = round_corner
+        self.speed = speed
+        self.speedpos = speedpos
+
+        # adjust bridge size considering the size of the laser focus [mm]
+        self.adj_bridge = self.bridge / 2 + self.beam_waist + self.round_corner
+        self.n_repeat = int(ceil((self.h_box + self.z_off) / self.deltaz))
+
+        # FARCALL directories
+        self.base_folder = base_folder
+        self.CWD = os.path.dirname(os.path.abspath(__file__))
+
+
 class GcodeParameters:
     """
     Class containing the parameters for the G-Code file compiler.
@@ -138,137 +273,3 @@ class GcodeParameters:
         plt.show()
 
         return func_antiwarp
-
-
-class WaveguideParameters:
-    """
-    Class containing the parameters for the waveguide fabrication.
-    """
-
-    def __init__(self,
-                 scan: int,
-                 speed: float,
-                 depth: float = 0.035,
-                 radius: float = 15,
-                 pitch: float = 0.080,
-                 pitch_fa: float = 0.127,
-                 int_dist: float = None,
-                 int_length: float = 0.0,
-                 length_arm: float = 0.0,
-                 speedpos: float = 40,
-                 dwelltime: float = 0.5,
-                 lsafe: float = 4.0,
-                 dsafe: float = 0.015,
-                 margin: float = 1.0,
-                 cmd_rate_max: float = 1200,
-                 acc_max: float = 500):
-        if not isinstance(scan, int):
-            raise ValueError('Number of scan must be integer.')
-
-        # input parameters:
-        self.scan = scan
-        self._speed = speed
-        self.depth = depth
-        self.radius = radius
-        self._pitch = pitch
-        self.pitch_fa = pitch_fa
-        self._int_dist = int_dist
-        self.int_length = int_length
-        self.length_arm = length_arm
-        self.speedpos = speedpos
-        self.dwelltime = dwelltime
-        self.dy_bend = None
-
-        self.lsafe = lsafe
-        self.dsafe = dsafe
-        self.margin = margin
-
-        self.cmd_rate_max = cmd_rate_max
-        self.acc_max = acc_max
-
-        self.lvelo = None
-        self.dl = None
-        self._compute_parameters()
-
-    @property
-    def speed(self) -> float:
-        return self._speed
-
-    @speed.setter
-    def speed(self, value: float):
-        self._speed = value
-        self._compute_parameters()
-
-    @property
-    def int_dist(self):
-        return self._int_dist
-
-    @int_dist.setter
-    def int_dist(self, value):
-        self._int_dist = value
-        self.dy_bend = self._calc_dbend()
-
-    @property
-    def pitch(self):
-        return self._pitch
-
-    @pitch.setter
-    def pitch(self, value):
-        self._pitch = value
-        self.dy_bend = self._calc_dbend()
-
-    # Private interface
-    def _calc_dbend(self):
-        if self._pitch is not None and self._int_dist is not None:
-            return 0.5 * (self._pitch - self._int_dist)
-        else:
-            return None
-
-    def _compute_parameters(self):
-        self.lvelo = 3 * (0.5 * self.speed ** 2 / self.acc_max)  # length needed to acquire the writing speed [mm]
-        self.dl = self.speed / self.cmd_rate_max  # minimum separation between two points [mm]
-
-
-class TrenchParameters:
-    """
-    Class containing the parameters for trench fabrication.
-    """
-
-    def __init__(self,
-                 x_center: float = None,
-                 y_min: float = None,
-                 y_max: float = None,
-                 bridge: float = 0.026,
-                 lenght: float = 1,
-                 nboxz: int = 4,
-                 z_off: float = 0.020,
-                 h_box: float = 0.075,
-                 base_folder: str = r'C:\Users\Capable\Desktop',
-                 deltaz: float = 0.0015,
-                 delta_floor: float = 0.001,
-                 beam_waist: float = 0.004,
-                 round_corner: float = 0.005,
-                 speed: float = 4,
-                 speedpos: float = 5):
-        self.x_center = x_center
-        self.y_min = y_min
-        self.y_max = y_max
-        self.bridge = bridge
-        self.length = lenght
-        self.nboxz = nboxz
-        self.z_off = z_off
-        self.h_box = h_box
-        self.deltaz = deltaz
-        self.delta_floor = delta_floor
-        self.beam_waist = beam_waist
-        self.round_corner = round_corner
-        self.speed = speed
-        self.speedpos = speedpos
-
-        # adjust bridge size considering the size of the laser focus [mm]
-        self.adj_bridge = self.bridge / 2 + self.beam_waist + self.round_corner
-        self.n_repeat = int(ceil((self.h_box + self.z_off) / self.deltaz))
-
-        # FARCALL directories
-        self.base_folder = base_folder
-        self.CWD = os.path.dirname(os.path.abspath(__file__))
