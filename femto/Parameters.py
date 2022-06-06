@@ -167,7 +167,7 @@ class WaveguideParameters:
 
         # input parameters:
         self.scan = scan
-        self.speed = speed
+        self._speed = speed
         self.depth = depth
         self.radius = radius
         self._pitch = pitch
@@ -179,16 +179,25 @@ class WaveguideParameters:
         self.dwelltime = dwelltime
         self.dy_bend = None
 
-        self.cmd_rate_max = cmd_rate_max
-        self.acc_max = acc_max
-
         self.lsafe = lsafe
         self.dsafe = dsafe
         self.margin = margin
 
-        # Compute parameters:
-        self.lvelo = 3 * (0.5 * self.speed ** 2 / self.acc_max)  # length needed to acquire the writing speed [mm]
-        self.dl = self.speed / self.cmd_rate_max  # minimum separation between two points [mm]
+        self.cmd_rate_max = cmd_rate_max
+        self.acc_max = acc_max
+
+        self.lvelo = None
+        self.dl = None
+        self._compute_parameters()
+
+    @property
+    def speed(self) -> float:
+        return self._speed
+
+    @speed.setter
+    def speed(self, value: float):
+        self._speed = value
+        self._compute_parameters()
 
     @property
     def int_dist(self):
@@ -214,13 +223,17 @@ class WaveguideParameters:
         else:
             return None
 
+    def _compute_parameters(self):
+        self.lvelo = 3 * (0.5 * self.speed ** 2 / self.acc_max)  # length needed to acquire the writing speed [mm]
+        self.dl = self.speed / self.cmd_rate_max  # minimum separation between two points [mm]
+
 
 class TrenchParameters:
     """
     Class containing the parameters for trench fabrication.
     """
 
-    def __init__(self, *,
+    def __init__(self,
                  x_center: float = None,
                  y_min: float = None,
                  y_max: float = None,
