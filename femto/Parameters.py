@@ -217,6 +217,7 @@ class WaveguideParameters:
         self._pitch = value
         self.dy_bend = self._calc_dbend()
 
+    # Private interface
     def _calc_dbend(self):
         if self._pitch is not None and self._int_dist is not None:
             return 0.5 * (self._pitch - self._int_dist)
