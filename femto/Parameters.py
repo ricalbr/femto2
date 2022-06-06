@@ -150,8 +150,14 @@ class WaveguideParameters:
                  speed: float,
                  depth: float = 0.035,
                  radius: float = 15,
+                 pitch: float = 0.080,
+                 pitch_fa: float = 0.127,
+                 int_dist: float = None,
+                 int_length: float = 0.0,
+                 length_arm: float = 0.0,
                  speedpos: float = 40,
                  dwelltime: float = 0.5,
+                 lsafe: float = 4.0,
                  dsafe: float = 0.015,
                  margin: float = 1.0,
                  cmd_rate_max: float = 1200,
@@ -164,18 +170,49 @@ class WaveguideParameters:
         self.speed = speed
         self.depth = depth
         self.radius = radius
+        self._pitch = pitch
+        self.pitch_fa = pitch_fa
+        self._int_dist = int_dist
+        self.int_length = int_length
+        self.length_arm = length_arm
         self.speedpos = speedpos
         self.dwelltime = dwelltime
+        self.dy_bend = None
 
         self.cmd_rate_max = cmd_rate_max
         self.acc_max = acc_max
 
+        self.lsafe = lsafe
         self.dsafe = dsafe
         self.margin = margin
 
         # Compute parameters:
         self.lvelo = 3 * (0.5 * self.speed ** 2 / self.acc_max)  # length needed to acquire the writing speed [mm]
         self.dl = self.speed / self.cmd_rate_max  # minimum separation between two points [mm]
+
+    @property
+    def int_dist(self):
+        return self._int_dist
+
+    @int_dist.setter
+    def int_dist(self, value):
+        self._int_dist = value
+        self.dy_bend = self._calc_dbend()
+
+    @property
+    def pitch(self):
+        return self._pitch
+
+    @pitch.setter
+    def pitch(self, value):
+        self._pitch = value
+        self.dy_bend = self._calc_dbend()
+
+    def _calc_dbend(self):
+        if self._pitch is not None and self._int_dist is not None:
+            return 0.5 * (self._pitch - self._int_dist)
+        else:
+            return None
 
 
 class TrenchParameters:
