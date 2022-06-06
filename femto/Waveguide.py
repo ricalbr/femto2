@@ -37,11 +37,9 @@ class Waveguide(LaserPath):
         :rtype: Waveguide
         """
         if np.size(init_pos) != 3:
-            raise ValueError('Given initial position is not valid.',
-                             f'3 values required. {np.size(init_pos)} given.')
+            raise ValueError(f'Given initial position is not valid. 3 values required. {np.size(init_pos)} given.')
         if self._x.size != 0:
-            raise ValueError('Coordinate matrix is not empty. ',
-                             'Cannot start a new waveguide in this point.')
+            raise ValueError('Coordinate matrix is not empty. Cannot start a new waveguide in this point.')
 
         x0, y0, z0 = init_pos
         f0 = np.asarray(speedpos, dtype=np.float32)
@@ -65,6 +63,7 @@ class Waveguide(LaserPath):
         f = np.array([self._f[-1], speedpos]).astype(np.float32)
         s = np.array([0, 0]).astype(np.float32)
         self.add_path(x, y, z, f, s)
+        self.fabrication_time()
 
     def linear(self, increment: list, mode: str = 'INC', shutter: int = 1, speed: float = None) -> Self:
         """
@@ -88,15 +87,13 @@ class Waveguide(LaserPath):
         :raise ValueError: Mode is neither INC nor ABS.
         """
         if mode.upper() not in ['ABS', 'INC']:
-            raise ValueError('Mode should be either ABS or INC.',
-                             f'{mode.upper()} was given.')
+            raise ValueError(f'Mode should be either ABS or INC. {mode.upper()} was given.')
         x_inc, y_inc, z_inc = increment
         f = self.param.speed if speed is None else speed
         if mode.upper() == 'ABS':
-            self.add_path(x_inc, y_inc, z_inc, f, np.asarray(shutter, dtype=np.float32))
+            self.add_path(x_inc, y_inc, z_inc, f, shutter)
         else:
-            self.add_path(self._x[-1] + x_inc, self._y[-1] + y_inc, self._z[-1] + z_inc, f,
-                          np.asarray(shutter, dtype=np.float32))
+            self.add_path(self._x[-1] + x_inc, self._y[-1] + y_inc, self._z[-1] + z_inc, f, shutter)
         return self
 
     def circ(self, initial_angle: float, final_angle: float, radius: float = None, shutter: int = 1,
@@ -540,8 +537,7 @@ class Waveguide(LaserPath):
         else:
             final_pos = np.insert(final_pos, 0, xl)
             pos_diff = np.subtract(final_pos, init_pos)
-            ang = np.arccos(1 - np.sqrt(pos_diff[1] ** 2 + pos_diff[2] ** 2) /
-                            (2 * radius))
+            ang = np.arccos(1 - np.sqrt(pos_diff[1] ** 2 + pos_diff[2] ** 2) / (2 * radius))
             pos_diff[0] = 2 * radius * np.sin(ang)
             l_curve = 2 * ang * radius
         return pos_diff[0], pos_diff[1], pos_diff[2], l_curve
@@ -624,27 +620,26 @@ def _example():
     from mpl_toolkits.mplot3d import Axes3D
 
     # Data
-    pitch = 0.080
-    int_dist = 0.007
-    dy_bend = 0.5 * (pitch - int_dist)
-    increment = [4, 0, 0]
-
     PARAMETERS_WG = WaveguideParameters(
         scan=6,
         speed=20,
-        radius=15
+        radius=15,
+        pitch=0.080,
+        int_dist=0.007,
     )
+
+    increment = [PARAMETERS_WG.lsafe, 0, 0]
 
     # Calculations
     mzi = [Waveguide(PARAMETERS_WG) for _ in range(2)]
     for index, wg in enumerate(mzi):
-        [xi, yi, zi] = [-2, -pitch / 2 + index * pitch, 0.035]
+        [xi, yi, zi] = [-2, -PARAMETERS_WG.pitch / 2 + index * PARAMETERS_WG.pitch, 0.035]
 
         wg.start([xi, yi, zi]) \
             .linear(increment) \
-            .sin_mzi((-1) ** index * dy_bend) \
+            .sin_mzi((-1) ** index * PARAMETERS_WG.dy_bend) \
             .spline_bridge((-1) ** index * 0.08, (-1) ** index * 0.015) \
-            .sin_mzi((-1) ** (index + 1) * dy_bend) \
+            .sin_mzi((-1) ** (index + 1) * PARAMETERS_WG.dy_bend) \
             .linear(increment)
         wg.end()
 

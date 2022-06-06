@@ -231,8 +231,7 @@ class TrenchColumn:
 
         for block in list(self._rect):
             block = (polygon.orient(block)
-                     .buffer(self.param.round_corner,
-                             resolution=250, cap_style=1))
+                     .buffer(self.param.round_corner, resolution=250, cap_style=1))
             trench = Trench(block, self.param.delta_floor)
             self._trench_list.append(trench)
 
@@ -264,10 +263,15 @@ def _example():
     import matplotlib.pyplot as plt
 
     # Data
-    pitch = 0.080
-    int_dist = 0.007
-    d_bend = 0.5 * (pitch - int_dist)
     x_mid = None
+
+    PARAMETERS_WG = WaveguideParameters(
+        scan=6,
+        speed=20,
+        radius=15,
+        pitch=0.080,
+        int_dist=0.007,
+    )
 
     PARAMETERS_TC = TrenchParameters(
         lenght=1.0,
@@ -276,21 +280,15 @@ def _example():
         h_box=0.075,
         base_folder=r'C:\Users\Capable\Desktop\RiccardoA',
         y_min=-0.1,
-        y_max=19 * pitch + 0.1
-    )
-
-    PARAMETERS_WG = WaveguideParameters(
-        scan=6,
-        speed=20,
-        radius=15
+        y_max=19 * PARAMETERS_WG.pitch + 0.1
     )
 
     # Calculations
     coup = [Waveguide(PARAMETERS_WG) for _ in range(20)]
     for i, wg in enumerate(coup):
-        wg.start([-2, i * pitch, 0.035]).sin_acc((-1) ** i * d_bend)
+        wg.start([-2, i * PARAMETERS_WG.pitch, 0.035]).sin_acc((-1) ** i * PARAMETERS_WG.dy_bend)
         x_mid = wg.x[-1]
-        wg.sin_acc((-1) ** i * d_bend).end()
+        wg.sin_acc((-1) ** i * PARAMETERS_WG.dy_bend).end()
 
     PARAMETERS_TC.x_center = x_mid
     trench_col = TrenchColumn(PARAMETERS_TC)
