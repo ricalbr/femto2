@@ -101,7 +101,7 @@ class LaserPath:
         """
         points = np.stack((self._x, self._y, self._z), axis=-1).astype(np.float32)
         linelength = np.linalg.norm(np.diff(points))
-        self.twriting = linelength * (1 / self.param.speed + 1 / self.param.speed) * self.param.scan
+        self.twriting = linelength * (1 / self.param.speed + 1 / self.param.speedpos) * self.param.scan
 
     # Private interface
     def _unique_points(self):
