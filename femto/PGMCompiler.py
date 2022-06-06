@@ -45,11 +45,10 @@ class PGMCompiler:
 
         self.output_digits = param.output_digits
 
+        self._instructions = deque()
         self._total_dwell_time = 0.0
         self._shutter_on = False
         self._loaded_files = []
-
-        self._instructions = deque()
 
     def __enter__(self):
         """
@@ -78,13 +77,12 @@ class PGMCompiler:
     def header(self):
         """
         The function print the header file of the G-Code file. The user can specify the fabrication line to work in
-        CAPABLE or FIRE LINE1 as parameter when the G-Code Compiler object is instantiated.
+        ``CAPABLE`` or ``FIRE LINE1`` as parameter when the G-Code Compiler object is instantiated.
 
         :return: None
         """
         if self.lab.upper() not in ['CAPABLE', 'FIRE']:
-            raise ValueError('Fabrication line should be CAPABLE or FIRE.'
-                             f'Given {self.lab.upper()}.')
+            raise ValueError(f'Fabrication line should be CAPABLE or FIRE. Given {self.lab.upper()}.')
 
         if self.lab.upper() == 'CAPABLE':
             with open(os.path.join(self.cwd, 'utils', 'header_capable.txt')) as fd:
@@ -121,7 +119,7 @@ class PGMCompiler:
         tracked internally during the compilation of the .pgm file). The instruction is printed to file only if the
         new state differs from the current one.
 
-        :param state: New state of the shutter. 'ON' or 'OFF'
+        :param state: New state of the shutter. ``ON`` or ``OFF``
         :type state: str
         :return: None
 
@@ -156,9 +154,10 @@ class PGMCompiler:
         To exclude a variable set it to None.
 
         :param home_pos: Ordered coordinate list that specifies software home position [mm].
-            home_pos[0] -> X
-            home_pos[1] -> Y
-            home_pos[2] -> Z
+        ::
+            ``home_pos[0]`` -> X
+            ``home_pos[1]`` -> Y
+            ``home_pos[2]`` -> Z
         :type home_pos: List[float]
         :return: None
 
@@ -330,12 +329,13 @@ class PGMCompiler:
                 self.shutter('ON')
                 self.dwell(self.long_pause)
             self._instructions.append(f'LINEAR {arg}\n')
+        self.dwell(self.long_pause)
 
     def instruction(self, instr: str):
         """
         Adds a G-Code instruction passed as parameter to the PGM file.
 
-        :param instr: Instruction line to be added to the PGM file. The '\n' character is optional.
+        :param instr: Instruction line to be added to the PGM file. The ``\\n`` character is optional.
         :type instr: str
         :return: None
         """
@@ -389,9 +389,9 @@ class PGMCompiler:
         """
         Returns the points compensated along z-direction for the refractive index, the offset and the glass warp.
 
-        :param pts: [X,Y,Z] matrix or just a single point
+        :param pts: ``[X,Y,Z]`` matrix or just a single point
         :type pts: np.ndarray
-        :return: [X,Y,Z] matrix of compensated points
+        :return: ``[X,Y,Z]`` matrix of compensated points
         :rtype: np.ndarray
         """
         pts_comp = deepcopy(np.array(pts))
@@ -436,7 +436,7 @@ class PGMCompiler:
     def _format_args(self, x: float = None, y: float = None, z: float = None, f: float = None) -> str:
         """
         Utility function that creates a string prepending the coordinate name to the given value for all the given
-        the coordinates (X,Y,Z) and feed rate (F).
+        the coordinates ``[X,Y,Z]`` and feed rate ``F``.
         The decimal precision can be set by the user by setting the output_digits attribute.
 
         :param x: Value of the x-coordinate [mm]. The default is None.
@@ -583,8 +583,8 @@ def make_trench(gc: PGMCompiler, col: TrenchColumn, col_index: int = None,
     :param dirname: Directory to export the trenches PGM files. The default is 's-trench'.
     :type dirname: str
     :param u: List of two values of U-coordinate for fabrication of wall and floor of the trench. The default is None.
-            u[0] -> U-coordinate for the wall
-            u[1] -> U-coordinate for the floor
+            ``u[0]`` -> U-coordinate for the wall
+            ``u[1]`` -> U-coordinate for the floor
     :type u: List
     :param nboxz: Number of sub-box along z-direction in which the trench is divided. The default is 4.
     :type nboxz: int
@@ -621,12 +621,8 @@ def make_trench(gc: PGMCompiler, col: TrenchColumn, col_index: int = None,
             # load filenames (wall/floor)
             wall_filename = f'trench{t_index + 1:03}_wall.pgm'
             floor_filename = f'trench{t_index + 1:03}_floor.pgm'
-            wall_path = os.path.join(base_folder,
-                                     trench_directory,
-                                     wall_filename)
-            floor_path = os.path.join(base_folder,
-                                      trench_directory,
-                                      floor_filename)
+            wall_path = os.path.join(base_folder, trench_directory, wall_filename)
+            floor_path = os.path.join(base_folder, trench_directory, floor_filename)
 
             x0, y0 = trench.block.exterior.coords[0]
             z0 = (nbox * hbox - zoff) / gc.ind_rif
@@ -659,16 +655,14 @@ def _example():
     from femto import Waveguide
 
     # Data
-    pitch = 0.080
-    int_dist = 0.007
-    d_bend = 0.5 * (pitch - int_dist)
-    increment = [4, 0, 0]
-
     PARAMETERS_WG = WaveguideParameters(
         scan=6,
         speed=20,
-        radius=15
+        radius=15,
+        pitch=0.080,
+        int_dist=0.007,
     )
+    increment = [PARAMETERS_WG.lsafe, 0, 0]
 
     PARAMETERS_GC = GcodeParameters(
         filename='testPGMcompiler.pgm',
@@ -681,9 +675,9 @@ def _example():
     # Calculations
     coup = [Waveguide(PARAMETERS_WG) for _ in range(2)]
     for i, wg in enumerate(coup):
-        wg.start([-2, -pitch / 2 + i * pitch, 0.035]) \
+        wg.start([-2, -PARAMETERS_WG.pitch / 2 + i * PARAMETERS_WG.pitch, 0.035]) \
             .linear(increment) \
-            .sin_mzi((-1) ** i * d_bend, arm_length=1.0) \
+            .sin_mzi((-1) ** i * PARAMETERS_WG.dy_bend, arm_length=1.0) \
             .linear(increment)
         wg.end()
 
