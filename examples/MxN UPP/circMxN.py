@@ -1,7 +1,8 @@
 import time
 
 import matplotlib.pyplot as plt
-from femto import PGMCompiler, Waveguide
+
+from femto import PGMCompiler, TrenchColumn, Waveguide
 from param import *
 
 t0 = time.perf_counter()
@@ -10,12 +11,12 @@ t0 = time.perf_counter()
 circ = {
     'waveguide': [Waveguide(PARAMETERS_WG) for _ in range(MM)],
     # 'marker': [Marker(PARAMETERS_MK) for _ in range(NN)],
-    # 'trench': [TrenchColumn(PARAMETERS_TC) for _ in range(NN)]
+    'trench': [TrenchColumn(PARAMETERS_TC) for _ in range(NN)]
 }
 
 x_trench = []
 for i, wg in enumerate(circ['waveguide']):
-    [xi, yi, zi] = [x0, y0 + (i - 0.5 * (MM - 1)) * PARAMETERS_WG.pitch, z0]
+    [xi, yi, zi] = [x0, y0 + (i - 0.5 * (MM - 1)) * PARAMETERS_WG.pitch, wg.depth]
 
     wg.start([xi, yi, zi])
     wg.linear(increment)
@@ -37,12 +38,12 @@ for i, wg in enumerate(circ['waveguide']):
     wg.linear(increment)
     wg.end()
 
-# # Trench
-# for xt, col in zip(x_trench, circ['trench']):
-#     col.x_c = xt
-#     col.y_min = y0 - 0.5 * MM * PARAMETERS_WG.pitch
-#     col.y_max = y0 + 0.5 * MM * PARAMETERS_WG.pitch
-#     col.get_trench(circ['waveguide'])
+# Trench
+for xt, col in zip(x_trench, circ['trench']):
+    col.x_center = xt
+    col.y_min = y0 - 0.5 * MM * PARAMETERS_WG.pitch
+    col.y_max = y0 + 0.5 * MM * PARAMETERS_WG.pitch
+    col.get_trench(circ['waveguide'])
 
 # # Plot
 fig, ax = plt.subplots()
@@ -53,11 +54,11 @@ for wg in circ['waveguide']:
 # for c in circ['marker']:
 #     ax.plot(c.x[:-1], c.y[:-1], '-k', linewidth=1.25)
 
-# for col in circ['trench']:
-#     for t in col:
-#         ax.add_patch(t.patch)
+for col in circ['trench']:
+    for t in col:
+        ax.add_patch(t.patch)
 plt.tight_layout(pad=0)
-# plt.show()
+plt.show()
 
 # Compilation
 # # OPTICAL CIRCUIT
