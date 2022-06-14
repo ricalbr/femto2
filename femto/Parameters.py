@@ -23,14 +23,16 @@ class WaveguideParameters:
                  pitch_fa: float = 0.127,
                  int_dist: float = None,
                  int_length: float = 0.0,
-                 length_arm: float = 0.0,
+                 arm_length: float = 0.0,
                  speedpos: float = 40,
                  dwelltime: float = 0.5,
                  lsafe: float = 4.0,
-                 dsafe: float = 0.015,
+                 ltrench: float = 1.0,
+                 dz_bridge: float = 0.015,
                  margin: float = 1.0,
                  cmd_rate_max: float = 1200,
-                 acc_max: float = 500):
+                 acc_max: float = 500,
+                 samplesize: Tuple[float, float] = (None, None)):
         if not isinstance(scan, int):
             raise ValueError('Number of scan must be integer.')
 
@@ -38,15 +40,17 @@ class WaveguideParameters:
         self.scan = scan
         self._speed = speed
         self.depth = depth
-        self.radius = radius
+        self._radius = radius
         self._pitch = pitch
         self.pitch_fa = pitch_fa
         self._int_dist = int_dist
-        self.int_length = int_length
-        self.length_arm = length_arm
+        self._int_length = int_length
+        self._arm_length = arm_length
+        self._dz_bridge = dz_bridge
+        self.samplesize = samplesize
 
         self.lsafe = lsafe
-        self.dsafe = dsafe
+        self.ltrench = ltrench
         self.margin = margin
         self.speedpos = speedpos
         self.dwelltime = dwelltime
@@ -57,8 +61,15 @@ class WaveguideParameters:
         # Computed parameters
         self.lvelo = None
         self.dl = None
+
+        # TODO: think of a @property for these quantities
         self.dy_bend = None
+        self.dx_bend = None
+        self.dx_acc = None
+        self.dx_mzi = None
+
         self._compute_parameters()
+        self._calc_bend()
 
     @property
     def speed(self) -> float:
@@ -70,33 +81,142 @@ class WaveguideParameters:
         self._compute_parameters()
 
     @property
-    def int_dist(self):
+    def radius(self) -> float:
+        return self._radius
+
+    @radius.setter
+    def radius(self, value: float):
+        self._radius = value
+        self._calc_bend()
+        # compute
+
+    @property
+    def int_dist(self) -> float:
         return self._int_dist
 
     @int_dist.setter
     def int_dist(self, value):
         self._int_dist = value
-        self.dy_bend = self._calc_dbend()
+        self._calc_bend()
 
     @property
-    def pitch(self):
+    def pitch(self) -> float:
         return self._pitch
 
     @pitch.setter
     def pitch(self, value):
         self._pitch = value
-        self.dy_bend = self._calc_dbend()
+        self._calc_bend()
+
+    @property
+    def int_length(self) -> float:
+        return self._int_length
+
+    @int_length.setter
+    def int_length(self, value):
+        self._int_length = value
+        # compute cose
+
+    @property
+    def arm_length(self):
+        return self._arm_length
+
+    @arm_length.setter
+    def arm_length(self, value):
+        self._arm_length = value
+        # compute cose
+
+    @property
+    def dz_bridge(self):
+        return self._dz_bridge
+
+    @dz_bridge.setter
+    def dz_bridge(self, value):
+        self._dz_bridge = value
+
+    @staticmethod
+    def get_sbend_parameter(dy: float, radius: float) -> tuple:
+        """
+        Computes the final angle, and x-displacement for a circular S-bend given the y-displacement dy and curvature
+        radius.
+
+        :param dy: Displacement along y-direction [mm].
+        :type dy: float
+        :param radius: Curvature radius of the S-bend [mm].
+        :type radius: float
+        :return: (final angle [radians], x-displacement [mm])
+        :rtype: tuple
+        """
+        a = np.arccos(1 - (np.abs(dy / 2) / radius))
+        dx = 2 * radius * np.sin(a)
+        return a, dx
+
+    @classmethod
+    def sbend_length(cls, dy: float, radius: float) -> float:
+        """
+        Computes the x-displacement for a circular S-bend given the y-displacement dy and curvature radius.
+
+        :param dy: Displacement along y-direction [mm].
+        :type dy: float
+        :param radius: Curvature radius of the S-bend [mm].
+        :type radius: float
+        :return: x-displacement [mm]
+        :rtype: float
+        """
+        return cls.get_sbend_parameter(dy, radius)[1]
+
+    @staticmethod
+    def get_spline_parameter(init_pos: np.ndarray, dy: float, dz: float, radius: float = 20,
+                             disp_x: float = 0) -> tuple:
+        """
+        Computes the delta displacements along x-, y- and z-direction and the total lenght of the curve.
+
+        :param init_pos: Initial position of the curve.
+        :type init_pos: np.ndarray
+        :param dy: Displacement along y-direction [mm].
+        :type dy: float
+        :param dz: Displacement along z-direction [mm].
+        :type dz: float
+        :param radius: Curvature radius of the spline [mm]. The default is 20 mm.
+        :type dz: radius
+        :param disp_x: Displacement along x-direction [mm]. The default is 0 mm.
+        :type disp_x: float
+        :return: (deltax [mm], deltay [mm], deltaz [mm], curve length [mm]).
+        :rtype: Tuple[float, float, float, float]
+        """
+        xl, yl, zl = init_pos
+        final_pos = np.array([yl + dy, zl + dz])
+        if disp_x != 0:
+            final_pos = np.insert(final_pos, 0, xl + disp_x)
+            pos_diff = np.subtract(final_pos, init_pos)
+            l_curve = np.sqrt(np.sum(pos_diff ** 2))
+        else:
+            final_pos = np.insert(final_pos, 0, xl)
+            pos_diff = np.subtract(final_pos, init_pos)
+            ang = np.arccos(1 - np.sqrt(pos_diff[1] ** 2 + pos_diff[2] ** 2) / (2 * radius))
+            pos_diff[0] = 2 * radius * np.sin(ang)
+            l_curve = 2 * ang * radius
+        return pos_diff[0], pos_diff[1], pos_diff[2], l_curve
 
     # Private interface
-    def _calc_dbend(self):
-        if self._pitch is not None and self._int_dist is not None:
-            return 0.5 * (self._pitch - self._int_dist)
+    def _calc_bend(self):
+        if self._pitch is None:
+            print(f'WARNING: Waveguide pitch is set to None.')
+            self.dy_bend = None
+        if self._int_dist is None:
+            print(f'WARNING: Interaction distance is set to None.')
+            self.dy_bend = None
         else:
-            return None
+            self.dy_bend = 0.5 * (self._pitch - self._int_dist)
+            if self.radius is None:
+                raise ValueError('Curvature radius is set to None.')
+            _, self.dx_bend = self.get_sbend_parameter(self.dy_bend, self.radius)
+            self.dx_acc = 2 * self.dx_bend + self._int_length
+            self.dx_mzi = 4 * self.dx_bend + 2 * self._int_length + self._arm_length
 
     def _compute_parameters(self):
         self.lvelo = 3 * (0.5 * self.speed ** 2 / self.acc_max)  # length needed to acquire the writing speed [mm]
-        self.dl = self.speed / self.cmd_rate_max  # minimum separation between two points [mm]
+        self.dl = self.speed / self.cmd_rate_max  # minimum separation between two points
 
 
 class TrenchParameters:
