@@ -77,7 +77,7 @@ class PGMCompiler:
     def header(self):
         """
         The function print the header file of the G-Code file. The user can specify the fabrication line to work in
-        ``CAPABLE`` or ``FIRE LINE1`` as parameter when the G-Code Compiler object is instantiated.
+        ``CAPABLE`` or ``FIRE LINE1`` as parameter when the G-Code Compiler obj is instantiated.
 
         :return: None
         """
@@ -214,12 +214,18 @@ class PGMCompiler:
         :return: None
         """
         if num is None:
-            raise ValueError('Number of iterations is None. Set the num_scan attribute in Waveguide object.')
+            raise ValueError('Number of iterations is None. Set the num_scan attribute in Waveguide obj.')
+        if num == 0:
+            raise ValueError('Number of iterations is 0. Set num_scan >= 1.')
         self._instructions.append(f'FOR ${var} = 0 TO {num - 1}\n')
+        _temp_dt = self._total_dwell_time
         try:
             yield
         finally:
             self._instructions.append(f'NEXT ${var}\n\n')
+            _dt_forloop = self._total_dwell_time - _temp_dt
+            # pauses should be multiplied by number of cycles as well
+            self._total_dwell_time += (num - 1) * _dt_forloop
 
     @contextmanager
     def repeat(self, num: int):
@@ -231,12 +237,18 @@ class PGMCompiler:
         :return: None
         """
         if num is None:
-            raise ValueError('Number of iterations is None. Set the `scan` attribute in Waveguide object.')
+            raise ValueError('Number of iterations is None. Set the `scan` attribute in Waveguide obj.')
+        if num == 0:
+            raise ValueError('Number of iterations is 0. Set num_scan >= 1.')
         self._instructions.append(f'REPEAT {num}\n')
+        _temp_dt = self._total_dwell_time
         try:
             yield
         finally:
             self._instructions.append('ENDREPEAT\n\n')
+            _dt_repeat = self._total_dwell_time - _temp_dt
+            # pauses should be multiplied by number of cycles as well
+            self._total_dwell_time += (num - 1) * _dt_repeat
 
     def tic(self):
         """
@@ -313,10 +325,10 @@ class PGMCompiler:
         x, y, z, f_c, s_c = points.T
         sub_points = np.stack((x, y, z), axis=-1).astype(np.float32)
         if self.warp_flag:
-            sub_points = np.matmul(sub_points, self._t_matrix())
+            sub_points = np.matmul(sub_points, self.t_matrix())
             x_c, y_c, z_c = self.compensate(sub_points).T
         else:
-            x_c, y_c, z_c = np.matmul(sub_points, self._t_matrix()).T
+            x_c, y_c, z_c = np.matmul(sub_points, self.t_matrix()).T
         args = [self._format_args(x, y, z, f)
                 for (x, y, z, f) in zip(x_c, y_c, z_c, f_c)]
         for (arg, s) in zip_longest(args, s_c):
@@ -404,8 +416,7 @@ class PGMCompiler:
             pts_comp[2] = (pts_comp[2] + self.fwarp(pts_comp[0], pts_comp[1]) / self.ind_rif)
         return pts_comp
 
-    # Private interface
-    def _t_matrix(self, dim: int = 3) -> np.ndarray:
+    def t_matrix(self, dim: int = 3) -> np.ndarray:
         """
         Given the rotation angle and the rifraction index, the function compute the transformation matrix as
         composition of rotatio matrix (RM) and a homothety matrix (SM).
@@ -433,6 +444,7 @@ class PGMCompiler:
         else:
             raise ValueError(f'Dimension not valid. dim must be either 2 or 3. Given {dim}.')
 
+    # Private interface
     def _format_args(self, x: float = None, y: float = None, z: float = None, f: float = None) -> str:
         """
         Utility function that creates a string prepending the coordinate name to the given value for all the given
@@ -509,10 +521,10 @@ def write_array(gc: PGMCompiler, points: np.ndarray, f_array: list = None):
     :return: None
     """
     if points.shape[-1] == 2:
-        x_array, y_array = np.matmul(points, gc._t_matrix(dim=2)).T
+        x_array, y_array = np.matmul(points, gc.t_matrix(dim=2)).T
         z_array = [None]
     else:
-        x_array, y_array, z_array = np.matmul(points, gc._t_matrix()).T
+        x_array, y_array, z_array = np.matmul(points, gc.t_matrix()).T
 
     if not isinstance(f_array, Iterable):
         f_array = [f_array]
@@ -523,9 +535,9 @@ def write_array(gc: PGMCompiler, points: np.ndarray, f_array: list = None):
 
 def export_trench_path(trench: Trench, filename: str, ind_rif: float, angle: float, tspeed: float = 4):
     """
-    Helper function for the export of the wall and floor instruction of a Trench object.
+    Helper function for the export of the wall and floor instruction of a Trench obj.
 
-    :param trench: Trench object to export.
+    :param trench: Trench obj to export.
     :type trench: Trench
     :param filename: Base filename for the wall.pgm and floor.pgm files. If the filename ends with the '.pgm'
     extension, the latter it is stripped and replaced with '_wall.pgm' and '_floor.pgm' to differentiate the two paths.
@@ -572,7 +584,7 @@ def make_trench(gc: PGMCompiler, col: TrenchColumn, col_index: int = None,
 
     :param gc: Instance of a PGMCompiler for compilation of a G-Code file.
     :type gc: PGMCompiler
-    :param col: TrenchColumn object containing the list of trench blocks to compile.
+    :param col: TrenchColumn obj containing the list of trench blocks to compile.
     :type col: List
     :param col_index: Index of the column, used for organize the code in folders. The default is None,
     trench directories will not be indexed.
