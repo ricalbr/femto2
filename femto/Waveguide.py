@@ -9,6 +9,7 @@ except ImportError:
 from scipy.interpolate import CubicSpline, InterpolatedUnivariateSpline
 from functools import partialmethod
 from femto.LaserPath import LaserPath
+from femto.helpers import dotdict
 
 
 class Waveguide(LaserPath):
@@ -588,6 +589,7 @@ def _example():
         radius=15,
         pitch=0.080,
         int_dist=0.007,
+        lsafe=3,
     )
 
     increment = [PARAMETERS_WG.lsafe, 0, 0]
@@ -595,13 +597,13 @@ def _example():
     # Calculations
     mzi = [Waveguide(PARAMETERS_WG) for _ in range(2)]
     for index, wg in enumerate(mzi):
-        [xi, yi, zi] = [-2, -PARAMETERS_WG.pitch / 2 + index * PARAMETERS_WG.pitch, 0.035]
+        [xi, yi, zi] = [-2, -wg.pitch / 2 + index * wg.pitch, 0.035]
 
         wg.start([xi, yi, zi]) \
             .linear(increment) \
-            .sin_mzi((-1) ** index * PARAMETERS_WG.dy_bend) \
+            .sin_mzi((-1) ** index * wg.dy_bend) \
             .spline_bridge((-1) ** index * 0.08, (-1) ** index * 0.015) \
-            .sin_mzi((-1) ** (index + 1) * PARAMETERS_WG.dy_bend) \
+            .sin_mzi((-1) ** (index + 1) * wg.dy_bend) \
             .linear(increment)
         wg.end()
 
