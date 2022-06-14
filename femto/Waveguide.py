@@ -17,7 +17,7 @@ class Waveguide(LaserPath):
     Class representing an optical waveguide.
     """
 
-    def __init__(self, param: WaveguideParameters):
+    def __init__(self, param: dict):
         super().__init__(param)
 
     # Methods
@@ -44,7 +44,9 @@ class Waveguide(LaserPath):
         x0, y0, z0 = init_pos
         f0 = np.asarray(speedpos, dtype=np.float32)
         s0 = np.asarray(0.0, dtype=np.float32)
+        s1 = np.asarray(1.0, dtype=np.float32)
         self.add_path(x0, y0, z0, f0, s0)
+        self.add_path(x0, y0, z0, f0, s1)
         return self
 
     def end(self, speedpos: float = 75):
@@ -89,7 +91,7 @@ class Waveguide(LaserPath):
         if mode.upper() not in ['ABS', 'INC']:
             raise ValueError(f'Mode should be either ABS or INC. {mode.upper()} was given.')
         x_inc, y_inc, z_inc = increment
-        f = self.param.speed if speed is None else speed
+        f = self.speed if speed is None else speed
         if mode.upper() == 'ABS':
             self.add_path(x_inc, y_inc, z_inc, f, shutter)
         else:
@@ -107,24 +109,23 @@ class Waveguide(LaserPath):
         :type initial_angle: float
         :param final_angle: Ending angle of the circular arc [radians].
         :type final_angle: float
-        :param radius: Radius of the circular arc [mm]. The default is self.param.radius.
+        :param radius: Radius of the circular arc [mm]. The default is self.radius.
         :type radius: float
         :param shutter: State of the shutter [0: 'OFF', 1: 'ON']. The default is 1.
         :type shutter: float
-        :param speed: Transition speed [mm/s]. The default is self.param.speed.
+        :param speed: Transition speed [mm/s]. The default is self.speed.
         :type speed: int
         :return: Self
         :rtype: Waveguide
         """
         if radius is None:
-            radius = self.param.radius
-        f = self.param.speed if speed is None else speed
+            radius = self.radius
+        f = self.speed if speed is None else speed
 
         delta_angle = abs(final_angle - initial_angle)
         num = self._get_num(delta_angle * radius, f)
 
         t = np.linspace(initial_angle, final_angle, num)
-
         new_x = self._x[-1] - radius * np.cos(initial_angle) + radius * np.cos(t)
         new_y = self._y[-1] - radius * np.sin(initial_angle) + radius * np.sin(t)
         new_z = self._z[-1] * np.ones(new_x.shape)
@@ -145,17 +146,17 @@ class Waveguide(LaserPath):
 
         :param dy: Amplitude of the S-bend along the y direction [mm].
         :type dy: float
-        :param radius: Curvature radius of the S-bend [mm]. The default is self.param.radius.
+        :param radius: Curvature radius of the S-bend [mm]. The default is self.radius.
         :type radius: float
         :param shutter: State of the shutter [0: 'OFF', 1: 'ON']. The default is 1.
         :type shutter: int
-        :param speed: Transition speed [mm/s]. The default is self.param.speed.
+        :param speed: Transition speed [mm/s]. The default is self.speed.
         :type speed: float
         :return: Self
         :rtype: Waveguide
         """
         if radius is None:
-            radius = self.param.radius
+            radius = self.radius
         a, _ = self.get_sbend_parameter(dy, radius)
 
         if dy > 0:
@@ -166,7 +167,7 @@ class Waveguide(LaserPath):
             self.circ(np.pi * (3 / 2) - a, np.pi * (3 / 2), radius=radius, speed=speed, shutter=shutter)
         return self
 
-    def arc_acc(self, dy: float, radius: float = None, arm_length: float = 0.0, shutter: int = 1,
+    def arc_acc(self, dy: float, radius: float = None, int_length: float = None, shutter: int = 1,
                 speed: float = None) -> Self:
         """
         Concatenates two circular S-bend to make a single mode of a circular directional coupler.
@@ -178,23 +179,26 @@ class Waveguide(LaserPath):
 
         :param dy: Amplitude of the S-bend along the y direction [mm].
         :type dy: float
-        :param radius: Curvature radius of the S-bend [mm]. The default is self.param.radius.
+        :param radius: Curvature radius of the S-bend [mm]. The default is self.radius.
         :type radius: float
-        :param arm_length: Length of the coupler straight arm [mm]. The default is 0 mm.
-        :type arm_length: float
+        :param int_length: Length of the coupler straight arm [mm]. The default is self.int_length.
+        :type int_length: float
         :param shutter: State of the shutter [0: 'OFF', 1: 'ON']. The default is 1.
         :type shutter: int
-        :param speed: Transition speed [mm/s]. The default is self.param.speed.
+        :param speed: Transition speed [mm/s]. The default is self.speed.
         :type speed: float
         :return: Self
         :rtype: Waveguide
         """
+        if int_length is None:
+            int_length = self.int_length
+
         self.arc_bend(dy, radius=radius, speed=speed, shutter=shutter)
-        self.linear([arm_length, 0, 0], speed=speed, shutter=shutter)
+        self.linear([int_length, 0, 0], speed=speed, shutter=shutter)
         self.arc_bend(-dy, radius=radius, speed=speed, shutter=shutter)
         return self
 
-    def arc_mzi(self, dy: float, radius: float = None, int_length: float = 0.0, arm_length: float = 0.0,
+    def arc_mzi(self, dy: float, radius: float = None, int_length: float = None, arm_length: float = None,
                 shutter: int = 1, speed: float = None) -> Self:
         """
         Concatenates two circular couplers to make a single mode of a circular MZI.
@@ -206,22 +210,25 @@ class Waveguide(LaserPath):
             
         :param dy: Amplitude of the S-bend along the y direction [mm].
         :type dy: float
-        :param radius: Curvature radius of the S-bend [mm]. The default is self.param.radius.
+        :param radius: Curvature radius of the S-bend [mm]. The default is self.radius.
         :type radius: float
-        :param int_length: Interaction distance of the MZI [mm]. The default is 0 mm.
+        :param int_length: Interaction distance of the MZI [mm]. The default is self.int_length.
         :type int_length: float
-        :param arm_length: Length of the coupler straight arm [mm]. The default is 0 mm.
+        :param arm_length: Length of the coupler straight arm [mm]. The default is self.arm_length.
         :type arm_length: float
         :param shutter: State of the shutter [0: 'OFF', 1: 'ON']. The default is 1.
         :type shutter: int
-        :param speed: Transition speed [mm/s]. The default is self.param.speed.
+        :param speed: Transition speed [mm/s]. The default is self.speed.
         :type speed: float
         :return: Self
         :rtype: Waveguide
         """
-        self.arc_acc(dy, radius=radius, arm_length=arm_length, speed=speed, shutter=shutter)
-        self.linear([int_length, 0, 0], speed=speed, shutter=shutter)
-        self.arc_acc(dy, radius=radius, arm_length=arm_length, speed=speed, shutter=shutter)
+        if arm_length is None:
+            arm_length = self.arm_length
+
+        self.arc_acc(dy, radius=radius, int_length=int_length, speed=speed, shutter=shutter)
+        self.linear([arm_length, 0, 0], speed=speed, shutter=shutter)
+        self.arc_acc(dy, radius=radius, int_length=int_length, speed=speed, shutter=shutter)
         return self
 
     def sin_bridge(self, dy: float, dz: float = None, radius: float = None, shutter: int = 1,
@@ -250,24 +257,24 @@ class Waveguide(LaserPath):
         :type dy: float
         :param dz: Amplitude of the S-bend along the y direction [mm].
         :type dz: float
-        :param radius: Curvature radius of the Sin-bend [mm]. The default is self.param.radius.
+        :param radius: Curvature radius of the Sin-bend [mm]. The default is self.radius.
         :type radius: float
         :param shutter: State of the shutter [0: 'OFF', 1: 'ON']. The default is 1.
         :type shutter: int
-        :param speed: Transition speed [mm/s]. The default is self.param.speed.
+        :param speed: Transition speed [mm/s]. The default is self.speed.
         :type speed: float
         :return: Self
         :rtype: Waveguide
         """
 
         if radius is None:
-            radius = self.param.radius
-        f = self.param.speed if speed is None else speed
+            radius = self.radius
+        f = self.speed if speed is None else speed
 
         _, dx = self.get_sbend_parameter(dy, radius)
         num = self._get_num(dx, f)
 
-        new_x = np.arange(self._x[-1], self._x[-1] + dx, dx / (num - 1))
+        new_x = np.linspace(self._x[-1], self._x[-1] + dx, num)
         new_y = self._y[-1] + 0.5 * dy * (1 - np.cos(np.pi / dx * (new_x - self._x[-1])))
         if dz:
             new_z = self._z[-1] + 0.5 * dz * (1 - np.cos(2 * np.pi / dx * (new_x - self._x[-1])))
@@ -293,23 +300,26 @@ class Waveguide(LaserPath):
 
         :param dy: Amplitude of the Sin-bend along the y direction [mm].
         :type dy: float
-        :param radius: Curvature radius of the Sin-bend [mm]. The default is self.param.radius.
+        :param radius: Curvature radius of the Sin-bend [mm]. The default is self.radius.
         :type radius: float
-        :param int_length: Interaction distance of the MZI [mm]. The default is 0 mm.
+        :param int_length: Interaction distance of the MZI [mm]. The default is self.int_length.
         :type int_length: float
         :param shutter: State of the shutter [0: 'OFF', 1: 'ON']. The default is 1.
         :type shutter: int
-        :param speed: Transition speed [mm/s]. The default is self.param.speed.
+        :param speed: Transition speed [mm/s]. The default is self.speed.
         :type speed: float
         :return: Self
         :rtype: Waveguide
         """
+        if int_length is None:
+            int_length = self.int_length
+
         self.sin_bend(dy, radius=radius, speed=speed, shutter=shutter)
         self.linear([int_length, 0, 0], speed=speed, shutter=shutter)
         self.sin_bend(-dy, radius=radius, speed=speed, shutter=shutter)
         return self
 
-    def sin_mzi(self, dy: float, radius: float = None, int_length: float = 0.0, arm_length: float = 0.0,
+    def sin_mzi(self, dy: float, radius: float = None, int_length: float = None, arm_length: float = None,
                 shutter: int = 1, speed: float = None) -> Self:
         """
         Concatenates two sinusoidal couplers to make a single mode of a sinusoidal MZI.
@@ -321,19 +331,22 @@ class Waveguide(LaserPath):
 
         :param dy: Amplitude of the Sin-bend along the y direction [mm].
         :type dy: float
-        :param radius: Curvature radius of the Sin-bend [mm]. The default is self.param.radius.
+        :param radius: Curvature radius of the Sin-bend [mm]. The default is self.radius.
         :type radius: float
-        :param int_length: Interaction distance of the MZI [mm]. The default is 0 mm.
+        :param int_length: Interaction distance of the MZI [mm]. The default is self.int_length.
         :type int_length: float
-        :param arm_length: Length of the coupler straight arm [mm]. The default is 0 mm.
+        :param arm_length: Length of the coupler straight arm [mm]. The default is self.arm_length.
         :type arm_length: float
         :param shutter: State of the shutter [0: 'OFF', 1: 'ON']. The default is 1.
         :type shutter: int
-        :param speed: Transition speed [mm/s]. The default is self.param.speed.
+        :param speed: Transition speed [mm/s]. The default is self.speed.
         :type speed: float
         :return: Self
         :rtype: Waveguide
         """
+        if arm_length is None:
+            arm_length = self.arm_length
+
         self.sin_acc(dy, radius=radius, int_length=int_length, shutter=shutter, speed=speed)
         self.linear([arm_length, 0, 0], shutter=shutter, speed=speed)
         self.sin_acc(dy, radius=radius, int_length=int_length, shutter=shutter, speed=speed)
@@ -355,13 +368,13 @@ class Waveguide(LaserPath):
         :type dz: float
         :param init_pos: Initial position of the spline. The default is last point of the waveguide (self.lastpt).
         :type init_pos: np.ndarray
-        :param radius: Curvature radius of the spline [mm]. The default is self.param.radius.
+        :param radius: Curvature radius of the spline [mm]. The default is self.radius.
         :type radius: float
         :param disp_x: Displacement of the spline along the x direction [mm].
         :type disp_x: float
         :param shutter: State of the shutter [0: 'OFF', 1: 'ON']. The default is 1.
         :type shutter: int
-        :param speed: Transition speed [mm/s]. The default is self.param.speed.
+        :param speed: Transition speed [mm/s]. The default is self.speed.
         :type speed: float
         :param bc_y:
         :type bc_y: tuple
@@ -371,9 +384,9 @@ class Waveguide(LaserPath):
         :rtype: Waveguide
         """
         if radius is None:
-            radius = self.param.radius
+            radius = self.radius
         x_spl, y_spl, z_spl = self._get_spline_points(**locals())
-        f = self.param.speed if speed is None else speed
+        f = self.speed if speed is None else speed
 
         # update coordinates or return
         self.add_path(x_spl, y_spl, z_spl, f * np.ones(x_spl.shape), shutter * np.ones(x_spl.shape))
@@ -404,13 +417,13 @@ class Waveguide(LaserPath):
         :type dz: float
         :param init_pos: Initial position of the spline. The default is last point of the waveguide (self.lastpt).
         :type init_pos: np.ndarray
-        :param radius: Curvature radius of the spline [mm]. The default is self.param.radius.
+        :param radius: Curvature radius of the spline [mm]. The default is self.radius.
         :type radius: float
         :param disp_x: Displacement of the spline along the x direction [mm].
         :type disp_x: float
         :param shutter: State of the shutter [0: 'OFF', 1: 'ON']. The default is 1.
         :type shutter: int
-        :param speed: Transition speed [mm/s]. The default is self.param.speed.
+        :param speed: Transition speed [mm/s]. The default is self.speed.
         :type speed: float
         :return: Self
         :rtype: Waveguide
@@ -418,9 +431,9 @@ class Waveguide(LaserPath):
         if init_pos is None:
             init_pos = self.lastpt
         if radius is None:
-            radius = self.param.radius
+            radius = self.radius
         if speed is None:
-            f = self.param.speed
+            f = self.speed
         else:
             f = speed
 
@@ -492,56 +505,6 @@ class Waveguide(LaserPath):
         cmd_rate = np.divide(f, dt, out=default_zero, where=(dt != 0))
         return np.mean(cmd_rate)
 
-    @staticmethod
-    def get_sbend_parameter(dy: float, radius: float) -> tuple:
-        """
-        Computes the final angle, and x-displacement for a circular S-bend given the y-displacement dy and curvature
-        radius.
-
-        :param dy: Displacement along y-direction [mm].
-        :type dy: float
-        :param radius: Curvature radius of the S-bend [mm].
-        :type radius: float
-        :return: (final angle [radians], x-displacement [mm])
-        :rtype: tuple
-        """
-        a = np.arccos(1 - (np.abs(dy / 2) / radius))
-        dx = 2 * radius * np.sin(a)
-        return a, dx
-
-    @staticmethod
-    def get_spline_parameter(init_pos: np.ndarray, dy: float, dz: float, radius: float = 20,
-                             disp_x: float = 0) -> tuple:
-        """
-        Computes the delta displacements along x-, y- and z-direction and the total lenght of the curve.
-
-        :param init_pos: Initial position of the curve.
-        :type init_pos: np.ndarray
-        :param dy: Displacement along y-direction [mm].
-        :type dy: float
-        :param dz: Displacement along z-direction [mm].
-        :type dz: float
-        :param radius: Curvature radius of the spline [mm]. The default is 20 mm.
-        :type dz: radius
-        :param disp_x: Displacement along x-direction [mm]. The default is 0 mm.
-        :type disp_x: float
-        :return: (deltax [mm], deltay [mm], deltaz [mm], curve length [mm]).
-        :rtype: Tuple[float, float, float, float]
-        """
-        xl, yl, zl = init_pos
-        final_pos = np.array([yl + dy, zl + dz])
-        if disp_x != 0:
-            final_pos = np.insert(final_pos, 0, xl + disp_x)
-            pos_diff = np.subtract(final_pos, init_pos)
-            l_curve = np.sqrt(np.sum(pos_diff ** 2))
-        else:
-            final_pos = np.insert(final_pos, 0, xl)
-            pos_diff = np.subtract(final_pos, init_pos)
-            ang = np.arccos(1 - np.sqrt(pos_diff[1] ** 2 + pos_diff[2] ** 2) / (2 * radius))
-            pos_diff[0] = 2 * radius * np.sin(ang)
-            l_curve = 2 * ang * radius
-        return pos_diff[0], pos_diff[1], pos_diff[2], l_curve
-
     # Private interface
     def _get_spline_points(self, dy: float, dz: float, init_pos: np.ndarray = None, radius: float = 20,
                            disp_x: float = 0, speed: float = None,
@@ -570,7 +533,7 @@ class Waveguide(LaserPath):
         :type dz: radius
         :param disp_x: Displacement along x-direction [mm]. The default is 0 mm.
         :type disp_x: float
-        :param speed: Transition speed [mm/s]. The default is self.param.speed.
+        :param speed: Transition speed [mm/s]. The default is self.speed.
         :type speed: float
         :param bc_y: Boundary conditions for the Y-coordinates. The default is ((1, 0.0), (1, 0.0)).
         :type bc_y: tuple
@@ -580,7 +543,7 @@ class Waveguide(LaserPath):
         :rtype: Tuple(np.ndarray, np.ndarray, np.ndarray)
         """
         xd, yd, zd, l_curve = self.get_spline_parameter(init_pos, dy, dz, radius, disp_x)
-        f = self.param.speed if speed is None else speed
+        f = self.speed if speed is None else speed
         num = self._get_num(l_curve, f)
 
         xcoord = np.linspace(0, xd, num)
@@ -592,7 +555,7 @@ class Waveguide(LaserPath):
     def _get_num(self, l_curve: float = 0, speed: float = 0) -> int:
         """
         Utility function that, given the length of a segment and the fabrication speed, computes the number of points
-        required to work at the maximum command rate (attribute of Waveguide object).
+        required to work at the maximum command rate (attribute of Waveguide obj).
 
         :param l_curve: Length of the waveguide segment [mm]. The default is 0 mm.
         :type l_curve: float
@@ -603,11 +566,11 @@ class Waveguide(LaserPath):
 
         :raise ValueError: Speed is set too low.
         """
-        f = self.param.speed if speed is None else speed
+        f = self.speed if speed is None else speed
         if f < 1e-6:
             raise ValueError('Speed set to 0.0 mm/s. Check speed parameter.')
 
-        dl = f / self.param.cmd_rate_max
+        dl = f / self.cmd_rate_max
         num = int(np.ceil(l_curve / dl))
         if num <= 1:
             print('I had to add use an higher instruction rate.\n')

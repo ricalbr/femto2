@@ -1,15 +1,17 @@
 import numpy as np
 
+from femto.Parameters import WaveguideParameters
 
-class LaserPath:
+
+class LaserPath(WaveguideParameters):
     """
     Class of irradiated paths. It manages all the coordinates of the laser path and computes the fabrication writing
     time.
     """
 
-    def __init__(self, param):
-        self.param = param
-        self.twriting = 0
+    def __init__(self, param: dict):
+        super().__init__(**param)
+        self.wtime = 0
 
         # Points
         self._x = np.asarray([])
@@ -99,9 +101,12 @@ class LaserPath:
         """
         Computes the time needed to travel along the line.
         """
-        points = np.stack((self._x, self._y, self._z), axis=-1).astype(np.float32)
-        linelength = np.linalg.norm(np.diff(points))
-        self.twriting = linelength * (1 / self.param.speed + 1 / self.param.speedpos) * self.param.scan
+        x, y, z = self._x, self._y, self._z
+        dists = np.sqrt(np.diff(x) ** 2 + np.diff(y) ** 2 + np.diff(z) ** 2)
+        linelength_shutter_on = np.sum(dists[:-1])
+        linelength_shutter_off = dists[-1]
+        self.wtime = (linelength_shutter_on * 1 / self.speed) * self.scan + \
+                     (linelength_shutter_off * 1 / self.speedpos) * self.scan
 
     # Private interface
     def _unique_points(self):
