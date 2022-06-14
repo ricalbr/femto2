@@ -4,10 +4,11 @@ from collections.abc import Iterable
 from contextlib import contextmanager
 from copy import deepcopy
 from itertools import zip_longest
-from math import radians
 from pathlib import Path
 
 import numpy as np
+
+from femto.helpers import dotdict
 
 try:
     from typing import Self
@@ -16,34 +17,16 @@ except ImportError:
 from typing import List
 
 from femto import Trench, TrenchColumn
-from femto.Parameters import GcodeParameters, WaveguideParameters
+from femto.Parameters import GcodeParameters
 
 
-class PGMCompiler:
+class PGMCompiler(GcodeParameters):
     """
     Class representing a PGM Compiler.
     """
 
-    def __init__(self, param: GcodeParameters):
-
-        if param.filename is None:
-            raise ValueError('Filename is None, set GcodeParameters.filename.')
-        else:
-            self.filename = param.filename
-        self.lab = param.lab
-        self.cwd = param.CWD
-        self.warp_flag = param.warp_flag
-        self.fwarp = param.fwarp
-        self.long_pause = param.long_pause
-        self.short_pause = param.short_pause
-
-        self.ind_rif = param.neff
-        if param.angle != 0:
-            print(' BEWARE ANGLES MUST BE IN DEGREE!! '.center(39, "*"))
-            print(f' Given alpha = {param.angle % 360:.3f} deg. '.center(39, "*"))
-        self.angle = radians(param.angle % 360)
-
-        self.output_digits = param.output_digits
+    def __init__(self, param: dict):
+        super().__init__(**param)
 
         self._instructions = deque()
         self._total_dwell_time = 0.0
@@ -85,10 +68,10 @@ class PGMCompiler:
             raise ValueError(f'Fabrication line should be CAPABLE or FIRE. Given {self.lab.upper()}.')
 
         if self.lab.upper() == 'CAPABLE':
-            with open(os.path.join(self.cwd, 'utils', 'header_capable.txt')) as fd:
+            with open(os.path.join(self.CWD, 'utils', 'header_capable.txt')) as fd:
                 self._instructions.extend(fd.readlines())
         else:
-            with open(os.path.join(self.cwd, 'utils', 'header_fire.txt')) as fd:
+            with open(os.path.join(self.CWD, 'utils', 'header_fire.txt')) as fd:
                 self._instructions.extend(fd.readlines())
 
     def dvar(self, variables: List[str]):
@@ -411,9 +394,9 @@ class PGMCompiler:
         if pts_comp.size > 3:
             zwarp = [float(self.fwarp(x, y)) for x, y in zip(pts_comp[:, 0], pts_comp[:, 1])]
             zwarp = np.array(zwarp)
-            pts_comp[:, 2] = (pts_comp[:, 2] + zwarp / self.ind_rif)
+            pts_comp[:, 2] = (pts_comp[:, 2] + zwarp / self.neff)
         else:
-            pts_comp[2] = (pts_comp[2] + self.fwarp(pts_comp[0], pts_comp[1]) / self.ind_rif)
+            pts_comp[2] = (pts_comp[2] + self.fwarp(pts_comp[0], pts_comp[1]) / self.neff)
         return pts_comp
 
     def t_matrix(self, dim: int = 3) -> np.ndarray:
@@ -433,7 +416,7 @@ class PGMCompiler:
                        [0, 0, 1]])
         SM = np.array([[1, 0, 0],
                        [0, 1, 0],
-                       [0, 0, 1 / self.ind_rif]])
+                       [0, 0, 1 / self.neff]])
         t_mat = SM @ RM
         if dim == 3:
             return t_mat
@@ -553,7 +536,7 @@ def export_trench_path(trench: Trench, filename: str, ind_rif: float, angle: flo
     if filename.endswith('.pgm'):
         filename = filename.split('.')[0]
 
-    TEMP_GC = GcodeParameters(
+    TEMP_GC = dict(
         filename=filename + '_wall.pgm',
         n_glass=ind_rif,
         n_environment=1.0,
@@ -564,7 +547,7 @@ def export_trench_path(trench: Trench, filename: str, ind_rif: float, angle: flo
     G.close()
     del G
 
-    TEMP_GC.filename = filename + '_floor.pgm'
+    TEMP_GC['filename'] = filename + '_floor.pgm'
     G = PGMCompiler(TEMP_GC)
     for path in trench.trench_paths():
         write_array(G, np.stack(path, axis=-1), f_array=[tspeed])
@@ -624,7 +607,7 @@ def make_trench(gc: PGMCompiler, col: TrenchColumn, col_index: int = None,
     os.makedirs(col_dir, exist_ok=True)
     for i, trench in enumerate(col):
         filename = os.path.join(col_dir, f'trench{i + 1:03}_')
-        export_trench_path(trench, filename, gc.ind_rif, gc.angle, tspeed)
+        export_trench_path(trench, filename, gc.neff, gc.angle, tspeed)
 
     gc.dvar(['ZCURR'])
 
@@ -637,7 +620,7 @@ def make_trench(gc: PGMCompiler, col: TrenchColumn, col_index: int = None,
             floor_path = os.path.join(base_folder, trench_directory, floor_filename)
 
             x0, y0 = trench.block.exterior.coords[0]
-            z0 = (nbox * hbox - zoff) / gc.ind_rif
+            z0 = (nbox * hbox - zoff) / gc.neff
             gc.comment(f'+--- TRENCH #{t_index + 1}, LEVEL {nbox + 1} ---+')
             gc.load_program(wall_path)
             gc.load_program(floor_path)
@@ -648,7 +631,7 @@ def make_trench(gc: PGMCompiler, col: TrenchColumn, col_index: int = None,
             gc.shutter('ON')
             with gc.repeat(int(np.ceil((hbox + zoff) / deltaz))):
                 gc.farcall(wall_filename)
-                gc.instruction(f'$ZCURR = $ZCURR + {deltaz / gc.ind_rif:.6f}')
+                gc.instruction(f'$ZCURR = $ZCURR + {deltaz / gc.neff:.6f}')
                 gc.instruction('LINEAR Z$ZCURR')
 
             if u is not None:
@@ -667,16 +650,17 @@ def _example():
     from femto import Waveguide
 
     # Data
-    PARAMETERS_WG = WaveguideParameters(
+    PARAMETERS_WG = dotdict(
         scan=6,
         speed=20,
         radius=15,
         pitch=0.080,
         int_dist=0.007,
+        lsafe=3
     )
     increment = [PARAMETERS_WG.lsafe, 0, 0]
 
-    PARAMETERS_GC = GcodeParameters(
+    PARAMETERS_GC = dotdict(
         filename='testPGMcompiler.pgm',
         lab='CAPABLE',
         samplesize=(25, 25),
@@ -687,16 +671,16 @@ def _example():
     # Calculations
     coup = [Waveguide(PARAMETERS_WG) for _ in range(2)]
     for i, wg in enumerate(coup):
-        wg.start([-2, -PARAMETERS_WG.pitch / 2 + i * PARAMETERS_WG.pitch, 0.035]) \
+        wg.start([-2, -wg.pitch / 2 + i * wg.pitch, 0.035]) \
             .linear(increment) \
-            .sin_mzi((-1) ** i * PARAMETERS_WG.dy_bend, arm_length=1.0) \
+            .sin_mzi((-1) ** i * wg.dy_bend, arm_length=1.0) \
             .linear(increment)
         wg.end()
 
     # Compilation
     with PGMCompiler(PARAMETERS_GC) as G:
         G.set_home([0, 0, 0])
-        with G.repeat(PARAMETERS_WG.scan):
+        with G.repeat(PARAMETERS_WG['scan']):
             for i, wg in enumerate(coup):
                 G.comment(f'Modo: {i}')
                 G.write(wg.points)

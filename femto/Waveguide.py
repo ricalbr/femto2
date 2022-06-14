@@ -8,7 +8,6 @@ except ImportError:
     from typing_extensions import Self
 from scipy.interpolate import CubicSpline, InterpolatedUnivariateSpline
 from functools import partialmethod
-from femto.Parameters import WaveguideParameters
 from femto.LaserPath import LaserPath
 
 
@@ -583,7 +582,7 @@ def _example():
     from mpl_toolkits.mplot3d import Axes3D
 
     # Data
-    PARAMETERS_WG = WaveguideParameters(
+    PARAMETERS_WG = dotdict(
         scan=6,
         speed=20,
         radius=15,
