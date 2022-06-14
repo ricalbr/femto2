@@ -1,16 +1,4 @@
-import numpy as np
-
 from femto.Parameters import GcodeParameters, TrenchParameters, WaveguideParameters
-
-
-# UTILITIES FUNCTIONS
-
-
-def get_sbend_par(D, R):
-    dy = np.abs(D / 2)
-    a = np.arccos(1 - (dy / R))
-    return 2 * R * np.sin(a)
-
 
 # GEOMETRICAL DATA
 MM = 20
@@ -19,24 +7,19 @@ NN = 20
 PARAMETERS_WG = WaveguideParameters(
     scan=6,
     speed=20,
-    depth=0.035,
-    radius=15
+    radius=15,
+    pitch=0.080,
+    int_dist=0.007,
+    lsafe=3
 )
 
 x0 = -2.0
 y0 = 0.0
 z0 = PARAMETERS_WG.depth
-swg_length = 3
-increment = [swg_length, 0.0, 0.0]
+increment = [PARAMETERS_WG.lsafe, 0.0, 0.0]
 
-pitch = 0.080
-pitch_fa = 0.127
-int_distance = 0.007
-int_length = 0.0
-length_arm = 0.0
-
-d1 = 0.5 * (pitch - int_distance)
-d2 = pitch - int_distance
+d1 = 0.5 * (PARAMETERS_WG.pitch - PARAMETERS_WG.int_dist)
+d2 = PARAMETERS_WG.pitch - PARAMETERS_WG.int_dist
 
 # Markers
 PARAMETERS_MK = WaveguideParameters(

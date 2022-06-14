@@ -1,7 +1,7 @@
 import os
+import time
 
 import matplotlib.pyplot as plt
-
 from femto import Marker, PGMCompiler, TrenchColumn, Waveguide
 from femto.Parameters import GcodeParameters, TrenchParameters, WaveguideParameters
 
@@ -80,7 +80,13 @@ for i in range(6):
 
 # # Marker
 pos = [PARAMETERS_GC.xsample / 2, y0 - pitch]
-c = Marker()
+PARAMETERS_MK = WaveguideParameters(
+    scan=1,
+    speed=4,
+    depth=0.001,
+    speedpos=5,
+)
+c = Marker(PARAMETERS_MK)
 c.cross(pos, ly=0.1)
 circ['marker'].append(c)
 
@@ -128,3 +134,8 @@ for col_index, col_trench in enumerate(circ['trench']):
     PARAMETERS_GC.filename = col_filename
     with PGMCompiler(PARAMETERS_GC) as gc:
         gc.trench(col_trench, col_index, base_folder=PARAMETERS_TC.base_folder)
+
+ttime = 0
+[ttime := ttime + wg.wtime for wg in circ['waveguide']]
+[ttime := ttime + col.wtime for col in circ['trench']]
+print(time.strftime('%H:%M:%S', time.gmtime(ttime)))
