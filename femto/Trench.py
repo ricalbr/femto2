@@ -5,12 +5,13 @@ import numpy as np
 import shapely.geometry
 from descartes import PolygonPatch
 
+from femto.helpers import dotdict
 from femto.Parameters import TrenchParameters
 from femto.Waveguide import Waveguide
 
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=DeprecationWarning)
-    from shapely.geometry import LineString, Polygon, box, polygon
+    from shapely.geometry import LineString, Polygon, polygon
 
 
 class Trench:
@@ -120,19 +121,14 @@ class Trench:
         return new_polygon if new_polygon.is_valid else None
 
 
-class TrenchColumn:
+class TrenchColumn(TrenchParameters):
     """
     Class representing a column of trenches.
     """
 
-    def __init__(self, param: TrenchParameters):
-        self.param = param
+    def __init__(self, param: dict):
+        super().__init__(**param)
         self._trench_list = []
-        self._x_c = self.param.x_center
-        self._y_min = self.param.y_min
-        self._y_max = self.param.y_max
-
-        self._rect = self._make_box()
 
     def __iter__(self) -> Iterator[Trench]:
         """
@@ -144,77 +140,11 @@ class TrenchColumn:
         return iter(self._trench_list)
 
     @property
-    def x_c(self) -> float:
-        """
-        Getter for the x-coordinate of the trench column center.
-
-        :return: center x-coordinate of the trench block
-        :rtype: float
-        """
-        return self._x_c
-
-    @x_c.setter
-    def x_c(self, x_center: float):
-        """
-        Setter for the x-coordinate of the center of the trench column.
-
-        :param x_center: center x-coordinate of the trench block
-        :type x_center: float
-        """
-        self._x_c = x_center
-        if x_center is not None:
-            self._rect = self._make_box()
-
-    @property
-    def y_min(self) -> float:
-        """
-        Getter for the lower y-coordinate of the trench column.
-
-        :return: y-coordinate of the lower border of trench column rectangle.
-        :rtype: float
-        """
-        return self._y_min
-
-    @y_min.setter
-    def y_min(self, y_min: float):
-        """
-        Setter for the y-coordinate of the lower border of the trench column.
-
-        :param y_min: y-coordinate of the trench block lower border
-        :type y_min: float
-        """
-        self._y_min = y_min
-        if y_min is not None:
-            self._rect = self._make_box()
-
-    @property
-    def y_max(self) -> float:
-        """
-        Getter for the upper y-coordinate of the trench column.
-
-        :return: y-coordinate of the upper border of trench column rectangle.
-        :rtype: float
-        """
-        return self._y_max
-
-    @y_max.setter
-    def y_max(self, y_max):
-        """
-        Setter for the y-coordinate of the upper border of the trench column.
-
-        :param y_max: y-coordinate of the trench block upper border
-        :type y_max: float
-        """
-        self._y_max = y_max
-        if y_max is not None:
-            self._rect = self._make_box()
-
-    @property
     def twriting(self):
         l_tot = 0.0
         for trench in self._trench_list:
-            l_tot += self.param.nboxz * (self.param.n_repeat * trench.wall_length + trench.floor_length)
-        return l_tot / self.param.speed
+            l_tot += self.nboxz * (self.n_repeat * trench.wall_length + trench.floor_length)
+        return l_tot / self.speed
 
     def get_trench(self, waveguides: List[Waveguide]):
         """
@@ -235,38 +165,16 @@ class TrenchColumn:
         if not all([isinstance(wg, Waveguide) for wg in waveguides]):
             raise TypeError('Elements circuit list must be of type Waveguide.')
 
+        trench_block = self.rect
         for wg in waveguides:
             x, y = wg.x[:-2], wg.y[:-2]
-            dilated = (LineString(list(zip(x, y))).buffer(self.param.adj_bridge, cap_style=1))
-            self._rect = self._rect.difference(dilated)
+            dilated = (LineString(list(zip(x, y))).buffer(self.adj_bridge, cap_style=1))
+            trench_block = trench_block.difference(dilated)
 
-        for block in list(self._rect):
-            block = (polygon.orient(block).buffer(self.param.round_corner, resolution=250, cap_style=1))
-            trench = Trench(block, self.param.delta_floor)
+        for block in list(trench_block):
+            block = (polygon.orient(block).buffer(self.round_corner, resolution=250, cap_style=1))
+            trench = Trench(block, self.delta_floor)
             self._trench_list.append(trench)
-
-    # Private interface
-    def _make_box(self) -> shapely.geometry.box:
-        """
-        Create the rectangular box for the whole trench column. If the ``x_c``, ``y_min`` and ``y_max`` are set we
-        create a rectangular polygon that will be used to create the single trench blocks.
-
-        ::
-            +-------+  -> y_max
-            |       |
-            |       |
-            |       |
-            +-------+  -> y_min
-                x_c
-
-        :return: Rectangular box centered in ``x_c`` and y-borders at ``y_min`` and ``y_max``.
-        :rtype: shapely.geometry.box
-        """
-        if self._x_c is not None and self._y_min is not None and self._y_max is not None:
-            return box(self._x_c - self.param.length / 2, self._y_min,
-                       self._x_c + self.param.length / 2, self._y_max)
-        else:
-            return None
 
 
 def _example():
@@ -275,7 +183,7 @@ def _example():
     # Data
     x_mid = None
 
-    PARAMETERS_WG = dict(
+    PARAMETERS_WG = dotdict(
         scan=6,
         speed=20,
         radius=15,
@@ -283,7 +191,7 @@ def _example():
         int_dist=0.007,
     )
 
-    PARAMETERS_TC = TrenchParameters(
+    PARAMETERS_TC = dotdict(
         lenght=1.0,
         nboxz=4,
         deltaz=0.0015,

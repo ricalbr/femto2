@@ -1,12 +1,19 @@
 import os
 import pickle
+import warnings
 from itertools import product
 from math import ceil
+from math import radians
 from typing import Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
+import shapely.geometry
 from scipy.interpolate import interp2d
+
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+    from shapely.geometry import box
 
 
 class WaveguideParameters:
@@ -263,6 +270,41 @@ class TrenchParameters:
         self.base_folder = base_folder
         self.CWD = os.path.dirname(os.path.abspath(__file__))
 
+        # self.rect = self._make_box()
+
+    @property
+    def rect(self) -> float:
+        """
+        Getter for the x-coordinate of the trench column center.
+
+        :return: center x-coordinate of the trench block
+        :rtype: float
+        """
+        return self._make_box()
+
+    # Private interface
+    def _make_box(self) -> shapely.geometry.box:
+        """
+        Create the rectangular box for the whole trench column. If the ``x_c``, ``y_min`` and ``y_max`` are set we
+        create a rectangular polygon that will be used to create the single trench blocks.
+
+        ::
+            +-------+  -> y_max
+            |       |
+            |       |
+            |       |
+            +-------+  -> y_min
+                x_c
+
+        :return: Rectangular box centered in ``x_c`` and y-borders at ``y_min`` and ``y_max``.
+        :rtype: shapely.geometry.box
+        """
+        if self.x_center is not None and self.y_min is not None and self.y_max is not None:
+            return box(self.x_center - self.length / 2, self.y_min,
+                       self.x_center + self.length / 2, self.y_max)
+        else:
+            return None
+
 
 class GcodeParameters:
     """
@@ -282,6 +324,9 @@ class GcodeParameters:
                  output_digits: int = 6):
 
         self.filename = filename
+        if self.filename is None:
+            raise ValueError('Filename is None, set GcodeParameters.filename.')
+
         self.CWD = os.path.dirname(os.path.abspath(__file__))
         self.samplesize = samplesize
         self.lab = lab
@@ -292,11 +337,15 @@ class GcodeParameters:
         self.short_pause = short_pause
         self.output_digits = output_digits
 
-        self.nglass = n_glass
-        self.nenv = n_environment
-        self.angle = angle
+        self._n_glass = n_glass
+        self._n_env = n_environment
+        self.neff = self._n_glass / self._n_env
 
-        self.neff = self.nglass / self.nenv
+        if angle != 0:
+            print(' BEWARE ANGLES MUST BE IN DEGREE!! '.center(39, "*"))
+            print(f' Given alpha = {angle % 360:.3f} deg. '.center(39, "*"))
+        self.angle = radians(angle % 360)
+
         self.xsample, self.ysample = self.samplesize
 
     def set_tshutter(self) -> float:
