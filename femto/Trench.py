@@ -5,7 +5,7 @@ import numpy as np
 import shapely.geometry
 from descartes import PolygonPatch
 
-from femto.Parameters import TrenchParameters, WaveguideParameters
+from femto.Parameters import TrenchParameters
 from femto.Waveguide import Waveguide
 
 with warnings.catch_warnings():
@@ -24,6 +24,8 @@ class Trench:
 
         self.block = block
         self.delta_floor = delta_floor
+        self.floor_length = 0.0
+        self.wall_length = 0.0
 
     @property
     def center(self) -> np.ndarray:
@@ -38,7 +40,7 @@ class Trench:
     @property
     def patch(self, fc: str = 'k', ec: str = 'k', alpha: float = 1, zorder: int = 1) -> PolygonPatch:
         """
-        Return a Patch object representing the trench block for plotting.
+        Return a Patch obj representing the trench block for plotting.
 
         :param fc:  Patch face colour. Can be specified with HEX code, e.g. '#9a9a9a'
         :type fc: str
@@ -48,7 +50,7 @@ class Trench:
         :type alpha: float
         :param zorder: Overlapping order in 2D plot. Higher values are on top.
         :type zorder: int
-        :return: Patch object for plotting the trench block
+        :return: Patch obj for plotting the trench block
         :rtype: descartes.PolygonPatch
         """
         return PolygonPatch(self.block, fc=fc, ec=ec, alpha=alpha, zorder=zorder)
@@ -57,30 +59,33 @@ class Trench:
         """
         Generator of the inset paths of the trench block.
 
-        First, the outer trench polygon object is insert in the trench ``polygon_list``. While the list is not empty
+        First, the outer trench polygon obj is insert in the trench ``polygon_list``. While the list is not empty
         we can extract the outer polygon from the list and compute the ``inset_polygon`` and insert it back to the list.
         ``inset_polygon`` can be:
-        ``Polygon`` object
-            The object is appended to the ``inset_polygon`` list and the exterior (x, y) coordinates are yielded.
-        ``MultiPolygon`` object
+        ``Polygon`` obj
+            The obj is appended to the ``inset_polygon`` list and the exterior (x, y) coordinates are yielded.
+        ``MultiPolygon`` obj
             All the single ``Polygon`` objects composing the ``MultiPolygon`` are appended to the ``inset_polygon``
             list as ``Polygon`` objects and the exterior (x, y) coordinates are yielded.
         ``None``
-            In this case, we cannot extract a ``inset_polygon`` from the ``Polygon`` object extracted from the
+            In this case, we cannot extract a ``inset_polygon`` from the ``Polygon`` obj extracted from the
             ``inset_polygon``. Nothing is appended to the ``polygon_list`` and its size is reduced.
 
         :return: (x, y) coordinates of the inset path.
         :rtype: Generator[numpy.ndarray]
         """
         polygon_list = [self.block]
+        self.wall_length = self.block.length
         while polygon_list:
             current_poly = polygon_list.pop(0)
             inset_polygon = self._buffer_polygon(current_poly)
             if inset_polygon and inset_polygon.type == 'MultiPolygon':
                 polygon_list.extend(list(inset_polygon))
                 for poly in list(inset_polygon):
+                    self.floor_length += poly.length
                     yield np.array(poly.exterior.coords).T
             elif inset_polygon and inset_polygon.type == 'Polygon':
+                self.floor_length += inset_polygon.length
                 polygon_list.append(inset_polygon)
                 yield np.array(inset_polygon.exterior.coords).T
             elif inset_polygon:
@@ -89,7 +94,7 @@ class Trench:
     # Private interface
     def _buffer_polygon(self, shape: Polygon, inset: bool = True) -> shapely.geometry.shape:
         """
-        Compute a buffer operation of shapely ``Polygon`` object.
+        Compute a buffer operation of shapely ``Polygon`` obj.
 
         :param shape: ``Polygon`` of the trench block
         :type shape: shapely.geometry.Polygon
@@ -101,7 +106,7 @@ class Trench:
 
         .. note::
         The buffer operation returns a polygonal result. The new polygon is checked for validity using
-        ``object.is_valid`` in the sense of [#]_.
+        ``obj.is_valid`` in the sense of [#]_.
 
         For a reference, read the buffer operations `here
         <https://shapely.readthedocs.io/en/stable/manual.html#constructive-methods>`_
@@ -133,7 +138,7 @@ class TrenchColumn:
         """
         Iterator that yields the single trench blocks of the column.
 
-        :return: Trench object of the trench column
+        :return: Trench obj of the trench column
         :rtype: Trench
         """
         return iter(self._trench_list)
@@ -204,6 +209,13 @@ class TrenchColumn:
         if y_max is not None:
             self._rect = self._make_box()
 
+    @property
+    def twriting(self):
+        l_tot = 0.0
+        for trench in self._trench_list:
+            l_tot += self.param.nboxz * (self.param.n_repeat * trench.wall_length + trench.floor_length)
+        return l_tot / self.param.speed
+
     def get_trench(self, waveguides: List[Waveguide]):
         """
         Compute the trench blocks from the waveguide of the optical circuit.
@@ -214,7 +226,7 @@ class TrenchColumn:
         obtaining a ``MultiPolygon`` with all the trench blocks.
 
         All the blocks are treated individually. Each block is then buffered to obtain an outset polygon with rounded
-        corners a Trench object is created with the new polygon box and the trenches are appended to the
+        corners a Trench obj is created with the new polygon box and the trenches are appended to the
         ``trench_list``.
 
         :param waveguides: List of the waveguides composing the optical circuit.
@@ -225,13 +237,11 @@ class TrenchColumn:
 
         for wg in waveguides:
             x, y = wg.x[:-2], wg.y[:-2]
-            dilated = (LineString(list(zip(x, y)))
-                       .buffer(self.param.adj_bridge, cap_style=1))
+            dilated = (LineString(list(zip(x, y))).buffer(self.param.adj_bridge, cap_style=1))
             self._rect = self._rect.difference(dilated)
 
         for block in list(self._rect):
-            block = (polygon.orient(block)
-                     .buffer(self.param.round_corner, resolution=250, cap_style=1))
+            block = (polygon.orient(block).buffer(self.param.round_corner, resolution=250, cap_style=1))
             trench = Trench(block, self.param.delta_floor)
             self._trench_list.append(trench)
 
@@ -265,7 +275,7 @@ def _example():
     # Data
     x_mid = None
 
-    PARAMETERS_WG = WaveguideParameters(
+    PARAMETERS_WG = dict(
         scan=6,
         speed=20,
         radius=15,
@@ -280,15 +290,15 @@ def _example():
         h_box=0.075,
         base_folder=r'C:\Users\Capable\Desktop\RiccardoA',
         y_min=-0.1,
-        y_max=19 * PARAMETERS_WG.pitch + 0.1
+        y_max=19 * PARAMETERS_WG['pitch'] + 0.1
     )
 
     # Calculations
     coup = [Waveguide(PARAMETERS_WG) for _ in range(20)]
     for i, wg in enumerate(coup):
-        wg.start([-2, i * PARAMETERS_WG.pitch, 0.035]).sin_acc((-1) ** i * PARAMETERS_WG.dy_bend)
+        wg.start([-2, i * wg.pitch, 0.035]).sin_acc((-1) ** i * wg.dy_bend)
         x_mid = wg.x[-1]
-        wg.sin_acc((-1) ** i * PARAMETERS_WG.dy_bend).end()
+        wg.sin_acc((-1) ** i * wg.dy_bend).end()
 
     PARAMETERS_TC.x_center = x_mid
     trench_col = TrenchColumn(PARAMETERS_TC)
