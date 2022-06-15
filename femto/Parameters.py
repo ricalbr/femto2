@@ -1,6 +1,7 @@
 import os
 import pickle
 import warnings
+from dataclasses import dataclass
 from itertools import product
 from math import ceil
 from math import radians
@@ -16,130 +17,75 @@ with warnings.catch_warnings():
     from shapely.geometry import box
 
 
+@dataclass
 class WaveguideParameters:
     """
     Class containing the parameters for the waveguide fabrication.
     """
 
-    def __init__(self,
-                 scan: int,
-                 speed: float,
-                 depth: float = 0.035,
-                 radius: float = 15,
-                 pitch: float = 0.080,
-                 pitch_fa: float = 0.127,
-                 int_dist: float = None,
-                 int_length: float = 0.0,
-                 arm_length: float = 0.0,
-                 speedpos: float = 40,
-                 dwelltime: float = 0.5,
-                 lsafe: float = 4.0,
-                 ltrench: float = 1.0,
-                 dz_bridge: float = 0.015,
-                 margin: float = 1.0,
-                 cmd_rate_max: float = 1200,
-                 acc_max: float = 500,
-                 samplesize: Tuple[float, float] = (None, None)):
-        if not isinstance(scan, int):
+    scan: int
+    speed: float
+    depth: float = 0.035
+    radius: float = 15
+    pitch: float = 0.080
+    pitch_fa: float = 0.127
+    int_dist: float = None
+    int_length: float = 0.0
+    arm_length: float = 0.0
+    speedpos: float = 40
+    dwelltime: float = 0.5
+    lsafe: float = 4.0
+    ltrench: float = 1.0
+    dz_bridge: float = 0.015
+    margin: float = 1.0
+    cmd_rate_max: float = 1200
+    acc_max: float = 500
+    samplesize: Tuple[float, float] = (None, None)
+
+    def __post_init__(self):
+        if not isinstance(self.scan, int):
             raise ValueError('Number of scan must be integer.')
 
-        # input parameters:
-        self.scan = scan
-        self._speed = speed
-        self.depth = depth
-        self._radius = radius
-        self._pitch = pitch
-        self.pitch_fa = pitch_fa
-        self._int_dist = int_dist
-        self._int_length = int_length
-        self._arm_length = arm_length
-        self._dz_bridge = dz_bridge
-        self.samplesize = samplesize
-
-        self.lsafe = lsafe
-        self.ltrench = ltrench
-        self.margin = margin
-        self.speedpos = speedpos
-        self.dwelltime = dwelltime
-
-        self.cmd_rate_max = cmd_rate_max
-        self.acc_max = acc_max
-
-        # Computed parameters
-        self.lvelo = None
-        self.dl = None
-
-        # TODO: think of a @property for these quantities
-        self.dy_bend = None
-        self.dx_bend = None
-        self.dx_acc = None
-        self.dx_mzi = None
-
-        self._compute_parameters()
-        self._calc_bend()
+    @property
+    def dx_bend(self) -> float:
+        if self.radius is None:
+            raise ValueError('Curvature radius is set to None.')
+        if self.dy_bend is None:
+            return None
+        return self.sbend_length(self.dy_bend, self.radius)
 
     @property
-    def speed(self) -> float:
-        return self._speed
-
-    @speed.setter
-    def speed(self, value: float):
-        self._speed = value
-        self._compute_parameters()
+    def dx_acc(self) -> float:
+        if self.dy_bend is None or self.dx_bend is None or self.int_length is None:
+            return None
+        return 2 * self.dx_bend + self.int_length
 
     @property
-    def radius(self) -> float:
-        return self._radius
-
-    @radius.setter
-    def radius(self, value: float):
-        self._radius = value
-        self._calc_bend()
-        # compute
+    def dx_mzi(self) -> float:
+        if self.dy_bend is None or self.dx_bend is None or self.int_length is None or self.arm_length is None:
+            return None
+        return 4 * self.dx_bend + 2 * self.int_length + self.arm_length
 
     @property
-    def int_dist(self) -> float:
-        return self._int_dist
-
-    @int_dist.setter
-    def int_dist(self, value):
-        self._int_dist = value
-        self._calc_bend()
-
-    @property
-    def pitch(self) -> float:
-        return self._pitch
-
-    @pitch.setter
-    def pitch(self, value):
-        self._pitch = value
-        self._calc_bend()
+    def dy_bend(self):
+        if self.pitch is None:
+            print(f'WARNING: Waveguide pitch is set to None.')
+            return None
+        if self.int_dist is None:
+            print(f'WARNING: Interaction distance is set to None.')
+            return None
+        else:
+            return 0.5 * (self.pitch - self.int_dist)
 
     @property
-    def int_length(self) -> float:
-        return self._int_length
-
-    @int_length.setter
-    def int_length(self, value):
-        self._int_length = value
-        # compute cose
+    def lvelo(self) -> float:
+        # length needed to acquire the writing speed [mm]
+        return 3 * (0.5 * self.speed ** 2 / self.acc_max)
 
     @property
-    def arm_length(self):
-        return self._arm_length
-
-    @arm_length.setter
-    def arm_length(self, value):
-        self._arm_length = value
-        # compute cose
-
-    @property
-    def dz_bridge(self):
-        return self._dz_bridge
-
-    @dz_bridge.setter
-    def dz_bridge(self, value):
-        self._dz_bridge = value
+    def dl(self) -> float:
+        # minimum separation between two points [mm]
+        return self.speed / self.cmd_rate_max
 
     @staticmethod
     def get_sbend_parameter(dy: float, radius: float) -> tuple:
@@ -205,87 +151,47 @@ class WaveguideParameters:
             l_curve = 2 * ang * radius
         return pos_diff[0], pos_diff[1], pos_diff[2], l_curve
 
-    # Private interface
-    def _calc_bend(self):
-        if self._pitch is None:
-            print(f'WARNING: Waveguide pitch is set to None.')
-            self.dy_bend = None
-        if self._int_dist is None:
-            print(f'WARNING: Interaction distance is set to None.')
-            self.dy_bend = None
-        else:
-            self.dy_bend = 0.5 * (self._pitch - self._int_dist)
-            if self.radius is None:
-                raise ValueError('Curvature radius is set to None.')
-            _, self.dx_bend = self.get_sbend_parameter(self.dy_bend, self.radius)
-            self.dx_acc = 2 * self.dx_bend + self._int_length
-            self.dx_mzi = 4 * self.dx_bend + 2 * self._int_length + self._arm_length
 
-    def _compute_parameters(self):
-        self.lvelo = 3 * (0.5 * self.speed ** 2 / self.acc_max)  # length needed to acquire the writing speed [mm]
-        self.dl = self.speed / self.cmd_rate_max  # minimum separation between two points
-
-
+@dataclass
 class TrenchParameters:
     """
     Class containing the parameters for trench fabrication.
     """
 
-    def __init__(self,
-                 x_center: float = None,
-                 y_min: float = None,
-                 y_max: float = None,
-                 bridge: float = 0.026,
-                 lenght: float = 1,
-                 nboxz: int = 4,
-                 z_off: float = 0.020,
-                 h_box: float = 0.075,
-                 base_folder: str = r'C:\Users\Capable\Desktop',
-                 deltaz: float = 0.0015,
-                 delta_floor: float = 0.001,
-                 beam_waist: float = 0.004,
-                 round_corner: float = 0.005,
-                 speed: float = 4,
-                 speedpos: float = 5):
-        self.x_center = x_center
-        self.y_min = y_min
-        self.y_max = y_max
-        self.bridge = bridge
-        self.length = lenght
-        self.nboxz = nboxz
-        self.z_off = z_off
-        self.h_box = h_box
-        self.deltaz = deltaz
-        self.delta_floor = delta_floor
-        self.beam_waist = beam_waist
-        self.round_corner = round_corner
-        self.speed = speed
-        self.speedpos = speedpos
+    x_center: float = None
+    y_min: float = None
+    y_max: float = None
+    bridge: float = 0.026
+    length: float = 1
+    nboxz: int = 4
+    z_off: float = 0.020
+    h_box: float = 0.075
+    base_folder: str = r'C:\Users\Capable\Desktop'
+    deltaz: float = 0.0015
+    delta_floor: float = 0.001
+    beam_waist: float = 0.004
+    round_corner: float = 0.005
+    speed: float = 4
+    speedpos: float = 5
+    CWD: str = ''
 
-        # adjust bridge size considering the size of the laser focus [mm]
-        self.adj_bridge = self.bridge / 2 + self.beam_waist + self.round_corner
-        self.n_repeat = int(ceil((self.h_box + self.z_off) / self.deltaz))
-
+    def __post_init__(self):
         # FARCALL directories
-        self.base_folder = base_folder
         self.CWD = os.path.dirname(os.path.abspath(__file__))
 
-        # self.rect = self._make_box()
+    @property
+    def adj_bridge(self) -> float:
+        # adjust bridge size considering the size of the laser focus [mm]
+        return self.bridge / 2 + self.beam_waist + self.round_corner
 
     @property
-    def rect(self) -> float:
-        """
-        Getter for the x-coordinate of the trench column center.
+    def n_repeat(self) -> int:
+        return int(ceil((self.h_box + self.z_off) / self.deltaz))
 
-        :return: center x-coordinate of the trench block
-        :rtype: float
+    @property
+    def rect(self) -> shapely.geometry.box:
         """
-        return self._make_box()
-
-    # Private interface
-    def _make_box(self) -> shapely.geometry.box:
-        """
-        Create the rectangular box for the whole trench column. If the ``x_c``, ``y_min`` and ``y_max`` are set we
+        Getter for the rectangular box for the whole trench column. If the ``x_c``, ``y_min`` and ``y_max`` are set we
         create a rectangular polygon that will be used to create the single trench blocks.
 
         ::
@@ -299,56 +205,55 @@ class TrenchParameters:
         :return: Rectangular box centered in ``x_c`` and y-borders at ``y_min`` and ``y_max``.
         :rtype: shapely.geometry.box
         """
-        if self.x_center is not None and self.y_min is not None and self.y_max is not None:
+        if self.x_center is None or self.y_min is None or self.y_max is None:
+            return None
+        else:
             return box(self.x_center - self.length / 2, self.y_min,
                        self.x_center + self.length / 2, self.y_max)
-        else:
-            return None
 
 
+@dataclass
 class GcodeParameters:
     """
     Class containing the parameters for the G-Code file compiler.
     """
 
-    def __init__(self,
-                 filename: str = None,
-                 samplesize: Tuple[float, float] = (None, None),
-                 lab: str = 'CAPABLE',
-                 warp_flag: bool = False,
-                 n_glass: float = 1.50,
-                 n_environment: float = 1.33,
-                 angle: float = 0.0,
-                 long_pause: float = 0.5,
-                 short_pause: float = 0.25,
-                 output_digits: int = 6):
+    filename: str = None
+    samplesize: Tuple[float, float] = (None, None)
+    lab: str = 'CAPABLE'
+    warp_flag: bool = False
+    n_glass: float = 1.50
+    n_environment: float = 1.33
+    angle: float = 0.0
+    long_pause: float = 0.5
+    short_pause: float = 0.25
+    output_digits: int = 6
 
-        self.filename = filename
+    def __post_init__(self):
         if self.filename is None:
             raise ValueError('Filename is None, set GcodeParameters.filename.')
-
         self.CWD = os.path.dirname(os.path.abspath(__file__))
-        self.samplesize = samplesize
-        self.lab = lab
-        self.warp_flag = warp_flag
         self.fwarp = self.antiwarp_management(self.warp_flag)
-        self.tshutter = self.set_tshutter()
-        self.long_pause = long_pause
-        self.short_pause = short_pause
-        self.output_digits = output_digits
 
-        self._n_glass = n_glass
-        self._n_env = n_environment
-        self.neff = self._n_glass / self._n_env
+        if self.angle != 0:
+            print(' BEWARE, ANGLES MUST BE IN DEGREE! '.center(39, "*"))
+            print(f' Given alpha = {self.angle % 360:.3f} deg. '.center(39, "*"))
+        self.angle = radians(self.angle % 360)
 
-        if angle != 0:
-            print(' BEWARE ANGLES MUST BE IN DEGREE!! '.center(39, "*"))
-            print(f' Given alpha = {angle % 360:.3f} deg. '.center(39, "*"))
-        self.angle = radians(angle % 360)
+    @property
+    def xsample(self) -> float:
+        return self.samplesize[0]
 
-        self.xsample, self.ysample = self.samplesize
+    @property
+    def ysample(self) -> float:
+        return self.samplesize[0]
 
-    def set_tshutter(self) -> float:
+    @property
+    def neff(self) -> float:
+        return self.n_glass / self.n_environment
+
+    @property
+    def tshutter(self) -> float:
         """
         Function that set the shuttering time given the fabrication laboratory.
 
