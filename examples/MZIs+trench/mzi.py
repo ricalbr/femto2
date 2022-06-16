@@ -1,141 +1,115 @@
 import os
-import time
 
 import matplotlib.pyplot as plt
-from femto import Marker, PGMCompiler, TrenchColumn, Waveguide
-from femto.Parameters import GcodeParameters, TrenchParameters, WaveguideParameters
+
+from femto import Cell, Marker, PGMCompiler, TrenchColumn, Waveguide
+from femto.helpers import dotdict
 
 # GEOMETRICAL DATA
-
 # Circuit
-PARAMETERS_WG = WaveguideParameters(
+PARAMETERS_WG = dotdict(
     scan=6,
     speed=20,
     depth=0.035,
     radius=15,
+    pitch=0.080,
+    pitch_fa=0.127,
+    int_dist=0.007,
+    int_length=0.0,
+    arm_length=0.0,
+    lsafe=3
 )
 
 x0 = -2.0
 y0 = 0.0
 z0 = PARAMETERS_WG.depth
-swg_length = 3
-increment = [swg_length, 0.0, 0.0]
-
-pitch = 0.080
-pitch_fa = 0.127
-depth = 0.035
-int_distance = 0.007
-int_length = 0.0
-length_arm = 0.0
-
-d1 = 0.5 * (pitch - int_distance)
+increment = [PARAMETERS_WG.lsafe, 0.0, 0.0]
 
 # Markers
+PARAMETERS_MK = dotdict(
+    scan=1,
+    speed=4,
+    depth=0.001,
+    speedpos=5,
+)
 lx = 1
 ly = 0.05
 
 # Trench
-PARAMETERS_TC = TrenchParameters(
-    lenght=1.0,
+PARAMETERS_TC = dotdict(
+    length=1.0,
     nboxz=4,
     deltaz=0.0015,
     h_box=0.075,
     base_folder=r'C:\Users\Capable\Desktop\RiccardoA',
     y_min=0.08,
-    y_max=0.08 + 6 * pitch - 0.02
+    y_max=0.08 + 6 * PARAMETERS_WG.pitch - 0.02
 )
 
 # G-CODE DATA
-PARAMETERS_GC = GcodeParameters(
+PARAMETERS_GC = dotdict(
     lab='CAPABLE',
     samplesize=(25, 25),
     angle=0.0
 )
 
 # 20x20 circuit
-circ = {
-    'waveguide': [],
-    'marker': [],
-    'trench': [],
-}
+circ = Cell()
 
 # Guida dritta
 wg = Waveguide(PARAMETERS_WG)
 wg.start([x0, y0, z0]) \
-    .linear([PARAMETERS_GC.xsample + 4, 0.0, 0.0])
+    .linear([PARAMETERS_GC.samplesize[0] + 4, 0.0, 0.0])
 wg.end()
-circ['waveguide'].append(wg)
+circ.add(wg)
 
 # MZI
-_, delta_x = wg.get_sbend_parameter(d1, PARAMETERS_WG.radius)
-l_x = (PARAMETERS_GC.xsample + 4 - delta_x * 4) / 2
+delta_x = wg.sbend_length(wg.dy_bend, wg.radius)
+l_x = (PARAMETERS_GC.samplesize[0] + 4 - delta_x * 4) / 2
 for i in range(6):
     wg = Waveguide(PARAMETERS_WG) \
-        .start([x0, (1 + i) * pitch, z0]) \
+        .start([x0, (1 + i) * wg.pitch, z0]) \
         .linear([l_x, 0, 0]) \
-        .arc_mzi((-1) ** i * d1) \
+        .arc_mzi((-1) ** i * wg.dy_bend) \
         .linear([l_x, 0, 0])
     wg.end()
-    circ['waveguide'].append(wg)
+    circ.add(wg)
 
 # # Marker
-pos = [PARAMETERS_GC.xsample / 2, y0 - pitch]
-PARAMETERS_MK = WaveguideParameters(
-    scan=1,
-    speed=4,
-    depth=0.001,
-    speedpos=5,
-)
+
+pos = [PARAMETERS_GC.samplesize[0] / 2, y0 - PARAMETERS_WG.pitch]
 c = Marker(PARAMETERS_MK)
 c.cross(pos, ly=0.1)
-circ['marker'].append(c)
+circ.add(c)
 
 # # Trench
-PARAMETERS_TC.x_center = PARAMETERS_GC.xsample / 2
+PARAMETERS_TC.x_center = PARAMETERS_GC.samplesize[0] / 2
 col = TrenchColumn(PARAMETERS_TC)
-col.get_trench(circ['waveguide'])
-circ['trench'].append(col)
+col.get_trench(circ.waveguides)
+circ.add(col)
 
 # Plot
-fig, ax = plt.subplots()
-for wg in circ['waveguide']:
-    ax.plot(wg.x[:-1], wg.y[:-1], '-b', alpha=0.5, linewidth=0.5)
-
-for c in circ['marker']:
-    ax.plot(c.x[:-1], c.y[:-1], '-k', linewidth=1.25)
-
-for col_trench in circ['trench']:
-    for t in col_trench:
-        ax.add_patch(t.patch)
-plt.tight_layout(pad=0)
-ax.set_aspect(10)
+circ.plot2d()
 plt.show()
 
 # Waveguide G-Code
 PARAMETERS_GC.filename = 'MZIs.pgm'
 with PGMCompiler(PARAMETERS_GC) as gc:
     with gc.repeat(PARAMETERS_WG.scan):
-        for i, wg in enumerate(circ['waveguide']):
+        for i, wg in enumerate(circ.waveguides):
             gc.comment(f' +--- Modo: {i + 1} ---+')
             gc.write(wg.points)
 
 # Marker G-Code
 PARAMETERS_GC.filename = 'Markers.pgm'
 with PGMCompiler(PARAMETERS_GC) as gc:
-    for mk in circ['marker']:
+    for mk in circ.markers:
         gc.write(mk.points)
 
 # Trench G-Code
-for col_index, col_trench in enumerate(circ['trench']):
+for col_index, col_trench in enumerate(circ.trench_cols):
     # Generate G-Code for the column
-    col_filename = os.path.join(os.getcwd(),
-                                's-trench',
-                                f'FARCALL{col_index + 1:03}')
+    col_filename = os.path.join(os.getcwd(), 's-trench', f'FARCALL{col_index + 1:03}')
     PARAMETERS_GC.filename = col_filename
     with PGMCompiler(PARAMETERS_GC) as gc:
         gc.trench(col_trench, col_index, base_folder=PARAMETERS_TC.base_folder)
-
-ttime = 0
-[ttime := ttime + wg.wtime for wg in circ['waveguide']]
-[ttime := ttime + col.wtime for col in circ['trench']]
-print(time.strftime('%H:%M:%S', time.gmtime(ttime)))
