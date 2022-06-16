@@ -192,7 +192,7 @@ def _example():
     )
 
     PARAMETERS_TC = dotdict(
-        lenght=1.0,
+        length=1.0,
         nboxz=4,
         deltaz=0.0015,
         h_box=0.075,
