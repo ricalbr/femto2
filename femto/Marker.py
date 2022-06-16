@@ -4,7 +4,6 @@ from typing import List
 import numpy as np
 
 from femto import Waveguide
-from femto.Parameters import WaveguideParameters
 
 
 class Marker(Waveguide):
@@ -12,8 +11,8 @@ class Marker(Waveguide):
     Class representing an ablation marker.
     """
 
-    def __init__(self, param: WaveguideParameters):
-        super(Marker, self).__init__(param)
+    def __init__(self, param: dict):
+        super().__init__(param)
 
     def cross(self, position: List[float], lx: float = 1, ly: float = 0.05, speedpos: float = None):
         """
@@ -27,28 +26,27 @@ class Marker(Waveguide):
         :type lx: float
         :param ly: Length of the cross marker along y [mm]. The default is 0.05 mm.
         :type ly: float
-        :param speedpos: Transition speed with the shutter closes [mm/s]. The default is self.param.speed.
+        :param speedpos: Transition speed with the shutter closes [mm/s]. The default is self.speed.
         :type speedpos: float
         :return: None
         """
         if len(position) == 2:
-            position.append(self.param.depth)
+            position.append(self.depth)
         elif len(position) == 3:
-            position[2] = self.param.depth
-            warnings.warn(f'Given 3D coordinate list. Z-coordinate is overwritten to {self.param.depth} mm.')
+            position[2] = self.depth
+            warnings.warn(f'Given 3D coordinate list. Z-coordinate is overwritten to {self.depth} mm.')
         else:
             raise ValueError('Given invalid position.')
 
         if speedpos is None:
-            speedpos = self.param.speedpos
+            speedpos = self.speedpos
 
-        self.start(position) \
-            .linear([-lx / 2, 0, 0], speed=speedpos, shutter=0) \
-            .linear([lx, 0, 0], speed=self.param.speed) \
-            .linear([-lx / 2, 0, 0], speed=speedpos, shutter=0) \
-            .linear([0, -ly / 2, 0], speed=speedpos, shutter=0) \
-            .linear([0, ly, 0], speed=self.param.speed) \
-            .linear([0, -ly / 2, 0], speed=speedpos, shutter=0)
+        start_pos = np.add(position, [-lx / 2, 0, 0])
+        self.start(start_pos) \
+            .linear([lx, 0, 0], speed=self.speed) \
+            .linear([-lx / 2, -ly / 2, 0], speed=speedpos, shutter=0) \
+            .linear([0, 0, 0], speed=speedpos, shutter=1) \
+            .linear([0, ly, 0], speed=self.speed)
         self.end(speedpos)
 
     def ruler(self, y_ticks: List, lx: float, lx_short: float = None, x_init: float = -2, speedpos: float = None):
@@ -64,38 +62,40 @@ class Marker(Waveguide):
         :type lx_short: float
         :param x_init: Starting x-coordinate of the laser [mm]. The default is -2 mm.
         :type x_init: float
-        :param speedpos: Transition speed with the shutter closes [mm/s]. The default is self.param.speed.
+        :param speedpos: Transition speed with the shutter closes [mm/s]. The default is self.speed.
         :type speedpos: float
         :return: None
         """
 
         if speedpos is None:
-            speedpos = self.param.speedpos
+            speedpos = self.speedpos
 
         if lx_short is None:
             lx_short = 0.75 * lx
         tick_len = lx_short * np.ones_like(y_ticks)
         tick_len[0] = lx
 
-        self.start([x_init, y_ticks[0], self.param.depth])
+        self.start([x_init, y_ticks[0], self.depth])
         for y, tlen in zip(y_ticks, tick_len):
-            self.linear([x_init, y, self.param.depth], speed=speedpos, mode='ABS', shutter=0)
-            self.linear([tlen, 0, 0], speed=self.param.speed, shutter=1)
+            self.linear([x_init, y, self.depth], speed=speedpos, mode='ABS', shutter=0)
+            self.linear([0, 0, 0], shutter=1)
+            self.linear([tlen, 0, 0], speed=self.speed, shutter=1)
+            self.linear([0, 0, 0], speed=self.speed, shutter=0)
         self.end(speedpos)
 
 
 def _example():
     from femto import PGMCompiler
-    from femto.Parameters import GcodeParameters, WaveguideParameters
+    from femto.helpers import dotdict
 
-    PARAMETERS_MK = WaveguideParameters(
+    PARAMETERS_MK = dotdict(
         scan=1,
         speed=4,
         speedpos=5,
         depth=0.001
     )
 
-    PARAMETERS_GC = GcodeParameters(
+    PARAMETERS_GC = dotdict(
         filename='testMarker.pgm',
         lab='CAPABLE',
         samplesize=(25, 25),
