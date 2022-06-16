@@ -6,6 +6,7 @@ import shapely.geometry
 from descartes import PolygonPatch
 
 from femto.helpers import dotdict
+from femto.helpers import listcast
 from femto.Parameters import TrenchParameters
 from femto.Waveguide import Waveguide
 
@@ -140,7 +141,7 @@ class TrenchColumn(TrenchParameters):
         return iter(self._trench_list)
 
     @property
-    def twriting(self):
+    def wtime(self):
         l_tot = 0.0
         for trench in self._trench_list:
             l_tot += self.nboxz * (self.n_repeat * trench.wall_length + trench.floor_length)
@@ -171,7 +172,7 @@ class TrenchColumn(TrenchParameters):
             dilated = (LineString(list(zip(x, y))).buffer(self.adj_bridge, cap_style=1))
             trench_block = trench_block.difference(dilated)
 
-        for block in list(trench_block):
+        for block in listcast(trench_block):
             block = (polygon.orient(block).buffer(self.round_corner, resolution=250, cap_style=1))
             trench = Trench(block, self.delta_floor)
             self._trench_list.append(trench)
