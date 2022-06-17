@@ -1,6 +1,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from descartes import PolygonPatch
 from mpl_toolkits.mplot3d import Axes3D
+from shapely.affinity import rotate, translate
+from shapely.geometry import Point
 
 from femto import Marker, PGMCompiler, Trench, TrenchColumn, Waveguide
 
@@ -45,7 +48,7 @@ class Cell(PGMCompiler):
         scargs = {**default_scargs, **sc_style}
         default_mkargs = {'linestyle': '-', 'color': 'k', 'linewidth': 2.0}
         mkargs = {**default_mkargs, **mk_style}
-        default_tcargs = {}
+        default_tcargs = {'facecolor': 'k', 'edgecolor': None, 'alpha': 1, 'zorder': 1}
         tcargs = {**default_tcargs, **tc_style}
 
         self.fig, self.ax = plt.subplots()
@@ -63,7 +66,9 @@ class Cell(PGMCompiler):
             xo, yo, _ = self._shutter_mask(p, shutter=1)
             self.ax.plot(xo, yo, **mkargs)
         for tr in self.trenches:
-            self.ax.add_patch(tr.patch)
+            shape = translate(tr.block, xoff=-self.new_origin[0], yoff=-self.new_origin[1])
+            shape = rotate(shape, angle=self.angle, use_radians=True, origin=Point(0, 0))
+            self.ax.add_patch(PolygonPatch(shape, **tcargs))
 
         # Glass
         if self.xsample is not None:
