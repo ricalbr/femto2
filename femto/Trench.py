@@ -40,22 +40,20 @@ class Trench:
         return np.asarray([self.block.centroid.x, self.block.centroid.y])
 
     @property
-    def patch(self, fc: str = 'k', ec: str = 'k', alpha: float = 1, zorder: int = 1) -> PolygonPatch:
+    def patch(self, kwargs=None) -> PolygonPatch:
         """
         Return a Patch obj representing the trench block for plotting.
 
-        :param fc:  Patch face colour. Can be specified with HEX code, e.g. '#9a9a9a'
-        :type fc: str
-        :param ec: Patch edge colour. Can be specified with HEX code, e.g. '#9a9a9a'
-        :type ec: str
-        :param alpha: Patch transparency coefficient. Value should be between 0 and 1.
-        :type alpha: float
-        :param zorder: Overlapping order in 2D plot. Higher values are on top.
-        :type zorder: int
+        :param kwargs: Plotting options supported for matplotlib.patches.Polygon class.
+        :type kwargs: dict
         :return: Patch obj for plotting the trench block
         :rtype: descartes.PolygonPatch
         """
-        return PolygonPatch(self.block, fc=fc, ec=ec, alpha=alpha, zorder=zorder)
+        if kwargs is None:
+            kwargs = {}
+        default_kwargs = {'facecolor': 'k', 'edgecolor': None, 'alpha': 1, 'zorder': 1}
+        kwargs = {**default_kwargs, **kwargs}
+        return PolygonPatch(self.block, **kwargs)
 
     def trench_paths(self) -> Generator[np.ndarray, None, None]:
         """
