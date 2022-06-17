@@ -48,13 +48,14 @@ PARAMETERS_TC = dotdict(
 
 # G-CODE DATA
 PARAMETERS_GC = dotdict(
+    filename='MZI.pgm',
     lab='CAPABLE',
     samplesize=(25, 25),
-    angle=0.0
+    angle=1.0
 )
 
 # 20x20 circuit
-circ = Cell()
+circ = Cell(PARAMETERS_GC)
 
 # Guida dritta
 wg = Waveguide(PARAMETERS_WG)
@@ -93,7 +94,6 @@ circ.plot2d()
 plt.show()
 
 # Waveguide G-Code
-PARAMETERS_GC.filename = 'MZIs.pgm'
 with PGMCompiler(PARAMETERS_GC) as gc:
     with gc.repeat(PARAMETERS_WG.scan):
         for i, wg in enumerate(circ.waveguides):
