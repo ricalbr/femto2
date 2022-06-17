@@ -2,11 +2,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 
-from femto import Marker, Trench, TrenchColumn, Waveguide
+from femto import Marker, PGMCompiler, Trench, TrenchColumn, Waveguide
 
 
-class Cell:
-    def __init__(self, dim=(None, None)):
+class Cell(PGMCompiler):
+    def __init__(self, param, dim=(None, None)):
+        super(Cell, self).__init__(param)
         self.dim = dim
         self.waveguides = []
         self.markers = []
@@ -27,7 +28,7 @@ class Cell:
         else:
             raise TypeError(f'The object must be a Waveguide, Marker or Trench object. {type(obj)} was given.')
 
-    def plot2d(self, shutter_close=True, wg_style=None, sc_style=None, mk_style=None, tc_style=None):
+    def plot2d(self, shutter_close=True, aspect='auto', wg_style=None, sc_style=None, mk_style=None, tc_style=None):
         if tc_style is None:
             tc_style = {}
         if mk_style is None:
@@ -49,18 +50,30 @@ class Cell:
         ax.set_xlabel('X [mm]')
         ax.set_ylabel('Y [mm]')
         for wg in self.waveguides:
-            xo, yo, _ = self._shutter_mask(wg.points, shutter=1)
+            p = np.array(self.transform_points(wg.points)).T
+            xo, yo, _ = self._shutter_mask(p, shutter=1)
             ax.plot(xo, yo, **wgargs)
             if shutter_close:
-                xc, yc, _ = self._shutter_mask(wg.points, shutter=0)
+                xc, yc, _ = self._shutter_mask(p, shutter=0)
                 ax.plot(xc, yc, **scargs)
         for mk in self.markers:
-            xo, yo, _ = self._shutter_mask(mk.points, shutter=1)
+            p = np.array(self.transform_points(mk.points)).T
+            xo, yo, _ = self._shutter_mask(p, shutter=1)
             ax.plot(xo, yo, **mkargs)
         for tr in self.trenches:
             ax.add_patch(tr.patch)
+
+        # Glass
+        if self.xsample is not None:
+            ax.axvline(x=0.0 - self.new_origin[0])
+            ax.axvline(x=self.xsample - self.new_origin[0])
+
+        # Origin
         ax.plot(0.0, 0.0, 'or')
         ax.annotate('(0,0)', (0.0, 0.0), textcoords="offset points", xytext=(0, 10), ha='left', color='r')
+        if isinstance(aspect, str) and aspect.lower() not in ['auto', 'equal']:
+            raise ValueError(f'aspect must be either `auto` or `equal`. Given {aspect.lower()}.')
+        ax.set_aspect(aspect)
 
     def plot3d(self, shutter_close=True, wg_style=None, sc_style=None, mk_style=None, tc_style=None):
         if tc_style is None:
@@ -117,3 +130,48 @@ class Cell:
             ym = np.where(s == 0, y, np.nan)
             zm = np.where(s == 0, z, np.nan)
         return x, ym, zm
+
+
+def _example():
+    from femto.helpers import dotdict
+
+    PARAMETERS_GC = dotdict(
+        filename='testMarker.pgm',
+        lab='CAPABLE',
+        new_origin=(1.0, -0.2),
+        samplesize=(25, 25),
+        angle=0.0,
+    )
+
+    PARAMETERS_WG = dotdict(
+        scan=6,
+        speed=20,
+        radius=15,
+        pitch=0.080,
+        int_dist=0.007,
+        lsafe=3,
+    )
+
+    increment = [PARAMETERS_WG.lsafe, 0, 0]
+    c = Cell(PARAMETERS_GC)
+
+    # Calculations
+    mzi = [Waveguide(PARAMETERS_WG) for _ in range(2)]
+    for index, wg in enumerate(mzi):
+        [xi, yi, zi] = [-2, -wg.pitch / 2 + index * wg.pitch, 0.035]
+
+        wg.start([xi, yi, zi]) \
+            .linear(increment) \
+            .sin_mzi((-1) ** index * wg.dy_bend) \
+            .spline_bridge((-1) ** index * 0.08, (-1) ** index * 0.015) \
+            .sin_mzi((-1) ** (index + 1) * wg.dy_bend) \
+            .linear(increment)
+        wg.end()
+        c.add(wg)
+
+    c.plot2d()
+    plt.show()
+
+
+if __name__ == '__main__':
+    _example()
