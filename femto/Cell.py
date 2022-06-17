@@ -121,14 +121,8 @@ class Cell(PGMCompiler):
         if shutter not in [0, 1]:
             raise ValueError(f'Shutter must be either OPEN (1) or CLOSE (0). Given {shutter}.')
         x, y, z, _, s = points.T
-        if shutter == 1:
-            # # or even mask all the values with shutter OFF
-            ym = np.where(s == 1, y, np.nan)
-            zm = np.where(s == 1, z, np.nan)
-        else:
-            # # or even mask all the values with shutter ON
-            ym = np.where(s == 0, y, np.nan)
-            zm = np.where(s == 0, z, np.nan)
+        ym = np.where(s == shutter, y, np.nan)
+        zm = np.where(s == shutter, z, np.nan)
         return x, ym, zm
 
 
