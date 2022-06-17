@@ -305,15 +305,8 @@ class PGMCompiler(GcodeParameters):
         :type points: numpy.ndarray
         :return: None
         """
-        x, y, z, f_c, s_c = points.T
-        sub_points = np.stack((x, y, z), axis=-1).astype(np.float32)
-        if self.warp_flag:
-            sub_points = np.matmul(sub_points, self.t_matrix())
-            x_c, y_c, z_c = self.compensate(sub_points).T
-        else:
-            x_c, y_c, z_c = np.matmul(sub_points, self.t_matrix()).T
-        args = [self._format_args(x, y, z, f)
-                for (x, y, z, f) in zip(x_c, y_c, z_c, f_c)]
+        x_c, y_c, z_c, f_c, s_c = self.transform_points(points)
+        args = [self._format_args(x, y, z, f) for (x, y, z, f) in zip(x_c, y_c, z_c, f_c)]
         for (arg, s) in zip_longest(args, s_c):
             if s == 0 and self._shutter_on is False:
                 pass
@@ -325,6 +318,17 @@ class PGMCompiler(GcodeParameters):
                 self.dwell(self.long_pause)
             self._instructions.append(f'LINEAR {arg}\n')
         self.dwell(self.long_pause)
+
+    def transform_points(self, points):
+        x, y, z, f_c, s_c = points.T
+        sub_points = np.stack((x, y, z), axis=-1).astype(np.float32)
+        sub_points -= np.array([[self.new_origin[0]], [self.new_origin[1]], [1]]).T
+        if self.warp_flag:
+            sub_points = np.matmul(sub_points, self.t_matrix())
+            x_c, y_c, z_c = self.compensate(sub_points).T
+        else:
+            x_c, y_c, z_c = np.matmul(sub_points, self.t_matrix()).T
+        return x_c, y_c, z_c, f_c, s_c
 
     def instruction(self, instr: str):
         """

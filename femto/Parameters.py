@@ -221,6 +221,7 @@ class GcodeParameters:
     filename: str = None
     samplesize: Tuple[float, float] = (None, None)
     lab: str = 'CAPABLE'
+    new_origin: Tuple[float] = (0.0, 0.0)
     warp_flag: bool = False
     n_glass: float = 1.50
     n_environment: float = 1.33
