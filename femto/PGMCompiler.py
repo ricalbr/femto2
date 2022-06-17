@@ -4,6 +4,7 @@ from collections.abc import Iterable
 from contextlib import contextmanager
 from copy import deepcopy
 from itertools import zip_longest
+from math import degrees
 from pathlib import Path
 
 import numpy as np
@@ -423,11 +424,11 @@ class PGMCompiler(GcodeParameters):
                        [0, 0, 1 / self.neff]])
         t_mat = SM @ RM
         if dim == 3:
-            return t_mat
+            return t_mat.T
         elif dim == 2:
             # export xy-submatrix
             ixgrid = np.ix_([0, 1], [0, 1])
-            return t_mat[ixgrid]
+            return t_mat[ixgrid].T
         else:
             raise ValueError(f'Dimension not valid. dim must be either 2 or 3. Given {dim}.')
 
@@ -611,7 +612,7 @@ def make_trench(gc: PGMCompiler, col: TrenchColumn, col_index: int = None,
     os.makedirs(col_dir, exist_ok=True)
     for i, trench in enumerate(col):
         filename = os.path.join(col_dir, f'trench{i + 1:03}_')
-        export_trench_path(trench, filename, gc.neff, gc.angle, tspeed)
+        export_trench_path(trench, filename, gc.neff, degrees(gc.angle), tspeed)
 
     gc.dvar(['ZCURR'])
 
