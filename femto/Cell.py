@@ -13,6 +13,8 @@ class Cell(PGMCompiler):
         self.markers = []
         self.trench_cols = []
         self.trenches = []
+        self.fig = None
+        self.ax = None
 
     def add(self, obj):
         if isinstance(obj, Marker):
@@ -46,34 +48,34 @@ class Cell(PGMCompiler):
         default_tcargs = {}
         tcargs = {**default_tcargs, **tc_style}
 
-        fig, ax = plt.subplots()
-        ax.set_xlabel('X [mm]')
-        ax.set_ylabel('Y [mm]')
+        self.fig, self.ax = plt.subplots()
+        self.ax.set_xlabel('X [mm]')
+        self.ax.set_ylabel('Y [mm]')
         for wg in self.waveguides:
             p = np.array(self.transform_points(wg.points)).T
             xo, yo, _ = self._shutter_mask(p, shutter=1)
-            ax.plot(xo, yo, **wgargs)
+            self.ax.plot(xo, yo, **wgargs)
             if shutter_close:
                 xc, yc, _ = self._shutter_mask(p, shutter=0)
-                ax.plot(xc, yc, **scargs)
+                self.ax.plot(xc, yc, **scargs)
         for mk in self.markers:
             p = np.array(self.transform_points(mk.points)).T
             xo, yo, _ = self._shutter_mask(p, shutter=1)
-            ax.plot(xo, yo, **mkargs)
+            self.ax.plot(xo, yo, **mkargs)
         for tr in self.trenches:
-            ax.add_patch(tr.patch)
+            self.ax.add_patch(tr.patch)
 
         # Glass
         if self.xsample is not None:
-            ax.axvline(x=0.0 - self.new_origin[0])
-            ax.axvline(x=self.xsample - self.new_origin[0])
+            self.ax.axvline(x=0.0 - self.new_origin[0])
+            self.ax.axvline(x=self.xsample - self.new_origin[0])
 
         # Origin
-        ax.plot(0.0, 0.0, 'or')
-        ax.annotate('(0,0)', (0.0, 0.0), textcoords="offset points", xytext=(0, 10), ha='left', color='r')
+        self.ax.plot(0.0, 0.0, 'or')
+        self.ax.annotate('(0,0)', (0.0, 0.0), textcoords="offset points", xytext=(0, 10), ha='left', color='r')
         if isinstance(aspect, str) and aspect.lower() not in ['auto', 'equal']:
             raise ValueError(f'aspect must be either `auto` or `equal`. Given {aspect.lower()}.')
-        ax.set_aspect(aspect)
+        self.ax.set_aspect(aspect)
 
     def plot3d(self, shutter_close=True, wg_style=None, sc_style=None, mk_style=None, tc_style=None):
         if tc_style is None:
@@ -93,27 +95,30 @@ class Cell(PGMCompiler):
         default_tcargs = {}
         tcargs = {**default_tcargs, **tc_style}
 
-        fig = plt.figure()
-        fig.clf()
-        ax = Axes3D(fig, auto_add_to_figure=False)
-        fig.add_axes(ax)
-        ax.set_xlabel('X [mm]')
-        ax.set_ylabel('Y [mm]')
-        ax.set_zlabel('Z [mm]')
+        self.fig = plt.figure()
+        self.fig.clf()
+        self.ax = Axes3D(self.fig, auto_add_to_figure=False)
+        self.fig.add_axes(self.ax)
+        self.ax.set_xlabel('X [mm]')
+        self.ax.set_ylabel('Y [mm]')
+        self.ax.set_zlabel('Z [mm]')
         for wg in self.waveguides:
             xo, yo, zo = self._shutter_mask(wg.points, shutter=1)
-            ax.plot(xo, yo, zo, **wgargs)
+            self.ax.plot(xo, yo, zo, **wgargs)
             if shutter_close:
                 xc, yc, zc = self._shutter_mask(wg.points, shutter=0)
-                ax.plot(xc, yc, zc, **scargs)
+                self.ax.plot(xc, yc, zc, **scargs)
         for mk in self.markers:
             xo, yo, zo = self._shutter_mask(mk.points, shutter=1)
-            ax.plot(xo, yo, zo, **mkargs)
+            self.ax.plot(xo, yo, zo, **mkargs)
         for tr in self.trenches:
             pass
             # ax.add_patch(patch_2d_to_3d(tr.patch))
-        ax.set_box_aspect(aspect=(2, 1, 0.25))
-        ax.plot(0.0, 0.0, 0.0, 'or')
+        self.ax.set_box_aspect(aspect=(2, 1, 0.25))
+        self.ax.plot(0.0, 0.0, 0.0, 'or')
+
+    def save(self, filename='device_scheme.pdf', bbox_inches='tight'):
+        self.fig.savefig(filename, bbox_inches=bbox_inches)
 
     # Private interface
     @staticmethod
@@ -164,7 +169,8 @@ def _example():
         c.add(wg)
 
     c.plot2d()
-    plt.show()
+    # c.save()
+    # plt.show()
 
 
 if __name__ == '__main__':
