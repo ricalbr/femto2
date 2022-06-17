@@ -138,7 +138,7 @@ def _example():
     PARAMETERS_GC = dotdict(
         filename='testMarker.pgm',
         lab='CAPABLE',
-        new_origin=(1.0, -0.2),
+        new_origin=(1.0, -0.0),
         samplesize=(25, 25),
         angle=0.0,
     )
@@ -149,7 +149,7 @@ def _example():
         radius=15,
         pitch=0.080,
         int_dist=0.007,
-        lsafe=3,
+        lsafe=5,
     )
 
     increment = [PARAMETERS_WG.lsafe, 0, 0]
@@ -163,9 +163,9 @@ def _example():
         wg.start([xi, yi, zi]) \
             .linear(increment) \
             .sin_mzi((-1) ** index * wg.dy_bend) \
-            .spline_bridge((-1) ** index * 0.08, (-1) ** index * 0.015) \
-            .sin_mzi((-1) ** (index + 1) * wg.dy_bend) \
-            .linear(increment)
+            .linear([5, 0, 0]) \
+            .sin_mzi((-1) ** index * wg.dy_bend) \
+            .linear([27, yi, zi], mode='ABS')
         wg.end()
         c.add(wg)
 
