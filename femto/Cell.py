@@ -77,8 +77,12 @@ class Cell(PGMCompiler):
 
         # Glass
         if self.xsample is not None:
-            self.ax.axvline(x=0.0 - self.new_origin[0])
-            self.ax.axvline(x=self.xsample - self.new_origin[0])
+            slope = np.inf if self.angle == 0.0 else -1/np.tan(self.angle)
+            rot = np.array([[np.cos(self.angle), -np.sin(self.angle)], [np.sin(self.angle), np.cos(self.angle)]])
+            p1 = np.dot(rot, np.array([0.0 - self.new_origin[0], 0.0 - self.new_origin[1]]))
+            p2 = np.dot(rot, np.array([self.xsample - self.new_origin[0], 0.0 - self.new_origin[1]]))
+            self.ax.axline(p1, slope=slope)
+            self.ax.axline(p2, slope=slope)
 
         # Origin
         self.ax.plot(0.0, 0.0, 'or')
