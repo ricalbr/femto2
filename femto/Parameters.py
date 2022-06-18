@@ -328,8 +328,7 @@ class GcodeParameters:
         for pos in list(product(xpos, ypos)):
             xlist.append(pos[0])
             ylist.append(pos[1])
-            zlist.append(float(input('X={:.1f} Y={:.1f}: \t'.format(pos[0],
-                                                                    pos[1]))) / 1000)
+            zlist.append(float(input('X={:.1f} Y={:.1f}: \t'.format(pos[0], pos[1]))) / 1000)
             if zlist[-1] == '':
                 raise ValueError('You have missed the last value.')
 
