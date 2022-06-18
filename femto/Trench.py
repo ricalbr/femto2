@@ -20,9 +20,7 @@ class Trench:
     Class representing a single trench block.
     """
 
-    def __init__(self,
-                 block: Polygon,
-                 delta_floor: float = 0.001):
+    def __init__(self, block: Polygon, delta_floor: float = 0.001):
 
         self.block = block
         self.delta_floor = delta_floor
