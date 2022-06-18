@@ -3,7 +3,12 @@ import numpy as np
 from descartes import PolygonPatch
 from mpl_toolkits.mplot3d import Axes3D
 from shapely.affinity import rotate, translate
-from shapely.geometry import Point
+import shapely.geometry
+import warnings
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+    from shapely.geometry import Point
+
 
 from femto import Marker, PGMCompiler, Trench, TrenchColumn, Waveguide
 
