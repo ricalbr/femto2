@@ -42,7 +42,8 @@ PARAMETERS_TC = dotdict(
 
 # G-CODE DATA
 PARAMETERS_GC = dotdict(
+    filename = 'UPP',
     lab='CAPABLE',
-    samplesize=(25, 25),
+    samplesize=(125, 25),
     angle=0.0
 )

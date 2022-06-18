@@ -3,11 +3,12 @@ import time
 
 from femto import Cell, Marker, PGMCompiler, TrenchColumn, Waveguide
 from param import *
+import matplotlib.pyplot as plt
 
 t0 = time.perf_counter()
 
 # MxN circuit
-circ = Cell()
+circ = Cell(PARAMETERS_GC)
 
 x_trench = []
 for i in range(MM):
@@ -50,11 +51,11 @@ for xt in x_trench:
 
 # # Plot
 circ.plot2d()
-# plt.show()
+plt.show()
 
 # Compilation
 # # OPTICAL CIRCUIT
-PARAMETERS_GC.filename = f'{MM}x{NN}CIRC.pgm'
+PARAMETERS_GC.filename = f'{MM}x{NN}_CIRCUIT.pgm'
 with PGMCompiler(PARAMETERS_GC) as gc:
     with gc.repeat(PARAMETERS_WG.scan):
         for i, wg in enumerate(circ.waveguides):
@@ -62,7 +63,7 @@ with PGMCompiler(PARAMETERS_GC) as gc:
             gc.write(wg.points)
 
 # # MARKERS
-PARAMETERS_GC.filename = f'{MM}x{NN}MARKERS.pgm'
+PARAMETERS_GC.filename = f'{MM}x{NN}_MARKERS.pgm'
 with PGMCompiler(PARAMETERS_GC) as gc:
     for i, c in enumerate(circ.markers):
         gc.comment(f' +--- Croce: {i + 1} ---+')
