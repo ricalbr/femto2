@@ -1,9 +1,7 @@
-import os
 import time
 
-from femto import Cell, Marker, PGMCompiler, TrenchColumn, Waveguide
+from femto import Cell, Marker, PGMCompiler, PGMTrench, TrenchColumn, Waveguide
 from param import *
-import matplotlib.pyplot as plt
 
 t0 = time.perf_counter()
 
@@ -51,7 +49,7 @@ for xt in x_trench:
 
 # # Plot
 circ.plot2d()
-plt.show()
+# plt.show()
 
 # Compilation
 # # OPTICAL CIRCUIT
@@ -70,12 +68,8 @@ with PGMCompiler(PARAMETERS_GC) as gc:
         gc.write(c.points)
 
 # # TRENCH
-for col_index, col in enumerate(circ.trench_cols):
-    col_filename = os.path.join(os.getcwd(), 's-trench', f'FARCALL_COLONNA{col_index + 1:03}.pgm')
-    PARAMETERS_GC.filename = col_filename
-    with PGMCompiler(PARAMETERS_GC) as gc:
-        gc.trench(col, col_index, base_folder=PARAMETERS_TC.base_folder, u=[31.7, 38.4])
-        gc.homing()
+tc = PGMTrench(PARAMETERS_GC, circ.trench_cols)
+tc.write()
 
 print(f'Elapsed time: {time.perf_counter() - t0:.2f} s.')
 
