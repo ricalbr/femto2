@@ -78,8 +78,8 @@ class Trench:
             current_poly = polygon_list.pop(0)
             inset_polygon = self._buffer_polygon(current_poly)
             if inset_polygon and inset_polygon.type == 'MultiPolygon':
-                polygon_list.extend(list(inset_polygon))
-                for poly in list(inset_polygon):
+                polygon_list.extend(list(inset_polygon.geoms))
+                for poly in list(inset_polygon.geoms):
                     self.floor_length += poly.length
                     yield np.array(poly.exterior.coords).T
             elif inset_polygon and inset_polygon.type == 'Polygon':
@@ -168,7 +168,7 @@ class TrenchColumn(TrenchParameters):
             dilated = (LineString(list(zip(x, y))).buffer(self.adj_bridge, cap_style=1))
             trench_block = trench_block.difference(dilated)
 
-        for block in listcast(trench_block):
+        for block in listcast(trench_block.geoms):
             block = (polygon.orient(block).buffer(self.round_corner, resolution=250, cap_style=1))
             trench = Trench(block, self.delta_floor)
             self._trench_list.append(trench)
