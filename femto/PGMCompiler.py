@@ -376,14 +376,6 @@ class PGMCompiler(GcodeParameters):
         if verbose:
             print('G-code compilation completed.')
 
-    # def trench(self, col: TrenchColumn, col_index: int = None, base_folder: str = r'C:\Users\Capable\Desktop',
-    #            dirname: str = 's-trench', u: List = None, nboxz: int = 4, hbox: float = 0.075, zoff: float = 0.020,
-    #            deltaz: float = 0.0015, tspeed: float = 4, speed_pos: float = 5, pause: float = 0.5):
-    #     """
-    #     See :mod:`make_trench() function femto.PGMCompiler.make_trench`
-    #     """
-    #     make_trench(self, col, col_index, base_folder, dirname, u, nboxz, hbox, zoff, deltaz, tspeed, speed_pos, pause)
-
     def compensate(self, pts: np.ndarray) -> np.ndarray:
         """
         Returns the points compensated along z-direction for the refractive index, the offset and the glass warp.
@@ -506,7 +498,7 @@ class PGMTrench(PGMCompiler):
         Secondly, the function produce a FARCALL.pgm program to fabricate all the trenches in the column.
 
         :param dirname: Name of the directory in which the .pgm file will be written. The path is relative to the
-        current file (.\dirname\)
+        current file (.\\dirname\\)
         :type dirname: str
         :return: None
         """
@@ -594,8 +586,10 @@ class PGMTrench(PGMCompiler):
 
     def _write_array(self, pgm_filename: str, points: np.ndarray, f_val: float):
         """
-        Helper function that produces a PGM file for a 3D matrix of points at a given traslation speed, without shuttering operations.
-        The function parse the points input matrix, applies the rotation and homothety transformations and parse all the LINEAR instructions.
+        Helper function that produces a PGM file for a 3D matrix of points at a given traslation speed,
+        without shuttering operations.
+        The function parse the points input matrix, applies the rotation and homothety transformations and parse all
+        the LINEAR instructions.
 
         :param pgm_filename: Filename of the file in which the G-Code instructions will be written.
         :type pgm_filename: str
