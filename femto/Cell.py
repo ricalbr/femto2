@@ -38,15 +38,7 @@ class Cell(PGMCompiler):
         else:
             raise TypeError(f'The object must be a Waveguide, Marker or Trench object. {type(obj)} was given.')
 
-    def plot2d(self, shutter_close=True, aspect='auto', wg_style=None, sc_style=None, mk_style=None, tc_style=None):
-        if tc_style is None:
-            tc_style = {}
-        if mk_style is None:
-            mk_style = {}
-        if sc_style is None:
-            sc_style = {}
-        if wg_style is None:
-            wg_style = {}
+    def plot2d(self, shutter_close=True, aspect='auto', wg_style={}, sc_style={}, mk_style={}, tc_style={}):
         default_wgargs = {'linestyle': '-', 'color': 'b', 'linewidth': 2.0}
         wgargs = {**default_wgargs, **wg_style}
         default_scargs = {'linestyle': ':', 'color': 'b', 'linewidth': 0.5}
@@ -87,15 +79,7 @@ class Cell(PGMCompiler):
             raise ValueError(f'aspect must be either `auto` or `equal`. Given {aspect.lower()}.')
         self.ax.set_aspect(aspect)
 
-    def plot3d(self, shutter_close=True, wg_style=None, sc_style=None, mk_style=None, tc_style=None):
-        if tc_style is None:
-            tc_style = {}
-        if mk_style is None:
-            mk_style = {}
-        if sc_style is None:
-            sc_style = {}
-        if wg_style is None:
-            wg_style = {}
+    def plot3d(self, shutter_close=True, wg_style={}, sc_style={}, mk_style={}, tc_style={}):
         default_wgargs = {'linestyle': '-', 'color': 'b', 'linewidth': 2.0}
         wgargs = {**default_wgargs, **wg_style}
         default_scargs = {'linestyle': ':', 'color': 'b', 'linewidth': 0.5}
