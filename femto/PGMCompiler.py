@@ -44,6 +44,7 @@ class PGMCompiler(GcodeParameters):
                 <code block>
         """
         self.header()
+        self.dwell(1.0)
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -321,7 +322,7 @@ class PGMCompiler(GcodeParameters):
     def transform_points(self, points):
         x, y, z, f_c, s_c = points.T
         sub_points = np.stack((x, y, z), axis=-1).astype(np.float32)
-        sub_points -= np.array([[self.new_origin[0]], [self.new_origin[1]], [1]]).T
+        sub_points -= np.array([[self.new_origin[0]], [self.new_origin[1]], [0]]).T
         if self.warp_flag:
             sub_points = np.matmul(sub_points, self.t_matrix())
             x_c, y_c, z_c = self.compensate(sub_points).T
@@ -519,6 +520,7 @@ class PGMTrench(PGMCompiler):
                 self._export_path(filename, trench, f=col.speed)
 
             self.header()
+            self.dwell(1.0)
             self.dvar(['ZCURR'])
 
             for nbox in range(col.nboxz):
