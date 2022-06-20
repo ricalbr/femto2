@@ -69,10 +69,10 @@ class WaveguideParameters:
     @property
     def dy_bend(self):
         if self.pitch is None:
-            print(f'WARNING: Waveguide pitch is set to None.')
+            print('WARNING: Waveguide pitch is set to None.')
             return None
         if self.int_dist is None:
-            print(f'WARNING: Interaction distance is set to None.')
+            print('WARNING: Interaction distance is set to None.')
             return None
         else:
             return 0.5 * (self.pitch - self.int_dist)
