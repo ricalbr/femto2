@@ -43,6 +43,10 @@ class LaserPath(WaveguideParameters):
         return coords[0]
 
     @property
+    def lastx(self) -> float:
+        return self.x[-1]
+
+    @property
     def y(self) -> np.ndarray:
         """
         Getter for the y-coordinate vector as a numpy array. The subsequent identical points in the vector are removed.
@@ -54,6 +58,10 @@ class LaserPath(WaveguideParameters):
         return coords[1]
 
     @property
+    def lasty(self) -> float:
+        return self.y[-1]
+
+    @property
     def z(self) -> np.ndarray:
         """
         Getter for the z-coordinate vector as a numpy array. The subsequent identical points in the vector are removed.
@@ -63,6 +71,10 @@ class LaserPath(WaveguideParameters):
         """
         coords = self._unique_points().T
         return coords[2]
+
+    @property
+    def lastz(self) -> float:
+        return self.z[-1]
 
     @property
     def lastpt(self) -> np.ndarray:
@@ -102,11 +114,12 @@ class LaserPath(WaveguideParameters):
         Computes the time needed to travel along the line.
         """
         x, y, z = self._x, self._y, self._z
+
         dists = np.sqrt(np.diff(x) ** 2 + np.diff(y) ** 2 + np.diff(z) ** 2)
         linelength_shutter_on = np.sum(dists[:-1])
         linelength_shutter_off = dists[-1]
         self.wtime = (linelength_shutter_on * 1 / self.speed) * self.scan + \
-                     (linelength_shutter_off * 1 / self.speedpos) * self.scan
+                     (linelength_shutter_off * 1 / self.speed_closed) * self.scan
 
     # Private interface
     def _unique_points(self):
