@@ -1,16 +1,14 @@
+import time
+
 import matplotlib.pyplot as plt
 import numpy as np
 from descartes import PolygonPatch
 from mpl_toolkits.mplot3d import Axes3D
 from shapely.affinity import rotate, translate
-import shapely.geometry
-import warnings
-with warnings.catch_warnings():
-    warnings.filterwarnings("ignore", category=DeprecationWarning)
-    from shapely.geometry import Point
-
+from shapely.geometry import Point
 
 from femto import Marker, PGMCompiler, Trench, TrenchColumn, Waveguide
+from femto.helpers import listcast, nest_level
 
 
 class Cell(PGMCompiler):
@@ -21,13 +19,15 @@ class Cell(PGMCompiler):
         self.markers = []
         self.trench_cols = []
         self.trenches = []
+        self._wg_fab_time = 0.0
+        self._tc_fab_time = 0.0
         self.fig = None
         self.ax = None
 
-    def add(self, obj):
+    def append(self, obj):
         if isinstance(obj, Marker):
             self.markers.append(obj)
-        elif isinstance(obj, Waveguide):
+        elif isinstance(obj, Waveguide) or (isinstance(obj, list) and all(isinstance(x, Waveguide) for x in obj)):
             self.waveguides.append(obj)
         elif isinstance(obj, Trench):
             self.trenches.append(obj)
@@ -51,13 +51,14 @@ class Cell(PGMCompiler):
         self.fig, self.ax = plt.subplots()
         self.ax.set_xlabel('X [mm]')
         self.ax.set_ylabel('Y [mm]')
-        for wg in self.waveguides:
-            p = np.array(self.transform_points(wg.points)).T
-            xo, yo, _ = self._shutter_mask(p, shutter=1)
-            self.ax.plot(xo, yo, **wgargs)
-            if shutter_close:
-                xc, yc, _ = self._shutter_mask(p, shutter=0)
-                self.ax.plot(xc, yc, **scargs)
+        for bunch in self.waveguides:
+            for wg in listcast(bunch):
+                p = np.array(self.transform_points(wg.points)).T
+                xo, yo, _ = self._shutter_mask(p, shutter=1)
+                self.ax.plot(xo, yo, **wgargs)
+                if shutter_close:
+                    xc, yc, _ = self._shutter_mask(p, shutter=0)
+                    self.ax.plot(xc, yc, **scargs)
         for mk in self.markers:
             p = np.array(self.transform_points(mk.points)).T
             xo, yo, _ = self._shutter_mask(p, shutter=1)
@@ -78,16 +79,15 @@ class Cell(PGMCompiler):
         if isinstance(aspect, str) and aspect.lower() not in ['auto', 'equal']:
             raise ValueError(f'aspect must be either `auto` or `equal`. Given {aspect.lower()}.')
         self.ax.set_aspect(aspect)
+        plt.show()
 
-    def plot3d(self, shutter_close=True, wg_style={}, sc_style={}, mk_style={}, tc_style={}):
+    def plot3d(self, shutter_close=True, wg_style={}, sc_style={}, mk_style={}):
         default_wgargs = {'linestyle': '-', 'color': 'b', 'linewidth': 2.0}
         wgargs = {**default_wgargs, **wg_style}
         default_scargs = {'linestyle': ':', 'color': 'b', 'linewidth': 0.5}
         scargs = {**default_scargs, **sc_style}
         default_mkargs = {'linestyle': '-', 'color': 'k', 'linewidth': 2.0}
         mkargs = {**default_mkargs, **mk_style}
-        default_tcargs = {}
-        tcargs = {**default_tcargs, **tc_style}
 
         self.fig = plt.figure()
         self.fig.clf()
@@ -96,23 +96,51 @@ class Cell(PGMCompiler):
         self.ax.set_xlabel('X [mm]')
         self.ax.set_ylabel('Y [mm]')
         self.ax.set_zlabel('Z [mm]')
-        for wg in self.waveguides:
-            xo, yo, zo = self._shutter_mask(wg.points, shutter=1)
-            self.ax.plot(xo, yo, zo, **wgargs)
-            if shutter_close:
-                xc, yc, zc = self._shutter_mask(wg.points, shutter=0)
-                self.ax.plot(xc, yc, zc, **scargs)
+        for bunch in self.waveguides:
+            for wg in listcast(bunch):
+                xo, yo, zo = self._shutter_mask(wg.points, shutter=1)
+                self.ax.plot(xo, yo, zo, **wgargs)
+                if shutter_close:
+                    xc, yc, zc = self._shutter_mask(wg.points, shutter=0)
+                    self.ax.plot(xc, yc, zc, **scargs)
         for mk in self.markers:
             xo, yo, zo = self._shutter_mask(mk.points, shutter=1)
             self.ax.plot(xo, yo, zo, **mkargs)
-        for tr in self.trenches:
-            pass
-            # ax.add_patch(patch_2d_to_3d(tr.patch))
         self.ax.set_box_aspect(aspect=(2, 1, 0.25))
         self.ax.plot(0.0, 0.0, 0.0, 'or')
 
     def save(self, filename='device_scheme.pdf', bbox_inches='tight'):
         self.fig.savefig(filename, bbox_inches=bbox_inches)
+
+    def pgm(self, verbose=True):
+
+        if nest_level(self.waveguides) > 2:
+            raise ValueError(f'The waveguide list has too many nested levels ({nest_level(self.waveguides)}. '
+                             'The maximum value is 2.')
+
+        self._wg_fab_time = 0.0
+        self.filename = self.filename.split('.')[0]
+        wg_filename = self.filename.split('.')[0] + '_WG.pgm'
+
+        self.header()
+        self.dwell(1.0)
+
+        for bunch in self.waveguides:
+            with self.repeat(listcast(bunch)[0].scan):
+                for wg in listcast(bunch):
+                    self._wg_fab_time += wg.wtime
+                    self.write(wg.points)
+        self.homing()
+
+        with open(wg_filename, 'w') as f:
+            f.write(''.join(self._instructions))
+        self._instructions.clear()
+        if verbose:
+            print('G-code compilation completed.')
+            print('Estimated fabrication time of the optical device: ',
+                  time.strftime('%H:%M:%S', time.gmtime(self._wg_fab_time + self._total_dwell_time)))
+        self._instructions.clear()
+        self._total_dwell_time = 0.0
 
     # Private interface
     @staticmethod
@@ -160,11 +188,10 @@ def _example():
             .sin_mzi((-1) ** index * wg.dy_bend) \
             .linear([27, yi, zi], mode='ABS')
         wg.end()
-        c.add(wg)
+        c.append(wg)
 
     c.plot2d()
     # c.save()
-    # plt.show()
 
 
 if __name__ == '__main__':
