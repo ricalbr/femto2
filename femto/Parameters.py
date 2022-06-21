@@ -32,7 +32,8 @@ class WaveguideParameters:
     int_dist: float = None
     int_length: float = 0.0
     arm_length: float = 0.0
-    speedpos: float = 40
+    speed_closed: float = 75
+    speedpos: float = 0.1
     dwelltime: float = 0.5
     lsafe: float = 4.0
     ltrench: float = 1.0
@@ -86,6 +87,11 @@ class WaveguideParameters:
     def dl(self) -> float:
         # minimum separation between two points [mm]
         return self.speed / self.cmd_rate_max
+
+    @property
+    def x_end(self) -> float:
+        # end of laser path (outside the sample)
+        return self.samplesize[0] + self.lsafe
 
     @staticmethod
     def get_sbend_parameter(dy: float, radius: float) -> tuple:

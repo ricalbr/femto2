@@ -32,6 +32,10 @@ class PGMCompiler(GcodeParameters):
         self._shutter_on = False
         self._loaded_files = []
 
+    @property
+    def tdwell(self) -> float:
+        return self._total_dwell_time
+
     def __enter__(self):
         """
         Context manager entry
@@ -161,7 +165,7 @@ class PGMCompiler(GcodeParameters):
         self.comment('HOMING')
         self.move_to([0, 0, 0])
 
-    def move_to(self, position: List[float], speedpos: float = 50):
+    def move_to(self, position: List[float], speedpos: float = 5):
         """
         Utility function to move to a given position with the shutter OFF. The user can specify the target position
         and the positioning speed.
@@ -171,7 +175,7 @@ class PGMCompiler(GcodeParameters):
             position[1] -> Y
             position[2] -> Z
         :type position: List[float]
-        :param speedpos: Positioning speed [mm/s]. The default is 50 mm/s.
+        :param speedpos: Positioning speed [mm/s]. The default is 5 mm/s.
         :type speedpos: float
         :return: None
         """
@@ -373,6 +377,7 @@ class PGMCompiler(GcodeParameters):
         # write instruction to file
         with open(pgm_filename, 'w') as f:
             f.write(''.join(self._instructions))
+        self._instructions.clear()
         if verbose:
             print('G-code compilation completed.')
 
@@ -529,7 +534,7 @@ class PGMTrench(PGMCompiler):
                     self.load_program(wall_path)
                     self.load_program(floor_path)
                     self.shutter('OFF')
-                    self.move_to([x0, y0, z0], speedpos=col.speedpos)
+                    self.move_to([x0, y0, z0], speedpos=col.speed_closed)
 
                     self.instruction(f'$ZCURR = {z0:.6f}')
                     self.shutter('ON')

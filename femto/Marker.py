@@ -39,10 +39,10 @@ class Marker(Waveguide):
             raise ValueError('Given invalid position.')
 
         if speedpos is None:
-            speedpos = self.speedpos
+            speedpos = self.speed_closed
 
         start_pos = np.add(position, [-lx / 2, 0, 0])
-        self.start(start_pos) \
+        self.start(start_pos, speedpos=5.0) \
             .linear([lx, 0, 0], speed=self.speed) \
             .linear([-lx / 2, -ly / 2, 0], speed=speedpos, shutter=0) \
             .linear([0, 0, 0], speed=speedpos, shutter=1) \
@@ -68,7 +68,7 @@ class Marker(Waveguide):
         """
 
         if speedpos is None:
-            speedpos = self.speedpos
+            speedpos = self.speed_closed
 
         if lx_short is None:
             lx_short = 0.75 * lx
