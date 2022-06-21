@@ -42,3 +42,11 @@ class dotdict(dict):
     __getattr__ = dict.get
     __setattr__ = dict.__setitem__
     __delattr__ = dict.__delitem__
+
+
+def nest_level(lst):
+    if not isinstance(lst, list):
+        return 0
+    if not lst:
+        return 1
+    return max(nest_level(item) for item in lst) + 1
