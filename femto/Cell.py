@@ -7,20 +7,18 @@ from mpl_toolkits.mplot3d import Axes3D
 from shapely.affinity import rotate, translate
 from shapely.geometry import Point
 
-from femto import Marker, PGMCompiler, Trench, TrenchColumn, Waveguide
+from femto import Marker, PGMCompiler, PGMTrench, Trench, TrenchColumn, Waveguide
 from femto.helpers import listcast, nest_level
 
 
 class Cell(PGMCompiler):
-    def __init__(self, param, dim=(None, None)):
+    def __init__(self, param):
         super(Cell, self).__init__(param)
-        self.dim = dim
+        self._param = param
         self.waveguides = []
         self.markers = []
         self.trench_cols = []
         self.trenches = []
-        self._wg_fab_time = 0.0
-        self._tc_fab_time = 0.0
         self.fig = None
         self.ax = None
 
@@ -33,12 +31,20 @@ class Cell(PGMCompiler):
             self.trenches.append(obj)
         elif isinstance(obj, TrenchColumn):
             for trc in obj:
-                self.add(trc)
+                self.append(trc)
             self.trench_cols.append(obj)
         else:
             raise TypeError(f'The object must be a Waveguide, Marker or Trench object. {type(obj)} was given.')
 
-    def plot2d(self, shutter_close=True, aspect='auto', wg_style={}, sc_style={}, mk_style={}, tc_style={}):
+    def plot2d(self, shutter_close=True, aspect='auto', wg_style=None, sc_style=None, mk_style=None, tc_style=None):
+        if wg_style is None:
+            wg_style = dict()
+        if sc_style is None:
+            sc_style = dict()
+        if mk_style is None:
+            mk_style = dict()
+        if tc_style is None:
+            tc_style = dict()
         default_wgargs = {'linestyle': '-', 'color': 'b', 'linewidth': 2.0}
         wgargs = {**default_wgargs, **wg_style}
         default_scargs = {'linestyle': ':', 'color': 'b', 'linewidth': 0.5}
@@ -81,7 +87,13 @@ class Cell(PGMCompiler):
         self.ax.set_aspect(aspect)
         plt.show()
 
-    def plot3d(self, shutter_close=True, wg_style={}, sc_style={}, mk_style={}):
+    def plot3d(self, shutter_close=True, wg_style=None, sc_style=None, mk_style=None):
+        if wg_style is None:
+            wg_style = dict()
+        if sc_style is None:
+            sc_style = dict()
+        if mk_style is None:
+            mk_style = dict()
         default_wgargs = {'linestyle': '-', 'color': 'b', 'linewidth': 2.0}
         wgargs = {**default_wgargs, **wg_style}
         default_scargs = {'linestyle': ':', 'color': 'b', 'linewidth': 0.5}
@@ -112,13 +124,22 @@ class Cell(PGMCompiler):
     def save(self, filename='device_scheme.pdf', bbox_inches='tight'):
         self.fig.savefig(filename, bbox_inches=bbox_inches)
 
-    def pgm(self, verbose=True):
+    def pgm(self, verbose: bool = True):
+        self._wg_pgm(verbose=verbose)
+        self._mk_pgm(verbose=verbose)
+        self._tc_pgm(verbose=verbose)
+
+        # self._tc_pgm(verbose=verbose)
+
+    def _wg_pgm(self, verbose: bool = True):
 
         if nest_level(self.waveguides) > 2:
             raise ValueError(f'The waveguide list has too many nested levels ({nest_level(self.waveguides)}. '
                              'The maximum value is 2.')
+        if not self.waveguides:
+            return
 
-        self._wg_fab_time = 0.0
+        _wg_fab_time = 0.0
         self.filename = self.filename.split('.')[0]
         wg_filename = self.filename.split('.')[0] + '_WG.pgm'
 
@@ -128,19 +149,63 @@ class Cell(PGMCompiler):
         for bunch in self.waveguides:
             with self.repeat(listcast(bunch)[0].scan):
                 for wg in listcast(bunch):
-                    self._wg_fab_time += wg.wtime
+                    _wg_fab_time += wg.wtime
                     self.write(wg.points)
         self.homing()
 
         with open(wg_filename, 'w') as f:
             f.write(''.join(self._instructions))
-        self._instructions.clear()
         if verbose:
             print('G-code compilation completed.')
             print('Estimated fabrication time of the optical device: ',
-                  time.strftime('%H:%M:%S', time.gmtime(self._wg_fab_time + self._total_dwell_time)))
+                  time.strftime('%H:%M:%S', time.gmtime(_wg_fab_time + self._total_dwell_time)))
         self._instructions.clear()
         self._total_dwell_time = 0.0
+
+    def _mk_pgm(self, verbose: bool = True):
+
+        if nest_level(self.markers) > 1:
+            raise ValueError(f'The markers list has too many nested levels ({nest_level(self.markers)}. '
+                             'The maximum value is 1.')
+        if not self.markers:
+            return
+
+        _mk_fab_time = 0.0
+        self.filename = self.filename.split('.')[0]
+        mk_filename = self.filename.split('.')[0] + '_MARKERS.pgm'
+
+        self.header()
+        self.dwell(1.0)
+
+        for bunch in self.markers:
+            with self.repeat(listcast(bunch)[0].scan):
+                for mk in listcast(bunch):
+                    _mk_fab_time += mk.wtime
+                    self.write(mk.points)
+        self.homing()
+
+        with open(mk_filename, 'w') as f:
+            f.write(''.join(self._instructions))
+        if verbose:
+            print('G-code compilation completed.')
+            print('Estimated fabrication time of the markers: ',
+                  time.strftime('%H:%M:%S', time.gmtime(_mk_fab_time + self._total_dwell_time)))
+        self._instructions.clear()
+        self._total_dwell_time = 0.0
+
+    def _tc_pgm(self, verbose: bool = True):
+        t_writer = PGMTrench(self._param, self.trench_cols)
+        t_writer.write()
+
+        if verbose:
+            _tc_fab_time = 0.0
+            for col in self.trench_cols:
+                _tc_fab_time += col.wtime
+
+            print('G-code compilation completed.')
+            print('Estimated fabrication time of the isolation trencehs: ',
+                  time.strftime('%H:%M:%S', time.gmtime(_tc_fab_time + t_writer._total_dwell_time)))
+        del t_writer
 
     # Private interface
     @staticmethod
@@ -157,20 +222,20 @@ def _example():
     from femto.helpers import dotdict
 
     PARAMETERS_GC = dotdict(
-        filename='testMarker.pgm',
-        lab='CAPABLE',
-        new_origin=(1.0, -0.0),
-        samplesize=(25, 25),
-        angle=0.0,
+            filename='testMarker.pgm',
+            lab='CAPABLE',
+            new_origin=(1.0, -0.0),
+            samplesize=(25, 25),
+            angle=0.0,
     )
 
     PARAMETERS_WG = dotdict(
-        scan=6,
-        speed=20,
-        radius=15,
-        pitch=0.080,
-        int_dist=0.007,
-        lsafe=5,
+            scan=6,
+            speed=20,
+            radius=15,
+            pitch=0.080,
+            int_dist=0.007,
+            lsafe=5,
     )
 
     increment = [PARAMETERS_WG.lsafe, 0, 0]
@@ -191,7 +256,8 @@ def _example():
         c.append(wg)
 
     c.plot2d()
-    # c.save()
+    c.save('circuit_scheme.pdf')
+    c.pgm()
 
 
 if __name__ == '__main__':
