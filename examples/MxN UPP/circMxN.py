@@ -1,6 +1,6 @@
 import time
 
-from femto import Cell, Marker, PGMCompiler, PGMTrench, TrenchColumn, Waveguide
+from femto import Cell, Marker, TrenchColumn, Waveguide
 from param import *
 
 t0 = time.perf_counter()
@@ -22,7 +22,7 @@ for i in range(MM):
             xl, yl, _ = wg.lastpt
             mk = Marker(PARAMETERS_MK)
             mk.cross([xl, yl - 0.2], lx, ly)
-            circ.add(mk)
+            circ.append(mk)
             x_trench.append(xl)
         wg.sin_bend((-1) ** (j + i % 2) * d1)
         wg.sin_bend((-1) ** (j + i % 2 + 1) * d2)
@@ -31,12 +31,12 @@ for i in range(MM):
         xl, yl, _ = wg.lastpt
         mk = Marker(PARAMETERS_MK)
         mk.cross([xl, yl - 0.2], lx, ly)
-        circ.add(mk)
+        circ.append(mk)
         x_trench.append(xl)
     wg.sin_acc((-1) ** (j + i % 2 + 1) * d1)
     wg.linear(increment)
     wg.end()
-    circ.add(wg)
+    circ.append(wg)
 
 # Trench
 for xt in x_trench:
@@ -45,36 +45,8 @@ for xt in x_trench:
     col.y_min = y0 - 0.5 * MM * PARAMETERS_WG.pitch
     col.y_max = y0 + 0.5 * MM * PARAMETERS_WG.pitch
     col.get_trench(circ.waveguides)
-    circ.add(col)
+    circ.append(col)
 
-# # Plot
+# # Plot and compilation
 circ.plot2d()
-# plt.show()
-
-# Compilation
-# # OPTICAL CIRCUIT
-PARAMETERS_GC.filename = f'{MM}x{NN}_CIRCUIT.pgm'
-with PGMCompiler(PARAMETERS_GC) as gc:
-    with gc.repeat(PARAMETERS_WG.scan):
-        for i, wg in enumerate(circ.waveguides):
-            gc.comment(f' +--- Modo: {i + 1} ---+')
-            gc.write(wg.points)
-
-# # MARKERS
-PARAMETERS_GC.filename = f'{MM}x{NN}_MARKERS.pgm'
-with PGMCompiler(PARAMETERS_GC) as gc:
-    for i, c in enumerate(circ.markers):
-        gc.comment(f' +--- Croce: {i + 1} ---+')
-        gc.write(c.points)
-
-# # TRENCH
-tc = PGMTrench(PARAMETERS_GC, circ.trench_cols)
-tc.write()
-
-print(f'Elapsed time: {time.perf_counter() - t0:.2f} s.')
-
-ttime = 0
-[ttime := ttime + wg.wtime for wg in circ.waveguides]
-for col in circ.trench_cols:
-    ttime += col.wtime
-print('Estimated fabrication time: ', time.strftime('%H:%M:%S', time.gmtime(ttime)))
+circ.pgm()
