@@ -1,18 +1,13 @@
-import warnings
 from typing import Generator, Iterator, List
 
 import numpy as np
 import shapely.geometry
 from descartes import PolygonPatch
+from shapely.geometry import LineString, Polygon, polygon
 
-from femto.helpers import dotdict
-from femto.helpers import listcast
+from femto.helpers import dotdict, flatten, listcast
 from femto.Parameters import TrenchParameters
 from femto.Waveguide import Waveguide
-
-with warnings.catch_warnings():
-    warnings.filterwarnings("ignore", category=DeprecationWarning)
-    from shapely.geometry import LineString, Polygon, polygon
 
 
 class Trench:
@@ -159,6 +154,8 @@ class TrenchColumn(TrenchParameters):
         :param waveguides: List of the waveguides composing the optical circuit.
         :type waveguides: List[Waveguide]
         """
+
+        waveguides = flatten(waveguides)
         if not all([isinstance(wg, Waveguide) for wg in waveguides]):
             raise TypeError('Elements circuit list must be of type Waveguide.')
 
@@ -181,21 +178,21 @@ def _example():
     x_mid = None
 
     PARAMETERS_WG = dotdict(
-        scan=6,
-        speed=20,
-        radius=15,
-        pitch=0.080,
-        int_dist=0.007,
+            scan=6,
+            speed=20,
+            radius=15,
+            pitch=0.080,
+            int_dist=0.007,
     )
 
     PARAMETERS_TC = dotdict(
-        length=1.0,
-        nboxz=4,
-        deltaz=0.0015,
-        h_box=0.075,
-        base_folder=r'C:\Users\Capable\Desktop\RiccardoA',
-        y_min=-0.1,
-        y_max=19 * PARAMETERS_WG['pitch'] + 0.1
+            length=1.0,
+            nboxz=4,
+            deltaz=0.0015,
+            h_box=0.075,
+            base_folder=r'C:\Users\Capable\Desktop\RiccardoA',
+            y_min=-0.1,
+            y_max=19 * PARAMETERS_WG['pitch'] + 0.1
     )
 
     # Calculations
