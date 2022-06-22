@@ -21,7 +21,7 @@ class Waveguide(LaserPath):
         super().__init__(param)
 
     # Methods
-    def start(self, init_pos: List[float], speedpos = None) -> Self:
+    def start(self, init_pos: List[float], speedpos: float = None) -> Self:
         """
         Starts a waveguide in the initial position given as input.
         The coordinates of the initial position are the first added to the matrix that describes the waveguide.

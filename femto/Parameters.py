@@ -1,20 +1,15 @@
 import os
 import pickle
-import warnings
 from dataclasses import dataclass
 from itertools import product
-from math import ceil
-from math import radians
+from math import ceil, radians
 from typing import Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
 import shapely.geometry
 from scipy.interpolate import interp2d
-
-with warnings.catch_warnings():
-    warnings.filterwarnings("ignore", category=DeprecationWarning)
-    from shapely.geometry import box
+from shapely.geometry import box
 
 
 @dataclass
