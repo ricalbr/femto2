@@ -172,8 +172,10 @@ class TrenchParameters:
     delta_floor: float = 0.001
     beam_waist: float = 0.004
     round_corner: float = 0.005
+    u: list = None
     speed: float = 4
-    speedpos: float = 5
+    speed_closed: float = 5
+    speedpos: float = 0.1
     CWD: str = ''
 
     def __post_init__(self):

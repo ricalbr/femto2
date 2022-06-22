@@ -490,10 +490,9 @@ class PGMCompiler(GcodeParameters):
 
 
 class PGMTrench(PGMCompiler):
-    def __init__(self, param: dict, trench_columns: TrenchColumn, u: list = None):
+    def __init__(self, param: dict, trench_columns: TrenchColumn):
         super().__init__(param)
         self.trench_columns = listcast(trench_columns)
-        self.u = u
 
     def write(self, dirname: str = 's-trench'):
         """
@@ -543,13 +542,13 @@ class PGMTrench(PGMCompiler):
                         self.instruction(f'$ZCURR = $ZCURR + {col.deltaz / super().neff:.6f}')
                         self.instruction('LINEAR Z$ZCURR')
 
-                    if self.u is not None:
-                        self.instruction(f'LINEAR U{self.u[-1]:.6f}')
+                    if col.u:
+                        self.instruction(f'LINEAR U{col.u[-1]:.6f}')
                     self.dwell(super().long_pause)
                     self.farcall(floor_filename)
                     self.shutter('OFF')
-                    if self.u is not None:
-                        self.instruction(f'LINEAR U{self.u[0]:.6f}')
+                    if col.u:
+                        self.instruction(f'LINEAR U{col.u[0]:.6f}')
 
                     self.remove_program(wall_path)
                     self.remove_program(floor_path)
@@ -621,21 +620,21 @@ def _example():
 
     # Data
     PARAMETERS_WG = dotdict(
-        scan=6,
-        speed=20,
-        radius=15,
-        pitch=0.080,
-        int_dist=0.007,
-        lsafe=3
+            scan=6,
+            speed=20,
+            radius=15,
+            pitch=0.080,
+            int_dist=0.007,
+            lsafe=3
     )
     increment = [PARAMETERS_WG.lsafe, 0, 0]
 
     PARAMETERS_GC = dotdict(
-        filename='testPGMcompiler.pgm',
-        lab='CAPABLE',
-        samplesize=(25, 25),
-        angle=0.0,
-        warp_flag=True,
+            filename='testPGMcompiler.pgm',
+            lab='CAPABLE',
+            samplesize=(25, 25),
+            angle=0.0,
+            warp_flag=True,
     )
 
     # Calculations
