@@ -47,7 +47,7 @@ class Marker(Waveguide):
             .linear([-lx / 2, -ly / 2, 0], speed=speedpos, shutter=0) \
             .linear([0, 0, 0], speed=speedpos, shutter=1) \
             .linear([0, ly, 0], speed=self.speed)
-        self.end(speedpos)
+        self.end()
 
     def ruler(self, y_ticks: List, lx: float, lx_short: float = None, x_init: float = -2, speedpos: float = None):
         """
@@ -89,17 +89,17 @@ def _example():
     from femto.helpers import dotdict
 
     PARAMETERS_MK = dotdict(
-        scan=1,
-        speed=4,
-        speedpos=5,
-        depth=0.001
+            scan=1,
+            speed=4,
+            speedpos=5,
+            depth=0.001
     )
 
     PARAMETERS_GC = dotdict(
-        filename='testMarker.pgm',
-        lab='CAPABLE',
-        samplesize=(25, 25),
-        angle=0.0,
+            filename='testMarker.pgm',
+            lab='CAPABLE',
+            samplesize=(25, 25),
+            angle=0.0,
     )
 
     c = Marker(PARAMETERS_MK)
