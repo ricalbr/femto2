@@ -11,7 +11,8 @@ PARAMETERS_WG = dotdict(
         depth=0.035,
         pitch=0.080,
         int_dist=0.007,
-        lsafe=3
+        lsafe=3,
+        samplesize=(110, 25)
 )
 
 x0 = -2.0
@@ -45,6 +46,6 @@ PARAMETERS_TC = dotdict(
 PARAMETERS_GC = dotdict(
         filename='UPP',
         lab='CAPABLE',
-        samplesize=(125, 25),
+        samplesize=(110, 25),
         angle=0.0
 )

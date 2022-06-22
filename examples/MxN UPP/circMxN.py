@@ -9,6 +9,7 @@ t0 = time.perf_counter()
 circ = Cell(PARAMETERS_GC)
 
 x_trench = []
+upp = []
 for i in range(MM):
     [xi, yi, zi] = [x0, y0 + (i - 0.5 * (MM - 1)) * PARAMETERS_WG.pitch, PARAMETERS_WG.depth]
 
@@ -34,9 +35,11 @@ for i in range(MM):
         circ.append(mk)
         x_trench.append(xl)
     wg.sin_acc((-1) ** (j + i % 2 + 1) * d1)
-    wg.linear(increment)
+    wg.linear([wg.x_end, wg.lasty, wg.lastz], mode='ABS')
     wg.end()
-    circ.append(wg)
+    upp.append(wg)
+
+circ.append(upp)
 
 # Trench
 for xt in x_trench:
