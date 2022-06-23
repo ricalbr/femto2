@@ -161,7 +161,9 @@ class TrenchColumn(TrenchParameters):
 
         trench_block = self.rect
         for wg in waveguides:
-            x, y = wg.x[:-2], wg.y[:-2]
+            x, y, *_, s = wg.points.T
+            x = np.delete(x, np.where(np.invert(s.astype(bool))))
+            y = np.delete(y, np.where(np.invert(s.astype(bool))))
             dilated = (LineString(list(zip(x, y))).buffer(self.adj_bridge, cap_style=1))
             trench_block = trench_block.difference(dilated)
 
