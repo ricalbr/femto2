@@ -39,7 +39,18 @@ for i in range(MM):
     wg.end()
     upp.append(wg)
 
+wgp1 = Waveguide(PARAMETERS_WG)
+p_init = [x0, y0 - 0.5 * (MM + 1) * wgp1.pitch, wgp1.depth]
+wgp1.start(p_init).linear([wgp1.x_end, wgp1.lasty, wgp1.lastz], mode='ABS').end()
+
+wgp2 = Waveguide(PARAMETERS_WG)
+p_init = [x0, y0 + 0.5 * (MM + 1) * wgp1.pitch, wgp1.depth]
+wgp2.start(p_init).linear([wgp2.x_end, wgp2.lasty, wgp2.lastz], mode='ABS').end()
+
+# Add waveguides and circuit to the cell
+circ.append(wgp1)
 circ.append(upp)
+circ.append(wgp2)
 
 # Trench
 for xt in x_trench:
@@ -52,4 +63,4 @@ for xt in x_trench:
 
 # # Plot and compilation
 circ.plot2d()
-circ.pgm()
+# circ.pgm()
