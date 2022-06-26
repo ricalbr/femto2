@@ -312,15 +312,14 @@ class PGMCompiler(GcodeParameters):
         x_c, y_c, z_c, f_c, s_c = self.transform_points(points)
         args = [self._format_args(x, y, z, f) for (x, y, z, f) in zip(x_c, y_c, z_c, f_c)]
         for (arg, s) in zip_longest(args, s_c):
-            if s == 0 and self._shutter_on is False:
-                pass
-            elif s == 0 and self._shutter_on is True:
+            if s == 0 and self._shutter_on is True:
                 self.shutter('OFF')
                 self.dwell(self.long_pause)
             elif s == 1 and self._shutter_on is False:
                 self.shutter('ON')
                 self.dwell(self.long_pause)
-            self._instructions.append(f'LINEAR {arg}\n')
+            else:
+                self._instructions.append(f'LINEAR {arg}\n')
         self.dwell(self.long_pause)
 
     def transform_points(self, points):
