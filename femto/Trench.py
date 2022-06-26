@@ -1,3 +1,4 @@
+from copy import deepcopy
 from typing import Generator, Iterator, List
 
 import numpy as np
@@ -155,7 +156,7 @@ class TrenchColumn(TrenchParameters):
         :type waveguides: List[Waveguide]
         """
 
-        waveguides = flatten(waveguides)
+        waveguides = flatten(deepcopy(waveguides))
         if not all([isinstance(wg, Waveguide) for wg in waveguides]):
             raise TypeError('Elements circuit list must be of type Waveguide.')
 
