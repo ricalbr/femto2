@@ -30,6 +30,7 @@ class PGMCompiler(GcodeParameters):
         self._instructions = deque()
         self._total_dwell_time = 0.0
         self._shutter_on = False
+        self._mode_abs = True
         self._loaded_files = []
 
     @property
@@ -88,6 +89,16 @@ class PGMCompiler(GcodeParameters):
         """
         args = ' '.join(["${}"] * len(variables)).format(*variables)
         self._instructions.appendleft(f'DVAR {args}\n')
+
+    def mode(self, mode: str = 'ABS'):
+        if mode.upper() not in ['ABS', 'INC']:
+            raise ValueError(f'Mode should be either ABSOLUTE (ABS) or INCREMENTAL (INC). {mode} was given.')
+        if mode.upper() == 'ABS':
+            self._instructions.append('ABSOLUTE\n')
+            self._mode_abs = True
+        else:
+            self._instructions.append('INCREMENTAL\n')
+            self._mode_abs = False
 
     def comment(self, comstring: str):
         """
