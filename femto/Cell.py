@@ -124,9 +124,10 @@ class Cell(PGMCompiler):
     def save(self, filename='device_scheme.pdf', bbox_inches='tight'):
         self.fig.savefig(filename, bbox_inches=bbox_inches)
 
-    def pgm(self, verbose: bool = True, trench: bool = True):
+    def pgm(self, verbose: bool = True, marker: bool = True, trench: bool = True):
         self._wg_pgm(verbose=verbose)
-        self._mk_pgm(verbose=verbose)
+        if marker:
+            self._mk_pgm(verbose=verbose)
         if trench:
             self._tc_pgm(verbose=verbose)
 
