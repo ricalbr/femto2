@@ -83,10 +83,10 @@ class Cell(PGMCompiler):
             self.ax.add_patch(PolygonPatch(shape, **tcargs))
 
         # Origin
-        # self.ax.plot(0.0, 0.0, 'or')
-        # self.ax.annotate('(0,0)', (0.0, 0.0), textcoords="offset points", xytext=(0, 10), ha='left', color='r')
-        # if isinstance(aspect, str) and aspect.lower() not in ['auto', 'equal']:
-        #     raise ValueError(f'aspect must be either `auto` or `equal`. Given {aspect.lower()}.')
+        self.ax.plot(0.0, 0.0, 'or')
+        self.ax.annotate('(0,0)', (0.0, 0.0), textcoords="offset points", xytext=(0, 10), ha='left', color='r')
+        if isinstance(aspect, str) and aspect.lower() not in ['auto', 'equal']:
+            raise ValueError(f'aspect must be either `auto` or `equal`. Given {aspect.lower()}.')
         self.ax.set_aspect(aspect)
         if tight: plt.tight_layout()
 
