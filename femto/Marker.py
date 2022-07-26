@@ -1,6 +1,9 @@
 import warnings
 from typing import List
-
+try:
+    from typing import Self
+except ImportError:
+    from typing_extensions import Self
 import numpy as np
 
 from femto import Waveguide
@@ -81,7 +84,58 @@ class Marker(Waveguide):
             self.linear([0, 0, 0], shutter=1)
             self.linear([tlen, 0, 0], speed=self.speed, shutter=1)
             self.linear([0, 0, 0], speed=self.speed, shutter=0)
-        self.end(speedpos)
+        self.end()
+
+    def start(self, init_pos: List[float], speedpos: float = None) -> Self:
+        """
+        Starts a waveguide in the initial position given as input.
+        The coordinates of the initial position are the first added to the matrix that describes the waveguide.
+
+        :param init_pos: Ordered list of coordinate that specifies the waveguide starting point [mm].
+            init_pos[0] -> X
+            init_pos[1] -> Y
+            init_pos[2] -> Z
+        :type init_pos: List[float]
+        :param speedpos: Translation speed [mm/s].
+        :type speedpos: float
+        :return: Self
+        :rtype: Waveguide
+        """
+        if len(init_pos) == 2:
+            init_pos.append(self.depth)
+        elif len(init_pos) == 3:
+            init_pos[2] = self.depth
+            warnings.warn(f'Given 3D coordinate list. Z-coordinate is overwritten to {self.depth} mm.')
+        else:
+            raise ValueError('Given invalid position.')
+        if self._x.size != 0:
+            raise ValueError('Coordinate matrix is not empty. Cannot start a new waveguide in this point.')
+        if speedpos is None:
+            speedpos = self.speedpos
+
+        x0, y0, z0 = init_pos
+        f0 = np.asarray(speedpos, dtype=np.float32)
+        s0 = np.asarray(0.0, dtype=np.float32)
+        s1 = np.asarray(1.0, dtype=np.float32)
+        self.add_path(x0, y0, z0, f0, s0)
+        self.add_path(x0, y0, z0, f0, s1)
+        return self
+
+    def end(self):
+        """
+        Ends a waveguide. The function automatically return to the initial point of the waveguide with a translation
+        speed specified by the user.
+
+        :return: Self
+        :rtype: Waveguide
+        """
+        x = np.array([self._x[-1], self._x[-1]]).astype(np.float32)
+        y = np.array([self._y[-1], self._y[-1]]).astype(np.float32)
+        z = np.array([self._z[-1], self._z[-1]]).astype(np.float32)
+        f = np.array([self._f[-1], self.speed_closed]).astype(np.float32)
+        s = np.array([0, 0]).astype(np.float32)
+        self.add_path(x, y, z, f, s)
+        self.fabrication_time()
 
 
 def _example():
