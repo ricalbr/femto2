@@ -37,7 +37,7 @@ class Cell(PGMCompiler):
             raise TypeError(f'The object must be a Waveguide, Marker or Trench object. {type(obj)} was given.')
 
     def plot2d(self, shutter_close: bool = True, aspect: str = 'auto', wg_style=None, sc_style=None, mk_style=None,
-               tc_style=None, pc_style=None, tight: bool = True):
+               tc_style=None, pc_style=None, tight: bool = True, gold_layer: bool = False):
         if wg_style is None:
             wg_style = dict()
         if sc_style is None:
@@ -56,7 +56,10 @@ class Cell(PGMCompiler):
         mkargs = {**default_mkargs, **mk_style}
         default_tcargs = {'facecolor': 'k', 'edgecolor': None, 'alpha': 1, 'zorder': 1}
         tcargs = {**default_tcargs, **tc_style}
-        default_pcargs = {'facecolor': '#FFD7004D', 'edgecolor': 'b', 'linewidth': 2, 'zorder': 0,}
+        if gold_layer:
+            default_pcargs = {'facecolor': '#FFD7004D', 'edgecolor': 'b', 'linewidth': 2, 'zorder': 0,}
+        else:
+            default_pcargs = {'facecolor': '#ADD8E64D', 'edgecolor': 'b', 'linewidth': 2, 'zorder': 0,}
         pcargs = {**default_pcargs, **pc_style}
 
         self.fig, self.ax = plt.subplots()
