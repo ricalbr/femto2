@@ -20,6 +20,9 @@ class Waveguide(LaserPath):
     def __init__(self, param: dict):
         super().__init__(param)
 
+    def __repr__(self):
+        return "{cname}@{id:x}".format(cname=self.__class__.__name__, id=id(self) & 0xFFFFFF)
+
     # Methods
     def start(self, init_pos: List[float], speedpos: float = None) -> Self:
         """
