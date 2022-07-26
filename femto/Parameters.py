@@ -1,20 +1,15 @@
 import os
 import pickle
-import warnings
 from dataclasses import dataclass
 from itertools import product
-from math import ceil
-from math import radians
+from math import ceil, radians
 from typing import Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
 import shapely.geometry
 from scipy.interpolate import interp2d
-
-with warnings.catch_warnings():
-    warnings.filterwarnings("ignore", category=DeprecationWarning)
-    from shapely.geometry import box
+from shapely.geometry import box
 
 
 @dataclass
@@ -32,9 +27,10 @@ class WaveguideParameters:
     int_dist: float = None
     int_length: float = 0.0
     arm_length: float = 0.0
-    speedpos: float = 40
+    speed_closed: float = 75
+    speedpos: float = 0.1
     dwelltime: float = 0.5
-    lsafe: float = 4.0
+    lsafe: float = 2.0
     ltrench: float = 1.0
     dz_bridge: float = 0.015
     margin: float = 1.0
@@ -69,10 +65,10 @@ class WaveguideParameters:
     @property
     def dy_bend(self):
         if self.pitch is None:
-            print(f'WARNING: Waveguide pitch is set to None.')
+            print('WARNING: Waveguide pitch is set to None.')
             return None
         if self.int_dist is None:
-            print(f'WARNING: Interaction distance is set to None.')
+            print('WARNING: Interaction distance is set to None.')
             return None
         else:
             return 0.5 * (self.pitch - self.int_dist)
@@ -86,6 +82,11 @@ class WaveguideParameters:
     def dl(self) -> float:
         # minimum separation between two points [mm]
         return self.speed / self.cmd_rate_max
+
+    @property
+    def x_end(self) -> float:
+        # end of laser path (outside the sample)
+        return self.samplesize[0] + self.lsafe
 
     @staticmethod
     def get_sbend_parameter(dy: float, radius: float) -> tuple:
@@ -171,8 +172,10 @@ class TrenchParameters:
     delta_floor: float = 0.001
     beam_waist: float = 0.004
     round_corner: float = 0.005
+    u: list = None
     speed: float = 4
-    speedpos: float = 5
+    speed_closed: float = 5
+    speedpos: float = 0.1
     CWD: str = ''
 
     def __post_init__(self):
@@ -247,7 +250,7 @@ class GcodeParameters:
 
     @property
     def ysample(self) -> float:
-        return self.samplesize[0]
+        return self.samplesize[1]
 
     @property
     def neff(self) -> float:
@@ -328,8 +331,7 @@ class GcodeParameters:
         for pos in list(product(xpos, ypos)):
             xlist.append(pos[0])
             ylist.append(pos[1])
-            zlist.append(float(input('X={:.1f} Y={:.1f}: \t'.format(pos[0],
-                                                                    pos[1]))) / 1000)
+            zlist.append(float(input('X={:.1f} Y={:.1f}: \t'.format(pos[0], pos[1]))) / 1000)
             if zlist[-1] == '':
                 raise ValueError('You have missed the last value.')
 

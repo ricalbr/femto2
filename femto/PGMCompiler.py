@@ -1,15 +1,13 @@
 import os
 from collections import deque
-from collections.abc import Iterable
 from contextlib import contextmanager
 from copy import deepcopy
 from itertools import zip_longest
-from math import degrees
 from pathlib import Path
 
 import numpy as np
 
-from femto.helpers import dotdict
+from femto.helpers import dotdict, listcast
 
 try:
     from typing import Self
@@ -32,7 +30,12 @@ class PGMCompiler(GcodeParameters):
         self._instructions = deque()
         self._total_dwell_time = 0.0
         self._shutter_on = False
+        self._mode_abs = True
         self._loaded_files = []
+
+    @property
+    def tdwell(self) -> float:
+        return self._total_dwell_time
 
     def __enter__(self):
         """
@@ -46,6 +49,7 @@ class PGMCompiler(GcodeParameters):
                 <code block>
         """
         self.header()
+        self.dwell(1.0)
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -85,6 +89,16 @@ class PGMCompiler(GcodeParameters):
         """
         args = ' '.join(["${}"] * len(variables)).format(*variables)
         self._instructions.appendleft(f'DVAR {args}\n')
+
+    def mode(self, mode: str = 'ABS'):
+        if mode.upper() not in ['ABS', 'INC']:
+            raise ValueError(f'Mode should be either ABSOLUTE (ABS) or INCREMENTAL (INC). {mode} was given.')
+        if mode.upper() == 'ABS':
+            self._instructions.append('ABSOLUTE\n')
+            self._mode_abs = True
+        else:
+            self._instructions.append('INCREMENTAL\n')
+            self._mode_abs = False
 
     def comment(self, comstring: str):
         """
@@ -162,7 +176,7 @@ class PGMCompiler(GcodeParameters):
         self.comment('HOMING')
         self.move_to([0, 0, 0])
 
-    def move_to(self, position: List[float], speedpos: float = 50):
+    def move_to(self, position: List[float], speedpos: float = 5):
         """
         Utility function to move to a given position with the shutter OFF. The user can specify the target position
         and the positioning speed.
@@ -172,7 +186,7 @@ class PGMCompiler(GcodeParameters):
             position[1] -> Y
             position[2] -> Z
         :type position: List[float]
-        :param speedpos: Positioning speed [mm/s]. The default is 50 mm/s.
+        :param speedpos: Positioning speed [mm/s]. The default is 5 mm/s.
         :type speedpos: float
         :return: None
         """
@@ -309,21 +323,20 @@ class PGMCompiler(GcodeParameters):
         x_c, y_c, z_c, f_c, s_c = self.transform_points(points)
         args = [self._format_args(x, y, z, f) for (x, y, z, f) in zip(x_c, y_c, z_c, f_c)]
         for (arg, s) in zip_longest(args, s_c):
-            if s == 0 and self._shutter_on is False:
-                pass
-            elif s == 0 and self._shutter_on is True:
+            if s == 0 and self._shutter_on is True:
                 self.shutter('OFF')
                 self.dwell(self.long_pause)
             elif s == 1 and self._shutter_on is False:
                 self.shutter('ON')
                 self.dwell(self.long_pause)
-            self._instructions.append(f'LINEAR {arg}\n')
+            else:
+                self._instructions.append(f'LINEAR {arg}\n')
         self.dwell(self.long_pause)
 
     def transform_points(self, points):
         x, y, z, f_c, s_c = points.T
         sub_points = np.stack((x, y, z), axis=-1).astype(np.float32)
-        sub_points -= np.array([[self.new_origin[0]], [self.new_origin[1]], [1]]).T
+        sub_points -= np.array([self.new_origin[0], self.new_origin[1], 0]).T
         if self.warp_flag:
             sub_points = np.matmul(sub_points, self.t_matrix())
             x_c, y_c, z_c = self.compensate(sub_points).T
@@ -374,16 +387,9 @@ class PGMCompiler(GcodeParameters):
         # write instruction to file
         with open(pgm_filename, 'w') as f:
             f.write(''.join(self._instructions))
+        self._instructions.clear()
         if verbose:
             print('G-code compilation completed.')
-
-    def trench(self, col: TrenchColumn, col_index: int = None, base_folder: str = r'C:\Users\Capable\Desktop',
-               dirname: str = 's-trench', u: List = None, nboxz: int = 4, hbox: float = 0.075, zoff: float = 0.020,
-               deltaz: float = 0.0015, tspeed: float = 4, speed_pos: float = 5, pause: float = 0.5):
-        """
-        See :mod:`make_trench() function femto.PGMCompiler.make_trench`
-        """
-        make_trench(self, col, col_index, base_folder, dirname, u, nboxz, hbox, zoff, deltaz, tspeed, speed_pos, pause)
 
     def compensate(self, pts: np.ndarray) -> np.ndarray:
         """
@@ -493,162 +499,133 @@ class PGMCompiler(GcodeParameters):
         return file
 
 
-def write_array(gc: PGMCompiler, points: np.ndarray, f_array: list = None):
-    """
-    Helper function that produces a PGM file for a 3D matrix of points at a given traslation speed,
-    without shuttering operations.
-    The function parse the points input matrix, applies the rotation and homothety transformations and parse all the
-    LINEAR instructions.
+class PGMTrench(PGMCompiler):
+    def __init__(self, param: dict, trench_columns: TrenchColumn):
+        super().__init__(param)
+        self.trench_columns = listcast(trench_columns)
 
-    :param gc: Instance of a PGMCompiler for compilation of a G-Code file.
-    :type gc: PGMCompiler
-    :param points: 3D points matrix. If the points matrix is 2D it is intended as [x,y] coordinates.
-    :type points: np.ndarray
-    :param f_array: List of traslation speed values. The default is [].
-    :type f_array: list
-    :return: None
-    """
-    if points.shape[-1] == 2:
-        x_array, y_array = np.matmul(points, gc.t_matrix(dim=2)).T
-        z_array = [None]
-    else:
-        x_array, y_array, z_array = np.matmul(points, gc.t_matrix()).T
+    def write(self, dirname: str = 's-trench'):
+        """
+        Helper function for the compilation of trench columns.
+        For each trench in the column, the function first compile a PGM file for border (or wall) and for the floor
+        inside a directory given by the user (base_folder).
+        Secondly, the function produce a FARCALL.pgm program to fabricate all the trenches in the column.
 
-    if not isinstance(f_array, Iterable):
-        f_array = [f_array]
+        :param dirname: Name of the directory in which the .pgm file will be written. The path is relative to the
+        current file (.\\dirname\\)
+        :type dirname: str
+        :return: None
+        """
+        for col_idx, col in enumerate(self.trench_columns):
+            self._instructions = deque()
+            col_pgm = os.path.join(os.getcwd(), dirname, f'FARCALL{col_idx + 1:03}.pgm')
+            col_dir = os.path.join(os.getcwd(), dirname, f'trenchCol{col_idx + 1:03}')
+            os.makedirs(col_dir, exist_ok=True)
+            for i, trench in enumerate(col):
+                filename = os.path.join(col_dir, f'trench{i + 1:03}')
+                self._export_path(filename, trench, f=col.speed)
 
-    instructions = [gc._format_args(x, y, z, f) for (x, y, z, f) in zip_longest(x_array, y_array, z_array, f_array)]
-    gc._instructions.extend([f'LINEAR {line}\n' for line in instructions])
+            self.header()
+            self.dwell(1.0)
+            self.dvar(['ZCURR'])
 
+            for nbox in range(col.nboxz):
+                for t_index, trench in enumerate(col):
+                    # load filenames (wall/floor)
+                    wall_filename = f'trench{t_index + 1:03}_wall.pgm'
+                    floor_filename = f'trench{t_index + 1:03}_floor.pgm'
+                    wall_path = os.path.join(col.base_folder, dirname, f'trenchCol{col_idx + 1:03}', wall_filename)
+                    floor_path = os.path.join(col.base_folder, dirname, f'trenchCol{col_idx + 1:03}', floor_filename)
 
-def export_trench_path(trench: Trench, filename: str, ind_rif: float, angle: float, tspeed: float = 4):
-    """
-    Helper function for the export of the wall and floor instruction of a Trench obj.
+                    x0, y0 = trench.block.exterior.coords[0]
+                    z0 = (nbox * col.h_box - col.z_off) / super().neff
+                    self.comment(f'+--- TRENCH #{t_index + 1}, LEVEL {nbox + 1} ---+')
+                    self.load_program(wall_path)
+                    self.load_program(floor_path)
+                    self.shutter('OFF')
+                    self.move_to([x0-self.new_origin[0], y0-self.new_origin[1], z0], speedpos=col.speed_closed)
 
-    :param trench: Trench obj to export.
-    :type trench: Trench
-    :param filename: Base filename for the wall.pgm and floor.pgm files. If the filename ends with the '.pgm'
-    extension, the latter it is stripped and replaced with '_wall.pgm' and '_floor.pgm' to differentiate the two paths.
-    :type filename: str
-    :param ind_rif: Refractive index.
-    :type ind_rif: float
-    :param angle: Rotation angle for the fabrication.
-    :type angle: float
-    :param tspeed: Traslation speed during fabrication [mm/s]. The default is 4 [mm/s].
-    :type tspeed: float
-    :return: None
-    """
-    if filename.endswith('.pgm'):
-        filename = filename.split('.')[0]
+                    self.instruction(f'$ZCURR = {z0:.6f}')
+                    self.shutter('ON')
+                    with self.repeat(col.n_repeat):
+                        self.farcall(wall_filename)
+                        self.instruction(f'$ZCURR = $ZCURR + {col.deltaz / super().neff:.6f}')
+                        self.instruction('LINEAR Z$ZCURR')
 
-    TEMP_GC = dict(
-        filename=filename + '_wall.pgm',
-        n_glass=ind_rif,
-        n_environment=1.0,
-        angle=angle
-    )
-    G = PGMCompiler(TEMP_GC)
-    write_array(G, np.array(trench.block.exterior.coords.xy).T, f_array=[tspeed])
-    G.close()
-    del G
+                    if col.u:
+                        self.instruction(f'LINEAR U{col.u[-1]:.6f}')
+                    self.dwell(super().long_pause)
+                    self.farcall(floor_filename)
+                    self.shutter('OFF')
+                    if col.u:
+                        self.instruction(f'LINEAR U{col.u[0]:.6f}')
 
-    TEMP_GC['filename'] = filename + '_floor.pgm'
-    G = PGMCompiler(TEMP_GC)
-    for path in trench.trench_paths():
-        write_array(G, np.stack(path, axis=-1), f_array=[tspeed])
-    G.close()
-    del G
+                    self.remove_program(wall_path)
+                    self.remove_program(floor_path)
 
+            # write instruction to file
+            with open(col_pgm, 'w') as f:
+                f.write(''.join(self._instructions))
 
-def make_trench(gc: PGMCompiler, col: TrenchColumn, col_index: int = None,
-                base_folder: str = r'C:\Users\Capable\Desktop', dirname: str = 's-trench', u: List = None,
-                nboxz: int = 4, hbox: float = 0.075, zoff: float = 0.020, deltaz: float = 0.0015, tspeed: float = 4,
-                speed_pos: float = 5, pause: float = 0.5):
-    """
-    Helper function for the compilation of trench columns.
-    For each trench in the column, the function first compile a PGM file for border (or wall) and for the floor
-    inside a directory given by the user (base_folder).
-    Secondly, the function produce a FARCALL.pgm program to fabricate all the trenches in the column.
+    def _export_path(self, filename: str, trench: Trench, f: float = 4):
+        """
+        Helper function for the export of the wall and floor instruction of a Trench obj.
 
-    :param gc: Instance of a PGMCompiler for compilation of a G-Code file.
-    :type gc: PGMCompiler
-    :param col: TrenchColumn obj containing the list of trench blocks to compile.
-    :type col: List
-    :param col_index: Index of the column, used for organize the code in folders. The default is None,
-    trench directories will not be indexed.
-    :type col_index: int
-    :param base_folder: String of the full PATH (in the lab computer) of the directory containig all the scripts for
-    the fabrication.
-    :type base_folder: str
-    :param dirname: Directory to export the trenches PGM files. The default is 's-trench'.
-    :type dirname: str
-    :param u: List of two values of U-coordinate for fabrication of wall and floor of the trench. The default is None.
-            ``u[0]`` -> U-coordinate for the wall
-            ``u[1]`` -> U-coordinate for the floor
-    :type u: List
-    :param nboxz: Number of sub-box along z-direction in which the trench is divided. The default is 4.
-    :type nboxz: int
-    :param hbox: Height along z-direction [mm] of the single sub-box. The default is 0.075 mm.
-    :type hbox: float
-    :param zoff: Offset [mm] in the z-direction for the starting the inscription of the trench wall. The default is
-    0.020 [mm].
-    :type zoff: float
-    :param deltaz: Distance [mm] along z-direction between different wall planes. The default is 0.0015 [mm].
-    :type deltaz: float
-    :param tspeed: Traslation speed during fabrication [mm/s]. The default is 4 mm/s.
-    :type tspeed: float
-    :param speed_pos: Positioning speed [mm/s]. The default is 5 mm/s.
-    :type speed_pos: float
-    :param pause: float
-    :type pause:  Value of pause. Units in [s]. The default is 0.5 s.
-    :return: None
-    """
-    if col_index is None:
-        trench_directory = os.path.join(dirname, 'trenchCol')
-    else:
-        trench_directory = os.path.join(dirname, f'trenchCol{col_index + 1:03}')
+        :param filename: Base filename for the wall.pgm and floor.pgm files. If the filename ends with the '.pgm'
+        extension, the latter it is stripped and replaced with '_wall.pgm' and '_floor.pgm' to differentiate the two
+        paths.
+        :type filename: str
+        :param trench: Trench obj to export.
+        :type trench: Trench
+        :param f: Traslation speed during fabrication [mm/s]. The default is 4 [mm/s].
+        :type f: float
+        :return: None
+        """
+        if filename is None:
+            raise ValueError('No filename given.')
+        if filename.endswith('.pgm'):
+            filename = filename.split('.')[0]
 
-    col_dir = os.path.join(os.getcwd(), trench_directory)
-    os.makedirs(col_dir, exist_ok=True)
-    for i, trench in enumerate(col):
-        filename = os.path.join(col_dir, f'trench{i + 1:03}_')
-        export_trench_path(trench, filename, gc.neff, degrees(gc.angle), tspeed)
+        # wall
+        points = np.array(trench.block.exterior.coords.xy).T
+        f_val = f
+        self._write_array(filename + '_wall.pgm', points, f_val)
+        del points
 
-    gc.dvar(['ZCURR'])
+        # floor
+        points = []
+        [points.extend(np.stack(path, axis=-1)) for path in trench.trench_paths()]
+        self._write_array(filename + '_floor.pgm', np.array(points), f_val)
+        del points
 
-    for nbox in range(nboxz):
-        for t_index, trench in enumerate(col):
-            # load filenames (wall/floor)
-            wall_filename = f'trench{t_index + 1:03}_wall.pgm'
-            floor_filename = f'trench{t_index + 1:03}_floor.pgm'
-            wall_path = os.path.join(base_folder, trench_directory, wall_filename)
-            floor_path = os.path.join(base_folder, trench_directory, floor_filename)
+    def _write_array(self, pgm_filename: str, points: np.ndarray, f_val: float):
+        """
+        Helper function that produces a PGM file for a 3D matrix of points at a given traslation speed,
+        without shuttering operations.
+        The function parse the points input matrix, applies the rotation and homothety transformations and parse all
+        the LINEAR instructions.
 
-            x0, y0 = trench.block.exterior.coords[0]
-            z0 = (nbox * hbox - zoff) / gc.neff
-            gc.comment(f'+--- TRENCH #{t_index + 1}, LEVEL {nbox + 1} ---+')
-            gc.load_program(wall_path)
-            gc.load_program(floor_path)
-            gc.shutter('OFF')
-            gc.move_to([x0, y0, z0], speedpos=speed_pos)
+        :param pgm_filename: Filename of the file in which the G-Code instructions will be written.
+        :type pgm_filename: str
+        :param points: 3D points matrix. If the points matrix is 2D it is intended as [x,y] coordinates.
+        :type points: np.ndarray
+        :param f_val: Traslation speed value.
+        :type f_val: float, np.ndarray or list
+        :return: None
+        """
 
-            gc.instruction(f'$ZCURR = {z0:.6f}')
-            gc.shutter('ON')
-            with gc.repeat(int(np.ceil((hbox + zoff) / deltaz))):
-                gc.farcall(wall_filename)
-                gc.instruction(f'$ZCURR = $ZCURR + {deltaz / gc.neff:.6f}')
-                gc.instruction('LINEAR Z$ZCURR')
+        points -= np.array([self.new_origin[0], self.new_origin[1]]).T
 
-            if u is not None:
-                gc.instruction(f'LINEAR U{u[-1]:.6f}')
-            gc.dwell(pause)
-            gc.farcall(floor_filename)
-            gc.shutter('OFF')
-            if u is not None:
-                gc.instruction(f'LINEAR U{u[0]:.6f}')
+        if points.shape[-1] == 2:
+            x_arr, y_arr = np.matmul(points, self.t_matrix(dim=2)).T
+            z_arr = [None]
+        else:
+            x_arr, y_arr, z_arr = np.matmul(points, self.t_matrix()).T
 
-            gc.remove_program(wall_path)
-            gc.remove_program(floor_path)
+        instr = [self._format_args(x, y, z, f) for (x, y, z, f) in zip_longest(x_arr, y_arr, z_arr, listcast(f_val))]
+        gcode_instr = [f'LINEAR {line}\n' for line in instr]
+        with open(pgm_filename, 'w') as f:
+            f.write(''.join(gcode_instr))
 
 
 def _example():
@@ -656,21 +633,21 @@ def _example():
 
     # Data
     PARAMETERS_WG = dotdict(
-        scan=6,
-        speed=20,
-        radius=15,
-        pitch=0.080,
-        int_dist=0.007,
-        lsafe=3
+            scan=6,
+            speed=20,
+            radius=15,
+            pitch=0.080,
+            int_dist=0.007,
+            lsafe=3
     )
     increment = [PARAMETERS_WG.lsafe, 0, 0]
 
     PARAMETERS_GC = dotdict(
-        filename='testPGMcompiler.pgm',
-        lab='CAPABLE',
-        samplesize=(25, 25),
-        angle=0.0,
-        warp_flag=True,
+            filename='testPGMcompiler.pgm',
+            lab='CAPABLE',
+            samplesize=(25, 25),
+            angle=0.0,
+            warp_flag=True,
     )
 
     # Calculations

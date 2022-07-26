@@ -20,8 +20,11 @@ class Waveguide(LaserPath):
     def __init__(self, param: dict):
         super().__init__(param)
 
+    def __repr__(self):
+        return "{cname}@{id:x}".format(cname=self.__class__.__name__, id=id(self) & 0xFFFFFF)
+
     # Methods
-    def start(self, init_pos: List[float], speedpos: float = 5) -> Self:
+    def start(self, init_pos: List[float], speedpos: float = None) -> Self:
         """
         Starts a waveguide in the initial position given as input.
         The coordinates of the initial position are the first added to the matrix that describes the waveguide.
@@ -31,7 +34,7 @@ class Waveguide(LaserPath):
             init_pos[1] -> Y
             init_pos[2] -> Z
         :type init_pos: List[float]
-        :param speedpos: Translation speed [mm/s]. The default is 5 mm/s.
+        :param speedpos: Translation speed [mm/s].
         :type speedpos: float
         :return: Self
         :rtype: Waveguide
@@ -40,6 +43,8 @@ class Waveguide(LaserPath):
             raise ValueError(f'Given initial position is not valid. 3 values required. {np.size(init_pos)} given.')
         if self._x.size != 0:
             raise ValueError('Coordinate matrix is not empty. Cannot start a new waveguide in this point.')
+        if speedpos is None:
+            speedpos = self.speedpos
 
         x0, y0, z0 = init_pos
         f0 = np.asarray(speedpos, dtype=np.float32)
@@ -49,20 +54,18 @@ class Waveguide(LaserPath):
         self.add_path(x0, y0, z0, f0, s1)
         return self
 
-    def end(self, speedpos: float = 75):
+    def end(self):
         """
         Ends a waveguide. The function automatically return to the initial point of the waveguide with a translation
         speed specified by the user.
 
-        :param speedpos: Traslation speed [mm/s]. The default is 75 mm/s.
-        :type speedpos: float
         :return: Self
         :rtype: Waveguide
         """
         x = np.array([self._x[-1], self._x[0]]).astype(np.float32)
         y = np.array([self._y[-1], self._y[0]]).astype(np.float32)
         z = np.array([self._z[-1], self._z[0]]).astype(np.float32)
-        f = np.array([self._f[-1], speedpos]).astype(np.float32)
+        f = np.array([self._f[-1], self.speed_closed]).astype(np.float32)
         s = np.array([0, 0]).astype(np.float32)
         self.add_path(x, y, z, f, s)
         self.fabrication_time()
@@ -207,7 +210,7 @@ class Waveguide(LaserPath):
         The sign of dy encodes the direction of the coupler:
             - dy > 0, upward S-bend
             - dy < 0, downward S-bend
-            
+
         :param dy: Amplitude of the S-bend along the y direction [mm].
         :type dy: float
         :param radius: Curvature radius of the S-bend [mm]. The default is self.radius.

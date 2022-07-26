@@ -42,3 +42,22 @@ class dotdict(dict):
     __getattr__ = dict.get
     __setattr__ = dict.__setitem__
     __delattr__ = dict.__delitem__
+
+
+def nest_level(lst):
+    if not isinstance(lst, list):
+        return 0
+    if not lst:
+        return 1
+    return max(nest_level(item) for item in lst) + 1
+
+
+def flatten(items, seqtypes=(list, tuple)):
+    try:
+        for i, x in enumerate(items):
+            while isinstance(x, seqtypes):
+                items[i:i + 1] = x
+                x = items[i]
+    except IndexError:
+        pass
+    return items

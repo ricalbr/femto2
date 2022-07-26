@@ -1,9 +1,7 @@
-import os
 import time
 
-from femto import Cell, Marker, PGMCompiler, TrenchColumn, Waveguide
+from femto import Cell, Marker, TrenchColumn, Waveguide
 from param import *
-import matplotlib.pyplot as plt
 
 t0 = time.perf_counter()
 
@@ -11,6 +9,7 @@ t0 = time.perf_counter()
 circ = Cell(PARAMETERS_GC)
 
 x_trench = []
+upp = []
 for i in range(MM):
     [xi, yi, zi] = [x0, y0 + (i - 0.5 * (MM - 1)) * PARAMETERS_WG.pitch, PARAMETERS_WG.depth]
 
@@ -24,7 +23,7 @@ for i in range(MM):
             xl, yl, _ = wg.lastpt
             mk = Marker(PARAMETERS_MK)
             mk.cross([xl, yl - 0.2], lx, ly)
-            circ.add(mk)
+            circ.append(mk)
             x_trench.append(xl)
         wg.sin_bend((-1) ** (j + i % 2) * d1)
         wg.sin_bend((-1) ** (j + i % 2 + 1) * d2)
@@ -33,12 +32,25 @@ for i in range(MM):
         xl, yl, _ = wg.lastpt
         mk = Marker(PARAMETERS_MK)
         mk.cross([xl, yl - 0.2], lx, ly)
-        circ.add(mk)
+        circ.append(mk)
         x_trench.append(xl)
     wg.sin_acc((-1) ** (j + i % 2 + 1) * d1)
-    wg.linear(increment)
+    wg.linear([wg.x_end, wg.lasty, wg.lastz], mode='ABS')
     wg.end()
-    circ.add(wg)
+    upp.append(wg)
+
+wgp1 = Waveguide(PARAMETERS_WG)
+p_init = [x0, y0 - 0.5 * (MM + 1) * wgp1.pitch, wgp1.depth]
+wgp1.start(p_init).linear([wgp1.x_end, wgp1.lasty, wgp1.lastz], mode='ABS').end()
+
+wgp2 = Waveguide(PARAMETERS_WG)
+p_init = [x0, y0 + 0.5 * (MM + 1) * wgp1.pitch, wgp1.depth]
+wgp2.start(p_init).linear([wgp2.x_end, wgp2.lasty, wgp2.lastz], mode='ABS').end()
+
+# Add waveguides and circuit to the cell
+circ.append(wgp1)
+circ.append(upp)
+circ.append(wgp2)
 
 # Trench
 for xt in x_trench:
@@ -47,40 +59,8 @@ for xt in x_trench:
     col.y_min = y0 - 0.5 * MM * PARAMETERS_WG.pitch
     col.y_max = y0 + 0.5 * MM * PARAMETERS_WG.pitch
     col.get_trench(circ.waveguides)
-    circ.add(col)
+    circ.append(col)
 
-# # Plot
+# # Plot and compilation
 circ.plot2d()
-plt.show()
-
-# Compilation
-# # OPTICAL CIRCUIT
-PARAMETERS_GC.filename = f'{MM}x{NN}_CIRCUIT.pgm'
-with PGMCompiler(PARAMETERS_GC) as gc:
-    with gc.repeat(PARAMETERS_WG.scan):
-        for i, wg in enumerate(circ.waveguides):
-            gc.comment(f' +--- Modo: {i + 1} ---+')
-            gc.write(wg.points)
-
-# # MARKERS
-PARAMETERS_GC.filename = f'{MM}x{NN}_MARKERS.pgm'
-with PGMCompiler(PARAMETERS_GC) as gc:
-    for i, c in enumerate(circ.markers):
-        gc.comment(f' +--- Croce: {i + 1} ---+')
-        gc.write(c.points)
-
-# # TRENCH
-for col_index, col in enumerate(circ.trench_cols):
-    col_filename = os.path.join(os.getcwd(), 's-trench', f'FARCALL_COLONNA{col_index + 1:03}.pgm')
-    PARAMETERS_GC.filename = col_filename
-    with PGMCompiler(PARAMETERS_GC) as gc:
-        gc.trench(col, col_index, base_folder=PARAMETERS_TC.base_folder, u=[31.7, 38.4])
-        gc.homing()
-
-print(f'Elapsed time: {time.perf_counter() - t0:.2f} s.')
-
-ttime = 0
-[ttime := ttime + wg.wtime for wg in circ.waveguides]
-for col in circ.trench_cols:
-    ttime += col.wtime
-print('Estimated fabrication time: ', time.strftime('%H:%M:%S', time.gmtime(ttime)))
+# circ.pgm()

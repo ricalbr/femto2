@@ -1,7 +1,3 @@
-import os
-
-import matplotlib.pyplot as plt
-
 from femto import Cell, Marker, PGMCompiler, TrenchColumn, Waveguide
 from femto.helpers import dotdict
 
@@ -91,7 +87,7 @@ circ.add(col)
 
 # Plot
 circ.plot2d()
-plt.show()
+# plt.show()
 
 # Waveguide G-Code
 with PGMCompiler(PARAMETERS_GC) as gc:
@@ -107,9 +103,14 @@ with PGMCompiler(PARAMETERS_GC) as gc:
         gc.write(mk.points)
 
 # Trench G-Code
-for col_index, col_trench in enumerate(circ.trench_cols):
-    # Generate G-Code for the column
-    col_filename = os.path.join(os.getcwd(), 's-trench', f'FARCALL{col_index + 1:03}')
-    PARAMETERS_GC.filename = col_filename
-    with PGMCompiler(PARAMETERS_GC) as gc:
-        gc.trench(col_trench, col_index, base_folder=PARAMETERS_TC.base_folder)
+from femto.PGMCompiler import PGMTrench
+
+PARAMETERS_GC.filename = 'test'
+tc = PGMTrench(PARAMETERS_GC, circ.trench_cols)
+tc.write()
+# for col_index, col_trench in enumerate(circ.trench_cols):
+#     # Generate G-Code for the column
+#     col_filename = os.path.join(os.getcwd(), 's-trench', f'FARCALL{col_index + 1:03}')
+#     PARAMETERS_GC.filename = col_filename
+#     with PGMCompiler(PARAMETERS_GC) as gc:
+#         gc.trench(col_trench, col_index, base_folder=PARAMETERS_TC.base_folder)

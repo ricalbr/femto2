@@ -17,7 +17,8 @@ __all__ = [
     'Trench',
     'TrenchColumn',
     'PGMCompiler',
-    'helpers.py',
+    'PGMTrench',
+    'helpers',
     'Cell'
 ]
 
@@ -25,5 +26,5 @@ from .helpers import *
 from .Waveguide import Waveguide
 from .Marker import Marker
 from .Trench import Trench, TrenchColumn
-from .PGMCompiler import PGMCompiler
+from .PGMCompiler import PGMCompiler, PGMTrench
 from .Cell import Cell
