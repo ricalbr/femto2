@@ -1,14 +1,14 @@
 import time
 
+import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 import numpy as np
 from descartes import PolygonPatch
+from femto import Marker, PGMCompiler, PGMTrench, Trench, TrenchColumn, Waveguide
+from femto.helpers import listcast, nest_level
 from mpl_toolkits.mplot3d import Axes3D
 from shapely.affinity import rotate, translate
 from shapely.geometry import Point
-
-from femto import Marker, PGMCompiler, PGMTrench, Trench, TrenchColumn, Waveguide
-from femto.helpers import listcast, nest_level
 
 
 class Cell(PGMCompiler):
@@ -36,7 +36,8 @@ class Cell(PGMCompiler):
         else:
             raise TypeError(f'The object must be a Waveguide, Marker or Trench object. {type(obj)} was given.')
 
-    def plot2d(self, shutter_close=True, aspect='auto', wg_style=None, sc_style=None, mk_style=None, tc_style=None):
+    def plot2d(self, shutter_close: bool = True, aspect: str = 'auto', wg_style=None, sc_style=None, mk_style=None,
+               tc_style=None, pc_style=None, tight: bool = True):
         if wg_style is None:
             wg_style = dict()
         if sc_style is None:
@@ -45,14 +46,18 @@ class Cell(PGMCompiler):
             mk_style = dict()
         if tc_style is None:
             tc_style = dict()
+        if pc_style is None:
+            pc_style = dict()
         default_wgargs = {'linestyle': '-', 'color': 'b', 'linewidth': 2.0}
         wgargs = {**default_wgargs, **wg_style}
         default_scargs = {'linestyle': ':', 'color': 'b', 'linewidth': 0.5}
         scargs = {**default_scargs, **sc_style}
-        default_mkargs = {'linestyle': '-', 'color': 'k', 'linewidth': 2.0}
+        default_mkargs = {'linestyle': '-', 'color': 'k', 'linewidth': 1.0}
         mkargs = {**default_mkargs, **mk_style}
         default_tcargs = {'facecolor': 'k', 'edgecolor': None, 'alpha': 1, 'zorder': 1}
         tcargs = {**default_tcargs, **tc_style}
+        default_pcargs = {'facecolor': '#FFD7004D', 'edgecolor': 'b', 'linewidth': 2, 'zorder': 0,}
+        pcargs = {**default_pcargs, **pc_style}
 
         self.fig, self.ax = plt.subplots()
         self.ax.set_xlabel('X [mm]')
@@ -74,17 +79,23 @@ class Cell(PGMCompiler):
             shape = rotate(shape, angle=self.angle, use_radians=True, origin=Point(0, 0))
             self.ax.add_patch(PolygonPatch(shape, **tcargs))
 
-        # Glass
-        if self.xsample is not None:
-            self.ax.axvline(x=0.0 - self.new_origin[0])
-            self.ax.axvline(x=self.xsample - self.new_origin[0])
-
         # Origin
-        self.ax.plot(0.0, 0.0, 'or')
-        self.ax.annotate('(0,0)', (0.0, 0.0), textcoords="offset points", xytext=(0, 10), ha='left', color='r')
-        if isinstance(aspect, str) and aspect.lower() not in ['auto', 'equal']:
-            raise ValueError(f'aspect must be either `auto` or `equal`. Given {aspect.lower()}.')
+        # self.ax.plot(0.0, 0.0, 'or')
+        # self.ax.annotate('(0,0)', (0.0, 0.0), textcoords="offset points", xytext=(0, 10), ha='left', color='r')
+        # if isinstance(aspect, str) and aspect.lower() not in ['auto', 'equal']:
+        #     raise ValueError(f'aspect must be either `auto` or `equal`. Given {aspect.lower()}.')
         self.ax.set_aspect(aspect)
+        if tight: plt.tight_layout()
+
+        rect = patches.Rectangle((0, 0), self.xsample, self.ysample, **pcargs)
+        self.ax.add_patch(rect)
+        self.ax.autoscale_view()
+
+        # # Glass
+        # if self.xsample is not None:
+        #     self.ax.axvline(x=0.0 - self.new_origin[0])
+        #     self.ax.axvline(x=self.xsample - self.new_origin[0])
+
         plt.show()
 
     def plot3d(self, shutter_close=True, wg_style=None, sc_style=None, mk_style=None):
@@ -124,8 +135,9 @@ class Cell(PGMCompiler):
     def save(self, filename='device_scheme.pdf', bbox_inches='tight'):
         self.fig.savefig(filename, bbox_inches=bbox_inches)
 
-    def pgm(self, verbose: bool = True, marker: bool = True, trench: bool = True):
-        self._wg_pgm(verbose=verbose)
+    def pgm(self, verbose: bool = True, waveguide: bool = True, marker: bool = True, trench: bool = True):
+        if waveguide:
+            self._wg_pgm(verbose=verbose)
         if marker:
             self._mk_pgm(verbose=verbose)
         if trench:
