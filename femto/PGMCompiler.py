@@ -336,7 +336,7 @@ class PGMCompiler(GcodeParameters):
     def transform_points(self, points):
         x, y, z, f_c, s_c = points.T
         sub_points = np.stack((x, y, z), axis=-1).astype(np.float32)
-        sub_points -= np.array([[self.new_origin[0]], [self.new_origin[1]], [0]]).T
+        sub_points -= np.array([self.new_origin[0], self.new_origin[1], 0]).T
         if self.warp_flag:
             sub_points = np.matmul(sub_points, self.t_matrix())
             x_c, y_c, z_c = self.compensate(sub_points).T
@@ -522,7 +522,7 @@ class PGMTrench(PGMCompiler):
             col_dir = os.path.join(os.getcwd(), dirname, f'trenchCol{col_idx + 1:03}')
             os.makedirs(col_dir, exist_ok=True)
             for i, trench in enumerate(col):
-                filename = os.path.join(col_dir, f'trench{i + 1:03}_')
+                filename = os.path.join(col_dir, f'trench{i + 1:03}')
                 self._export_path(filename, trench, f=col.speed)
 
             self.header()
@@ -543,7 +543,7 @@ class PGMTrench(PGMCompiler):
                     self.load_program(wall_path)
                     self.load_program(floor_path)
                     self.shutter('OFF')
-                    self.move_to([x0, y0, z0], speedpos=col.speed_closed)
+                    self.move_to([x0-self.new_origin[0], y0-self.new_origin[1], z0], speedpos=col.speed_closed)
 
                     self.instruction(f'$ZCURR = {z0:.6f}')
                     self.shutter('ON')
@@ -613,6 +613,9 @@ class PGMTrench(PGMCompiler):
         :type f_val: float, np.ndarray or list
         :return: None
         """
+
+        points -= np.array([self.new_origin[0], self.new_origin[1]]).T
+
         if points.shape[-1] == 2:
             x_arr, y_arr = np.matmul(points, self.t_matrix(dim=2)).T
             z_arr = [None]
