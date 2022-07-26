@@ -30,7 +30,7 @@ class WaveguideParameters:
     speed_closed: float = 75
     speedpos: float = 0.1
     dwelltime: float = 0.5
-    lsafe: float = 4.0
+    lsafe: float = 2.0
     ltrench: float = 1.0
     dz_bridge: float = 0.015
     margin: float = 1.0
@@ -250,7 +250,7 @@ class GcodeParameters:
 
     @property
     def ysample(self) -> float:
-        return self.samplesize[0]
+        return self.samplesize[1]
 
     @property
     def neff(self) -> float:
