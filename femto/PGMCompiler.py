@@ -540,6 +540,7 @@ class PGMTrench(PGMCompiler):
                     x0, y0 = trench.block.exterior.coords[0]
                     z0 = (nbox * col.h_box - col.z_off) / super().neff
                     self.comment(f'+--- TRENCH #{t_index + 1}, LEVEL {nbox + 1} ---+')
+                    self.instruction(f'MSGDISPLAY 1, "TRENCH #{t_index + 1}, LEVEL {nbox + 1}"\n')
                     self.load_program(wall_path)
                     self.load_program(floor_path)
                     self.shutter('OFF')
@@ -562,6 +563,7 @@ class PGMTrench(PGMCompiler):
 
                     self.remove_program(wall_path)
                     self.remove_program(floor_path)
+            self.instruction('MSGCLEAR -1\n')
 
             # write instruction to file
             with open(col_pgm, 'w') as f:
