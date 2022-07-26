@@ -24,14 +24,14 @@ class Trench:
         self.wall_length = 0.0
 
     @property
-    def center(self) -> np.ndarray:
+    def center(self) -> list:
         """
         Returns the (x, y) coordinates of the trench block baricenter point.
 
         :return: (x, y) coordinates of the block's center point
-        :rtype: np.ndarray
+        :rtype: list
         """
-        return np.asarray([self.block.centroid.x, self.block.centroid.y])
+        return [self.block.centroid.x, self.block.centroid.y]
 
     @property
     def patch(self, kwargs=None) -> PolygonPatch:
@@ -48,6 +48,23 @@ class Trench:
         default_kwargs = {'facecolor': 'k', 'edgecolor': None, 'alpha': 1, 'zorder': 1}
         kwargs = {**default_kwargs, **kwargs}
         return PolygonPatch(self.block, **kwargs)
+
+    @property
+    def xmin(self):
+        return self.block.bounds[0]
+
+    @property
+    def ymin(self):
+        return self.block.bounds[1]
+
+    @property
+    def xmax(self):
+        return self.block.bounds[2]
+
+    @property
+    def ymax(self):
+        return self.block.bounds[3]
+
 
     def trench_paths(self) -> Generator[np.ndarray, None, None]:
         """
@@ -133,11 +150,15 @@ class TrenchColumn(TrenchParameters):
         return iter(self._trench_list)
 
     @property
-    def wtime(self):
+    def wtime(self) -> float:
         l_tot = 0.0
         for trench in self._trench_list:
             l_tot += self.nboxz * (self.n_repeat * trench.wall_length + trench.floor_length)
         return l_tot / self.speed
+
+    @property
+    def trenches(self) -> list:
+        return self._trench_list
 
     def get_trench(self, waveguides: List[Waveguide]):
         """
