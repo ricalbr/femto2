@@ -54,7 +54,7 @@ class Cell(PGMCompiler):
         scargs = {**default_scargs, **sc_style}
         default_mkargs = {'linestyle': '-', 'color': 'k', 'linewidth': 1.0}
         mkargs = {**default_mkargs, **mk_style}
-        default_tcargs = {'facecolor': 'k', 'edgecolor': None, 'alpha': 1, 'zorder': 1}
+        default_tcargs = {'facecolor': '#7E7E7E', 'edgecolor': None, 'alpha': 1, 'zorder': 1}
         tcargs = {**default_tcargs, **tc_style}
         if gold_layer:
             default_pcargs = {'facecolor': '#FFD7004D', 'edgecolor': 'b', 'linewidth': 2, 'zorder': 0,}
