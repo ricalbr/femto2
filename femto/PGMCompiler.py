@@ -304,7 +304,7 @@ class PGMCompiler(GcodeParameters):
         if file.stem not in self._loaded_files:
             raise FileNotFoundError(f'{file} not loaded. Cannot load it.')
         self._instructions.append(f'FARCALL "{file}"\n')
-        self._instructions.append('PROGRAM 0 STOP\n')
+        # self._instructions.append('PROGRAM 0 STOP\n')
 
     def write(self, points: np.ndarray):
         """
@@ -541,8 +541,9 @@ class PGMTrench(PGMCompiler):
                     z0 = (nbox * col.h_box - col.z_off) / super().neff
                     self.comment(f'+--- TRENCH #{t_index + 1}, LEVEL {nbox + 1} ---+')
                     self.instruction(f'MSGDISPLAY 1, "TRENCH #{t_index + 1}, LEVEL {nbox + 1}"\n')
+
+                    # WALL
                     self.load_program(wall_path)
-                    self.load_program(floor_path)
                     self.shutter('OFF')
                     self.move_to([x0-self.new_origin[0], y0-self.new_origin[1], z0], speedpos=col.speed_closed)
 
@@ -552,7 +553,10 @@ class PGMTrench(PGMCompiler):
                         self.farcall(wall_filename)
                         self.instruction(f'$ZCURR = $ZCURR + {col.deltaz / super().neff:.6f}')
                         self.instruction('LINEAR Z$ZCURR')
+                    self.remove_program(wall_path)
 
+                    # FLOOR
+                    self.load_program(floor_path)
                     if col.u:
                         self.instruction(f'LINEAR U{col.u[-1]:.6f}')
                     self.dwell(super().long_pause)
@@ -560,8 +564,6 @@ class PGMTrench(PGMCompiler):
                     self.shutter('OFF')
                     if col.u:
                         self.instruction(f'LINEAR U{col.u[0]:.6f}')
-
-                    self.remove_program(wall_path)
                     self.remove_program(floor_path)
             self.instruction('MSGCLEAR -1\n')
 
