@@ -268,7 +268,7 @@ class PGMCompiler(GcodeParameters):
         self._instructions.append('MSGDISPLAY 1, "---------------------"\n')
         self._instructions.append('MSGDISPLAY 1, " "\n\n')
 
-    def load_program(self, filename: str):
+    def load_program(self, filename: str, task_id: int = 0):
         """
         Adds the instruction to LOAD a program in a G-Code file.
 
@@ -277,10 +277,10 @@ class PGMCompiler(GcodeParameters):
         :return: None
         """
         file = self._parse_filepath(filename, extension='pgm')
-        self._instructions.append(f'PROGRAM 0 LOAD "{file}"\n')
+        self._instructions.append(f'PROGRAM {task_id} LOAD "{file}"\n')
         self._loaded_files.append(file.stem)
 
-    def remove_program(self, filename: str):
+    def remove_program(self, filename: str, task_id: int = 0):
         """
         Adds the instruction to REMOVE a program from memory buffer in a G-Code file.
 
@@ -289,6 +289,7 @@ class PGMCompiler(GcodeParameters):
         :return: None
         """
         file = self._parse_filepath(filename, extension='pgm')
+        self.programstop(task_id)
         self._instructions.append(f'REMOVEPROGRAM "{file}"\n')
         self._loaded_files.remove(file.stem)
 
@@ -304,7 +305,23 @@ class PGMCompiler(GcodeParameters):
         if file.stem not in self._loaded_files:
             raise FileNotFoundError(f'{file} not loaded. Cannot load it.')
         self._instructions.append(f'FARCALL "{file}"\n')
-        # self._instructions.append('PROGRAM 0 STOP\n')
+
+    def programstop(self, task_id: int = 0):
+        self._instructions.append(f'PROGRAM {task_id} STOP\n')
+
+    def buffercall(self, filename: str, task_id: int = 0):
+        """
+        Adds the BUFFEREDRUN instruction in a G-Code file.
+
+        :param filename: Name of the file to call.
+        :type filename: str
+        :return: None
+        """
+        file = self._parse_filepath(filename)
+        if file.stem not in self._loaded_files:
+            raise FileNotFoundError(f'{file} not loaded. Cannot load it.')
+        self._instructions.append(f'PROGRAM {task_id} BUFFEREDRUN "{file}"\n')
+
 
     def write(self, points: np.ndarray):
         """
@@ -534,8 +551,8 @@ class PGMTrench(PGMCompiler):
                     # load filenames (wall/floor)
                     wall_filename = f'trench{t_index + 1:03}_wall.pgm'
                     floor_filename = f'trench{t_index + 1:03}_floor.pgm'
-                    wall_path = os.path.join(col.base_folder, dirname, f'trenchCol{col_idx + 1:03}', wall_filename)
-                    floor_path = os.path.join(col.base_folder, dirname, f'trenchCol{col_idx + 1:03}', floor_filename)
+                    wall_path = os.path.join(col.base_folder, f'trenchCol{col_idx + 1:03}', wall_filename)
+                    floor_path = os.path.join(col.base_folder, f'trenchCol{col_idx + 1:03}', floor_filename)
 
                     x0, y0 = trench.block.exterior.coords[0]
                     z0 = (nbox * col.h_box - col.z_off) / super().neff
@@ -556,10 +573,12 @@ class PGMTrench(PGMCompiler):
                     self.remove_program(wall_path)
 
                     # FLOOR
+                    self.shutter(state='OFF')
                     self.load_program(floor_path)
                     if col.u:
                         self.instruction(f'LINEAR U{col.u[-1]:.6f}')
-                    self.dwell(super().long_pause)
+                    # self.dwell(super().long_pause)
+                    self.shutter(state='ON')
                     self.farcall(floor_filename)
                     self.shutter('OFF')
                     if col.u:
