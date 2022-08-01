@@ -36,7 +36,6 @@ class Marker(Waveguide):
             init_pos.append(self.depth)
         elif len(init_pos) == 3:
             init_pos[2] = self.depth
-            warnings.warn(f'Given 3D coordinate list. Z-coordinate is overwritten to {self.depth} mm.')
         else:
             raise ValueError('Given invalid position.')
         if self._x.size != 0:
