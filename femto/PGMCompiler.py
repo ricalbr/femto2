@@ -308,6 +308,7 @@ class PGMCompiler(GcodeParameters):
 
     def programstop(self, task_id: int = 0):
         self._instructions.append(f'PROGRAM {task_id} STOP\n')
+        self._instructions.append(f'WAIT (TASKSTATUS({task_id}, DATAITEM_TaskState) == TASKSTATE_Idle) -1\n')
 
     def buffercall(self, filename: str, task_id: int = 0):
         """
