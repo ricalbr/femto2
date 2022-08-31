@@ -323,6 +323,11 @@ class PGMCompiler(GcodeParameters):
             raise FileNotFoundError(f'{file} not loaded. Cannot load it.')
         self._instructions.append(f'PROGRAM {task_id} BUFFEREDRUN "{file}"\n')
 
+    def chiamatutto(self, filename: str, task_id: int = 0):
+        self.load_program(filename, task_id)
+        self.farcall(filename)
+        self.remove_program(filename, task_id)
+        self.dwell(self.long_pause)
 
     def write(self, points: np.ndarray):
         """
