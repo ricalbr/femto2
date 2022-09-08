@@ -1,5 +1,8 @@
+from operator import add
+
 import numpy as np
 
+from femto.helpers import dotdict
 from femto.Parameters import WaveguideParameters
 
 
@@ -121,6 +124,57 @@ class LaserPath(WaveguideParameters):
         self.wtime = (linelength_shutter_on * 1 / self.speed) * self.scan + \
                      (linelength_shutter_off * 1 / self.speed_closed) * self.scan
 
+    def flip_path(self):
+        """
+        Flip the laser path along the x-, y- and z-coordinates
+        :return: None
+        """
+
+        m = np.array([1, 1, 1])
+        # reverse the coordinates arrays to flip
+        if self.flip_x:
+            m[0] = -1
+            xc = np.flip(self._x)
+        else:
+            xc = self._x
+        if self.flip_y:
+            m[1] = -1
+            yc = np.flip(self._y)
+        else:
+            yc = self._y
+        if self.flip_z:
+            m[2] = -1
+            zc = np.flip(self._z)
+        else:
+            zc = self._z
+
+        # create flip matrix (+1 -> no flip, -1 -> flip)
+        M = np.diag(m)
+
+        # create the displacement matrix to map the transformed min/max coordinates to the original min/max coordinates)
+        C = np.array([xc, yc, zc])
+        d = np.array([np.max(xc) + np.min(xc),
+                      np.max(yc) + np.min(yc),
+                      np.max(zc) + np.min(zc)])
+        S = np.multiply((1 - m) / 2, d)
+
+        # matrix multiplication and sum element-wise
+        flip_x, flip_y, flip_z = map(add, M @ C, S)
+
+        # update coordinates
+        if self.flip_x:
+            self._x = np.flip(flip_x)
+        else:
+            self._x = flip_x
+        if self.flip_y:
+            self._y = np.flip(flip_y)
+        else:
+            self._y = flip_y
+        if self.flip_z:
+            self._z = np.flip(flip_z)
+        else:
+            self._z = flip_z
+
     # Private interface
     def _unique_points(self):
         """
@@ -144,3 +198,54 @@ class LaserPath(WaveguideParameters):
         mask = np.sum(np.abs(mask), axis=1, dtype=bool)
         mask = np.insert(mask, 0, True)
         return np.delete(data, np.where(mask is False), 0).astype(np.float32)
+
+
+def _example():
+    import matplotlib.pyplot as plt
+    from mpl_toolkits.mplot3d import Axes3D
+    from femto import Waveguide
+
+    # Data
+    PARAMETERS_WG = dotdict(
+            scan=6,
+            speed=20,
+            radius=15,
+            pitch=0.080,
+            int_dist=0.007,
+            lsafe=3,
+    )
+
+    increment = [PARAMETERS_WG.lsafe, 0, 0]
+
+    # Calculations
+    mzi = [Waveguide(PARAMETERS_WG) for _ in range(2)]
+    for index, wg in enumerate(mzi):
+        [xi, yi, zi] = [-2, -wg.pitch / 2 + index * wg.pitch, 0.035]
+
+        wg.start([xi, yi, zi]) \
+            .linear([10, 0, 0]) \
+            .sin_mzi((-1) ** index * wg.dy_bend) \
+            .spline_bridge((-1) ** index * 0.08, (-1) ** index * 0.015) \
+            .sin_mzi((-1) ** (index + 1) * wg.dy_bend) \
+            .linear(increment)
+        wg.end()
+
+    print(wg.x)
+
+    # Plot
+    fig = plt.figure()
+    fig.clf()
+    ax = Axes3D(fig, auto_add_to_figure=False)
+    fig.add_axes(ax)
+    ax.set_xlabel('X [mm]')
+    ax.set_ylabel('Y [mm]')
+    ax.set_zlabel('Z [mm]')
+    for wg in mzi:
+        ax.plot(wg.x[:-1], wg.y[:-1], wg.z[:-1], '-k', linewidth=2.5)
+        ax.plot(wg.x[-2:], wg.y[-2:], wg.z[-2:], ':b', linewidth=1.0)
+    ax.set_box_aspect(aspect=(3, 1, 0.5))
+    plt.show()
+
+
+if __name__ == '__main__':
+    _example()
