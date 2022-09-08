@@ -62,6 +62,11 @@ class Waveguide(LaserPath):
         :return: Self
         :rtype: Waveguide
         """
+
+        # flip the path
+        self.flip_path()
+
+        # append the transformed path and add the coordinates to return to the initial point
         x = np.array([self._x[-1], self._x[0]]).astype(np.float32)
         y = np.array([self._y[-1], self._y[0]]).astype(np.float32)
         z = np.array([self._z[-1], self._z[0]]).astype(np.float32)
@@ -587,12 +592,13 @@ def _example():
 
     # Data
     PARAMETERS_WG = dotdict(
-        scan=6,
-        speed=20,
-        radius=15,
-        pitch=0.080,
-        int_dist=0.007,
-        lsafe=3,
+            scan=6,
+            speed=20,
+            radius=15,
+            pitch=0.080,
+            int_dist=0.007,
+            lsafe=3,
+            flip_x=True,
     )
 
     increment = [PARAMETERS_WG.lsafe, 0, 0]
@@ -606,6 +612,7 @@ def _example():
             .linear(increment) \
             .sin_mzi((-1) ** index * wg.dy_bend) \
             .spline_bridge((-1) ** index * 0.08, (-1) ** index * 0.015) \
+            .sin_mzi((-1) ** (index + 1) * wg.dy_bend) \
             .sin_mzi((-1) ** (index + 1) * wg.dy_bend) \
             .linear(increment)
         wg.end()

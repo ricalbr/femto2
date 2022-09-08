@@ -37,6 +37,9 @@ class WaveguideParameters:
     cmd_rate_max: float = 1200
     acc_max: float = 500
     samplesize: Tuple[float, float] = (None, None)
+    flip_x: bool = False
+    flip_y: bool = False
+    flip_z: bool = False
 
     def __post_init__(self):
         if not isinstance(self.scan, int):
