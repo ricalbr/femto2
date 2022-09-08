@@ -131,6 +131,7 @@ class LaserPath(WaveguideParameters):
         """
 
         m = np.array([1, 1, 1])
+        # reverse the coordinates arrays to flip
         if self.flip_x:
             m[0] = -1
             xc = np.flip(self._x)
@@ -147,15 +148,20 @@ class LaserPath(WaveguideParameters):
         else:
             zc = self._z
 
+        # create flip matrix (+1 -> no flip, -1 -> flip)
         M = np.diag(m)
+
+        # create the displacement matrix to map the transformed min/max coordinates to the original min/max coordinates)
         C = np.array([xc, yc, zc])
         d = np.array([np.max(xc) + np.min(xc),
                       np.max(yc) + np.min(yc),
                       np.max(zc) + np.min(zc)])
         S = np.multiply((1 - m) / 2, d)
 
+        # matrix multiplication and sum element-wise
         flip_x, flip_y, flip_z = map(add, M @ C, S)
 
+        # update coordinates
         if self.flip_x:
             self._x = np.flip(flip_x)
         else:
