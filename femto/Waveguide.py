@@ -24,7 +24,7 @@ class Waveguide(LaserPath):
         return "{cname}@{id:x}".format(cname=self.__class__.__name__, id=id(self) & 0xFFFFFF)
 
     # Methods
-    def start(self, init_pos: List[float], speedpos: float = None) -> Self:
+    def start(self, init_pos: List[float] = None, speedpos: float = None) -> Self:
         """
         Starts a waveguide in the initial position given as input.
         The coordinates of the initial position are the first added to the matrix that describes the waveguide.
@@ -39,14 +39,17 @@ class Waveguide(LaserPath):
         :return: Self
         :rtype: Waveguide
         """
-        if np.size(init_pos) != 3:
-            raise ValueError(f'Given initial position is not valid. 3 values required. {np.size(init_pos)} given.')
+        if init_pos is None:
+            x0, y0, z0 = self.init_point
+        else:
+            if np.size(init_pos) != 3:
+                raise ValueError(f'Given initial position is not valid. 3 values required. {np.size(init_pos)} given.')
+            x0, y0, z0 = init_pos
         if self._x.size != 0:
             raise ValueError('Coordinate matrix is not empty. Cannot start a new waveguide in this point.')
         if speedpos is None:
             speedpos = self.speedpos
 
-        x0, y0, z0 = init_pos
         f0 = np.asarray(speedpos, dtype=np.float32)
         s0 = np.asarray(0.0, dtype=np.float32)
         s1 = np.asarray(1.0, dtype=np.float32)
@@ -587,28 +590,30 @@ def _example():
 
     # Data
     PARAMETERS_WG = dotdict(
-        scan=6,
-        speed=20,
-        radius=15,
-        pitch=0.080,
-        int_dist=0.007,
-        lsafe=3,
+            scan=6,
+            speed=20,
+            radius=15,
+            pitch=0.080,
+            int_dist=0.007,
+            lsafe=3,
     )
 
     increment = [PARAMETERS_WG.lsafe, 0, 0]
 
     # Calculations
-    mzi = [Waveguide(PARAMETERS_WG) for _ in range(2)]
-    for index, wg in enumerate(mzi):
-        [xi, yi, zi] = [-2, -wg.pitch / 2 + index * wg.pitch, 0.035]
+    mzi = []
+    for index in range(2):
+        PARAMETERS_WG.y_init = -PARAMETERS_WG.pitch / 2 + index * PARAMETERS_WG.pitch
 
-        wg.start([xi, yi, zi]) \
+        wg = Waveguide(PARAMETERS_WG)
+        wg.start() \
             .linear(increment) \
             .sin_mzi((-1) ** index * wg.dy_bend) \
             .spline_bridge((-1) ** index * 0.08, (-1) ** index * 0.015) \
             .sin_mzi((-1) ** (index + 1) * wg.dy_bend) \
             .linear(increment)
         wg.end()
+        mzi.append(wg)
 
     # Plot
     fig = plt.figure()

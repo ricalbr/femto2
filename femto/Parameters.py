@@ -20,6 +20,9 @@ class WaveguideParameters:
 
     scan: int
     speed: float
+    x_init: float = -2.0
+    y_init: float = None
+    z_init: float = None
     depth: float = 0.035
     radius: float = 15
     pitch: float = 0.080
@@ -41,6 +44,18 @@ class WaveguideParameters:
     def __post_init__(self):
         if not isinstance(self.scan, int):
             raise ValueError('Number of scan must be integer.')
+
+    @property
+    def init_point(self):
+        if self.y_init is None:
+            y0 = 0.0
+        else:
+            y0 = self.y_init
+        if self.z_init is None:
+            z0 = self.depth
+        else:
+            z0 = self.z_init
+        return [self.x_init, y0, z0]
 
     @property
     def dx_bend(self) -> float:
