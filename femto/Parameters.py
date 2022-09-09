@@ -185,7 +185,7 @@ class TrenchParameters:
     nboxz: int = 4
     z_off: float = 0.020
     h_box: float = 0.075
-    base_folder: str = r'C:\Users\Capable\Desktop'
+    base_folder: str = ''
     deltaz: float = 0.0015
     delta_floor: float = 0.001
     beam_waist: float = 0.004
