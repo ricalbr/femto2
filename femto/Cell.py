@@ -4,11 +4,12 @@ import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 import numpy as np
 from descartes import PolygonPatch
-from femto import Marker, PGMCompiler, PGMTrench, Trench, TrenchColumn, Waveguide
-from femto.helpers import listcast, nest_level
 from mpl_toolkits.mplot3d import Axes3D
 from shapely.affinity import rotate, translate
 from shapely.geometry import Point
+
+from femto import Marker, PGMCompiler, PGMTrench, Trench, TrenchColumn, Waveguide
+from femto.helpers import listcast, nest_level
 
 
 class Cell(PGMCompiler):
@@ -57,9 +58,9 @@ class Cell(PGMCompiler):
         default_tcargs = {'facecolor': '#7E7E7E', 'edgecolor': None, 'alpha': 1, 'zorder': 1}
         tcargs = {**default_tcargs, **tc_style}
         if gold_layer:
-            default_pcargs = {'facecolor': '#FFD7004D', 'edgecolor': 'b', 'linewidth': 2, 'zorder': 0,}
+            default_pcargs = {'facecolor': '#FFD7004D', 'edgecolor': 'b', 'linewidth': 2, 'zorder': 0, }
         else:
-            default_pcargs = {'facecolor': '#ADD8E64D', 'edgecolor': 'b', 'linewidth': 2, 'zorder': 0,}
+            default_pcargs = {'facecolor': '#ADD8E64D', 'edgecolor': 'b', 'linewidth': 2, 'zorder': 0, }
         pcargs = {**default_pcargs, **pc_style}
 
         self.fig, self.ax = plt.subplots()
@@ -88,16 +89,12 @@ class Cell(PGMCompiler):
         if isinstance(aspect, str) and aspect.lower() not in ['auto', 'equal']:
             raise ValueError(f'aspect must be either `auto` or `equal`. Given {aspect.lower()}.')
         self.ax.set_aspect(aspect)
-        if tight: plt.tight_layout()
+        if tight:
+            plt.tight_layout()
 
         rect = patches.Rectangle((0, 0), self.xsample, self.ysample, **pcargs)
         self.ax.add_patch(rect)
         self.ax.autoscale_view()
-
-        # # Glass
-        # if self.xsample is not None:
-        #     self.ax.axvline(x=0.0 - self.new_origin[0])
-        #     self.ax.axvline(x=self.xsample - self.new_origin[0])
 
         plt.show()
 

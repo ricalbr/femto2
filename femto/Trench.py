@@ -65,7 +65,6 @@ class Trench:
     def ymax(self):
         return self.block.bounds[3]
 
-
     def trench_paths(self) -> Generator[np.ndarray, None, None]:
         """
         Generator of the inset paths of the trench block.

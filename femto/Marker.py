@@ -1,5 +1,6 @@
 import warnings
 from typing import List
+
 try:
     from typing import Self
 except ImportError:
@@ -146,25 +147,25 @@ class Marker(Waveguide):
             raise ValueError('Orientation must be either "x" (parallel lines along x) or "y" (parallel lines along y).'
                              f'Given {orientation}.')
         elif orientation.lower() == 'x':
-            num_passes = int(np.abs(init_pos[1] - final_pos[1])/delta)
+            num_passes = int(np.abs(init_pos[1] - final_pos[1]) / delta)
             delta = np.sign(final_pos[1] - init_pos[1]) * delta
 
             self.start(init_pos, speedpos=5.0)
             for i, _ in enumerate(range(num_passes)):
-                self.linear([(-1)**i*width, 0, 0], mode='INC')
-                self.linear([0,delta,0], mode='INC')
-            self.linear([(-1)**(i+1)*width, 0, 0], mode='INC')
+                self.linear([(-1) ** i * width, 0, 0], mode='INC')
+                self.linear([0, delta, 0], mode='INC')
+            self.linear([(-1) ** (i + 1) * width, 0, 0], mode='INC')
             self.end()
 
         else:
-            num_passes = int(np.abs(init_pos[0] - final_pos[0])/delta)
+            num_passes = int(np.abs(init_pos[0] - final_pos[0]) / delta)
             delta = np.sign(final_pos[0] - init_pos[0]) * delta
 
             self.start(init_pos, speedpos=5.0)
             for i, _ in enumerate(range(num_passes)):
-                self.linear([self.lastx, (-1)**i*width, self.lastz], mode='ABS')
-                self.linear([delta,0,0], mode='INC')
-            self.linear([(-1)**i*width, self.lasty, self.lastz], mode='ABS')
+                self.linear([self.lastx, (-1) ** i * width, self.lastz], mode='ABS')
+                self.linear([delta, 0, 0], mode='INC')
+            self.linear([(-1) ** i * width, self.lasty, self.lastz], mode='ABS')
             self.end()
 
     def ablation(self, points: List[List[float]] = None, shift: float = None, speedpos: float = None):
@@ -194,6 +195,7 @@ class Marker(Waveguide):
                     self.linear(p, mode='ABS')
                 self.linear(shift[-1], mode='ABS', shutter=0)
         self.end()
+
 
 def _example():
     from femto import PGMCompiler
