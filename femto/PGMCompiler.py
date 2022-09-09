@@ -304,6 +304,7 @@ class PGMCompiler(GcodeParameters):
         file = self._parse_filepath(filename)
         if file.stem not in self._loaded_files:
             raise FileNotFoundError(f'{file} not loaded. Cannot load it.')
+        self.dwell(self.short_pause)
         self._instructions.append(f'FARCALL "{file}"\n')
 
     def programstop(self, task_id: int = 0):
@@ -568,7 +569,7 @@ class PGMTrench(PGMCompiler):
                     # WALL
                     self.load_program(wall_path)
                     self.shutter('OFF')
-                    self.move_to([x0-self.new_origin[0], y0-self.new_origin[1], z0], speedpos=col.speed_closed)
+                    self.move_to([x0 - self.new_origin[0], y0 - self.new_origin[1], z0], speedpos=col.speed_closed)
 
                     self.instruction(f'$ZCURR = {z0:.6f}')
                     self.shutter('ON')
@@ -583,7 +584,6 @@ class PGMTrench(PGMCompiler):
                     self.load_program(floor_path)
                     if col.u:
                         self.instruction(f'LINEAR U{col.u[-1]:.6f}')
-                    # self.dwell(super().long_pause)
                     self.shutter(state='ON')
                     self.farcall(floor_filename)
                     self.shutter('OFF')
