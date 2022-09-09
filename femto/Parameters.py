@@ -248,7 +248,7 @@ class GcodeParameters:
     n_environment: float = 1.33
     angle: float = 0.0
     long_pause: float = 0.5
-    short_pause: float = 0.25
+    short_pause: float = 0.05
     output_digits: int = 6
 
     def __post_init__(self):
