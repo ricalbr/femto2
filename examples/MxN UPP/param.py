@@ -12,11 +12,11 @@ PARAMETERS_WG = dotdict(
         pitch=0.080,
         int_dist=0.007,
         lsafe=3,
-        samplesize=(110, 25)
+        samplesize=(110, 5)
 )
 
 x0 = -2.0
-y0 = 0.0
+y0 = 2.50
 increment = [PARAMETERS_WG.lsafe, 0.0, 0.0]
 
 d1 = 0.5 * (PARAMETERS_WG.pitch - PARAMETERS_WG.int_dist)
@@ -46,6 +46,6 @@ PARAMETERS_TC = dotdict(
 PARAMETERS_GC = dotdict(
         filename='UPP',
         lab='CAPABLE',
-        samplesize=(110, 25),
+        samplesize=PARAMETERS_WG.samplesize,
         angle=0.0
 )
