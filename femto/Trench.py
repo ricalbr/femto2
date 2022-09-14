@@ -213,7 +213,7 @@ def _example():
             nboxz=4,
             deltaz=0.0015,
             h_box=0.075,
-            base_folder=r'C:\Users\Capable\Desktop\RiccardoA',
+            base_folder=r'',
             y_min=-0.1,
             y_max=19 * PARAMETERS_WG['pitch'] + 0.1
     )
