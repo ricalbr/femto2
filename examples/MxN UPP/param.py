@@ -38,7 +38,7 @@ PARAMETERS_TC = dotdict(
         nboxz=4,
         deltaz=0.0015,
         h_box=0.075,
-        base_folder=r'C:\Users\Capable\Desktop\RiccardoA',
+        base_folder=r'',
         u=[34.6, 36.4]
 )
 
