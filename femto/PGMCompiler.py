@@ -58,7 +58,7 @@ class PGMCompiler(GcodeParameters):
 
         :return: None
         """
-        self.homing()
+        self.go_init()
         self.close()
 
     # Methods
@@ -175,6 +175,14 @@ class PGMCompiler(GcodeParameters):
         """
         self.comment('HOMING')
         self.move_to([0, 0, 0])
+
+    def go_init(self):
+        """
+        Utility function to return to the initial point of fabrication (-2,0,0) with shutter OFF.
+
+        :return: None
+        """
+        self.move_to([-2, 0, 0])
 
     def move_to(self, position: List[float], speedpos: float = 5):
         """
@@ -324,11 +332,15 @@ class PGMCompiler(GcodeParameters):
             raise FileNotFoundError(f'{file} not loaded. Cannot load it.')
         self._instructions.append(f'PROGRAM {task_id} BUFFEREDRUN "{file}"\n')
 
-    def chiamatutto(self, filename: str, task_id: int = 0):
-        self.load_program(filename, task_id)
-        self.farcall(filename)
-        self.remove_program(filename, task_id)
-        self.dwell(self.long_pause)
+    def chiamatutto(self, filenames: List[str], task_id: List[int] = [0]):
+        for (fpath, t_id) in zip_longest(listcast(filenames), listcast(task_id), fillvalue=0):
+            _, fn = os.path.split(fpath)
+
+            self.load_program(fpath, t_id)
+            self.farcall(fn)
+            self.remove_program(fn, t_id)
+            self.dwell(self.long_pause)
+            self.instruction('\n')
 
     def write(self, points: np.ndarray):
         """
@@ -527,8 +539,9 @@ class PGMTrench(PGMCompiler):
     def __init__(self, param: dict, trench_columns: TrenchColumn):
         super().__init__(param)
         self.trench_columns = listcast(trench_columns)
+        self._param = param
 
-    def write(self, dirname: str = 's-trench'):
+    def write(self, dirname: str = 'trench'):
         """
         Helper function for the compilation of trench columns.
         For each trench in the column, the function first compile a PGM file for border (or wall) and for the floor
@@ -540,9 +553,11 @@ class PGMTrench(PGMCompiler):
         :type dirname: str
         :return: None
         """
+        t_list = []
         for col_idx, col in enumerate(self.trench_columns):
             self._instructions = deque()
             col_pgm = os.path.join(os.getcwd(), dirname, f'FARCALL{col_idx + 1:03}.pgm')
+            t_list.append(os.path.join(col.base_folder, f'FARCALL{col_idx + 1:03}.pgm'))
             col_dir = os.path.join(os.getcwd(), dirname, f'trenchCol{col_idx + 1:03}')
             os.makedirs(col_dir, exist_ok=True)
             for i, trench in enumerate(col):
@@ -577,7 +592,7 @@ class PGMTrench(PGMCompiler):
                         self.farcall(wall_filename)
                         self.instruction(f'$ZCURR = $ZCURR + {col.deltaz / super().neff:.6f}')
                         self.instruction('LINEAR Z$ZCURR')
-                    self.remove_program(wall_path)
+                    self.remove_program(wall_filename)
 
                     # FLOOR
                     self.shutter(state='OFF')
@@ -589,12 +604,18 @@ class PGMTrench(PGMCompiler):
                     self.shutter('OFF')
                     if col.u:
                         self.instruction(f'LINEAR U{col.u[0]:.6f}')
-                    self.remove_program(floor_path)
+                    self.remove_program(floor_filename)
             self.instruction('MSGCLEAR -1\n')
 
             # write instruction to file
             with open(col_pgm, 'w') as f:
                 f.write(''.join(self._instructions))
+
+        # farcall main
+        main_param = self._param.copy()
+        main_param.filename = os.path.join(dirname, 'MAIN.pgm')
+        with PGMCompiler(main_param) as G:
+            G.chiamatutto(t_list)
 
     def _export_path(self, filename: str, trench: Trench, f: float = 4):
         """
