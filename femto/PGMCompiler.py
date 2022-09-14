@@ -613,7 +613,7 @@ class PGMTrench(PGMCompiler):
 
         # farcall main
         main_param = self._param.copy()
-        main_param.filename = os.path.join(dirname, 'MAIN.pgm')
+        main_param['filename'] = os.path.join(dirname, 'MAIN.pgm')
         with PGMCompiler(main_param) as G:
             G.chiamatutto(t_list)
 
