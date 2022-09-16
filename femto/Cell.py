@@ -38,7 +38,7 @@ class Cell(PGMCompiler):
             raise TypeError(f'The object must be a Waveguide, Marker or Trench object. {type(obj)} was given.')
 
     def plot2d(self, shutter_close: bool = True, aspect: str = 'auto', wg_style=None, sc_style=None, mk_style=None,
-               tc_style=None, pc_style=None, tight: bool = True, gold_layer: bool = False):
+               tc_style=None, pc_style=None, tight: bool = True, gold_layer: bool = False, show: bool = True):
         if wg_style is None:
             wg_style = dict()
         if sc_style is None:
@@ -96,7 +96,9 @@ class Cell(PGMCompiler):
         self.ax.add_patch(rect)
         self.ax.autoscale_view()
 
-        plt.show()
+        if show:
+            plt.show()
+        return self.ax
 
     def plot3d(self, shutter_close=True, wg_style=None, sc_style=None, mk_style=None):
         if wg_style is None:
