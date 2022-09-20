@@ -597,7 +597,7 @@ class PGMTrench(PGMCompiler):
                     # FLOOR
                     self.shutter(state='OFF')
                     self.load_program(floor_path)
-                    self.instruction(f'MSGDISPLAY 1, "COL{col_idx + 1:03} T{t_index + 1} LV.{nbox + 1}, F"\n')
+                    self.instruction(f'MSGDISPLAY 1, "COL{col_idx + 1:03} T{t_index + 1:03} LV.{nbox + 1:03}, F"\n')
                     if col.u:
                         self.instruction(f'LINEAR U{col.u[-1]:.6f}')
                     self.shutter(state='ON')
