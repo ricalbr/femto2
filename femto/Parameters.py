@@ -35,7 +35,7 @@ class WaveguideParameters:
     dwelltime: float = 0.5
     lsafe: float = 2.0
     ltrench: float = 1.0
-    dz_bridge: float = 0.015
+    dz_bridge: float = 0.007
     margin: float = 1.0
     cmd_rate_max: float = 1200
     acc_max: float = 500
