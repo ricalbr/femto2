@@ -165,7 +165,7 @@ class Cell(PGMCompiler):
                 for wg in listcast(bunch):
                     _wg_fab_time += wg.wtime
                     self.write(wg.points)
-        self.homing()
+        self.go_init()
 
         with open(wg_filename, 'w') as f:
             f.write(''.join(self._instructions))
