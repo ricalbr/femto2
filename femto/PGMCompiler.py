@@ -578,11 +578,12 @@ class PGMTrench(PGMCompiler):
 
                     x0, y0 = trench.block.exterior.coords[0]
                     z0 = (nbox * col.h_box - col.z_off) / super().neff
-                    self.comment(f'+--- COLUMN #{col_idx + 1:03}, TRENCH #{t_index + 1} LEVEL {nbox + 1} ---+')
+                    self.comment(f'+--- COLUMN #{col_idx + 1}, TRENCH #{t_index + 1} LEVEL {nbox + 1} ---+')
 
                     # WALL
                     self.load_program(wall_path)
-                    self.instruction(f'MSGDISPLAY 1, "COL{col_idx + 1:03} T{t_index + 1} LV.{nbox + 1}, W"\n')
+                    self.instruction(f'MSGDISPLAY 1, "COL {col_idx + 1:03}, TR {t_index + 1:03}, LV {nbox + 1:03}, '
+                                     f'W"\n')
                     self.shutter('OFF')
                     self.move_to([x0 - self.new_origin[0], y0 - self.new_origin[1], z0], speedpos=col.speed_closed)
 
@@ -597,7 +598,8 @@ class PGMTrench(PGMCompiler):
                     # FLOOR
                     self.shutter(state='OFF')
                     self.load_program(floor_path)
-                    self.instruction(f'MSGDISPLAY 1, "COL{col_idx + 1:03} T{t_index + 1:03} LV.{nbox + 1:03}, F"\n')
+                    self.instruction(f'MSGDISPLAY 1, "COL {col_idx + 1:03}, TR {t_index + 1:03}, LV {nbox + 1:03}, '
+                                     f'F"\n')
                     if col.u:
                         self.instruction(f'LINEAR U{col.u[-1]:.6f}')
                     self.shutter(state='ON')
