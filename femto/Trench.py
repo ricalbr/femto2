@@ -162,7 +162,7 @@ class TrenchColumn(TrenchParameters):
     def trenches(self) -> list:
         return self._trench_list
 
-    def get_trench(self, waveguides: List):
+    def get_trench(self, waveguides: List, remove: List[int] = []):
         """
         Compute the trench blocks from the waveguide of the optical circuit.
         To get the trench blocks, the waveguides are used as mold matrix for the trenches. The waveguides are
@@ -177,6 +177,8 @@ class TrenchColumn(TrenchParameters):
 
         :param waveguides: List of the waveguides composing the optical circuit.
         :type waveguides: List[Waveguide]
+        :param remove: List of trench to remove.
+        :type remove: List[int]
         """
 
         waveguides = flatten(deepcopy(waveguides))
@@ -190,6 +192,9 @@ class TrenchColumn(TrenchParameters):
             block = (polygon.orient(block).buffer(self.round_corner, resolution=250, cap_style=1))
             trench = Trench(block, self.delta_floor)
             self._trench_list.append(trench)
+
+        for index in sorted(listcast(remove), reverse=True):
+            del self._trench_list[index]
 
     @staticmethod
     def _extract_path(waveguide):
