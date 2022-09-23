@@ -162,7 +162,7 @@ class TrenchColumn(TrenchParameters):
     def trenches(self) -> list:
         return self._trench_list
 
-    def get_trench(self, waveguides: List[Waveguide]):
+    def get_trench(self, waveguides: List):
         """
         Compute the trench blocks from the waveguide of the optical circuit.
         To get the trench blocks, the waveguides are used as mold matrix for the trenches. The waveguides are
@@ -180,21 +180,40 @@ class TrenchColumn(TrenchParameters):
         """
 
         waveguides = flatten(deepcopy(waveguides))
-        if not all([isinstance(wg, Waveguide) for wg in waveguides]):
-            raise TypeError('Elements circuit list must be of type Waveguide.')
-
         trench_block = self.rect
         for wg in waveguides:
-            x, y, *_, s = wg.points.T
-            x = np.delete(x, np.where(np.invert(s.astype(bool))))
-            y = np.delete(y, np.where(np.invert(s.astype(bool))))
+            x, y = self._extract_path(wg)
             dilated = (LineString(list(zip(x, y))).buffer(self.adj_bridge, cap_style=1))
             trench_block = trench_block.difference(dilated)
 
-        for block in listcast(trench_block.geoms):
+        for block in listcast(sorted(trench_block.geoms, key=Trench)):
             block = (polygon.orient(block).buffer(self.round_corner, resolution=250, cap_style=1))
             trench = Trench(block, self.delta_floor)
             self._trench_list.append(trench)
+
+    @staticmethod
+    def _extract_path(waveguide):
+        """
+        Extract the x, y path from Waveguide or numpy.ndarray object.
+
+        The input object get parsed and if it is a Waveguide object the points are extracted and the shutter-closed
+        points are removed from the 2D matrix.
+        Alterntively, if the input object is a numpy.ndarray, it is implicity assumed that it is a 2D matrix with
+        just the shutter-open path. (x, y) coordinates are extracted and returned.
+
+        :param waveguide: Waveguide object or 2D numpy.ndarray with the path xy-points.
+        :type waveguide: Waveguide or numpy.ndarray
+        """
+
+        if isinstance(waveguide, Waveguide):
+            x, y, *_, s = waveguide.points.T
+            x = np.delete(x, np.where(np.invert(s.astype(bool))))
+            y = np.delete(y, np.where(np.invert(s.astype(bool))))
+        elif isinstance(waveguide, np.ndarray):
+            x, y = waveguide.T
+        else:
+            raise TypeError('Elements circuit list must be of type Waveguide or 2D numpy.array.')
+        return x, y
 
 
 def _example():
