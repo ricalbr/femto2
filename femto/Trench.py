@@ -23,6 +23,9 @@ class Trench:
         self.floor_length = 0.0
         self.wall_length = 0.0
 
+    def __lt__(self, other):
+        return self.block.exterior.coords.xy[1][0] < other.block.exterior.coords.xy[1][0]
+
     @property
     def center(self) -> list:
         """
