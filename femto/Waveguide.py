@@ -561,7 +561,7 @@ class Waveguide(LaserPath):
         cs_y = CubicSpline((0.0, xd), (0.0, yd), bc_type=bc_y)
         cs_z = CubicSpline((0.0, xd), (0.0, zd), bc_type=bc_z)
 
-        return (xcoord + init_pos[0], cs_y(xcoord) + init_pos[1], cs_z(xcoord) + init_pos[2])
+        return xcoord + init_pos[0], cs_y(xcoord) + init_pos[1], cs_z(xcoord) + init_pos[2]
 
     def _get_num(self, l_curve: float = 0, speed: float = 0) -> int:
         """
@@ -587,6 +587,30 @@ class Waveguide(LaserPath):
             print('I had to add use an higher instruction rate.\n')
             return 3
         return num
+
+
+def coupler(param, d=None):
+    if d is not None:
+        param.int_dist = d
+
+    if param.y_init is None:
+        param.y_init = 0.0
+
+    mode1 = Waveguide(param)
+    mode1.start() \
+        .linear([(mode1.samplesize[0] - mode1.dx_bend) / 2, mode1.lasty, mode1.lastz], mode='ABS') \
+        .sin_acc(mode1.dy_bend) \
+        .linear([mode1.x_end, mode1.lasty, mode1.lastz], mode='ABS') \
+        .end()
+
+    param.y_init += param.pitch
+    mode2 = Waveguide(param)
+    mode2.start() \
+        .linear([(mode2.samplesize[0] - mode2.dx_bend) / 2, mode2.lasty, mode2.lastz], mode='ABS') \
+        .sin_acc(-mode2.dy_bend) \
+        .linear([mode2.x_end, mode2.lasty, mode2.lastz], mode='ABS') \
+        .end()
+    return [mode1, mode2]
 
 
 def _example():
