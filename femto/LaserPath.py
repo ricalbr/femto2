@@ -1,4 +1,5 @@
 from operator import add
+from typing import List
 
 import numpy as np
 
@@ -90,6 +91,21 @@ class LaserPath(WaveguideParameters):
         if self._x.size > 0:
             return np.array([self._x[-1], self._y[-1], self._z[-1]])
         return np.array([])
+
+    @property
+    def path(self) -> List:
+        x, y, z, _, s = self.points.T
+        x = np.delete(x, np.where(np.invert(s.astype(bool))))
+        y = np.delete(y, np.where(np.invert(s.astype(bool))))
+        return [x, y]
+
+    @property
+    def path3d(self) -> List:
+        x, y, z, _, s = self.points.T
+        x = np.delete(x, np.where(np.invert(s.astype(bool))))
+        y = np.delete(y, np.where(np.invert(s.astype(bool))))
+        z = np.delete(z, np.where(np.invert(s.astype(bool))))
+        return [x, y, z]
 
     def add_path(self, x: np.ndarray, y: np.ndarray, z: np.ndarray, f: np.ndarray, s: np.ndarray):
         """
