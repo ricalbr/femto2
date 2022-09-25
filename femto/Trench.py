@@ -183,7 +183,7 @@ class TrenchColumn(TrenchParameters):
 
         if remove is None:
             remove = []
-            
+
         waveguides = flatten(deepcopy(waveguides))
         trench_block = self.rect
         for wg in waveguides:
