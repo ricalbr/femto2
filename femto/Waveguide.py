@@ -407,7 +407,7 @@ class Waveguide(LaserPath):
                       shutter: int = 1, speed: float = None) -> Self:
         """
         Computes a spline bridge as a sequence of two spline segments. dy is the total displacement along the
-        y-direction of the bridge and dy is the height of the bridge along z.
+        y-direction of the bridge and dz is the height of the bridge along z.
         First, the function computes the dx-displacement of the planar spline curve with a dy displacement. This
         datum is used to compute the value of the first derivative along the y-coordinate for the costruction of the
         spline bridge such that:
