@@ -217,7 +217,7 @@ class Cell(PGMCompiler):
                 _tc_fab_time += col.wtime
 
             print('G-code compilation completed.')
-            print('Estimated fabrication time of the isolation trencehs: ',
+            print('Estimated fabrication time of the isolation trenches: ',
                   time.strftime('%H:%M:%S', time.gmtime(_tc_fab_time + t_writer._total_dwell_time)))
         del t_writer
 
