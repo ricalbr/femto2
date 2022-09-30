@@ -123,8 +123,7 @@ class WaveguideParameters:
         dx = 2 * radius * np.sin(a)
         return a, dx
 
-    @classmethod
-    def sbend_length(cls, dy: float, radius: float) -> float:
+    def sbend_length(self, dy: float, radius: float) -> float:
         """
         Computes the x-displacement for a circular S-bend given the y-displacement dy and curvature radius.
 
@@ -135,7 +134,7 @@ class WaveguideParameters:
         :return: x-displacement [mm]
         :rtype: float
         """
-        return cls.get_sbend_parameter(dy, radius)[1]
+        return self.get_sbend_parameter(dy, radius)[1]
 
     @staticmethod
     def get_spline_parameter(init_pos: np.ndarray, dy: float, dz: float, radius: float = 20,
