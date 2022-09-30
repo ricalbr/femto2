@@ -107,6 +107,11 @@ class LaserPath(WaveguideParameters):
         z = np.delete(z, np.where(np.invert(s.astype(bool))))
         return [x, y, z]
 
+    @property
+    def length(self) -> float:
+        x, y, z = self.path3d
+        return float(np.sum(np.sqrt(np.diff(x)**2 + np.diff(y)**2 + np.diff(z)**2)))
+
     def add_path(self, x: np.ndarray, y: np.ndarray, z: np.ndarray, f: np.ndarray, s: np.ndarray):
         """
         Takes [x, y, z, f, s] numpy.ndarrays and adds it to the class coordinates.
@@ -246,7 +251,7 @@ def _example():
             .linear(increment)
         wg.end()
 
-    print(wg.x)
+    print(wg.length)
 
     # Plot
     fig = plt.figure()
