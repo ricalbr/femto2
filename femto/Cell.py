@@ -1,3 +1,4 @@
+import os
 import time
 
 import numpy as np
@@ -213,8 +214,14 @@ class Cell(PGMCompiler):
             self.fig.show()
         return self.fig
 
-    def save(self, filename='device_scheme.pdf'):
-        self.fig.write_image(filename, width=1980, height=1080, scale=2, engine='kaleido')
+    def save(self, filename='device_scheme.html'):
+        extension = os.path.splitext(filename)[1][1:].strip()
+
+        if extension == '': filename += '.html'
+        if extension.lower() in ['html', '']:
+            self.fig.write_html(filename)
+        else:
+            self.fig.write_image(filename, width=1980, height=1080, scale=2, engine='kaleido')
 
     def pgm(self, verbose: bool = True, waveguide: bool = True, marker: bool = True, trench: bool = True):
         if waveguide:
