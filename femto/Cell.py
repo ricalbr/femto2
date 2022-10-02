@@ -1,15 +1,11 @@
 import time
 
-import matplotlib.patches as patches
-import matplotlib.pyplot as plt
 import numpy as np
-from descartes import PolygonPatch
-from mpl_toolkits.mplot3d import Axes3D
-from shapely.affinity import rotate, translate
-from shapely.geometry import Point
-
+import plotly.graph_objects as go
 from femto import Marker, PGMCompiler, PGMTrench, Trench, TrenchColumn, Waveguide
 from femto.helpers import listcast, nest_level
+from shapely.affinity import rotate, translate
+from shapely.geometry import Point
 
 
 class Cell(PGMCompiler):
@@ -38,7 +34,7 @@ class Cell(PGMCompiler):
             raise TypeError(f'The object must be a Waveguide, Marker or Trench object. {type(obj)} was given.')
 
     def plot2d(self, shutter_close: bool = True, aspect: str = 'auto', wg_style=None, sc_style=None, mk_style=None,
-               tc_style=None, pc_style=None, tight: bool = True, gold_layer: bool = False, show: bool = True):
+               tc_style=None, pc_style=None, gold_layer: bool = False, show: bool = True):
         if wg_style is None:
             wg_style = dict()
         if sc_style is None:
@@ -49,93 +45,176 @@ class Cell(PGMCompiler):
             tc_style = dict()
         if pc_style is None:
             pc_style = dict()
-        default_wgargs = {'linestyle': '-', 'color': 'b', 'linewidth': 2.0}
+        default_wgargs = {'dash': 'solid', 'color': '#0000ff', 'width': 1.5, }
         wgargs = {**default_wgargs, **wg_style}
-        default_scargs = {'linestyle': ':', 'color': 'b', 'linewidth': 0.5}
+        default_scargs = {'dash': 'dot', 'color': '#0000ff', 'width': 0.5}
         scargs = {**default_scargs, **sc_style}
-        default_mkargs = {'linestyle': '-', 'color': 'k', 'linewidth': 1.0}
+        default_mkargs = {'dash': 'solid', 'color': '#000000', 'width': 2.0}
         mkargs = {**default_mkargs, **mk_style}
-        default_tcargs = {'facecolor': '#7E7E7E', 'edgecolor': None, 'alpha': 1, 'zorder': 1}
+        default_tcargs = {'fillcolor': '#7E7E7E', 'mode': 'none', 'hoverinfo': 'none'}
         tcargs = {**default_tcargs, **tc_style}
         if gold_layer:
-            default_pcargs = {'facecolor': '#FFD7004D', 'edgecolor': 'b', 'linewidth': 2, 'zorder': 0, }
+            default_pcargs = {'fillcolor': '#FFD700', 'line_color': '#000000', 'line_width': 2, 'layer': 'below', }
         else:
-            default_pcargs = {'facecolor': '#ADD8E64D', 'edgecolor': 'b', 'linewidth': 2, 'zorder': 0, }
+            default_pcargs = {'fillcolor': '#D0FAF9', 'line_color': '#000000', 'line_width': 2, 'layer': 'below', }
         pcargs = {**default_pcargs, **pc_style}
 
-        self.fig, self.ax = plt.subplots()
-        self.ax.set_xlabel('X [mm]')
-        self.ax.set_ylabel('Y [mm]')
+        self.fig = go.Figure()
+
         for bunch in self.waveguides:
             for wg in listcast(bunch):
                 p = np.array(self.transform_points(wg.points)).T
                 xo, yo, _ = self._shutter_mask(p, shutter=1)
-                self.ax.plot(xo, yo, **wgargs)
+                self.fig.add_trace(go.Scattergl(x=xo, y=yo,
+                                                mode='lines',
+                                                line=wgargs,
+                                                showlegend=False,
+                                                hovertemplate='(%{x:.4f}, %{y:.4f})<extra>WG</extra>'))
                 if shutter_close:
                     xc, yc, _ = self._shutter_mask(p, shutter=0)
-                    self.ax.plot(xc, yc, **scargs)
+                    self.fig.add_trace(go.Scattergl(x=xc, y=yc,
+                                                    mode='lines',
+                                                    line=scargs,
+                                                    hoverinfo='none',
+                                                    showlegend=False, ))
         for mk in self.markers:
             p = np.array(self.transform_points(mk.points)).T
             xo, yo, _ = self._shutter_mask(p, shutter=1)
-            self.ax.plot(xo, yo, **mkargs)
+            self.fig.add_trace(go.Scattergl(x=xo, y=yo,
+                                            mode='lines',
+                                            line=mkargs,
+                                            showlegend=False,
+                                            hovertemplate='(%{x:.4f}, %{y:.4f})<extra>MK</extra>'))
         for tr in self.trenches:
             shape = translate(tr.block, xoff=-self.new_origin[0], yoff=-self.new_origin[1])
             shape = rotate(shape, angle=self.angle, use_radians=True, origin=Point(0, 0))
-            self.ax.add_patch(PolygonPatch(shape, **tcargs))
+            xt, yt = np.asarray(shape.exterior.coords.xy)
+            self.fig.add_trace(go.Scattergl(x=xt, y=yt,
+                                            fill='toself',
+                                            **default_tcargs,
+                                            showlegend=False,
+                                            hovertemplate='(%{x:.4f}, %{y:.4f})<extra>TR</extra>'))
 
-        # Origin
-        self.ax.plot(0.0, 0.0, 'or')
-        self.ax.annotate('(0,0)', (0.0, 0.0), textcoords="offset points", xytext=(0, 10), ha='left', color='r')
-        if isinstance(aspect, str) and aspect.lower() not in ['auto', 'equal']:
-            raise ValueError(f'aspect must be either `auto` or `equal`. Given {aspect.lower()}.')
-        self.ax.set_aspect(aspect)
-        if tight:
-            plt.tight_layout()
+        # GLASS
+        self.fig.add_shape(type='rect', x0=0 - self.new_origin[0], y0=0 - self.new_origin[1],
+                           x1=self.xsample - self.new_origin[0], y1=self.ysample - self.new_origin[1],
+                           **default_pcargs)
 
-        rect = patches.Rectangle((0, 0), self.xsample, self.ysample, **pcargs)
-        self.ax.add_patch(rect)
-        self.ax.autoscale_view()
+        # ORIGIN
+        self.fig.add_trace(go.Scattergl(x=[0], y=[0],
+                                        marker=dict(color='red', size=12),
+                                        hoverinfo='none',
+                                        showlegend=False, ))
 
+        # TODO: axis = 'equal' feature
+        # if isinstance(aspect, str) and aspect.lower() not in ['auto', 'equal']:
+        #     raise ValueError(f'aspect must be either `auto` or `equal`. Given {aspect.lower()}.')
+        # self.ax.set_aspect(aspect)
+
+        self.fig.update_layout(
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)',
+                xaxis=dict(title='x [mm]',
+                           showgrid=False,
+                           zeroline=False, ),
+                yaxis=dict(title='y [mm]',
+                           showgrid=False,
+                           zeroline=False, ),
+                annotations=[dict(x=0, y=0,
+                                  text='(0,0)',
+                                  showarrow=False,
+                                  xanchor="left",
+                                  xshift=-25,
+                                  yshift=-20,
+                                  font=dict(color='red'))]
+        )
+
+        # SHOW
         if show:
-            plt.show()
-        return self.ax
+            self.fig.show()
+        return self.fig
 
-    def plot3d(self, shutter_close=True, wg_style=None, sc_style=None, mk_style=None):
+    def plot3d(self, shutter_close: bool = True, wg_style=None, sc_style=None, mk_style=None, show: bool = True):
         if wg_style is None:
             wg_style = dict()
         if sc_style is None:
             sc_style = dict()
         if mk_style is None:
             mk_style = dict()
-        default_wgargs = {'linestyle': '-', 'color': 'b', 'linewidth': 2.0}
+        default_wgargs = {'dash': 'solid', 'color': '#0000ff', 'width': 1.5, }
         wgargs = {**default_wgargs, **wg_style}
-        default_scargs = {'linestyle': ':', 'color': 'b', 'linewidth': 0.5}
+        default_scargs = {'dash': 'dot', 'color': '#0000ff', 'width': 0.5}
         scargs = {**default_scargs, **sc_style}
-        default_mkargs = {'linestyle': '-', 'color': 'k', 'linewidth': 2.0}
+        default_mkargs = {'dash': 'solid', 'color': '#000000', 'width': 2.0}
         mkargs = {**default_mkargs, **mk_style}
 
-        self.fig = plt.figure()
-        self.fig.clf()
-        self.ax = Axes3D(self.fig, auto_add_to_figure=False)
-        self.fig.add_axes(self.ax)
-        self.ax.set_xlabel('X [mm]')
-        self.ax.set_ylabel('Y [mm]')
-        self.ax.set_zlabel('Z [mm]')
+        self.fig = go.Figure()
+
         for bunch in self.waveguides:
             for wg in listcast(bunch):
-                xo, yo, zo = self._shutter_mask(wg.points, shutter=1)
-                self.ax.plot(xo, yo, zo, **wgargs)
+                p = np.array(self.transform_points(wg.points)).T
+                xo, yo, zo = self._shutter_mask(p, shutter=1)
+                self.fig.add_trace(go.Scatter3d(x=xo, y=yo, z=zo,
+                                                mode='lines',
+                                                line=wgargs,
+                                                showlegend=False,
+                                                hovertemplate='(%{x:.4f}, %{y:.4f}), %{z:.4f})<extra>WG</extra>'))
                 if shutter_close:
-                    xc, yc, zc = self._shutter_mask(wg.points, shutter=0)
-                    self.ax.plot(xc, yc, zc, **scargs)
-        for mk in self.markers:
-            xo, yo, zo = self._shutter_mask(mk.points, shutter=1)
-            self.ax.plot(xo, yo, zo, **mkargs)
-        self.ax.set_box_aspect(aspect=(2, 1, 0.25))
-        self.ax.plot(0.0, 0.0, 0.0, 'or')
+                    xc, yc, zc = self._shutter_mask(p, shutter=0)
+                    self.fig.add_trace(go.Scatter3d(x=xc, y=yc, z=zc,
+                                                    mode='lines',
+                                                    line=scargs,
+                                                    hoverinfo='none',
+                                                    showlegend=False, ))
 
-    def save(self, filename='device_scheme.pdf', bbox_inches='tight'):
-        self.fig.savefig(filename, bbox_inches=bbox_inches)
+        for mk in self.markers:
+            p = np.array(self.transform_points(mk.points)).T
+            xo, yo, zo = self._shutter_mask(p, shutter=1)
+            self.fig.add_trace(go.Scatter3d(x=xo, y=yo, z=zo,
+                                            mode='lines',
+                                            line=mkargs,
+                                            showlegend=False,
+                                            hovertemplate='<extra>MK</extra>'))
+
+        # ORIGIN
+        self.fig.add_trace(go.Scatter3d(x=[0], y=[0], z=[0],
+                                        marker=dict(color='red', size=12),
+                                        hoverinfo='none',
+                                        showlegend=False, ))
+
+        self.fig.update_layout(
+                scene=dict(
+                        bgcolor='rgba(0,0,0,0)',
+                        aspectratio=dict(
+                                x=2,
+                                y=1,
+                                z=0.25,
+                        ),
+                        xaxis=dict(title='x [mm]',
+                                   showgrid=False,
+                                   zeroline=False, ),
+                        yaxis=dict(title='y [mm]',
+                                   showgrid=False,
+                                   zeroline=False, ),
+                        zaxis=dict(title='z [mm]',
+                                   showgrid=False,
+                                   zeroline=False, ),
+                        annotations=[dict(x=0, y=0, z=0,
+                                          text='(0,0,0)',
+                                          showarrow=False,
+                                          xanchor="left",
+                                          xshift=10,
+                                          font=dict(color='red'))]
+                )
+        )
+
+        # SHOW
+        if show:
+            self.fig.show()
+        return self.fig
+
+    def save(self, filename='device_scheme.pdf'):
+        self.fig.write_image(filename, width=1980, height=1080, scale=2, engine='kaleido')
 
     def pgm(self, verbose: bool = True, waveguide: bool = True, marker: bool = True, trench: bool = True):
         if waveguide:
@@ -238,8 +317,8 @@ def _example():
     PARAMETERS_GC = dotdict(
             filename='testMarker.pgm',
             lab='CAPABLE',
-            new_origin=(1.0, -0.0),
-            samplesize=(25, 25),
+            new_origin=(0.5, 0.5),
+            samplesize=(25, 1),
             angle=0.0,
     )
 
@@ -257,8 +336,9 @@ def _example():
 
     # Calculations
     mzi = [Waveguide(PARAMETERS_WG) for _ in range(2)]
+    y0 = PARAMETERS_GC.samplesize[1] / 2
     for index, wg in enumerate(mzi):
-        [xi, yi, zi] = [-2, -wg.pitch / 2 + index * wg.pitch, 0.035]
+        [xi, yi, zi] = [-2, -wg.pitch / 2 + index * wg.pitch + y0, 0.035]
 
         wg.start([xi, yi, zi]) \
             .linear(increment) \
@@ -270,8 +350,8 @@ def _example():
         c.append(wg)
 
     c.plot2d()
-    c.save('circuit_scheme.pdf')
-    c.pgm()
+    # c.save('circuit_scheme.pdf')
+    # c.pgm()
 
 
 if __name__ == '__main__':
