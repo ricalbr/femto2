@@ -170,7 +170,7 @@ class Device(PGMCompiler):
                                                 mode='lines',
                                                 line=wgargs,
                                                 showlegend=False,
-                                                hovertemplate='(%{x:.4f}, %{y:.4f}), %{z:.4f})<extra>WG</extra>'))
+                                                hovertemplate='(%{x:.4f}, %{y:.4f}, %{z:.4f})<extra>WG</extra>'))
                 if shutter_close:
                     xc, yc, zc = self._shutter_mask(p, shutter=0)
                     self.fig.add_trace(go.Scatter3d(x=xc, y=yc, z=zc,
