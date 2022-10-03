@@ -585,6 +585,8 @@ class PGMTrench(PGMCompiler):
                     self.instruction(f'MSGDISPLAY 1, "COL {col_idx + 1:03}, TR {t_index + 1:03}, LV {nbox + 1:03}, '
                                      f'W"\n')
                     self.shutter('OFF')
+                    if col.u:
+                        self.instruction(f'LINEAR U{col.u[0]:.6f}')
                     self.move_to([x0 - self.new_origin[0], y0 - self.new_origin[1], z0], speedpos=col.speed_closed)
 
                     self.instruction(f'$ZCURR = {z0:.6f}')
