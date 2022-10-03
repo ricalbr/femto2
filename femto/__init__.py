@@ -11,6 +11,9 @@ __keywords__ = 'python g-code integrated-circuits quantum-optics'
 # @see: https://stackoverflow.com/a/35710527
 __all__ = [
     'Parameters',
+    'WaveguideParameters',
+    'TrenchParameters',
+    'GcodeParameters',
     'LaserPath',
     'Waveguide',
     'Marker',
@@ -19,10 +22,13 @@ __all__ = [
     'PGMCompiler',
     'PGMTrench',
     'helpers',
-    'Cell'
+    'Cell',
+    'Device',
 ]
 
 from .helpers import *
+from .Parameters import WaveguideParameters, TrenchParameters, GcodeParameters
+from .LaserPath import LaserPath
 from .Waveguide import Waveguide
 from .Marker import Marker
 from .Trench import Trench, TrenchColumn

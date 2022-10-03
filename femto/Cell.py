@@ -9,19 +9,22 @@ from shapely.affinity import rotate, translate
 from shapely.geometry import Point
 
 
-class Cell(PGMCompiler):
+class Device(PGMCompiler):
     def __init__(self, param):
-        super(Cell, self).__init__(param)
+        super(Device, self).__init__(param)
         self._param = param
         self.waveguides = []
         self.markers = []
         self.trench_cols = []
         self.trenches = []
         self.fig = None
-        self.ax = None
 
     def append(self, obj):
-        if isinstance(obj, Marker):
+        if isinstance(obj, Cell):
+            self.markers.extend(obj.markers)
+            self.waveguides.extend(obj.waveguides)
+            self.trenches.extend(obj.trenches)
+        elif isinstance(obj, Marker):
             self.markers.append(obj)
         elif isinstance(obj, Waveguide) or (isinstance(obj, list) and all(isinstance(x, Waveguide) for x in obj)):
             self.waveguides.append(obj)
@@ -223,6 +226,20 @@ class Cell(PGMCompiler):
         else:
             self.fig.write_image(filename, width=1980, height=1080, scale=2, engine='kaleido')
 
+    @staticmethod
+    def _shutter_mask(points, shutter: int = 1):
+        if shutter not in [0, 1]:
+            raise ValueError(f'Shutter must be either OPEN (1) or CLOSE (0). Given {shutter}.')
+        x, y, z, _, s = points.T
+        ym = np.where(s == shutter, y, np.nan)
+        zm = np.where(s == shutter, z, np.nan)
+        return x, ym, zm
+
+
+class Cell(Device):
+    def __init__(self, param):
+        super(Cell, self).__init__(param)
+
     def pgm(self, verbose: bool = True, waveguide: bool = True, marker: bool = True, trench: bool = True):
         if waveguide:
             self._wg_pgm(verbose=verbose)
@@ -231,6 +248,7 @@ class Cell(PGMCompiler):
         if trench:
             self._tc_pgm(verbose=verbose)
 
+    # Private interface
     def _wg_pgm(self, verbose: bool = True):
 
         if nest_level(self.waveguides) > 2:
@@ -306,17 +324,6 @@ class Cell(PGMCompiler):
             print('Estimated fabrication time of the isolation trenches: ',
                   time.strftime('%H:%M:%S', time.gmtime(_tc_fab_time + t_writer._total_dwell_time)))
         del t_writer
-
-    # Private interface
-    @staticmethod
-    def _shutter_mask(points, shutter: int = 1):
-        if shutter not in [0, 1]:
-            raise ValueError(f'Shutter must be either OPEN (1) or CLOSE (0). Given {shutter}.')
-        x, y, z, _, s = points.T
-        ym = np.where(s == shutter, y, np.nan)
-        zm = np.where(s == shutter, z, np.nan)
-        return x, ym, zm
-
 
 def _example():
     from femto.helpers import dotdict
