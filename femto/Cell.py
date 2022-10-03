@@ -298,7 +298,7 @@ class Cell(Device):
 
         _mk_fab_time = 0.0
         self.filename = self.filename.split('.')[0]
-        mk_filename = self.filename.split('.')[0] + '_MARKERS.pgm'
+        mk_filename = self.filename.split('.')[0] + '_MK.pgm'
 
         self.header()
         self.dwell(1.0)
