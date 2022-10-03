@@ -485,7 +485,7 @@ class Waveguide(LaserPath):
         self.add_path(x, us_y(x), us_z(x), f * np.ones(x.shape), shutter * np.ones(x.shape))
         return self
 
-    def curvature(self) -> np.ndarray:
+    def curvature_radius(self) -> np.ndarray:
         """
         Computes the 3D point-to-point curvature radius of the waveguide shape.
 
@@ -509,8 +509,8 @@ class Waveguide(LaserPath):
         default_zero = np.ones(np.size(num)) * np.inf
 
         # only divide nonzeros else Inf
-        curvature = np.divide(num, den, out=default_zero, where=(den != 0))
-        return curvature
+        curvature_radius = np.divide(num, den, out=default_zero, where=(den != 0))
+        return curvature_radius
 
     def cmd_rate(self) -> np.ndarray:
         """
