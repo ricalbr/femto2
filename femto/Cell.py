@@ -37,6 +37,14 @@ class Device(PGMCompiler):
         else:
             raise TypeError(f'The object must be a Waveguide, Marker or Trench object. {type(obj)} was given.')
 
+    def extend(self, obj):
+        if isinstance(obj, list):
+            for elem in obj:
+                self.append(elem)
+        else:
+            raise TypeError(f'The object must be a list. {type(obj)} was given.')
+
+
     def plot2d(self, shutter_close: bool = True, aspect: str = 'auto', wg_style=None, sc_style=None, mk_style=None,
                tc_style=None, pc_style=None, gold_layer: bool = False, show: bool = True):
         if wg_style is None:
