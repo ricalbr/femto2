@@ -31,7 +31,7 @@ class WaveguideParameters:
     int_length: float = 0.0
     arm_length: float = 0.0
     speed_closed: float = 75
-    speedpos: float = 0.1
+    speedpos: float = 0.5
     dwelltime: float = 0.5
     lsafe: float = 2.0
     ltrench: float = 1.0
