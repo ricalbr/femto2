@@ -335,7 +335,6 @@ class PGMCompiler(GcodeParameters):
     def chiamatutto(self, filenames: List[str], task_id: List[int] = [0]):
         for (fpath, t_id) in zip_longest(listcast(filenames), listcast(task_id), fillvalue=0):
             _, fn = os.path.split(fpath)
-
             self.load_program(fpath, t_id)
             self.farcall(fn)
             self.remove_program(fn, t_id)

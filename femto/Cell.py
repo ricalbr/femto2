@@ -46,7 +46,7 @@ class Device(PGMCompiler):
 
 
     def plot2d(self, shutter_close: bool = True, aspect: str = 'auto', wg_style=None, sc_style=None, mk_style=None,
-               tc_style=None, pc_style=None, gold_layer: bool = False, show: bool = True):
+               tc_style=None, pc_style=None, gold_layer: bool = False, show: bool = True, save: bool = False):
         if wg_style is None:
             wg_style = dict()
         if sc_style is None:
@@ -144,9 +144,14 @@ class Device(PGMCompiler):
         # SHOW
         if show:
             self.fig.show()
+
+        # SAVE
+        if save:
+            self.save()
         return self.fig
 
-    def plot3d(self, shutter_close: bool = True, wg_style=None, sc_style=None, mk_style=None, show: bool = True):
+    def plot3d(self, shutter_close: bool = True, wg_style=None, sc_style=None, mk_style=None, show: bool = True,
+               save: bool = False):
         if wg_style is None:
             wg_style = dict()
         if sc_style is None:
@@ -225,7 +230,12 @@ class Device(PGMCompiler):
             self.fig.show()
         return self.fig
 
-    def save(self, filename='device_scheme.html'):
+        # SAVE
+        if save:
+            self.save()
+        return self.fig
+
+    def save(self, filename='scheme.html'):
         extension = os.path.splitext(filename)[1][1:].strip()
 
         if extension == '': filename += '.html'
