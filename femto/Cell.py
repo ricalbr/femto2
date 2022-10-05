@@ -17,10 +17,12 @@ class Device(PGMCompiler):
         self.markers = []
         self.trench_cols = []
         self.trenches = []
+        self.cells = []
         self.fig = None
 
     def append(self, obj):
         if isinstance(obj, Cell):
+            self.cells.append(obj)
             self.markers.extend(obj.markers)
             self.waveguides.extend(obj.waveguides)
             self.trenches.extend(obj.trenches)
