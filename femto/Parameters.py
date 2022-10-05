@@ -197,7 +197,7 @@ class TrenchParameters:
     speed: float = 4
     speed_closed: float = 5
     speedpos: float = 0.1
-    CWD: str = ''
+    CWD: str = None
 
     def __post_init__(self):
         # FARCALL directories
@@ -243,6 +243,7 @@ class GcodeParameters:
     """
 
     filename: str = None
+    export_dir: str = ''
     samplesize: Tuple[float, float] = (None, None)
     lab: str = 'CAPABLE'
     new_origin: Tuple[float] = (0.0, 0.0)
@@ -258,6 +259,12 @@ class GcodeParameters:
         if self.filename is None:
             raise ValueError('Filename is None, set GcodeParameters.filename.')
         self.CWD = os.path.dirname(os.path.abspath(__file__))
+
+        if self.export_dir:
+            if not os.path.exists(self.export_dir):
+                os.makedirs(self.export_dir)
+            self.filename = os.path.join(self.export_dir, self.filename)
+
         self.fwarp = self.antiwarp_management(self.warp_flag)
 
         if self.angle != 0:
