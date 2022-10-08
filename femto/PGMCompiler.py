@@ -51,7 +51,7 @@ class PGMCompiler(GcodeParameters):
         self.header()
         self.dwell(1.0)
         if self.aerotech_angle:
-            self._enter_axis_rotation()
+            self._enter_axis_rotation(angle=self.aerotech_angle)
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -559,11 +559,16 @@ class PGMCompiler(GcodeParameters):
             file = Path(filename)
         return file
 
-    def _enter_axis_rotation(self):
+    def _enter_axis_rotation(self, angle: float = None):
         self.comment('ACTIVATE AXIS ROTATION')
         self._instructions.append(f'LINEAR X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{self.speed_pos:.6f}\n')
         self._instructions.append(f'G84 X Y\n')
-        self._instructions.append(f'G84 X Y F{self.aerotech_angle}\n\n')
+
+        if angle is None:
+            return
+
+        angle = float(angle % 360)
+        self._instructions.append(f'G84 X Y F{angle}\n\n')
 
     def _exit_axis_rotation(self):
         self.comment('DEACTIVATE AXIS ROTATION')
