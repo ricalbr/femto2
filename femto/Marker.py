@@ -42,7 +42,7 @@ class Marker(Waveguide):
         if self._x.size != 0:
             raise ValueError('Coordinate matrix is not empty. Cannot start a new waveguide in this point.')
         if speedpos is None:
-            speedpos = self.speedpos
+            speedpos = self.speed_pos
 
         x0, y0, z0 = init_pos
         f0 = np.asarray(speedpos, dtype=np.float32)

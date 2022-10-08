@@ -48,7 +48,7 @@ class Waveguide(LaserPath):
         if self._x.size != 0:
             raise ValueError('Coordinate matrix is not empty. Cannot start a new waveguide in this point.')
         if speedpos is None:
-            speedpos = self.speedpos
+            speedpos = self.speed_pos
 
         f0 = np.asarray(speedpos, dtype=np.float32)
         s0 = np.asarray(0.0, dtype=np.float32)

@@ -31,8 +31,7 @@ class WaveguideParameters:
     int_length: float = 0.0
     arm_length: float = 0.0
     speed_closed: float = 75
-    speedpos: float = 0.5
-    dwelltime: float = 0.5
+    speed_pos: float = 0.5
     lsafe: float = 2.0
     ltrench: float = 1.0
     dz_bridge: float = 0.007
@@ -255,6 +254,7 @@ class GcodeParameters:
     long_pause: float = 0.5
     short_pause: float = 0.05
     output_digits: int = 6
+    speed_pos: float = 5.0
 
     def __post_init__(self):
         if self.filename is None:
