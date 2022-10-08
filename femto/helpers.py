@@ -1,4 +1,5 @@
 from functools import partial
+from itertools import cycle
 from typing import List
 
 
@@ -61,3 +62,7 @@ def flatten(items, seqtypes=(list, tuple)):
     except IndexError:
         pass
     return items
+
+
+def sign():
+    return cycle([1, -1])
