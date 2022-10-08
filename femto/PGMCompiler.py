@@ -225,6 +225,19 @@ class PGMCompiler(GcodeParameters):
         self._instructions.append(f'G84 X Y\n')
 
     @contextmanager
+    def axis_rotation(self):
+        self.comment('ACTIVATE AXIS ROTATION')
+        self._instructions.append(f'LINEAR X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{self.speed_pos:.6f}\n')
+        self._instructions.append(f'G84 X Y\n')
+        self._instructions.append(f'G84 X Y F{self.aerotech_angle}\n\n')
+        try:
+            yield
+        finally:
+            self.comment('DEACTIVATE AXIS ROTATION')
+            self._instructions.append(f'LINEAR X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{self.speed_pos:.6f}\n')
+            self._instructions.append(f'G84 X Y\n')
+
+    @contextmanager
     def for_loop(self, var: str, num: int):
         """
         Context manager that manages a FOR loop in a G-Code file.
