@@ -29,7 +29,7 @@ __all__ = [
 from .helpers import *
 from .Parameters import WaveguideParameters, TrenchParameters, GcodeParameters
 from .LaserPath import LaserPath
-from .Waveguide import Waveguide
+from .Waveguide import Waveguide, coupler
 from .Marker import Marker
 from .Trench import Trench, TrenchColumn
 from .PGMCompiler import PGMCompiler, PGMTrench
