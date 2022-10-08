@@ -1,3 +1,4 @@
+from femto.PGMCompiler import PGMTrench
 from femto import Cell, Marker, PGMCompiler, TrenchColumn, Waveguide
 from femto.helpers import dotdict
 
@@ -26,7 +27,7 @@ PARAMETERS_MK = dotdict(
     scan=1,
     speed=4,
     depth=0.001,
-    speedpos=5,
+    speed_pos=5,
 )
 lx = 1
 ly = 0.05
@@ -47,7 +48,7 @@ PARAMETERS_GC = dotdict(
     filename='MZI.pgm',
     lab='CAPABLE',
     samplesize=(25, 25),
-    angle=1.0
+    rotation_angle=1.0
 )
 
 # 20x20 circuit
@@ -58,7 +59,7 @@ wg = Waveguide(PARAMETERS_WG)
 wg.start([x0, y0, z0]) \
     .linear([PARAMETERS_GC.samplesize[0] + 4, 0.0, 0.0])
 wg.end()
-circ.add(wg)
+circ.append(wg)
 
 # MZI
 delta_x = wg.sbend_length(wg.dy_bend, wg.radius)
@@ -70,20 +71,20 @@ for i in range(6):
         .arc_mzi((-1) ** i * wg.dy_bend) \
         .linear([l_x, 0, 0])
     wg.end()
-    circ.add(wg)
+    circ.append(wg)
 
 # # Marker
 
 pos = [PARAMETERS_GC.samplesize[0] / 2, y0 - PARAMETERS_WG.pitch]
 c = Marker(PARAMETERS_MK)
 c.cross(pos, ly=0.1)
-circ.add(c)
+circ.append(c)
 
 # # Trench
 PARAMETERS_TC.x_center = PARAMETERS_GC.samplesize[0] / 2
 col = TrenchColumn(PARAMETERS_TC)
 col.get_trench(circ.waveguides)
-circ.add(col)
+circ.append(col)
 
 # Plot
 circ.plot2d()
@@ -103,7 +104,6 @@ with PGMCompiler(PARAMETERS_GC) as gc:
         gc.write(mk.points)
 
 # Trench G-Code
-from femto.PGMCompiler import PGMTrench
 
 PARAMETERS_GC.filename = 'test'
 tc = PGMTrench(PARAMETERS_GC, circ.trench_cols)
