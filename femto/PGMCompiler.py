@@ -221,7 +221,7 @@ class PGMCompiler(GcodeParameters):
 
     def deactivate_axis_rotation(self):
         self.comment('DEACTIVATE AXIS ROTATION')
-        self._instructions.append('LINEAR X0 Y0 Z0\n')
+        self._instructions.append(f'LINEAR X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{self.speed_pos:.6f}\n')
         self._instructions.append(f'G84 X Y\n')
 
     @contextmanager
