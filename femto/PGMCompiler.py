@@ -51,7 +51,7 @@ class PGMCompiler(GcodeParameters):
         self.header()
         self.dwell(1.0)
         if self.aerotech_angle:
-            self.activate_axis_rotation()
+            self._enter_axis_rotation()
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -62,7 +62,7 @@ class PGMCompiler(GcodeParameters):
         """
 
         if self.aerotech_angle:
-            self.deactivate_axis_rotation()
+            self._exit_axis_rotation()
             self._instructions.append('\n')
         self.go_init()
         self.close()
@@ -214,28 +214,13 @@ class PGMCompiler(GcodeParameters):
         self._instructions.append(f'LINEAR {args}\n')
         self.dwell(self.long_pause)
 
-    def activate_axis_rotation(self):
-        self.deactivate_axis_rotation()
-        self.comment('ACTIVATE AXIS ROTATION')
-        self._instructions.append(f'G84 X Y F{self.aerotech_angle}\n\n')
-
-    def deactivate_axis_rotation(self):
-        self.comment('DEACTIVATE AXIS ROTATION')
-        self._instructions.append(f'LINEAR X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{self.speed_pos:.6f}\n')
-        self._instructions.append(f'G84 X Y\n')
-
     @contextmanager
     def axis_rotation(self):
-        self.comment('ACTIVATE AXIS ROTATION')
-        self._instructions.append(f'LINEAR X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{self.speed_pos:.6f}\n')
-        self._instructions.append(f'G84 X Y\n')
-        self._instructions.append(f'G84 X Y F{self.aerotech_angle}\n\n')
+        self._enter_axis_rotation()
         try:
             yield
         finally:
-            self.comment('DEACTIVATE AXIS ROTATION')
-            self._instructions.append(f'LINEAR X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{self.speed_pos:.6f}\n')
-            self._instructions.append(f'G84 X Y\n')
+            self._exit_axis_rotation()
 
     @contextmanager
     def for_loop(self, var: str, num: int):
@@ -573,6 +558,17 @@ class PGMCompiler(GcodeParameters):
         else:
             file = Path(filename)
         return file
+
+    def _enter_axis_rotation(self):
+        self.comment('ACTIVATE AXIS ROTATION')
+        self._instructions.append(f'LINEAR X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{self.speed_pos:.6f}\n')
+        self._instructions.append(f'G84 X Y\n')
+        self._instructions.append(f'G84 X Y F{self.aerotech_angle}\n\n')
+
+    def _exit_axis_rotation(self):
+        self.comment('DEACTIVATE AXIS ROTATION')
+        self._instructions.append(f'LINEAR X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{self.speed_pos:.6f}\n')
+        self._instructions.append(f'G84 X Y\n')
 
 
 class PGMTrench(PGMCompiler):
