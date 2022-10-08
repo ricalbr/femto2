@@ -110,7 +110,7 @@ class LaserPath(WaveguideParameters):
     @property
     def length(self) -> float:
         x, y, z = self.path3d
-        return float(np.sum(np.sqrt(np.diff(x)**2 + np.diff(y)**2 + np.diff(z)**2)))
+        return float(np.sum(np.sqrt(np.diff(x) ** 2 + np.diff(y) ** 2 + np.diff(z) ** 2)))
 
     def add_path(self, x: np.ndarray, y: np.ndarray, z: np.ndarray, f: np.ndarray, s: np.ndarray):
         """
@@ -250,8 +250,7 @@ def _example():
             .sin_mzi((-1) ** (index + 1) * wg.dy_bend) \
             .linear(increment)
         wg.end()
-
-    print(wg.length)
+        print(wg.length)
 
     # Plot
     fig = plt.figure()
