@@ -1,7 +1,6 @@
 <div id="top"></div>
 
 <!-- PROJECT LOGO -->
-<br />
 <div>
   <a href="https://github.com/github_username/repo_name">
     <h1> 
