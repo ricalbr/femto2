@@ -50,6 +50,8 @@ class PGMCompiler(GcodeParameters):
         """
         self.header()
         self.dwell(1.0)
+        if self.aerotech_angle:
+            self._enter_axis_rotation(angle=self.aerotech_angle)
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -58,6 +60,10 @@ class PGMCompiler(GcodeParameters):
 
         :return: None
         """
+
+        if self.aerotech_angle:
+            self._exit_axis_rotation()
+            self._instructions.append('\n')
         self.go_init()
         self.close()
 
@@ -209,6 +215,14 @@ class PGMCompiler(GcodeParameters):
         self.dwell(self.long_pause)
 
     @contextmanager
+    def axis_rotation(self):
+        self._enter_axis_rotation()
+        try:
+            yield
+        finally:
+            self._exit_axis_rotation()
+
+    @contextmanager
     def for_loop(self, var: str, num: int):
         """
         Context manager that manages a FOR loop in a G-Code file.
@@ -282,6 +296,8 @@ class PGMCompiler(GcodeParameters):
 
         :param filename: Name of the file that have to be loaded.
         :type filename: str
+        :param task_id: ID of the task associated to the process.
+        :type task_id: int
         :return: None
         """
         file = self._parse_filepath(filename, extension='pgm')
@@ -294,6 +310,8 @@ class PGMCompiler(GcodeParameters):
 
         :param filename: Name of the file to remove.
         :type filename: str
+        :param task_id: ID of the task associated to the process.
+        :type task_id: int
         :return: None
         """
         file = self._parse_filepath(filename, extension='pgm')
@@ -325,6 +343,8 @@ class PGMCompiler(GcodeParameters):
 
         :param filename: Name of the file to call.
         :type filename: str
+        :param task_id: ID of the task associated to the process.
+        :type task_id: int
         :return: None
         """
         file = self._parse_filepath(filename)
@@ -332,7 +352,7 @@ class PGMCompiler(GcodeParameters):
             raise FileNotFoundError(f'{file} not loaded. Cannot load it.')
         self._instructions.append(f'PROGRAM {task_id} BUFFEREDRUN "{file}"\n')
 
-    def chiamatutto(self, filenames: List[str], task_id: List[int] = [0]):
+    def chiamatutto(self, filenames: List[str], task_id: List[int] = 0):
         for (fpath, t_id) in zip_longest(listcast(filenames), listcast(task_id), fillvalue=0):
             _, fn = os.path.split(fpath)
             self.load_program(fpath, t_id)
@@ -344,9 +364,9 @@ class PGMCompiler(GcodeParameters):
     def write(self, points: np.ndarray):
         """
         The function convert the quintuple (X,Y,Z,F,S) to G-Code instructions. The (X,Y,Z) coordinates are
-        transformed using the transformation matrix that takes into account the rotation of a given angle and the
-        homothety to compensate the (effective) refractive index different from 1. Moreover, if the warp_flag is True
-        the points are compensated along the z-direction.
+        transformed using the transformation matrix that takes into account the rotation of a given rotation_angle
+        and the homothety to compensate the (effective) refractive index different from 1. Moreover, if the warp_flag
+        is True the points are compensated along the z-direction.
 
         The transformed points are then parsed together with the feed rate and shutter state coordinate to produce
         the LINEAR movements.
@@ -415,9 +435,15 @@ class PGMCompiler(GcodeParameters):
             pgm_filename = filename
         else:
             pgm_filename = self.filename
+
         # if not present in the filename, add the proper file extension
         if not pgm_filename.endswith('.pgm'):
             pgm_filename += '.pgm'
+
+        if self.export_dir:
+            if not os.path.exists(self.export_dir):
+                os.makedirs(self.export_dir)
+            pgm_filename = os.path.join(self.export_dir, pgm_filename)
 
         # write instruction to file
         with open(pgm_filename, 'w') as f:
@@ -447,7 +473,7 @@ class PGMCompiler(GcodeParameters):
 
     def t_matrix(self, dim: int = 3) -> np.ndarray:
         """
-        Given the rotation angle and the rifraction index, the function compute the transformation matrix as
+        Given the rotation rotation_angle and the rifraction index, the function compute the transformation matrix as
         composition of rotatio matrix (RM) and a homothety matrix (SM).
 
         :param dim: Dimension of the transformation matrix. The default is 3.
@@ -457,8 +483,8 @@ class PGMCompiler(GcodeParameters):
 
         :raise ValueError: Dimension not valid
         """
-        RM = np.array([[np.cos(self.angle), -np.sin(self.angle), 0],
-                       [np.sin(self.angle), np.cos(self.angle), 0],
+        RM = np.array([[np.cos(self.rotation_angle), -np.sin(self.rotation_angle), 0],
+                       [np.sin(self.rotation_angle), np.cos(self.rotation_angle), 0],
                        [0, 0, 1]])
         SM = np.array([[1, 0, 0],
                        [0, 1, 0],
@@ -533,9 +559,25 @@ class PGMCompiler(GcodeParameters):
             file = Path(filename)
         return file
 
+    def _enter_axis_rotation(self, angle: float = None):
+        self.comment('ACTIVATE AXIS ROTATION')
+        self._instructions.append(f'LINEAR X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{self.speed_pos:.6f}\n')
+        self._instructions.append(f'G84 X Y\n')
+
+        if angle is None:
+            return
+
+        angle = float(angle % 360)
+        self._instructions.append(f'G84 X Y F{angle}\n\n')
+
+    def _exit_axis_rotation(self):
+        self.comment('DEACTIVATE AXIS ROTATION')
+        self._instructions.append(f'LINEAR X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{self.speed_pos:.6f}\n')
+        self._instructions.append(f'G84 X Y\n')
+
 
 class PGMTrench(PGMCompiler):
-    def __init__(self, param: dict, trench_columns: TrenchColumn):
+    def __init__(self, param: dict, trench_columns: List[TrenchColumn]):
         super().__init__(param)
         self.trench_columns = listcast(trench_columns)
         self._param = param
@@ -552,77 +594,81 @@ class PGMTrench(PGMCompiler):
         :type dirname: str
         :return: None
         """
-        t_list = []
+
         for col_idx, col in enumerate(self.trench_columns):
-            self._instructions = deque()
-            col_pgm = os.path.join(os.getcwd(), dirname, f'FARCALL{col_idx + 1:03}.pgm')
-            t_list.append(os.path.join(col.base_folder, f'FARCALL{col_idx + 1:03}.pgm'))
-            col_dir = os.path.join(os.getcwd(), dirname, f'trenchCol{col_idx + 1:03}')
+            # Prepare directories for export .pgm files
+            col_dir = os.path.join(os.getcwd(), self.export_dir, dirname, f'trenchCol{col_idx + 1:03}')
             os.makedirs(col_dir, exist_ok=True)
+
+            # Export walls and floors .pgm scripts
             for i, trench in enumerate(col):
                 filename = os.path.join(col_dir, f'trench{i + 1:03}')
-                self._export_path(filename, trench, f=col.speed)
+                self._export_path(filename, trench, speed=col.speed)
 
-            self.header()
-            self.dwell(1.0)
-            self.dvar(['ZCURR'])
+            # Export FARCALL for each trench column
+            col_param = self._param.copy()
+            col_param['filename'] = os.path.join(os.getcwd(), self.export_dir, dirname, f'FARCALL{col_idx + 1:03}.pgm')
+            with PGMCompiler(col_param) as G:
+                G.dvar(['ZCURR'])
 
-            for nbox in range(col.nboxz):
-                for t_index, trench in enumerate(col):
-                    # load filenames (wall/floor)
-                    wall_filename = f'trench{t_index + 1:03}_wall.pgm'
-                    floor_filename = f'trench{t_index + 1:03}_floor.pgm'
-                    wall_path = os.path.join(col.base_folder, f'trenchCol{col_idx + 1:03}', wall_filename)
-                    floor_path = os.path.join(col.base_folder, f'trenchCol{col_idx + 1:03}', floor_filename)
+                for nbox in range(col.nboxz):
+                    for t_index, trench in enumerate(col):
+                        # load filenames (wall/floor)
+                        wall_filename = f'trench{t_index + 1:03}_wall.pgm'
+                        floor_filename = f'trench{t_index + 1:03}_floor.pgm'
+                        wall_path = os.path.join(col.base_folder, f'trenchCol{col_idx + 1:03}', wall_filename)
+                        floor_path = os.path.join(col.base_folder, f'trenchCol{col_idx + 1:03}', floor_filename)
 
-                    x0, y0 = trench.block.exterior.coords[0]
-                    z0 = (nbox * col.h_box - col.z_off) / super().neff
-                    self.comment(f'+--- COLUMN #{col_idx + 1}, TRENCH #{t_index + 1} LEVEL {nbox + 1} ---+')
+                        x0, y0 = trench.block.exterior.coords[0]
+                        z0 = (nbox * col.h_box - col.z_off) / super().neff
+                        G.comment(f'+--- COLUMN #{col_idx + 1}, TRENCH #{t_index + 1} LEVEL {nbox + 1} ---+')
 
-                    # WALL
-                    self.load_program(wall_path)
-                    self.instruction(f'MSGDISPLAY 1, "COL {col_idx + 1:03}, TR {t_index + 1:03}, LV {nbox + 1:03}, '
-                                     f'W"\n')
-                    self.shutter('OFF')
-                    if col.u:
-                        self.instruction(f'LINEAR U{col.u[0]:.6f}')
-                    self.move_to([x0 - self.new_origin[0], y0 - self.new_origin[1], z0], speedpos=col.speed_closed)
+                        # WALL
+                        G.load_program(wall_path)
+                        G.instruction(
+                                f'MSGDISPLAY 1, "COL {col_idx + 1:03}, TR {t_index + 1:03}, LV {nbox + 1:03}, W"\n')
+                        G.shutter('OFF')
+                        if col.u:
+                            G.instruction(f'LINEAR U{col.u[0]:.6f}')
+                        G.move_to([x0 - self.new_origin[0], y0 - self.new_origin[1], z0], speedpos=col.speed_closed)
 
-                    self.instruction(f'$ZCURR = {z0:.6f}')
-                    self.shutter('ON')
-                    with self.repeat(col.n_repeat):
-                        self.farcall(wall_filename)
-                        self.instruction(f'$ZCURR = $ZCURR + {col.deltaz / super().neff:.6f}')
-                        self.instruction('LINEAR Z$ZCURR')
-                    self.remove_program(wall_filename)
+                        G.instruction(f'$ZCURR = {z0:.6f}')
+                        G.shutter('ON')
+                        with G.repeat(col.n_repeat):
+                            G.farcall(wall_filename)
+                            G.instruction(f'$ZCURR = $ZCURR + {col.deltaz / super().neff:.6f}')
+                            G.instruction('LINEAR Z$ZCURR')
+                        G.remove_program(wall_filename)
 
-                    # FLOOR
-                    self.shutter(state='OFF')
-                    self.load_program(floor_path)
-                    self.instruction(f'MSGDISPLAY 1, "COL {col_idx + 1:03}, TR {t_index + 1:03}, LV {nbox + 1:03}, '
-                                     f'F"\n')
-                    if col.u:
-                        self.instruction(f'LINEAR U{col.u[-1]:.6f}')
-                    self.shutter(state='ON')
-                    self.farcall(floor_filename)
-                    self.shutter('OFF')
-                    if col.u:
-                        self.instruction(f'LINEAR U{col.u[0]:.6f}')
-                    self.remove_program(floor_filename)
-            self.instruction('MSGCLEAR -1\n')
+                        # FLOOR
+                        G.shutter(state='OFF')
+                        G.load_program(floor_path)
+                        G.instruction(
+                                f'MSGDISPLAY 1, "COL {col_idx + 1:03}, TR {t_index + 1:03}, LV {nbox + 1:03}, F"\n')
+                        if col.u:
+                            G.instruction(f'LINEAR U{col.u[-1]:.6f}')
+                        G.shutter(state='ON')
+                        G.farcall(floor_filename)
+                        G.shutter('OFF')
+                        if col.u:
+                            G.instruction(f'LINEAR U{col.u[0]:.6f}')
+                        G.remove_program(floor_filename)
+                G.instruction('MSGCLEAR -1\n')
+            del G
 
-            # write instruction to file
-            with open(col_pgm, 'w') as f:
-                f.write(''.join(self._instructions))
-
+        # MAIN FARCALL, calls all columns .pgm scripts
         if self.trench_columns:
-            # farcall main
+            # MAIN FARCALL parameters
             main_param = self._param.copy()
             main_param['filename'] = os.path.join(dirname, 'MAIN.pgm')
+            main_param['aerotech_angle'] = None
+
+            t_list = [os.path.join(col.base_folder, f'FARCALL{idx + 1:03}.pgm') for idx, col in
+                      enumerate(self.trench_columns)]
             with PGMCompiler(main_param) as G:
                 G.chiamatutto(t_list)
 
-    def _export_path(self, filename: str, trench: Trench, f: float = 4):
+    def _export_path(self, filename: str, trench: Trench, speed: float = 4):
         """
         Helper function for the export of the wall and floor instruction of a Trench obj.
 
@@ -632,8 +678,8 @@ class PGMTrench(PGMCompiler):
         :type filename: str
         :param trench: Trench obj to export.
         :type trench: Trench
-        :param f: Traslation speed during fabrication [mm/s]. The default is 4 [mm/s].
-        :type f: float
+        :param speed: Traslation speed during fabrication [mm/s]. The default is 4 [mm/s].
+        :type speed: float
         :return: None
         """
         if filename is None:
@@ -641,16 +687,15 @@ class PGMTrench(PGMCompiler):
         if filename.endswith('.pgm'):
             filename = filename.split('.')[0]
 
-        # wall
+        # Wall script
         points = np.array(trench.block.exterior.coords.xy).T
-        f_val = f
-        self._write_array(filename + '_wall.pgm', points, f_val)
+        self._write_array(filename + '_wall.pgm', points, speed)
         del points
 
-        # floor
+        # Floor script
         points = []
         [points.extend(np.stack(path, axis=-1)) for path in trench.trench_paths()]
-        self._write_array(filename + '_floor.pgm', np.array(points), f_val)
+        self._write_array(filename + '_floor.pgm', np.array(points), speed)
         del points
 
     def _write_array(self, pgm_filename: str, points: np.ndarray, f_val: float):

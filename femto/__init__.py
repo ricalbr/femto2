@@ -21,16 +21,16 @@ __all__ = [
     'TrenchColumn',
     'PGMCompiler',
     'PGMTrench',
-    'helpers',
-    'Cell',
     'Device',
+    'Cell',
+    'helpers',
 ]
 
 from .helpers import *
 from .Parameters import WaveguideParameters, TrenchParameters, GcodeParameters
 from .LaserPath import LaserPath
-from .Waveguide import Waveguide
+from .Waveguide import Waveguide, coupler
 from .Marker import Marker
 from .Trench import Trench, TrenchColumn
 from .PGMCompiler import PGMCompiler, PGMTrench
-from .Cell import Cell
+from .Cell import Cell, Device
