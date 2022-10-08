@@ -3,10 +3,11 @@ import time
 
 import numpy as np
 import plotly.graph_objects as go
-from femto import Marker, PGMCompiler, PGMTrench, Trench, TrenchColumn, Waveguide
-from femto.helpers import listcast, nest_level
 from shapely.affinity import rotate, translate
 from shapely.geometry import Point
+
+from femto import Marker, PGMCompiler, PGMTrench, Trench, TrenchColumn, Waveguide
+from femto.helpers import listcast, nest_level
 
 
 class Device(PGMCompiler):
@@ -46,8 +47,7 @@ class Device(PGMCompiler):
         else:
             raise TypeError(f'The object must be a list. {type(obj)} was given.')
 
-
-    def plot2d(self, shutter_close: bool = True, aspect: str = 'auto', wg_style=None, sc_style=None, mk_style=None,
+    def plot2d(self, shutter_close: bool = True, wg_style=None, sc_style=None, mk_style=None,
                tc_style=None, pc_style=None, gold_layer: bool = False, show: bool = True, save: bool = False):
         if wg_style is None:
             wg_style = dict()
@@ -101,11 +101,11 @@ class Device(PGMCompiler):
                                             hovertemplate='(%{x:.4f}, %{y:.4f})<extra>MK</extra>'))
         for tr in self.trenches:
             shape = translate(tr.block, xoff=-self.new_origin[0], yoff=-self.new_origin[1])
-            shape = rotate(shape, angle=self.angle, use_radians=True, origin=Point(0, 0))
+            shape = rotate(shape, angle=self.rotation_angle, use_radians=True, origin=Point(0, 0))
             xt, yt = np.asarray(shape.exterior.coords.xy)
             self.fig.add_trace(go.Scattergl(x=xt, y=yt,
                                             fill='toself',
-                                            **default_tcargs,
+                                            **tcargs,
                                             showlegend=False,
                                             hovertemplate='(%{x:.4f}, %{y:.4f})<extra>TR</extra>'))
 
@@ -137,13 +137,13 @@ class Device(PGMCompiler):
                            linewidth=1,
                            linecolor='black',
                            ticklen=10,
-                           tick0 = 0,
+                           tick0=0,
                            ticks="outside",
                            fixedrange=False,
                            minor=dict(ticklen=5,
                                       # dtick=1,
                                       tickmode='linear',
-                                      ticks="outside",),
+                                      ticks="outside", ),
                            ),
                 yaxis=dict(title='y [mm]',
                            showgrid=False,
@@ -153,13 +153,13 @@ class Device(PGMCompiler):
                            linewidth=1,
                            linecolor='black',
                            ticklen=10,
-                           tick0 = 0,
+                           tick0=0,
                            ticks="outside",
                            fixedrange=False,
                            minor=dict(ticklen=5,
                                       # dtick=0.2,
                                       tickmode='linear',
-                                      ticks="outside",),
+                                      ticks="outside", ),
                            ),
                 annotations=[dict(x=0, y=0,
                                   text='(0,0)',
@@ -238,7 +238,7 @@ class Device(PGMCompiler):
                         ),
                         xaxis=dict(title='x [mm]',
                                    showgrid=False,
-                                   zeroline=False,),
+                                   zeroline=False, ),
                         yaxis=dict(title='y [mm]',
                                    showgrid=False,
                                    zeroline=False, ),
@@ -257,7 +257,6 @@ class Device(PGMCompiler):
         # SHOW
         if show:
             self.fig.show()
-        return self.fig
 
         # SAVE
         if save:
@@ -267,7 +266,8 @@ class Device(PGMCompiler):
     def save(self, filename='scheme.html'):
         extension = os.path.splitext(filename)[1][1:].strip()
 
-        if extension == '': filename += '.html'
+        if extension == '':
+            filename += '.html'
         if extension.lower() in ['html', '']:
             self.fig.write_html(filename)
         else:
@@ -305,21 +305,19 @@ class Cell(Device):
             return
 
         _wg_fab_time = 0.0
+        _wg_param = self._param.copy()
         self.filename = self.filename.split('.')[0]
-        wg_filename = self.filename.split('.')[0] + '_WG.pgm'
+        _wg_param['filename'] = self.filename.split('.')[0] + '_WG.pgm'
 
-        self.header()
-        self.dwell(1.0)
+        with PGMCompiler(_wg_param) as G:
+            for bunch in self.waveguides:
+                with G.repeat(listcast(bunch)[0].scan):
+                    for wg in listcast(bunch):
+                        _wg_fab_time += wg.wtime
+                        G.write(wg.points)
+            G.go_init()
+        del G
 
-        for bunch in self.waveguides:
-            with self.repeat(listcast(bunch)[0].scan):
-                for wg in listcast(bunch):
-                    _wg_fab_time += wg.wtime
-                    self.write(wg.points)
-        self.go_init()
-
-        with open(wg_filename, 'w') as f:
-            f.write(''.join(self._instructions))
         if verbose:
             print('G-code compilation completed.')
             print('Estimated fabrication time of the optical device: ',
@@ -337,20 +335,18 @@ class Cell(Device):
 
         _mk_fab_time = 0.0
         self.filename = self.filename.split('.')[0]
-        mk_filename = self.filename.split('.')[0] + '_MK.pgm'
+        _mk_param = self._param.copy()
+        _mk_param['filename'] = self.filename.split('.')[0] + '_MK.pgm'
 
-        self.header()
-        self.dwell(1.0)
+        with PGMCompiler(_mk_param) as G:
+            for bunch in self.markers:
+                with G.repeat(listcast(bunch)[0].scan):
+                    for mk in listcast(bunch):
+                        _mk_fab_time += mk.wtime
+                        G.write(mk.points)
+            G.homing()
+        del G
 
-        for bunch in self.markers:
-            with self.repeat(listcast(bunch)[0].scan):
-                for mk in listcast(bunch):
-                    _mk_fab_time += mk.wtime
-                    self.write(mk.points)
-        self.homing()
-
-        with open(mk_filename, 'w') as f:
-            f.write(''.join(self._instructions))
         if verbose:
             print('G-code compilation completed.')
             print('Estimated fabrication time of the markers: ',
@@ -371,6 +367,7 @@ class Cell(Device):
             print('Estimated fabrication time of the isolation trenches: ',
                   time.strftime('%H:%M:%S', time.gmtime(_tc_fab_time + t_writer._total_dwell_time)))
         del t_writer
+
 
 def _example():
     from femto.helpers import dotdict

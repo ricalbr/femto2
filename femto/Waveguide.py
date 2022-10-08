@@ -116,9 +116,9 @@ class Waveguide(LaserPath):
         arc of a given radius. The user can set the transition speed, the shutter state during the movement and the
         number of points of the arc.
 
-        :param initial_angle: Starting angle of the circular arc [radians].
+        :param initial_angle: Starting rotation_angle of the circular arc [radians].
         :type initial_angle: float
-        :param final_angle: Ending angle of the circular arc [radians].
+        :param final_angle: Ending rotation_angle of the circular arc [radians].
         :type final_angle: float
         :param radius: Radius of the circular arc [mm]. The default is self.radius.
         :type radius: float
@@ -149,7 +149,7 @@ class Waveguide(LaserPath):
         """
         Concatenates two circular arc to make a circular S-bend.
         The user can specify the amplitude of the S-bend (height in the y direction) and the curvature radius.
-        Starting and ending angle of the two arcs are computed automatically.
+        Starting and ending rotation_angle of the two arcs are computed automatically.
 
         The sign of dy encodes the direction of the S-bend:
             - dy > 0, upward S-bend
@@ -307,7 +307,7 @@ class Waveguide(LaserPath):
         num = self._get_num(dx, f)
 
         new_x = np.linspace(self._x[-1], self._x[-1] + dx, num)
-        new_y = self._y[-1] + 0.5 * dy * (1 - np.cos(2*np.pi / dx * (new_x - self._x[-1])))
+        new_y = self._y[-1] + 0.5 * dy * (1 - np.cos(2 * np.pi / dx * (new_x - self._x[-1])))
         new_z = self._z[-1] * np.ones(new_x.shape)
 
         # update coordinates
