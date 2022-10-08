@@ -264,14 +264,15 @@ class GcodeParameters:
         self.fwarp = self.antiwarp_management(self.warp_flag)
 
         if self.rotation_angle != 0:
-            print(' BEWARE, ANGLES MUST BE IN DEGREE! '.center(39, "*"))
-            print(f' Given alpha = {self.rotation_angle % 360:.3f} deg. '.center(39, "*"))
+            print(' BEWARE, ANGLE MUST BE IN DEGREE! '.center(39, "*"))
+            print(f' Rotation angle is {self.rotation_angle % 360:.3f} deg. '.center(39, "*"))
         self.rotation_angle = radians(self.rotation_angle % 360)
 
         if self.aerotech_angle:
             print(' BEWARE, G84 COMMAND WILL BE USED!!! '.center(39, "*"))
-            print(' ANGLES MUST BE IN DEGREE! '.center(39, "*"))
-            print(f' Given alpha = {self.aerotech_angle % 360:.3f} deg. '.center(39, "*"))
+            print(' ANGLE MUST BE IN DEGREE! '.center(39, "*"))
+            print(f' Rotation angle is {self.aerotech_angle % 360:.3f} deg. '.center(39, "*"))
+            print()
             self.aerotech_angle = self.aerotech_angle % 360
 
     @property
