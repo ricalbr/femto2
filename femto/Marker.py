@@ -8,6 +8,7 @@ except ImportError:
 import numpy as np
 
 from femto import Waveguide
+from femto.helpers import sign
 
 
 class Marker(Waveguide):
@@ -141,53 +142,55 @@ class Marker(Waveguide):
                 orientation: str = 'x', speedpos: float = None):
 
         if speedpos is None:
-            speedpos = self.speed_closed
+            speedpos = self.speed_pos
 
         if orientation.lower() not in ['x', 'y']:
             raise ValueError('Orientation must be either "x" (parallel lines along x) or "y" (parallel lines along y).'
                              f'Given {orientation}.')
-        elif orientation.lower() == 'x':
+        s = sign()
+        if orientation.lower() == 'x':
             num_passes = int(np.abs(init_pos[1] - final_pos[1]) / delta)
             delta = np.sign(final_pos[1] - init_pos[1]) * delta
 
-            self.start(init_pos, speedpos=5.0)
-            for i, _ in enumerate(range(num_passes)):
-                self.linear([(-1) ** i * width, 0, 0], mode='INC')
+            self.start(init_pos, speedpos=speedpos)
+            for _ in range(num_passes):
+                self.linear([next(s) * width, 0, 0], mode='INC')
                 self.linear([0, delta, 0], mode='INC')
-            self.linear([(-1) ** (i + 1) * width, 0, 0], mode='INC')
+            self.linear([next(s) * width, 0, 0], mode='INC')
             self.end()
 
         else:
             num_passes = int(np.abs(init_pos[0] - final_pos[0]) / delta)
             delta = np.sign(final_pos[0] - init_pos[0]) * delta
 
-            self.start(init_pos, speedpos=5.0)
-            for i, _ in enumerate(range(num_passes)):
-                self.linear([self.lastx, (-1) ** i * width, self.lastz], mode='ABS')
+            self.start(init_pos, speedpos=speedpos)
+            for _ in range(num_passes):
+                self.linear([0, next(s) * width, 0], mode='INC')
                 self.linear([delta, 0, 0], mode='INC')
-            self.linear([(-1) ** i * width, self.lasty, self.lastz], mode='ABS')
+            self.linear([0, next(s) * width, 0], mode='INC')
             self.end()
 
     def ablation(self, points: List[List[float]] = None, shift: float = None, speedpos: float = None):
-        if points is None: return
+        if points is None:
+            return
 
         if speedpos is None:
             speedpos = self.speed_closed
 
-        self.start(points.pop(0))
+        self.start(points.pop(0), speedpos=speedpos)
         for p in points:
-            if p[0] == None: p[0] = self.lastx
-            if p[1] == None: p[1] = self.lasty
-            if p[2] == None: p[2] = self.lastz
+            if p[0] is None:
+                p[0] = self.lastx
+            if p[1] is None:
+                p[1] = self.lasty
+            if p[2] is None:
+                p[2] = self.lastz
             self.linear(p, mode='ABS')
 
         if shift is not None:
             points = np.asarray(points)
-            shifted_points = []
-            shifted_points.append(np.add(points, [shift, 0, 0]))
-            shifted_points.append(np.add(points, [-shift, 0, 0]))
-            shifted_points.append(np.add(points, [0, shift, 0]))
-            shifted_points.append(np.add(points, [0, -shift, 0]))
+            shifted_points = [np.add(points, [shift, 0, 0]), np.add(points, [-shift, 0, 0]),
+                              np.add(points, [0, shift, 0]), np.add(points, [0, -shift, 0])]
 
             for shift in shifted_points:
                 self.linear(shift[0], mode='ABS', shutter=0)
