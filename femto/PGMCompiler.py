@@ -64,7 +64,8 @@ class PGMCompiler(GcodeParameters):
         if self.aerotech_angle:
             self._exit_axis_rotation()
             self._instructions.append('\n')
-        self.go_init()
+        if self.home:
+            self.go_init()
         self.close()
 
     # Methods
@@ -114,7 +115,10 @@ class PGMCompiler(GcodeParameters):
         :type comstring: str
         :return: None
         """
-        self._instructions.append(f'\n; {comstring}\n')
+        if comstring:
+            self._instructions.append(f'\n; {comstring}\n')
+        else:
+            self._instructions.append('\n')
 
     def shutter(self, state: str):
         """
@@ -245,7 +249,7 @@ class PGMCompiler(GcodeParameters):
             self._instructions.append(f'NEXT ${var}\n\n')
             _dt_forloop = self._total_dwell_time - _temp_dt
             # pauses should be multiplied by number of cycles as well
-            self._total_dwell_time += (num - 1) * _dt_forloop
+            self._total_dwell_time += num * _dt_forloop
 
     @contextmanager
     def repeat(self, num: int):
@@ -259,16 +263,18 @@ class PGMCompiler(GcodeParameters):
         if num is None:
             raise ValueError('Number of iterations is None. Set the `scan` attribute in Waveguide obj.')
         if num == 0:
-            raise ValueError('Number of iterations is 0. Set num_scan >= 1.')
-        self._instructions.append(f'REPEAT {num}\n')
+            raise ValueError('Number of iterations is 0. Set "scan" >= 1.')
+        if num != 1:
+            self._instructions.append(f'REPEAT {num}\n')
         _temp_dt = self._total_dwell_time
         try:
             yield
         finally:
-            self._instructions.append('ENDREPEAT\n\n')
+            if num != 1:
+                self._instructions.append('ENDREPEAT\n\n')
             _dt_repeat = self._total_dwell_time - _temp_dt
             # pauses should be multiplied by number of cycles as well
-            self._total_dwell_time += (num - 1) * _dt_repeat
+            self._total_dwell_time += num * _dt_repeat
 
     def tic(self):
         """

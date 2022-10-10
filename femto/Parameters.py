@@ -245,6 +245,7 @@ class GcodeParameters:
     export_dir: str = ''
     samplesize: Tuple[float, float] = (None, None)
     lab: str = 'CAPABLE'
+    home: bool = False
     new_origin: Tuple[float] = (0.0, 0.0)
     warp_flag: bool = False
     n_glass: float = 1.50
