@@ -339,11 +339,13 @@ class Cell(Device):
         _mk_param.filename = self.filename.split('.')[0] + '_MK.pgm'
 
         with PGMCompiler(_mk_param) as G:
-            for bunch in self.markers:
+            for idx, bunch in enumerate(self.markers):
                 with G.repeat(listcast(bunch)[0].scan):
                     for mk in listcast(bunch):
                         _mk_fab_time += mk.wtime
+                        G.comment(f'MARKER {idx + 1}')
                         G.write(mk.points)
+                        G.comment('')
             G.homing()
         del G
 

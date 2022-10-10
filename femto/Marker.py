@@ -1,4 +1,3 @@
-import warnings
 from typing import List
 
 try:
@@ -19,7 +18,7 @@ class Marker(Waveguide):
     def __init__(self, param: dict):
         super().__init__(param)
 
-    def start(self, init_pos: List[float], speedpos: float = None) -> Self:
+    def start(self, init_pos: List[float] = None, speedpos: float = None) -> Self:
         """
         Starts a waveguide in the initial position given as input.
         The coordinates of the initial position are the first added to the matrix that describes the waveguide.
@@ -34,7 +33,10 @@ class Marker(Waveguide):
         :return: Self
         :rtype: Waveguide
         """
-        if len(init_pos) == 2:
+
+        if init_pos is None:
+            init_pos = self.init_point
+        elif len(init_pos) == 2:
             init_pos.append(self.depth)
         elif len(init_pos) == 3:
             init_pos[2] = self.depth
@@ -61,15 +63,15 @@ class Marker(Waveguide):
         :return: Self
         :rtype: Waveguide
         """
-        x = np.array([self._x[-1], self._x[-1]]).astype(np.float32)
-        y = np.array([self._y[-1], self._y[-1]]).astype(np.float32)
-        z = np.array([self._z[-1], self._z[-1]]).astype(np.float32)
-        f = np.array([self._f[-1], self.speed_closed]).astype(np.float32)
-        s = np.array([0, 0]).astype(np.float32)
+        x = np.array([self._x[-1]]).astype(np.float32)
+        y = np.array([self._y[-1]]).astype(np.float32)
+        z = np.array([self._z[-1]]).astype(np.float32)
+        f = np.array([self.speed_closed]).astype(np.float32)
+        s = np.array([0]).astype(np.float32)
         self.add_path(x, y, z, f, s)
         self.fabrication_time()
 
-    def cross(self, position: List[float], lx: float = 1, ly: float = 0.05, speedpos: float = None):
+    def cross(self, position: List[float], lx: float = 1, ly: float = 0.05):
         """
         Computes the points of a cross marker of given widht along x- and y-direction.
 
@@ -81,27 +83,22 @@ class Marker(Waveguide):
         :type lx: float
         :param ly: Length of the cross marker along y [mm]. The default is 0.05 mm.
         :type ly: float
-        :param speedpos: Transition speed with the shutter closes [mm/s]. The default is self.speed.
-        :type speedpos: float
         :return: None
         """
         if len(position) == 2:
             position.append(self.depth)
-        elif len(position) == 3:
-            position[2] = self.depth
-            warnings.warn(f'Given 3D coordinate list. Z-coordinate is overwritten to {self.depth} mm.')
         else:
             raise ValueError('Given invalid position.')
 
-        if speedpos is None:
-            speedpos = self.speed_closed
-
-        start_pos = np.add(position, [-lx / 2, 0, 0])
-        self.start(start_pos, speedpos=5.0)
-        self.linear([lx, 0, 0], speed=self.speed)
-        self.linear([-lx / 2, -ly / 2, 0], speed=speedpos, shutter=0)
-        self.linear([0, 0, 0], speed=speedpos, shutter=1)
-        self.linear([0, ly, 0], speed=self.speed)
+        # start_pos = np.add(position, [-lx / 2, 0, 0])
+        xi, yi, zi = position
+        self.start([xi - lx / 2, yi, zi], speedpos=5.0)
+        self.linear([xi + lx / 2, yi, zi], mode='ABS')
+        self.linear([xi + lx / 2, yi, zi], mode='ABS', shutter=0)
+        self.linear([xi, yi - ly / 2, zi], mode='ABS', shutter=0)
+        self.linear([xi, yi - ly / 2, zi], mode='ABS')
+        self.linear([xi, yi + ly / 2, zi], mode='ABS')
+        self.linear(position, mode='ABS', shutter=0)
         self.end()
 
     def ruler(self, y_ticks: List, lx: float, lx_short: float = None, x_init: float = -2, speedpos: float = None):
@@ -123,7 +120,7 @@ class Marker(Waveguide):
         """
 
         if speedpos is None:
-            speedpos = self.speed_closed
+            speedpos = self.speed_pos
 
         if lx_short is None:
             lx_short = 0.75 * lx
@@ -206,21 +203,22 @@ def _example():
 
     PARAMETERS_MK = dotdict(
             scan=1,
-            speed=4,
-            speedpos=5,
-            depth=0.001
+            speed=1,
+            speed_pos=5,
+            speed_closed=5,
+            depth=0.000
     )
 
     PARAMETERS_GC = dotdict(
             filename='testMarker.pgm',
             lab='CAPABLE',
             samplesize=(25, 25),
-            angle=0.0,
+            rotation_angle=0.0,
     )
 
     c = Marker(PARAMETERS_MK)
-    c.ruler([0, 1, 2], 5, 3.5)
-    print(c.points)
+    c.cross([2.5, 1], 5, 2)
+    # print(c.points)
 
     with PGMCompiler(PARAMETERS_GC) as gc:
         gc.write(c.points)
