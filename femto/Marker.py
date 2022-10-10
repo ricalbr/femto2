@@ -87,7 +87,7 @@ class Marker(Waveguide):
         """
         if len(position) == 2:
             position.append(self.depth)
-        else:
+        elif len(position) != 3:
             raise ValueError('Given invalid position.')
 
         # start_pos = np.add(position, [-lx / 2, 0, 0])
