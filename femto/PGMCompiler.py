@@ -606,8 +606,8 @@ class PGMTrench(PGMCompiler):
                 self._export_path(filename, trench, speed=col.speed)
 
             # Export FARCALL for each trench column
-            col_param = self._param.copy()
-            col_param['filename'] = os.path.join(os.getcwd(), self.export_dir, dirname, f'FARCALL{col_idx + 1:03}.pgm')
+            col_param = dotdict(self._param.copy())
+            col_param.filename = os.path.join(os.getcwd(), self.export_dir, dirname, f'FARCALL{col_idx + 1:03}.pgm')
             with PGMCompiler(col_param) as G:
                 G.dvar(['ZCURR'])
 
@@ -659,9 +659,9 @@ class PGMTrench(PGMCompiler):
         # MAIN FARCALL, calls all columns .pgm scripts
         if self.trench_columns:
             # MAIN FARCALL parameters
-            main_param = self._param.copy()
-            main_param['filename'] = os.path.join(dirname, 'MAIN.pgm')
-            main_param['aerotech_angle'] = None
+            main_param = dotdict(self._param.copy())
+            main_param.filename = os.path.join(dirname, 'MAIN.pgm')
+            main_param.aerotech_angle = None
 
             t_list = [os.path.join(col.base_folder, f'FARCALL{idx + 1:03}.pgm') for idx, col in
                       enumerate(self.trench_columns)]

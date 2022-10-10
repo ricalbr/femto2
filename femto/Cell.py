@@ -7,7 +7,7 @@ from shapely.affinity import rotate, translate
 from shapely.geometry import Point
 
 from femto import Marker, PGMCompiler, PGMTrench, Trench, TrenchColumn, Waveguide
-from femto.helpers import listcast, nest_level
+from femto.helpers import dotdict, listcast, nest_level
 
 
 class Device(PGMCompiler):
@@ -305,9 +305,9 @@ class Cell(Device):
             return
 
         _wg_fab_time = 0.0
-        _wg_param = self._param.copy()
+        _wg_param = dotdict(self._param.copy())
         self.filename = self.filename.split('.')[0]
-        _wg_param['filename'] = self.filename.split('.')[0] + '_WG.pgm'
+        _wg_param.filename = self.filename.split('.')[0] + '_WG.pgm'
 
         with PGMCompiler(_wg_param) as G:
             for bunch in self.waveguides:
@@ -335,8 +335,8 @@ class Cell(Device):
 
         _mk_fab_time = 0.0
         self.filename = self.filename.split('.')[0]
-        _mk_param = self._param.copy()
-        _mk_param['filename'] = self.filename.split('.')[0] + '_MK.pgm'
+        _mk_param = dotdict(self._param.copy())
+        _mk_param.filename = self.filename.split('.')[0] + '_MK.pgm'
 
         with PGMCompiler(_mk_param) as G:
             for bunch in self.markers:
