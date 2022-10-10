@@ -606,21 +606,23 @@ class Waveguide(LaserPath):
 
 
 def coupler(param, d=None):
+    p = dotdict(param.copy())
+    
     if d is not None:
-        param.int_dist = d
+        p.int_dist = d
 
-    if param.y_init is None:
-        param.y_init = 0.0
+    if p.y_init is None:
+        p.y_init = 0.0
 
-    mode1 = Waveguide(param)
+    mode1 = Waveguide(p)
     mode1.start() \
         .linear([(mode1.samplesize[0] - mode1.dx_bend) / 2, mode1.lasty, mode1.lastz], mode='ABS') \
         .sin_acc(mode1.dy_bend) \
         .linear([mode1.x_end, mode1.lasty, mode1.lastz], mode='ABS') \
         .end()
 
-    param.y_init += param.pitch
-    mode2 = Waveguide(param)
+    p.y_init += p.pitch
+    mode2 = Waveguide(p)
     mode2.start() \
         .linear([(mode2.samplesize[0] - mode2.dx_bend) / 2, mode2.lasty, mode2.lastz], mode='ABS') \
         .sin_acc(-mode2.dy_bend) \
