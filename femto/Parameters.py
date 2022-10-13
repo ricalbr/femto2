@@ -382,3 +382,50 @@ class GcodeParameters:
         plt.show()
 
         return func_antiwarp
+
+@dataclass
+class StandardLaserPathParameters:
+    """
+    Class containing the parameters for generic FLM written structure fabrication.
+    """
+
+    scan: int =1
+    speed: float =1.0
+    x_init: float = 0
+    y_init: float = None
+    z_init: float = None
+    speed_closed: float = 5
+    speed_pos: float = 0.5
+    cmd_rate_max: float = 1200
+    acc_max: float = 500
+    samplesize: Tuple[float, float] = (None, None)
+    flip_x: bool = False
+    flip_y: bool = False
+    flip_z: bool = False
+    
+    @property
+    def init_point(self):
+        if self.y_init is None:
+            y0 = 0.0
+        else:
+            y0 = self.y_init
+        if self.z_init is None:
+            z0 = 0.0
+        else:
+            z0 = self.z_init
+        return [self.x_init, y0, z0]
+
+@dataclass
+class RasterImageParameters(StandardLaserPathParameters):
+    """
+    Class containing the parameters for generic FLM written structure fabrication.
+    """        
+    px_to_mm: int = 0.01 #pixel to millimeter scale when converting image to laser path
+    img_size: Tuple[int,int]=(None,None)        
+    
+    @property
+    def path_size(self):  
+        if not all(self.img_size): #check if img_size is None
+            raise ValueError("No image size given, unable to compute laserpath dimension")
+        else:
+            return tuple(self.px_to_mm * elem for elem in self.img_size)
