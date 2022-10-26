@@ -24,7 +24,7 @@ class RasterImage(RasterImageParameters):
         return "{cname}@{id:x}".format(cname=self.__class__.__name__, id=id(self) & 0xFFFFFF)
 
     # Methods
-    def convert_Image_to_path(self,img):
+    def convert_Image_to_path(self,img,display_flag=False):
         #displaing image information
         print("Image opened. Displaying information")
         print(img.format)
@@ -40,7 +40,8 @@ class RasterImage(RasterImageParameters):
         if img.mode!="1":
             print("The program takes as input black and white images. Conversion of input image to BW with arbitrary threshold at half of scale")
             img_BW = img.convert("1",dither=None)
-            img_BW.show()
+            if display_flag:
+                img_BW.show()
             
         data = np.asarray(img_BW)
         GCODE_array=np.array([0, 0, 0, 2, 0, 0.1, 0, 0]); #initialization  of the GCODE array
@@ -72,7 +73,8 @@ class RasterImage(RasterImageParameters):
                             new_GCODE_line=np.array([jj*self.px_to_mm, ii*self.px_to_mm, 0, speed, shutter_state, 0.1, 0, 0])
                             GCODE_array=np.vstack([GCODE_array,new_GCODE_line])
                             shutter_state=0
-                            speed=self.speed*2   
+                            speed=self.speed*2  
+        self.add_path(GCODE_array[:,0], GCODE_array[:,1], GCODE_array[:,2], GCODE_array[:,3], GCODE_array[:,4])                    
         return GCODE_array
         
 
@@ -97,6 +99,9 @@ def _example():
     
     fig_colored=GCODE_plot_colored(GCODE_array)
     fig_colored.show()
+    
+    print("Expected writing time {:.3f} seconds".format(r_img.wtime))
+    print("Laser path length {:.3f} mm".format(r_img.length))
         
 if __name__ == '__main__':
     _example()
