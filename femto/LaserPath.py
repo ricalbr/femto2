@@ -37,6 +37,11 @@ class LaserPathParameters:
     flip_x: bool = False
     flip_y: bool = False
     flip_z: bool = False
+    _x: np.ndarray = np.asarray([])
+    _y: np.ndarray = np.asarray([])
+    _z: np.ndarray = np.asarray([])
+    _f: np.ndarray = np.asarray([])
+    _s: np.ndarray = np.asarray([])
     
     def __post_init__(self):
         if not isinstance(self.scan, int):
@@ -81,12 +86,12 @@ class LaserPath(LaserPathParameters):
         super().__init__(**param)
         self._wtime = float(0)
 
-        # Points
-        self._x = np.asarray([])
-        self._y = np.asarray([])
-        self._z = np.asarray([])
-        self._f = np.asarray([])
-        self._s = np.asarray([])
+        # # Points
+        # self._x = np.asarray([])
+        # self._y = np.asarray([])
+        # self._z = np.asarray([])
+        # self._f = np.asarray([])
+        # self._s = np.asarray([])
 
     @property
     def points(self) -> np.ndarray:
