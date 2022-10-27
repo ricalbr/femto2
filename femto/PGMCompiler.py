@@ -344,7 +344,7 @@ class PGMCompiler(GcodeParameters):
         :type points: numpy.ndarray
         :return: None
         """
-        
+
         x_c, y_c, z_c, f_c, s_c = self.transform_points(points)
         args = [self._format_args(x, y, z, f) for (x, y, z, f) in zip(x_c, y_c, z_c, f_c)]
         for (arg, s) in zip_longest(args, s_c):

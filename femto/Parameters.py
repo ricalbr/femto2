@@ -232,6 +232,7 @@ class GcodeParameters:
     long_pause: float = 0.5
     short_pause: float = 0.25
     output_digits: int = 6
+    speed_pos: float = 5.0
     flip_x: bool = False
     flip_y: bool = False
     flip_z: bool = False
