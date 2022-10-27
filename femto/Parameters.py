@@ -150,6 +150,34 @@ class WaveguideParameters(LaserPath):
             l_curve = 2 * ang * radius
         return pos_diff[0], pos_diff[1], pos_diff[2], l_curve
 
+@dataclass
+class MarkerParameters(LaserPath):
+    """
+    Class containing the parameters for the surface ablation marker fabrication.
+    """
+    depth: float = 0.0
+
+    def __post_init__(self):
+        #parent method redefinition, to inclure depth property
+        if not isinstance(self.scan, int):
+            raise ValueError('Number of scan must be integer.')
+
+        if self.z_init is None:
+            self.z_init = self.depth
+
+    @property
+    def init_point(self):
+        #parent method redefinition, to inclure depth property
+        if self.y_init is None:
+            y0 = 0.0
+        else:
+            y0 = self.y_init
+        if self.z_init is None:
+            z0 = self.depth
+        else:
+            z0 = self.z_init
+        return [self.x_init, y0, z0]
+
 
 @dataclass
 class TrenchParameters:
