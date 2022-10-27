@@ -70,7 +70,7 @@ class Marker(MarkerParameters):
         s = np.array([0]).astype(np.float32)
         self.add_path(x, y, z, f, s)
         self.fabrication_time()
-    
+
     def linear(self, increment: list, mode: str = 'INC', shutter: int = 1, speed: float = None) -> Self:
         """
         Adds a linear increment to the last point of the current waveguide.
@@ -229,7 +229,6 @@ class Marker(MarkerParameters):
 
 
 def _example():
-    from femto import PGMCompiler
     from femto.helpers import dotdict
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
@@ -251,7 +250,7 @@ def _example():
 
     c = Marker(PARAMETERS_MK)
     c.cross([2.5, 1], 5, 2)
-#    c.ruler([1,2,3,5] , 0.75)
+    #    c.ruler([1,2,3,5] , 0.75)
     print(c.points)
 
     # with PGMCompiler(PARAMETERS_GC) as gc:
@@ -267,7 +266,6 @@ def _example():
     ax.plot(c.x, c.y, c.z, '-k', linewidth=2.5)
     ax.set_box_aspect(aspect=(3, 1, 0.5))
     plt.show()
-
 
 
 if __name__ == '__main__':

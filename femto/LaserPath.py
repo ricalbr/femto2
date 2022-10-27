@@ -1,21 +1,11 @@
-from operator import add
-from typing import List
-import os
-import pickle
 from dataclasses import dataclass
-from itertools import product
-from math import ceil, radians
-from typing import Tuple
-
-import matplotlib.pyplot as plt
-import numpy as np
-import shapely.geometry
-from scipy.interpolate import interp2d
-from shapely.geometry import box
+from operator import add
+from typing import List, Tuple
 
 import numpy as np
 
 from femto.helpers import dotdict
+
 
 @dataclass
 class LaserPathParameters:
@@ -23,8 +13,8 @@ class LaserPathParameters:
     Class containing the parameters for generic FLM written structure fabrication.
     """
 
-    scan: int =1
-    speed: float =1.0
+    scan: int = 1
+    speed: float = 1.0
     x_init: float = 0
     y_init: float = None
     z_init: float = None
@@ -42,11 +32,11 @@ class LaserPathParameters:
     _z: np.ndarray = np.asarray([])
     _f: np.ndarray = np.asarray([])
     _s: np.ndarray = np.asarray([])
-    
+
     def __post_init__(self):
         if not isinstance(self.scan, int):
             raise ValueError('Number of scan must be integer.')
-    
+
     @property
     def init_point(self):
         if self.y_init is None:
@@ -58,23 +48,22 @@ class LaserPathParameters:
         else:
             z0 = self.z_init
         return [self.x_init, y0, z0]
-    
+
     @property
     def lvelo(self) -> float:
         # length needed to acquire the writing speed [mm]
         return 3 * (0.5 * self.speed ** 2 / self.acc_max)
-    
-    
+
     @property
     def dl(self) -> float:
         # minimum separation between two points [mm]
         return self.speed / self.cmd_rate_max
-    
-    
+
     @property
     def x_end(self) -> float:
         # end of laser path (outside the sample)
         return self.samplesize[0] + self.lsafe
+
 
 @dataclass
 class LaserPath(LaserPathParameters):
@@ -170,7 +159,7 @@ class LaserPath(LaserPathParameters):
         :return: Fabrication time in seconds
         :rtype: float
         """
-        
+
         self.fabrication_time()
         return self._wtime
 
@@ -219,11 +208,11 @@ class LaserPath(LaserPathParameters):
         """
         Computes the time needed to travel along the line. It assumes 
         """
-        x, y, z , f= self._x, self._y, self._z, self._f
-        
+        x, y, z, f = self._x, self._y, self._z, self._f
+
         dists = np.sqrt(np.diff(x) ** 2 + np.diff(y) ** 2 + np.diff(z) ** 2)
-        times = dists/f[1:]
-        self._wtime = (sum(times))*self.scan
+        times = dists / f[1:]
+        self._wtime = (sum(times)) * self.scan
 
     def flip_path(self):
         """
@@ -303,28 +292,26 @@ class LaserPath(LaserPathParameters):
 
 def _example():
     #### example usefull to test Waveguide, but not Laserpath as stand alone
-    
-    
+
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
 
-     # Data
+    # Data
     PARAMETERS_LP = dotdict(
             scan=6,
             speed=20,
             lsafe=3,
     )
 
-    LP_instance=LaserPath(PARAMETERS_LP)
+    LP_instance = LaserPath(PARAMETERS_LP)
 
-    path_x=np.array([0,1,1,2])
-    path_y=np.array([0,0,2,3])
-    path_z=np.array([0,0,0,3])
-    path_f=np.array([1,2,3,4])
-    path_s=np.array([1,1,1,1])
-    LP_instance.add_path(path_x,path_y,path_z,path_f,path_s)
+    path_x = np.array([0, 1, 1, 2])
+    path_y = np.array([0, 0, 2, 3])
+    path_z = np.array([0, 0, 0, 3])
+    path_f = np.array([1, 2, 3, 4])
+    path_s = np.array([1, 1, 1, 1])
+    LP_instance.add_path(path_x, path_y, path_z, path_f, path_s)
     # increment = [PARAMETERS_WG.lsafe, 0, 0]
-
 
     # Plot
     fig = plt.figure()
@@ -340,6 +327,7 @@ def _example():
 
     print("Expected writing time {:.3f} seconds".format(LP_instance.wtime))
     print("Laser path length {:.3f} mm".format(LP_instance.length))
+
 
 if __name__ == '__main__':
     _example()

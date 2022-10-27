@@ -8,9 +8,10 @@ except ImportError:
     from typing_extensions import Self
 from scipy.interpolate import CubicSpline, InterpolatedUnivariateSpline
 from functools import partialmethod
-#rom femto.LaserPath import LaserPath
+# rom femto.LaserPath import LaserPath
 from femto.helpers import dotdict
 from femto.Parameters import WaveguideParameters
+
 
 class Waveguide(WaveguideParameters):
     """
@@ -607,7 +608,7 @@ class Waveguide(WaveguideParameters):
 
 def coupler(param, d=None):
     p = dotdict(param.copy())
-    
+
     if d is not None:
         p.int_dist = d
 
@@ -677,7 +678,7 @@ def _example():
         ax.plot(wg.x[-2:], wg.y[-2:], wg.z[-2:], ':b', linewidth=1.0)
     ax.set_box_aspect(aspect=(3, 1, 0.5))
     plt.show()
-    
+
     print("Expected writing time {:.3f} seconds".format(wg.wtime))
     print("Laser path length {:.3f} mm".format(wg.length))
 

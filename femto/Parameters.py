@@ -11,7 +11,7 @@ import shapely.geometry
 from scipy.interpolate import interp2d
 from shapely.geometry import box
 
-from femto.LaserPath import LaserPath #Parent of all structures
+from femto.LaserPath import LaserPath  # Parent of all structures
 
 
 @dataclass
@@ -19,7 +19,6 @@ class WaveguideParameters(LaserPath):
     """
     Class containing the parameters for the waveguide fabrication.
     """
-
 
     depth: float = 0.035
     radius: float = 15
@@ -32,9 +31,8 @@ class WaveguideParameters(LaserPath):
     dz_bridge: float = 0.007
     margin: float = 1.0
 
-
     def __post_init__(self):
-        #parent method redefinition, to inclure depth property
+        # parent method redefinition, to inclure depth property
         if not isinstance(self.scan, int):
             raise ValueError('Number of scan must be integer.')
 
@@ -43,7 +41,7 @@ class WaveguideParameters(LaserPath):
 
     @property
     def init_point(self):
-        #parent method redefinition, to inclure depth property
+        # parent method redefinition, to inclure depth property
         if self.y_init is None:
             y0 = 0.0
         else:
@@ -84,7 +82,6 @@ class WaveguideParameters(LaserPath):
             return None
         else:
             return 0.5 * (self.pitch - self.int_dist)
-
 
     @staticmethod
     def get_sbend_parameter(dy: float, radius: float) -> tuple:
@@ -150,6 +147,7 @@ class WaveguideParameters(LaserPath):
             l_curve = 2 * ang * radius
         return pos_diff[0], pos_diff[1], pos_diff[2], l_curve
 
+
 @dataclass
 class MarkerParameters(LaserPath):
     """
@@ -158,7 +156,7 @@ class MarkerParameters(LaserPath):
     depth: float = 0.0
 
     def __post_init__(self):
-        #parent method redefinition, to inclure depth property
+        # parent method redefinition, to inclure depth property
         if not isinstance(self.scan, int):
             raise ValueError('Number of scan must be integer.')
 
@@ -167,7 +165,7 @@ class MarkerParameters(LaserPath):
 
     @property
     def init_point(self):
-        #parent method redefinition, to inclure depth property
+        # parent method redefinition, to inclure depth property
         if self.y_init is None:
             y0 = 0.0
         else:
@@ -239,6 +237,7 @@ class TrenchParameters:
         else:
             return box(self.x_center - self.length / 2, self.y_min,
                        self.x_center + self.length / 2, self.y_max)
+
 
 @dataclass
 class GcodeParameters:
@@ -388,17 +387,18 @@ class GcodeParameters:
 
         return func_antiwarp
 
+
 @dataclass
 class RasterImageParameters(LaserPath):
     """
     Class containing the parameters for generic FLM written structure fabrication.
-    """        
-    px_to_mm: int = 0.01 #pixel to millimeter scale when converting image to laser path
-    img_size: Tuple[int,int]=(None,None)        
-    
+    """
+    px_to_mm: int = 0.01  # pixel to millimeter scale when converting image to laser path
+    img_size: Tuple[int, int] = (None, None)
+
     @property
-    def path_size(self):  
-        if not all(self.img_size): #check if img_size is None
+    def path_size(self):
+        if not all(self.img_size):  # check if img_size is None
             raise ValueError("No image size given, unable to compute laserpath dimension")
         else:
             return tuple(self.px_to_mm * elem for elem in self.img_size)
