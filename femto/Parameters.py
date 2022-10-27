@@ -37,9 +37,6 @@ class WaveguideParameters:
     cmd_rate_max: float = 1200
     acc_max: float = 500
     samplesize: Tuple[float, float] = (None, None)
-    flip_x: bool = False
-    flip_y: bool = False
-    flip_z: bool = False
 
     def __post_init__(self):
         if not isinstance(self.scan, int):
@@ -235,6 +232,9 @@ class GcodeParameters:
     long_pause: float = 0.5
     short_pause: float = 0.25
     output_digits: int = 6
+    flip_x: bool = False
+    flip_y: bool = False
+    flip_z: bool = False
 
     def __post_init__(self):
         if self.filename is None:

@@ -3,6 +3,7 @@ from collections import deque
 from contextlib import contextmanager
 from copy import deepcopy
 from itertools import zip_longest
+from operator import add
 from pathlib import Path
 
 import numpy as np
@@ -343,7 +344,9 @@ class PGMCompiler(GcodeParameters):
         :type points: numpy.ndarray
         :return: None
         """
-        x_c, y_c, z_c, f_c, s_c = self.transform_points(points)
+        x, y, z, f_c, s_c = points.T
+        x, y, z = self.flip_path(x, y, z)
+        x_c, y_c, z_c = self.transform_points(x, y, z)
         args = [self._format_args(x, y, z, f) for (x, y, z, f) in zip(x_c, y_c, z_c, f_c)]
         for (arg, s) in zip_longest(args, s_c):
             if s == 0 and self._shutter_on is True:
@@ -356,16 +359,61 @@ class PGMCompiler(GcodeParameters):
                 self._instructions.append(f'LINEAR {arg}\n')
         self.dwell(self.long_pause)
 
-    def transform_points(self, points):
-        x, y, z, f_c, s_c = points.T
-        sub_points = np.stack((x, y, z), axis=-1).astype(np.float32)
-        sub_points -= np.array([self.new_origin[0], self.new_origin[1], 0]).T
+    def transform_points(self, x, y, z):
+        point_matrix = np.stack((x, y, z), axis=-1).astype(np.float32)
+        point_matrix -= np.array([self.new_origin[0], self.new_origin[1], 0]).T
         if self.warp_flag:
-            sub_points = np.matmul(sub_points, self.t_matrix())
-            x_c, y_c, z_c = self.compensate(sub_points).T
+            point_matrix = np.matmul(point_matrix, self.t_matrix())
+            x_c, y_c, z_c = self.compensate(point_matrix).T
         else:
-            x_c, y_c, z_c = np.matmul(sub_points, self.t_matrix()).T
-        return x_c, y_c, z_c, f_c, s_c
+            x_c, y_c, z_c = np.matmul(point_matrix, self.t_matrix()).T
+        return x_c, y_c, z_c
+
+    def flip_path(self, xc, yc, zc):
+        """
+        Flip the laser path along the x-, y- and z-coordinates
+        :return: None
+        """
+
+        flip_toggle = np.array([1, 1, 1])
+        # reverse the coordinates arrays to flip
+        if self.flip_x:
+            flip_toggle[0] = -1
+            xc = np.flip(xc)
+        if self.flip_y:
+            flip_toggle[1] = -1
+            yc = np.flip(yc)
+        if self.flip_z:
+            flip_toggle[2] = -1
+            zc = np.flip(zc)
+
+        # create flip matrix (+1 -> no flip, -1 -> flip)
+        flip_matrix = np.diag(flip_toggle)
+
+        # create the displacement matrix to map the transformed min/max coordinates to the original min/max coordinates)
+        points_matrix = np.array([xc, yc, zc])
+        displacements = np.array([np.max(xc) + np.min(xc),
+                                  np.max(yc) + np.min(yc),
+                                  np.max(zc) + np.min(zc)])
+        S = np.multiply((1 - flip_toggle) / 2, displacements)
+
+        # matrix multiplication and sum element-wise, add the displacement only to the flipped coordinates
+        flip_x, flip_y, flip_z = map(add, flip_matrix @ points_matrix, S)
+
+        # update coordinates
+        if self.flip_x:
+            xc = np.flip(flip_x)
+        else:
+            xc = flip_x
+        if self.flip_y:
+            yc = np.flip(flip_y)
+        else:
+            yc = flip_y
+        if self.flip_z:
+            zc = np.flip(flip_z)
+        else:
+            zc = flip_z
+        return xc, yc, zc
 
     def instruction(self, instr: str):
         """
@@ -568,7 +616,7 @@ class PGMTrench(PGMCompiler):
                     # WALL
                     self.load_program(wall_path)
                     self.shutter('OFF')
-                    self.move_to([x0-self.new_origin[0], y0-self.new_origin[1], z0], speedpos=col.speed_closed)
+                    self.move_to([x0 - self.new_origin[0], y0 - self.new_origin[1], z0], speedpos=col.speed_closed)
 
                     self.instruction(f'$ZCURR = {z0:.6f}')
                     self.shutter('ON')
