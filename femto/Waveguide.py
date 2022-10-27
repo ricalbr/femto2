@@ -63,9 +63,6 @@ class Waveguide(LaserPath):
         :rtype: Waveguide
         """
 
-        # flip the path
-        self.flip_path()
-
         # append the transformed path and add the coordinates to return to the initial point
         x = np.array([self._x[-1], self._x[0]]).astype(np.float32)
         y = np.array([self._y[-1], self._y[0]]).astype(np.float32)
@@ -598,7 +595,6 @@ def _example():
             pitch=0.080,
             int_dist=0.007,
             lsafe=3,
-            flip_x=True,
     )
 
     increment = [PARAMETERS_WG.lsafe, 0, 0]

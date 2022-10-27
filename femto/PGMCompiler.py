@@ -344,9 +344,8 @@ class PGMCompiler(GcodeParameters):
         :type points: numpy.ndarray
         :return: None
         """
-        x, y, z, f_c, s_c = points.T
-        x, y, z = self.flip_path(x, y, z)
-        x_c, y_c, z_c = self.transform_points(x, y, z)
+        
+        x_c, y_c, z_c, f_c, s_c = self.transform_points(points)
         args = [self._format_args(x, y, z, f) for (x, y, z, f) in zip(x_c, y_c, z_c, f_c)]
         for (arg, s) in zip_longest(args, s_c):
             if s == 0 and self._shutter_on is True:
@@ -359,7 +358,9 @@ class PGMCompiler(GcodeParameters):
                 self._instructions.append(f'LINEAR {arg}\n')
         self.dwell(self.long_pause)
 
-    def transform_points(self, x, y, z):
+    def transform_points(self, points):
+        x, y, z, fc, sc = points.T
+        x, y, z = self.flip_path(x, y, z)
         point_matrix = np.stack((x, y, z), axis=-1).astype(np.float32)
         point_matrix -= np.array([self.new_origin[0], self.new_origin[1], 0]).T
         if self.warp_flag:
@@ -367,7 +368,7 @@ class PGMCompiler(GcodeParameters):
             x_c, y_c, z_c = self.compensate(point_matrix).T
         else:
             x_c, y_c, z_c = np.matmul(point_matrix, self.t_matrix()).T
-        return x_c, y_c, z_c
+        return x_c, y_c, z_c, fc, sc
 
     def flip_path(self, xc, yc, zc):
         """
@@ -706,7 +707,7 @@ class PGMTrench(PGMCompiler):
 
 
 def _example():
-    from femto import Waveguide
+    from femto import Waveguide, Cell
 
     # Data
     PARAMETERS_WG = dotdict(
@@ -715,16 +716,17 @@ def _example():
             radius=15,
             pitch=0.080,
             int_dist=0.007,
-            lsafe=3
+            lsafe=3,
+            samplesize=(25, 3),
     )
     increment = [PARAMETERS_WG.lsafe, 0, 0]
 
     PARAMETERS_GC = dotdict(
             filename='testPGMcompiler.pgm',
             lab='CAPABLE',
-            samplesize=(25, 25),
-            angle=0.0,
-            warp_flag=True,
+            samplesize=PARAMETERS_WG.samplesize,
+            angle=2.0,
+            flip_x=True,
     )
 
     # Calculations
@@ -733,8 +735,15 @@ def _example():
         wg.start([-2, -wg.pitch / 2 + i * wg.pitch, 0.035]) \
             .linear(increment) \
             .sin_mzi((-1) ** i * wg.dy_bend, arm_length=1.0) \
-            .linear(increment)
+            .sin_mzi((-1) ** i * wg.dy_bend, arm_length=1.0) \
+            .linear(increment) \
+            .sin_mzi((-1) ** i * wg.dy_bend, arm_length=1.0) \
+            .linear([wg.x_end, wg.lasty, wg.lastz], mode='ABS')
         wg.end()
+
+    c = Cell(PARAMETERS_GC)
+    c.append(coup)
+    c.plot2d()
 
     # Compilation
     with PGMCompiler(PARAMETERS_GC) as G:
