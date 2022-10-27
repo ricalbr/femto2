@@ -8,17 +8,17 @@ except ImportError:
     from typing_extensions import Self
 from scipy.interpolate import CubicSpline, InterpolatedUnivariateSpline
 from functools import partialmethod
-from femto.LaserPath import LaserPath
+#rom femto.LaserPath import LaserPath
 from femto.helpers import dotdict
+from femto.Parameters import WaveguideParameters
 
-
-class Waveguide(LaserPath):
+class Waveguide(WaveguideParameters):
     """
     Class representing an optical waveguide.
     """
 
     def __init__(self, param: dict):
-        super().__init__(param)
+        super().__init__(**param)
 
     def __repr__(self):
         return "{cname}@{id:x}".format(cname=self.__class__.__name__, id=id(self) & 0xFFFFFF)
@@ -677,6 +677,9 @@ def _example():
         ax.plot(wg.x[-2:], wg.y[-2:], wg.z[-2:], ':b', linewidth=1.0)
     ax.set_box_aspect(aspect=(3, 1, 0.5))
     plt.show()
+    
+    print("Expected writing time {:.3f} seconds".format(wg.wtime))
+    print("Laser path length {:.3f} mm".format(wg.length))
 
 
 if __name__ == '__main__':
