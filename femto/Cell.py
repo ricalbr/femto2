@@ -6,7 +6,7 @@ import plotly.graph_objects as go
 from shapely.affinity import rotate, translate
 from shapely.geometry import Point
 
-from femto import Marker, PGMCompiler, PGMTrench, Trench, TrenchColumn, Waveguide
+from femto import _Marker, _Waveguide, PGMCompiler, PGMTrench, Trench, TrenchColumn
 from femto.helpers import dotdict, listcast, nest_level
 
 
@@ -27,9 +27,9 @@ class Device(PGMCompiler):
             self.markers.extend(obj.markers)
             self.waveguides.extend(obj.waveguides)
             self.trenches.extend(obj.trenches)
-        elif isinstance(obj, Marker):
+        elif isinstance(obj, _Marker):
             self.markers.append(obj)
-        elif isinstance(obj, Waveguide) or (isinstance(obj, list) and all(isinstance(x, Waveguide) for x in obj)):
+        elif isinstance(obj, _Waveguide) or (isinstance(obj, list) and all(isinstance(x, _Waveguide) for x in obj)):
             self.waveguides.append(obj)
         elif isinstance(obj, Trench):
             self.trenches.append(obj)
@@ -395,7 +395,7 @@ def _example():
     c = Cell(PARAMETERS_GC)
 
     # Calculations
-    mzi = [Waveguide(PARAMETERS_WG) for _ in range(2)]
+    mzi = [_Waveguide(PARAMETERS_WG) for _ in range(2)]
     y0 = PARAMETERS_GC.samplesize[1] / 2
     for index, wg in enumerate(mzi):
         [xi, yi, zi] = [-2, -wg.pitch / 2 + index * wg.pitch + y0, 0.035]

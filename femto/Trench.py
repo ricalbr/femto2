@@ -8,7 +8,7 @@ from shapely.geometry import LineString, Polygon, polygon
 
 from femto.helpers import dotdict, flatten, listcast
 from femto.Parameters import TrenchParameters
-from femto.Waveguide import Waveguide
+from femto.Waveguide import _Waveguide
 
 
 class Trench:
@@ -176,7 +176,7 @@ class TrenchColumn(TrenchParameters):
         ``trench_list``.
 
         :param waveguides: List of the waveguides composing the optical circuit.
-        :type waveguides: List[Waveguide]
+        :type waveguides: List[_Waveguide]
         :param remove: List of trench to remove.
         :type remove: List[int]
         """
@@ -210,15 +210,15 @@ class TrenchColumn(TrenchParameters):
         just the shutter-open path. (x, y) coordinates are extracted and returned.
 
         :param waveguide: Waveguide object or 2D numpy.ndarray with the path xy-points.
-        :type waveguide: Waveguide or numpy.ndarray
+        :type waveguide: _Waveguide or numpy.ndarray
         """
 
-        if isinstance(waveguide, Waveguide):
+        if isinstance(waveguide, _Waveguide):
             x, y = waveguide.path
         elif isinstance(waveguide, np.ndarray):
             x, y = waveguide.T
         else:
-            raise TypeError('Elements circuit list must be of type Waveguide or 2D numpy.array.')
+            raise TypeError('Elements circuit list must be of type _Waveguide or 2D numpy.array.')
         return x, y
 
 
@@ -247,7 +247,7 @@ def _example():
     )
 
     # Calculations
-    coup = [Waveguide(PARAMETERS_WG) for _ in range(20)]
+    coup = [_Waveguide(PARAMETERS_WG) for _ in range(20)]
     for i, wg in enumerate(coup):
         wg.start([-2, i * wg.pitch, 0.035]).sin_acc((-1) ** i * wg.dy_bend)
         x_mid = wg.x[-1]

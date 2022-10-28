@@ -752,7 +752,7 @@ def _example():
             filename='testPGMcompiler.pgm',
             lab='CAPABLE',
             samplesize=(25, 25),
-            angle=0.0,
+            rotation_angle=0.0,
             warp_flag=True,
     )
 

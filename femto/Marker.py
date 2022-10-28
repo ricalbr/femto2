@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from typing import List
 
+from dacite import from_dict
+
 try:
     from typing import Self
 except ImportError:
@@ -13,7 +15,7 @@ from femto.helpers import sign
 
 
 @dataclass(kw_only=True)
-class Marker(LaserPath, MarkerParameters):
+class _Marker(LaserPath, MarkerParameters):
     """
     Class representing an ablation marker.
     """
@@ -34,7 +36,7 @@ class Marker(LaserPath, MarkerParameters):
         :param speedpos: Translation speed [mm/s].
         :type speedpos: float
         :return: Self
-        :rtype: Waveguide
+        :rtype: _Waveguide
         """
 
         if init_pos is None:
@@ -64,7 +66,7 @@ class Marker(LaserPath, MarkerParameters):
         speed specified by the user.
 
         :return: Self
-        :rtype: Waveguide
+        :rtype: _Waveguide
         """
         x = np.array([self._x[-1]]).astype(np.float32)
         y = np.array([self._y[-1]]).astype(np.float32)
@@ -91,7 +93,7 @@ class Marker(LaserPath, MarkerParameters):
         :param speed: Transition speed [mm/s]. The default is self.param.speed.
         :type speed: float
         :return: Self
-        :rtype: Waveguide
+        :rtype: _Waveguide
 
         :raise ValueError: Mode is neither INC nor ABS.
         """
@@ -231,6 +233,10 @@ class Marker(LaserPath, MarkerParameters):
         self.end()
 
 
+def Marker(param):
+    return from_dict(data_class=_Marker, data=param)
+
+
 def _example():
     from femto.helpers import dotdict
     import matplotlib.pyplot as plt
@@ -253,11 +259,12 @@ def _example():
 
     c = Marker(PARAMETERS_MK)
     c.cross([2.5, 1], 5, 2)
-    #    c.ruler([1,2,3,5] , 0.75)
     print(c.points)
 
-    # with PGMCompiler(PARAMETERS_GC) as gc:
-    #     gc.write(c.points)
+    from femto import PGMCompiler
+    with PGMCompiler(PARAMETERS_GC) as gc:
+        gc.write(c.points)
+
     # Plot
     fig = plt.figure()
     fig.clf()

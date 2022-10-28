@@ -1,4 +1,4 @@
-from femto import Cell, Marker, PGMCompiler, TrenchColumn, Waveguide
+from femto import Cell, _Marker, PGMCompiler, TrenchColumn, _Waveguide
 from femto.helpers import dotdict
 from femto.PGMCompiler import PGMTrench
 
@@ -55,7 +55,7 @@ PARAMETERS_GC = dotdict(
 circ = Cell(PARAMETERS_GC)
 
 # Guida dritta
-wg = Waveguide(PARAMETERS_WG)
+wg = _Waveguide(PARAMETERS_WG)
 wg.start([x0, y0, z0]) \
     .linear([PARAMETERS_GC.samplesize[0] + 4, 0.0, 0.0])
 wg.end()
@@ -65,7 +65,7 @@ circ.append(wg)
 delta_x = wg.sbend_length(wg.dy_bend, wg.radius)
 l_x = (PARAMETERS_GC.samplesize[0] + 4 - delta_x * 4) / 2
 for i in range(6):
-    wg = Waveguide(PARAMETERS_WG) \
+    wg = _Waveguide(PARAMETERS_WG) \
         .start([x0, (1 + i) * wg.pitch, z0]) \
         .linear([l_x, 0, 0]) \
         .arc_mzi((-1) ** i * wg.dy_bend) \
@@ -73,10 +73,10 @@ for i in range(6):
     wg.end()
     circ.append(wg)
 
-# # Marker
+# # _Marker
 
 pos = [PARAMETERS_GC.samplesize[0] / 2, y0 - PARAMETERS_WG.pitch]
-c = Marker(PARAMETERS_MK)
+c = _Marker(PARAMETERS_MK)
 c.cross(pos, ly=0.1)
 circ.append(c)
 
@@ -90,14 +90,14 @@ circ.append(col)
 circ.plot2d()
 # plt.show()
 
-# Waveguide G-Code
+# _Waveguide G-Code
 with PGMCompiler(PARAMETERS_GC) as gc:
     with gc.repeat(PARAMETERS_WG.scan):
         for i, wg in enumerate(circ.waveguides):
             gc.comment(f' +--- Modo: {i + 1} ---+')
             gc.write(wg.points)
 
-# Marker G-Code
+# _Marker G-Code
 PARAMETERS_GC.filename = 'Markers.pgm'
 with PGMCompiler(PARAMETERS_GC) as gc:
     for mk in circ.markers:
