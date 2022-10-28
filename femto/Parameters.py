@@ -235,7 +235,7 @@ class RasterImageParameters(LaserPathParameters):
     """
     Class containing the parameters for generic FLM written structure fabrication.
     """
-    px_to_mm: int = 0.01  # pixel to millimeter scale when converting image to laser path
+    px_to_mm: float = 0.01  # pixel to millimeter scale when converting image to laser path
     img_size: Tuple[int, int] = (None, None)
 
     @property

@@ -21,7 +21,8 @@ __all__ = [
     'coupler',
     '_Marker',
     'Marker',
-    'RasterImage'
+    '_RasterImage',
+    'RasterImage',
     'Trench',
     'TrenchColumn',
     'PGMCompiler',
@@ -36,7 +37,7 @@ from .Parameters import LaserPathParameters, WaveguideParameters, MarkerParamete
 from .LaserPath import LaserPath
 from .Waveguide import _Waveguide, Waveguide, coupler
 from .Marker import _Marker, Marker
-from .RasterImage import RasterImage
+from .RasterImage import _RasterImage, RasterImage
 from .Trench import Trench, TrenchColumn
 from .PGMCompiler import PGMCompiler, PGMTrench
 from .Cell import Cell, Device
