@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 
@@ -15,13 +15,19 @@ class LaserPath(LaserPathParameters):
     """
 
     _wtime: float = 0.0
+    _x: Optional[np.ndarray]
+    _y: Optional[np.ndarray]
+    _z: Optional[np.ndarray]
+    _f: Optional[np.ndarray]
+    _s: Optional[np.ndarray]
 
-    # Points
-    _x: np.ndarray = np.asarray([])
-    _y: np.ndarray = np.asarray([])
-    _z: np.ndarray = np.asarray([])
-    _f: np.ndarray = np.asarray([])
-    _s: np.ndarray = np.asarray([])
+    def __post_init__(self):
+        super().__post_init__()
+        self._x = np.array([])
+        self._y = np.array([])
+        self._z = np.array([])
+        self._f = np.array([])
+        self._s = np.array([])
 
     @property
     def points(self) -> np.ndarray:
