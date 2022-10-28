@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import List
 
 import numpy as np
@@ -8,18 +9,19 @@ except ImportError:
     from typing_extensions import Self
 from scipy.interpolate import CubicSpline, InterpolatedUnivariateSpline
 from functools import partialmethod
-# rom femto.LaserPath import LaserPath
 from femto.helpers import dotdict
+from femto import LaserPath
 from femto.Parameters import WaveguideParameters
 
 
-class Waveguide(WaveguideParameters):
+@dataclass(kw_only=True)
+class Waveguide(LaserPath, WaveguideParameters):
     """
     Class representing an optical waveguide.
     """
 
-    def __init__(self, param: dict):
-        super().__init__(**param)
+    # def __init__(self, param: dict):
+    #     super().__init__(**param)
 
     def __repr__(self):
         return "{cname}@{id:x}".format(cname=self.__class__.__name__, id=id(self) & 0xFFFFFF)
@@ -68,7 +70,7 @@ class Waveguide(WaveguideParameters):
         """
 
         # flip the path
-        self.flip_path()
+        # self.flip_path()
 
         # append the transformed path and add the coordinates to return to the initial point
         x = np.array([self._x[-1], self._x[0]]).astype(np.float32)
@@ -615,7 +617,7 @@ def coupler(param, d=None):
     if p.y_init is None:
         p.y_init = 0.0
 
-    mode1 = Waveguide(p)
+    mode1 = Waveguide(**p)
     mode1.start() \
         .linear([(mode1.samplesize[0] - mode1.dx_bend) / 2, mode1.lasty, mode1.lastz], mode='ABS') \
         .sin_acc(mode1.dy_bend) \
@@ -623,7 +625,7 @@ def coupler(param, d=None):
         .end()
 
     p.y_init += p.pitch
-    mode2 = Waveguide(p)
+    mode2 = Waveguide(**p)
     mode2.start() \
         .linear([(mode2.samplesize[0] - mode2.dx_bend) / 2, mode2.lasty, mode2.lastz], mode='ABS') \
         .sin_acc(-mode2.dy_bend) \
@@ -644,7 +646,6 @@ def _example():
             pitch=0.080,
             int_dist=0.007,
             lsafe=3,
-            flip_x=True,
     )
 
     increment = [PARAMETERS_WG.lsafe, 0, 0]
@@ -654,7 +655,7 @@ def _example():
     for index in range(2):
         PARAMETERS_WG.y_init = -PARAMETERS_WG.pitch / 2 + index * PARAMETERS_WG.pitch
 
-        wg = Waveguide(PARAMETERS_WG)
+        wg = Waveguide(**PARAMETERS_WG)
         wg.start() \
             .linear(increment) \
             .sin_mzi((-1) ** index * wg.dy_bend) \

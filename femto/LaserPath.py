@@ -1,87 +1,27 @@
 from dataclasses import dataclass
-from operator import add
-from typing import List, Tuple
+from typing import List
 
 import numpy as np
 
 from femto.helpers import dotdict
+from femto.Parameters import LaserPathParameters
 
 
-@dataclass
-class LaserPathParameters:
-    """
-    Class containing the parameters for generic FLM written structure fabrication.
-    """
-
-    scan: int = 1
-    speed: float = 1.0
-    x_init: float = 0
-    y_init: float = None
-    z_init: float = None
-    lsafe: float = 2.0
-    speed_closed: float = 5
-    speed_pos: float = 0.5
-    cmd_rate_max: float = 1200
-    acc_max: float = 500
-    samplesize: Tuple[float, float] = (None, None)
-    flip_x: bool = False
-    flip_y: bool = False
-    flip_z: bool = False
-    _x: np.ndarray = np.asarray([])
-    _y: np.ndarray = np.asarray([])
-    _z: np.ndarray = np.asarray([])
-    _f: np.ndarray = np.asarray([])
-    _s: np.ndarray = np.asarray([])
-
-    def __post_init__(self):
-        if not isinstance(self.scan, int):
-            raise ValueError('Number of scan must be integer.')
-
-    @property
-    def init_point(self):
-        if self.y_init is None:
-            y0 = 0.0
-        else:
-            y0 = self.y_init
-        if self.z_init is None:
-            z0 = 0.0
-        else:
-            z0 = self.z_init
-        return [self.x_init, y0, z0]
-
-    @property
-    def lvelo(self) -> float:
-        # length needed to acquire the writing speed [mm]
-        return 3 * (0.5 * self.speed ** 2 / self.acc_max)
-
-    @property
-    def dl(self) -> float:
-        # minimum separation between two points [mm]
-        return self.speed / self.cmd_rate_max
-
-    @property
-    def x_end(self) -> float:
-        # end of laser path (outside the sample)
-        return self.samplesize[0] + self.lsafe
-
-
-@dataclass
+@dataclass(kw_only=True)
 class LaserPath(LaserPathParameters):
     """
     Class of irradiated paths. It manages all the coordinates of the laser path and computes the fabrication writing
     time. It is the parent of all other classes through thier *ClassParameter*
     """
 
-    def __init__(self, param: dict):
-        super().__init__(**param)
-        self._wtime = float(0)
+    _wtime: float = 0.0
 
-        # # Points
-        # self._x = np.asarray([])
-        # self._y = np.asarray([])
-        # self._z = np.asarray([])
-        # self._f = np.asarray([])
-        # self._s = np.asarray([])
+    # Points
+    _x: np.ndarray = np.asarray([])
+    _y: np.ndarray = np.asarray([])
+    _z: np.ndarray = np.asarray([])
+    _f: np.ndarray = np.asarray([])
+    _s: np.ndarray = np.asarray([])
 
     @property
     def points(self) -> np.ndarray:
@@ -214,56 +154,57 @@ class LaserPath(LaserPathParameters):
         times = dists / f[1:]
         self._wtime = (sum(times)) * self.scan
 
-    def flip_path(self):
-        """
-        Flip the laser path along the x-, y- and z-coordinates
-        :return: None
-        """
-
-        m = np.array([1, 1, 1])
-        # reverse the coordinates arrays to flip
-        if self.flip_x:
-            m[0] = -1
-            xc = np.flip(self._x)
-        else:
-            xc = self._x
-        if self.flip_y:
-            m[1] = -1
-            yc = np.flip(self._y)
-        else:
-            yc = self._y
-        if self.flip_z:
-            m[2] = -1
-            zc = np.flip(self._z)
-        else:
-            zc = self._z
-
-        # create flip matrix (+1 -> no flip, -1 -> flip)
-        M = np.diag(m)
-
-        # create the displacement matrix to map the transformed min/max coordinates to the original min/max coordinates)
-        C = np.array([xc, yc, zc])
-        d = np.array([np.max(xc) + np.min(xc),
-                      np.max(yc) + np.min(yc),
-                      np.max(zc) + np.min(zc)])
-        S = np.multiply((1 - m) / 2, d)
-
-        # matrix multiplication and sum element-wise
-        flip_x, flip_y, flip_z = map(add, M @ C, S)
-
-        # update coordinates
-        if self.flip_x:
-            self._x = np.flip(flip_x)
-        else:
-            self._x = flip_x
-        if self.flip_y:
-            self._y = np.flip(flip_y)
-        else:
-            self._y = flip_y
-        if self.flip_z:
-            self._z = np.flip(flip_z)
-        else:
-            self._z = flip_z
+    # def flip_path(self):
+    #     """
+    #     Flip the laser path along the x-, y- and z-coordinates
+    #     :return: None
+    #     """
+    #
+    #     m = np.array([1, 1, 1])
+    #     # reverse the coordinates arrays to flip
+    #     if self.flip_x:
+    #         m[0] = -1
+    #         xc = np.flip(self._x)
+    #     else:
+    #         xc = self._x
+    #     if self.flip_y:
+    #         m[1] = -1
+    #         yc = np.flip(self._y)
+    #     else:
+    #         yc = self._y
+    #     if self.flip_z:
+    #         m[2] = -1
+    #         zc = np.flip(self._z)
+    #     else:
+    #         zc = self._z
+    #
+    #     # create flip matrix (+1 -> no flip, -1 -> flip)
+    #     M = np.diag(m)
+    #
+    #     # create the displacement matrix to map the transformed min/max coordinates to the original min/max
+    #     coordinates)
+    #     C = np.array([xc, yc, zc])
+    #     d = np.array([np.max(xc) + np.min(xc),
+    #                   np.max(yc) + np.min(yc),
+    #                   np.max(zc) + np.min(zc)])
+    #     S = np.multiply((1 - m) / 2, d)
+    #
+    #     # matrix multiplication and sum element-wise
+    #     flip_x, flip_y, flip_z = map(add, M @ C, S)
+    #
+    #     # update coordinates
+    #     if self.flip_x:
+    #         self._x = np.flip(flip_x)
+    #     else:
+    #         self._x = flip_x
+    #     if self.flip_y:
+    #         self._y = np.flip(flip_y)
+    #     else:
+    #         self._y = flip_y
+    #     if self.flip_z:
+    #         self._z = np.flip(flip_z)
+    #     else:
+    #         self._z = flip_z
 
     # Private interface
     def _unique_points(self):
@@ -291,7 +232,7 @@ class LaserPath(LaserPathParameters):
 
 
 def _example():
-    #### example usefull to test Waveguide, but not Laserpath as stand alone
+    # Example usefull to test Waveguide, but not Laserpath as stand alone
 
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
@@ -303,7 +244,7 @@ def _example():
             lsafe=3,
     )
 
-    LP_instance = LaserPath(PARAMETERS_LP)
+    LP_instance = LaserPath(**PARAMETERS_LP)
 
     path_x = np.array([0, 1, 1, 2])
     path_y = np.array([0, 0, 2, 3])

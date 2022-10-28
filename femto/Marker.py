@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import List
 
 try:
@@ -7,16 +8,18 @@ except ImportError:
 import numpy as np
 
 from femto.Parameters import MarkerParameters
+from femto import LaserPath
 from femto.helpers import sign
 
 
-class Marker(MarkerParameters):
+@dataclass(kw_only=True)
+class Marker(LaserPath, MarkerParameters):
     """
     Class representing an ablation marker.
     """
 
-    def __init__(self, param: dict):
-        super().__init__(**param)
+    # def __init__(self, param: dict):
+    #     super().__init__(**param)
 
     def start(self, init_pos: List[float] = None, speedpos: float = None) -> Self:
         """

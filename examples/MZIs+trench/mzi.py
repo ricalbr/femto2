@@ -1,20 +1,20 @@
-from femto.PGMCompiler import PGMTrench
 from femto import Cell, Marker, PGMCompiler, TrenchColumn, Waveguide
 from femto.helpers import dotdict
+from femto.PGMCompiler import PGMTrench
 
 # GEOMETRICAL DATA
 # Circuit
 PARAMETERS_WG = dotdict(
-    scan=6,
-    speed=20,
-    depth=0.035,
-    radius=15,
-    pitch=0.080,
-    pitch_fa=0.127,
-    int_dist=0.007,
-    int_length=0.0,
-    arm_length=0.0,
-    lsafe=3
+        scan=6,
+        speed=20,
+        depth=0.035,
+        radius=15,
+        pitch=0.080,
+        pitch_fa=0.127,
+        int_dist=0.007,
+        int_length=0.0,
+        arm_length=0.0,
+        lsafe=3
 )
 
 x0 = -2.0
@@ -24,31 +24,31 @@ increment = [PARAMETERS_WG.lsafe, 0.0, 0.0]
 
 # Markers
 PARAMETERS_MK = dotdict(
-    scan=1,
-    speed=4,
-    depth=0.001,
-    speed_pos=5,
+        scan=1,
+        speed=4,
+        depth=0.001,
+        speed_pos=5,
 )
 lx = 1
 ly = 0.05
 
 # Trench
 PARAMETERS_TC = dotdict(
-    length=1.0,
-    nboxz=4,
-    deltaz=0.0015,
-    h_box=0.075,
-    base_folder=r'C:\Users\Capable\Desktop\RiccardoA',
-    y_min=0.08,
-    y_max=0.08 + 6 * PARAMETERS_WG.pitch - 0.02
+        length=1.0,
+        nboxz=4,
+        deltaz=0.0015,
+        h_box=0.075,
+        base_folder=r'C:\Users\Capable\Desktop\RiccardoA',
+        y_min=0.08,
+        y_max=0.08 + 6 * PARAMETERS_WG.pitch - 0.02
 )
 
 # G-CODE DATA
 PARAMETERS_GC = dotdict(
-    filename='MZI.pgm',
-    lab='CAPABLE',
-    samplesize=(25, 25),
-    rotation_angle=1.0
+        filename='MZI.pgm',
+        lab='CAPABLE',
+        samplesize=(25, 25),
+        rotation_angle=1.0
 )
 
 # 20x20 circuit

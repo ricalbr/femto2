@@ -11,6 +11,7 @@ __keywords__ = 'python g-code integrated-circuits quantum-optics'
 # @see: https://stackoverflow.com/a/35710527
 __all__ = [
     'Parameters',
+    'LaserPathParameters',
     'WaveguideParameters',
     'TrenchParameters',
     'GcodeParameters',
@@ -27,7 +28,7 @@ __all__ = [
 ]
 
 from .helpers import *
-from .Parameters import WaveguideParameters, TrenchParameters, GcodeParameters
+from .Parameters import LaserPathParameters, WaveguideParameters, TrenchParameters, GcodeParameters
 from .LaserPath import LaserPath
 from .Waveguide import Waveguide, coupler
 from .Marker import Marker
