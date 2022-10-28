@@ -16,8 +16,12 @@ __all__ = [
     'TrenchParameters',
     'GcodeParameters',
     'LaserPath',
+    '_Waveguide',
     'Waveguide',
+    'coupler',
+    '_Marker',
     'Marker',
+    'RasterImage'
     'Trench',
     'TrenchColumn',
     'PGMCompiler',
@@ -28,10 +32,11 @@ __all__ = [
 ]
 
 from .helpers import *
-from .Parameters import LaserPathParameters, WaveguideParameters, TrenchParameters, GcodeParameters
+from .Parameters import LaserPathParameters, WaveguideParameters, MarkerParameters, RasterImageParameters, TrenchParameters, GcodeParameters
 from .LaserPath import LaserPath
-from .Waveguide import Waveguide, coupler
-from .Marker import Marker
+from .Waveguide import _Waveguide, Waveguide, coupler
+from .Marker import _Marker, Marker
+from .RasterImage import RasterImage
 from .Trench import Trench, TrenchColumn
 from .PGMCompiler import PGMCompiler, PGMTrench
 from .Cell import Cell, Device
