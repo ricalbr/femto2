@@ -7,27 +7,19 @@ from femto.helpers import dotdict
 from femto.Parameters import LaserPathParameters
 
 
-@dataclass(kw_only=True)
+@dataclass(kw_only=True, slots=True)
 class LaserPath(LaserPathParameters):
     """
     Class of irradiated paths. It manages all the coordinates of the laser path and computes the fabrication writing
     time. It is the parent of all other classes through thier *ClassParameter*
     """
 
+    _x: Optional[np.ndarray] = np.array([])
+    _y: Optional[np.ndarray] = np.array([])
+    _z: Optional[np.ndarray] = np.array([])
+    _f: Optional[np.ndarray] = np.array([])
+    _s: Optional[np.ndarray] = np.array([])
     _wtime: float = 0.0
-    _x: Optional[np.ndarray]
-    _y: Optional[np.ndarray]
-    _z: Optional[np.ndarray]
-    _f: Optional[np.ndarray]
-    _s: Optional[np.ndarray]
-
-    def __post_init__(self):
-        super().__post_init__()
-        self._x = np.array([])
-        self._y = np.array([])
-        self._z = np.array([])
-        self._f = np.array([])
-        self._s = np.array([])
 
     @property
     def points(self) -> np.ndarray:
@@ -152,14 +144,11 @@ class LaserPath(LaserPathParameters):
 
     def fabrication_time(self):
         """
-        Computes the time needed to travel along the line.
+        Computes the time needed to travel along the line. It assumes
         """
+        x, y, z, f = self._x, self._y, self._z, self._f
 
         dists = np.sqrt(np.diff(x) ** 2 + np.diff(y) ** 2 + np.diff(z) ** 2)
-        linelength_shutter_on = np.sum(dists[:-1])
-        linelength_shutter_off = dists[-1]
-        self.wtime = (linelength_shutter_on * 1 / self.speed) * self.scan + \
-                     (linelength_shutter_off * 1 / self.speed_closed) * self.scan
         times = dists / f[1:]
         self._wtime = (sum(times)) * self.scan
 
