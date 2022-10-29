@@ -102,9 +102,10 @@ class _Marker(LaserPath, MarkerParameters):
         x_inc, y_inc, z_inc = increment
         f = self.speed if speed is None else speed
         if mode.upper() == 'ABS':
-            self.add_path(x_inc, y_inc, z_inc, f, shutter)
+            self.add_path(x_inc, y_inc, z_inc, np.asarray(f), np.asarray(shutter))
         else:
-            self.add_path(self._x[-1] + x_inc, self._y[-1] + y_inc, self._z[-1] + z_inc, f, shutter)
+            self.add_path(self._x[-1] + x_inc, self._y[-1] + y_inc, self._z[-1] + z_inc, np.asarray(f),
+                          np.asarray(shutter))
         return self
 
     def cross(self, position: List[float], lx: float = 1, ly: float = 0.05):
