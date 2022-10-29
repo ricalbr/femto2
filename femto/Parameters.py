@@ -12,7 +12,6 @@ from scipy.interpolate import interp2d
 from shapely.geometry import box
 
 
-
 @dataclass(kw_only=True)
 class LaserPathParameters:
     """
@@ -306,7 +305,7 @@ class TrenchParameters:
                        self.x_center + self.length / 2, self.y_max)
 
 
-@dataclass
+@dataclass(kw_only=True)
 class GcodeParameters:
     """
     Class containing the parameters for the G-Code file compiler.

@@ -33,7 +33,8 @@ __all__ = [
 ]
 
 from .helpers import *
-from .Parameters import LaserPathParameters, WaveguideParameters, MarkerParameters, RasterImageParameters, TrenchParameters, GcodeParameters
+from .Parameters import LaserPathParameters, WaveguideParameters, MarkerParameters, RasterImageParameters, \
+    TrenchParameters, GcodeParameters
 from .LaserPath import LaserPath
 from .Waveguide import _Waveguide, Waveguide, coupler
 from .Marker import _Marker, Marker
