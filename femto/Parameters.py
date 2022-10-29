@@ -12,8 +12,6 @@ from scipy.interpolate import interp2d
 from shapely.geometry import box
 
 
-# from femto.LaserPath import LaserPath  # Parent of all structures
-
 
 @dataclass(kw_only=True)
 class LaserPathParameters:
@@ -329,6 +327,9 @@ class GcodeParameters:
     short_pause: float = 0.05
     output_digits: int = 6
     speed_pos: float = 5.0
+    flip_x: bool = False
+    flip_y: bool = False
+    flip_z: bool = False
 
     def __post_init__(self):
         if self.filename is None:

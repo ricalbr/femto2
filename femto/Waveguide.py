@@ -70,9 +70,6 @@ class _Waveguide(LaserPath, WaveguideParameters):
         :rtype: _Waveguide
         """
 
-        # flip the path
-        # self.flip_path()
-
         # append the transformed path and add the coordinates to return to the initial point
         x = np.array([self._x[-1], self._x[0]]).astype(np.float32)
         y = np.array([self._y[-1], self._y[0]]).astype(np.float32)
