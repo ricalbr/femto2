@@ -297,12 +297,9 @@ class _Waveguide(LaserPath, WaveguideParameters):
 
     sin_bend = partialmethod(sin_bridge, dz=None)
 
-    def sin_bend_comp(self, dx: float, dy: float, radius: float = None, shutter: int = 1, speed: float = None) -> Self:
+    def sin_bend_comp(self, dx: float, dy: float, shutter: int = 1, speed: float = None) -> Self:
 
-        if radius is None:
-            radius = self.radius
         f = self.speed if speed is None else speed
-
         num = self._get_num(dx, f)
 
         new_x = np.linspace(self._x[-1], self._x[-1] + dx, num)
