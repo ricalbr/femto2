@@ -176,6 +176,31 @@ class LaserPath(LaserPathParameters):
         mask = np.insert(mask, 0, True)
         return np.delete(data, np.where(mask is False), 0).astype(np.float32)
 
+    def _get_num(self, l_curve: float = 0, speed: float = 0) -> int:
+        """
+        Utility function that, given the length of a segment and the fabrication speed, computes the number of points
+        required to work at the maximum command rate (attribute of _Waveguide obj).
+
+        :param l_curve: Length of the waveguide segment [mm]. The default is 0 mm.
+        :type l_curve: float
+        :param speed: Fabrication speed [mm/s]. The default is 0 mm/s.
+        :type speed: float
+        :return: Number of subdivisions.
+        :rtype: int
+
+        :raise ValueError: Speed is set too low.
+        """
+        f = self.speed if speed is None else speed
+        if f < 1e-6:
+            raise ValueError('Speed set to 0.0 mm/s. Check speed parameter.')
+
+        dl = f / self.cmd_rate_max
+        num = int(np.ceil(l_curve / dl))
+        if num <= 1:
+            print('I had to add use an higher instruction rate.\n')
+            return 3
+        return num
+
 
 def _example():
     # Example usefull to test Waveguide, but not Laserpath as stand alone
