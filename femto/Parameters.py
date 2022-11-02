@@ -204,6 +204,8 @@ class MarkerParameters(LaserPathParameters):
     Class containing the parameters for the surface ablation marker fabrication.
     """
     depth: float = 0.0
+    lx: float = 1.0
+    ly: float = 0.060
 
     def __post_init__(self):
         # parent method redefinition, to inclure depth property
