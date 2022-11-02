@@ -3,11 +3,10 @@ import time
 
 import numpy as np
 import plotly.graph_objects as go
-from shapely.affinity import rotate, translate
-from shapely.geometry import Point
-
 from femto import _Marker, _Waveguide, PGMCompiler, PGMTrench, Trench, TrenchColumn
 from femto.helpers import dotdict, listcast, nest_level
+from shapely.affinity import rotate, translate
+from shapely.geometry import Point
 
 
 class Device(PGMCompiler):

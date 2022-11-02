@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from typing import List, Optional
 
 import numpy as np
-
 from femto.helpers import dotdict
 from femto.Parameters import LaserPathParameters
 

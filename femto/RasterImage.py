@@ -2,12 +2,11 @@ from dataclasses import dataclass
 
 import numpy as np
 from dacite import from_dict
-from PIL import Image
-
 from femto.GCODE_plot_colored import GCODE_plot_colored
 from femto.helpers import dotdict
 from femto.LaserPath import LaserPath
 from femto.Parameters import RasterImageParameters
+from PIL import Image
 
 
 @dataclass(kw_only=True)
@@ -15,6 +14,7 @@ class _RasterImage(LaserPath, RasterImageParameters):
     """
     Class representing an X raster laser path in the Xy plane obtained from a balck and white image.
     """
+
     def __post_init__(self):
         super().__post_init__()
 
