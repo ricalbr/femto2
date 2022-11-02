@@ -15,6 +15,8 @@ class _RasterImage(LaserPath, RasterImageParameters):
     """
     Class representing an X raster laser path in the Xy plane obtained from a balck and white image.
     """
+    def __post_init__(self):
+        super().__post_init__()
 
     def __repr__(self):
         return "{cname}@{id:x}".format(cname=self.__class__.__name__, id=id(self) & 0xFFFFFF)

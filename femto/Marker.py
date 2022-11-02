@@ -20,8 +20,8 @@ class _Marker(LaserPath, MarkerParameters):
     Class representing an ablation marker.
     """
 
-    # def __init__(self, param: dict):
-    #     super().__init__(**param)
+    def __post_init__(self):
+        super().__post_init__()
 
     def start(self, init_pos: List[float] = None, speedpos: float = None) -> Self:
         """

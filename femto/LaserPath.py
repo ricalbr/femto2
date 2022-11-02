@@ -7,19 +7,27 @@ from femto.helpers import dotdict
 from femto.Parameters import LaserPathParameters
 
 
-@dataclass(kw_only=True, slots=True)
+@dataclass(kw_only=True)
 class LaserPath(LaserPathParameters):
     """
     Class of irradiated paths. It manages all the coordinates of the laser path and computes the fabrication writing
     time. It is the parent of all other classes through thier *ClassParameter*
     """
 
-    _x: Optional[np.ndarray] = np.array([])
-    _y: Optional[np.ndarray] = np.array([])
-    _z: Optional[np.ndarray] = np.array([])
-    _f: Optional[np.ndarray] = np.array([])
-    _s: Optional[np.ndarray] = np.array([])
+    _x: Optional[np.ndarray] = None
+    _y: Optional[np.ndarray] = None
+    _z: Optional[np.ndarray] = None
+    _f: Optional[np.ndarray] = None
+    _s: Optional[np.ndarray] = None
     _wtime: float = 0.0
+
+    def __post_init__(self):
+        super().__post_init__()
+        self._x = np.array([])
+        self._y = np.array([])
+        self._z = np.array([])
+        self._f = np.array([])
+        self._s = np.array([])
 
     @property
     def points(self) -> np.ndarray:

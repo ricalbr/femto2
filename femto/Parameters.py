@@ -20,7 +20,7 @@ class LaserPathParameters:
 
     scan: int = 1
     speed: float = 1.0
-    x_init: float = 0
+    x_init: float = -2.0
     y_init: float = None
     z_init: float = None
     lsafe: float = 2.0
@@ -31,8 +31,15 @@ class LaserPathParameters:
     samplesize: Tuple[float, float] = (None, None)
 
     def __post_init__(self):
+
         if not isinstance(self.scan, int):
             raise ValueError('Number of scan must be integer.')
+
+        if self.z_init is None:
+            if self.depth is None:
+                raise ValueError('Waveguide depth is None.')
+            else:
+                self.z_init = self.depth
 
     @property
     def init_point(self):
@@ -80,7 +87,9 @@ class WaveguideParameters(LaserPathParameters):
     margin: float = 1.0
 
     def __post_init__(self):
-        # parent method redefinition, to inclure depth property
+        super().__post_init__()
+
+        # parent method redefinition, to include depth property
         if not isinstance(self.scan, int):
             print(self.scan)
             raise ValueError('Number of scan must be integer.')
@@ -197,7 +206,6 @@ class WaveguideParameters(LaserPathParameters):
         return pos_diff[0], pos_diff[1], pos_diff[2], l_curve
 
 
-# @dataclass
 @dataclass(kw_only=True)
 class MarkerParameters(LaserPathParameters):
     """
@@ -208,7 +216,9 @@ class MarkerParameters(LaserPathParameters):
     ly: float = 0.060
 
     def __post_init__(self):
-        # parent method redefinition, to inclure depth property
+        super().__post_init__()
+
+        # parent method redefinition, to include depth property
         if not isinstance(self.scan, int):
             raise ValueError('Number of scan must be integer.')
 
@@ -217,7 +227,7 @@ class MarkerParameters(LaserPathParameters):
 
     @property
     def init_point(self):
-        # parent method redefinition, to inclure depth property
+        # parent method redefinition, to include depth property
         if self.y_init is None:
             y0 = 0.0
         else:
@@ -236,6 +246,9 @@ class RasterImageParameters(LaserPathParameters):
     """
     px_to_mm: float = 0.01  # pixel to millimeter scale when converting image to laser path
     img_size: Tuple[int, int] = (None, None)
+
+    def __post_init__(self):
+        super().__post_init__()
 
     @property
     def path_size(self):

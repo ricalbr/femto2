@@ -21,6 +21,9 @@ class _Waveguide(LaserPath, WaveguideParameters):
     Class representing an optical waveguide.
     """
 
+    def __post_init__(self):
+        super().__post_init__()
+
     def __repr__(self):
         return "{cname}@{id:x}".format(cname=self.__class__.__name__, id=id(self) & 0xFFFFFF)
 
