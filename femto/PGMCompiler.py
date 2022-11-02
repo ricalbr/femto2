@@ -73,15 +73,18 @@ class PGMCompiler(GcodeParameters):
     def header(self):
         """
         The function print the header file of the G-Code file. The user can specify the fabrication line to work in
-        ``CAPABLE`` or ``FIRE LINE1`` as parameter when the G-Code Compiler obj is instantiated.
+        ``CAPABLE``, ``CARBIDE`` or ``FIRE LINE1`` as parameter when the G-Code Compiler obj is instantiated.
 
         :return: None
         """
-        if self.lab.upper() not in ['CAPABLE', 'FIRE']:
-            raise ValueError(f'Fabrication line should be CAPABLE or FIRE. Given {self.lab.upper()}.')
+        if self.lab.upper() not in ['CAPABLE', 'FIRE', 'CARBIDE']:
+            raise ValueError(f'Fabrication line should be CAPABLE, CARBIDE or FIRE. Given {self.lab.upper()}.')
 
         if self.lab.upper() == 'CAPABLE':
             with open(os.path.join(self.CWD, 'utils', 'header_capable.txt')) as fd:
+                self._instructions.extend(fd.readlines())
+        elif self.lab.upper() == 'CARBIDE':
+            with open(os.path.join(self.CWD, 'utils', 'header_carbide.txt')) as fd:
                 self._instructions.extend(fd.readlines())
         else:
             with open(os.path.join(self.CWD, 'utils', 'header_fire.txt')) as fd:
