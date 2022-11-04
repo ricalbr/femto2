@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 import numpy as np
 from dacite import from_dict
-from femto.GCODE_plot_colored import GCODE_plot_colored
+from femto.utils.GCODE_plot_colored import GCODE_plot_colored
 from femto.helpers import dotdict
 from femto.LaserPath import LaserPath
 from femto.Parameters import RasterImageParameters
