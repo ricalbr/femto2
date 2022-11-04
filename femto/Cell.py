@@ -3,10 +3,9 @@ import time
 
 import numpy as np
 import plotly.graph_objects as go
+
 from femto import _Marker, _Waveguide, PGMCompiler, PGMTrench, Trench, TrenchColumn
 from femto.helpers import dotdict, listcast, nest_level
-from shapely.affinity import rotate, translate
-from shapely.geometry import Point
 
 
 class Device(PGMCompiler):
@@ -104,7 +103,7 @@ class Device(PGMCompiler):
             # Create (X,Y,Z,F,S) matrix for points transformation
             xt = xt.reshape(-1, 1)
             yt = yt.reshape(-1, 1)
-            dummy_p = np.empty(shape=(xt.shape[0], 3)) # dummy set of points for z, f, s cooridnates
+            dummy_p = np.empty(shape=(xt.shape[0], 3))  # dummy set of points for z, f, s cooridnates
 
             pt = np.hstack((xt, yt, dummy_p)).astype(np.float32)
 

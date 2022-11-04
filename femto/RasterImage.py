@@ -2,11 +2,12 @@ from dataclasses import dataclass
 
 import numpy as np
 from dacite import from_dict
-from femto.utils.GCODE_plot_colored import GCODE_plot_colored
+from PIL import Image
+
 from femto.helpers import dotdict
 from femto.LaserPath import LaserPath
 from femto.Parameters import RasterImageParameters
-from PIL import Image
+from femto.utils.GCODE_plot_colored import GCODE_plot_colored
 
 
 @dataclass(kw_only=True)

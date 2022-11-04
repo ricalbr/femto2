@@ -4,10 +4,11 @@ from typing import Generator, Iterator, List
 import numpy as np
 import shapely.geometry
 from descartes import PolygonPatch
+from shapely.geometry import LineString, Polygon, polygon
+
 from femto.helpers import dotdict, flatten, listcast
 from femto.Parameters import TrenchParameters
 from femto.Waveguide import _Waveguide
-from shapely.geometry import LineString, Polygon, polygon
 
 
 class Trench:
