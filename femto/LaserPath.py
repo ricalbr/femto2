@@ -225,10 +225,9 @@ def _example():
     path_x = np.array([0, 1, 1, 2, 4, 4, 4, 4])
     path_y = np.array([0, 0, 2, 3, 4, 4, 4, 4])
     path_z = np.array([0, 0, 0, 3, 4, 4, 4, 4])
-    path_f = np.array([1, 2, 3, 4, 3, 1, 0, 1])
+    path_f = np.array([1, 2, 3, 4, 3, 1, 6, 1])
     path_s = np.array([1, 1, 1, 1, 1, 1, 1, 0])
     lpath.add_path(path_x, path_y, path_z, path_f, path_s)
-    print(lpath.path3d)
 
     # Plot
     fig = plt.figure()
