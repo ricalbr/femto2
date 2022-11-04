@@ -343,7 +343,6 @@ class GcodeParameters:
     speed_pos: float = 5.0
     flip_x: bool = False
     flip_y: bool = False
-    flip_z: bool = False
 
     def __post_init__(self):
         if self.filename is None:

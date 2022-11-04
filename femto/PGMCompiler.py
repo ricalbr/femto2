@@ -424,18 +424,15 @@ class PGMCompiler(GcodeParameters):
         if self.flip_y:
             flip_toggle[1] = -1
             yc = np.flip(yc)
-        if self.flip_z:
-            flip_toggle[2] = -1
-            zc = np.flip(zc)
 
         # create flip matrix (+1 -> no flip, -1 -> flip)
         flip_matrix = np.diag(flip_toggle)
 
         # create the displacement matrix to map the transformed min/max coordinates to the original min/max coordinates)
         points_matrix = np.array([xc, yc, zc])
-        displacements = np.array([np.max(xc) + np.min(xc),
-                                  np.max(yc) + np.min(yc),
-                                  np.max(zc) + np.min(zc)])
+        displacements = np.array([self.samplesize[0] - self.new_origin[0],
+                                  self.samplesize[1] - self.new_origin[1],
+                                  0])
         S = np.multiply((1 - flip_toggle) / 2, displacements)
 
         # matrix multiplication and sum element-wise, add the displacement only to the flipped coordinates
@@ -450,10 +447,6 @@ class PGMCompiler(GcodeParameters):
             yc = np.flip(flip_y)
         else:
             yc = flip_y
-        if self.flip_z:
-            zc = np.flip(flip_z)
-        else:
-            zc = flip_z
         return xc, yc, zc
 
     def instruction(self, instr: str):

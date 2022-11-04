@@ -98,10 +98,18 @@ class Device(PGMCompiler):
                                             line=mkargs,
                                             showlegend=False,
                                             hovertemplate='(%{x:.4f}, %{y:.4f})<extra>MK</extra>'))
+
         for tr in self.trenches:
-            shape = translate(tr.block, xoff=-self.new_origin[0], yoff=-self.new_origin[1])
-            shape = rotate(shape, angle=self.rotation_angle, use_radians=True, origin=Point(0, 0))
-            xt, yt = np.asarray(shape.exterior.coords.xy)
+            xt, yt = np.asarray(tr.block.exterior.coords.xy)
+            # Create (X,Y,Z,F,S) matrix for points transformation
+            xt = xt.reshape(-1, 1)
+            yt = yt.reshape(-1, 1)
+            dummy_p = np.empty(shape=(xt.shape[0], 3)) # dummy set of points for z, f, s cooridnates
+
+            pt = np.hstack((xt, yt, dummy_p)).astype(np.float32)
+
+            # transform set of points
+            xt, yt, *_ = self.transform_points(pt)
             self.fig.add_trace(go.Scattergl(x=xt, y=yt,
                                             fill='toself',
                                             **tcargs,
