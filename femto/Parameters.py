@@ -35,12 +35,6 @@ class LaserPathParameters:
         if not isinstance(self.scan, int):
             raise ValueError('Number of scan must be integer.')
 
-        if self.z_init is None:
-            if self.depth is None:
-                raise ValueError('Waveguide depth is None.')
-            else:
-                self.z_init = self.depth
-
     @property
     def init_point(self):
         if self.y_init is None:
