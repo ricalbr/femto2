@@ -116,11 +116,13 @@ class LaserPath(LaserPathParameters):
 
     @property
     def path3d(self) -> List:
+        # filter 3D points without F
         x, y, z, s = unique_filter([self._x, self._y, self._z, self._s]).T
+        # mask and select just those with s = 1
         x = np.delete(x, np.where(np.invert(s.astype(bool))))
         y = np.delete(y, np.where(np.invert(s.astype(bool))))
         z = np.delete(z, np.where(np.invert(s.astype(bool))))
-        return unique_filter([x, y, z])
+        return [x, y, z]
 
     @property
     def length(self) -> float:
