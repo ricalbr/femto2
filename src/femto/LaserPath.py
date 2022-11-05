@@ -2,8 +2,10 @@ from dataclasses import dataclass
 from typing import List, Optional
 
 import numpy as np
-from src.femto.helpers import dotdict
+
+from src.femto.helpers import unique_filter
 from src.femto.Parameters import LaserPathParameters
+
 
 @dataclass(kw_only=True)
 class LaserPath(LaserPathParameters):
@@ -47,11 +49,16 @@ class LaserPath(LaserPathParameters):
         :rtype: numpy.ndarray
         """
         coords = self._unique_points().T
-        return coords[0]
+        if coords.ndim == 2:
+            return coords[0]
+        return np.array([])
 
     @property
     def lastx(self) -> float:
-        return self.x[-1]
+        arrx = self.x
+        if arrx.size:
+            return arrx[-1]
+        return None
 
     @property
     def y(self) -> np.ndarray:
@@ -62,11 +69,16 @@ class LaserPath(LaserPathParameters):
         :rtype: numpy.ndarray
         """
         coords = self._unique_points().T
-        return coords[1]
+        if coords.ndim == 2:
+            return coords[1]
+        return np.array([])
 
     @property
     def lasty(self) -> float:
-        return self.y[-1]
+        arry = self.y
+        if arry.size:
+            return arry[-1]
+        return None
 
     @property
     def z(self) -> np.ndarray:
@@ -77,11 +89,16 @@ class LaserPath(LaserPathParameters):
         :rtype: numpy.ndarray
         """
         coords = self._unique_points().T
-        return coords[2]
+        if coords.ndim == 2:
+            return coords[2]
+        return np.array([])
 
     @property
     def lastz(self) -> float:
-        return self.z[-1]
+        arrz = self.z
+        if arrz.size:
+            return arrz[-1]
+        return None
 
     @property
     def lastpt(self) -> np.ndarray:
@@ -220,12 +237,13 @@ def _example():
 
     lpath = LaserPath(**PARAMETERS_LP)
 
-    path_x = np.array([0, 1, 1, 2, 4, 4, 4, 4])
-    path_y = np.array([0, 0, 2, 3, 4, 4, 4, 4])
-    path_z = np.array([0, 0, 0, 3, 4, 4, 4, 4])
-    path_f = np.array([1, 2, 3, 4, 3, 1, 6, 1])
-    path_s = np.array([1, 1, 1, 1, 1, 1, 1, 0])
+    path_x = np.array([0, 1, 1, 1, 1, 1, 2, 2, 2])
+    path_y = np.array([0, 0, 1, 1, 1, 2, 3, 3, 3])
+    path_z = np.array([0, 0, 1, 1, 1, 0, 3, 3, 3])
+    path_f = np.array([1, 2, 1, 1, 1, 3, 4, 4, 4])
+    path_s = np.array([1, 1, 1, 1, 1, 1, 1, 1, 1])
     lpath.add_path(path_x, path_y, path_z, path_f, path_s)
+    print(lpath.points.T)
 
     # Plot
     fig = plt.figure()
@@ -237,7 +255,7 @@ def _example():
     ax.set_zlabel('Z [mm]')
     ax.plot(lpath.x, lpath.y, lpath.z, '-k', linewidth=2.5)
     ax.set_box_aspect(aspect=(3, 1, 0.5))
-    plt.show()
+    # plt.show()
 
     print("Expected writing time {:.3f} seconds".format(lpath.wtime))
     print("Laser path length {:.3f} mm".format(lpath.length))

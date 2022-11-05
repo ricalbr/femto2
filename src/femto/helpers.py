@@ -74,6 +74,10 @@ def unique_filter(arrays: List) -> np.ndarray:
     # data matrix
     data = np.stack(arrays, axis=-1).astype(np.float32)
 
+    # empty array list
+    if data.size == 0:
+        return np.array([])
+
     # mask
     mask = np.diff(data, axis=0)
     mask = np.sum(np.abs(mask), axis=1, dtype=bool)
