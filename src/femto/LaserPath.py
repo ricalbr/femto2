@@ -5,7 +5,6 @@ import numpy as np
 from src.femto.helpers import dotdict
 from src.femto.Parameters import LaserPathParameters
 
-
 @dataclass(kw_only=True)
 class LaserPath(LaserPathParameters):
     """
@@ -110,14 +109,14 @@ class LaserPath(LaserPathParameters):
 
     @property
     def path(self) -> List:
-        x, y, z, _, s = self.points.T
-        x = np.delete(x, np.where(np.invert(s.astype(bool))))
-        y = np.delete(y, np.where(np.invert(s.astype(bool))))
+        x, y, _ = self.path3d
         return [x, y]
 
     @property
     def path3d(self) -> List:
-        x, y, z, _, s = self.points.T
+        # filter 3D points without F
+        x, y, z, s = unique_filter([self._x, self._y, self._z, self._s]).T
+        # mask and select just those with s = 1
         x = np.delete(x, np.where(np.invert(s.astype(bool))))
         y = np.delete(y, np.where(np.invert(s.astype(bool))))
         z = np.delete(z, np.where(np.invert(s.astype(bool))))
@@ -177,11 +176,7 @@ class LaserPath(LaserPathParameters):
         :return: Modified coordinate matrix (x, y, z, f, s) without duplicates.
         :rtype: numpy.ndarray
         """
-        data = np.stack((self._x, self._y, self._z, self._f, self._s), axis=-1).astype(np.float32)
-        mask = np.diff(data, axis=0)
-        mask = np.sum(np.abs(mask), axis=1, dtype=bool)
-        mask = np.insert(mask, 0, True)
-        return np.delete(data, np.where(mask is False), 0).astype(np.float32)
+        return unique_filter([self._x, self._y, self._z, self._f, self._s])
 
     def _get_num(self, l_curve: float = 0, speed: float = 0) -> int:
         """
@@ -212,6 +207,7 @@ class LaserPath(LaserPathParameters):
 def _example():
     # Example usefull to test Waveguide, but not Laserpath as stand alone
 
+    from femto.helpers import dotdict
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
 
@@ -222,15 +218,14 @@ def _example():
             lsafe=3,
     )
 
-    LP_instance = LaserPath(**PARAMETERS_LP)
+    lpath = LaserPath(**PARAMETERS_LP)
 
-    path_x = np.array([0, 1, 1, 2])
-    path_y = np.array([0, 0, 2, 3])
-    path_z = np.array([0, 0, 0, 3])
-    path_f = np.array([1, 2, 3, 4])
-    path_s = np.array([1, 1, 1, 1])
-    LP_instance.add_path(path_x, path_y, path_z, path_f, path_s)
-    # increment = [PARAMETERS_WG.lsafe, 0, 0]
+    path_x = np.array([0, 1, 1, 2, 4, 4, 4, 4])
+    path_y = np.array([0, 0, 2, 3, 4, 4, 4, 4])
+    path_z = np.array([0, 0, 0, 3, 4, 4, 4, 4])
+    path_f = np.array([1, 2, 3, 4, 3, 1, 6, 1])
+    path_s = np.array([1, 1, 1, 1, 1, 1, 1, 0])
+    lpath.add_path(path_x, path_y, path_z, path_f, path_s)
 
     # Plot
     fig = plt.figure()
@@ -240,12 +235,12 @@ def _example():
     ax.set_xlabel('X [mm]')
     ax.set_ylabel('Y [mm]')
     ax.set_zlabel('Z [mm]')
-    ax.plot(LP_instance.x, LP_instance.y, LP_instance.z, '-k', linewidth=2.5)
+    ax.plot(lpath.x, lpath.y, lpath.z, '-k', linewidth=2.5)
     ax.set_box_aspect(aspect=(3, 1, 0.5))
     plt.show()
 
-    print("Expected writing time {:.3f} seconds".format(LP_instance.wtime))
-    print("Laser path length {:.3f} mm".format(LP_instance.length))
+    print("Expected writing time {:.3f} seconds".format(lpath.wtime))
+    print("Laser path length {:.3f} mm".format(lpath.length))
 
 
 if __name__ == '__main__':
