@@ -10,9 +10,9 @@ except ImportError:
     from typing_extensions import Self
 from scipy.interpolate import CubicSpline, InterpolatedUnivariateSpline
 from functools import partialmethod
-from femto.helpers import dotdict
-from femto import LaserPath
-from femto.Parameters import WaveguideParameters
+from src.femto.helpers import dotdict
+from src.femto import LaserPath
+from src.femto.Parameters import WaveguideParameters
 
 
 @dataclass(kw_only=True)

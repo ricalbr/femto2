@@ -9,9 +9,9 @@ except ImportError:
     from typing_extensions import Self
 import numpy as np
 
-from femto.Parameters import MarkerParameters
-from femto import LaserPath
-from femto.helpers import sign
+from src.femto.Parameters import MarkerParameters
+from src.femto import LaserPath
+from src.femto.helpers import sign
 
 
 @dataclass(kw_only=True)
@@ -239,7 +239,7 @@ def Marker(param):
 
 
 def _example():
-    from femto.helpers import dotdict
+    from src.femto.helpers import dotdict
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
 
@@ -262,7 +262,7 @@ def _example():
     c.cross([2.5, 1], 5, 2)
     print(c.points)
 
-    from femto import PGMCompiler
+    from src.femto import PGMCompiler
     with PGMCompiler(PARAMETERS_GC) as gc:
         gc.write(c.points)
 

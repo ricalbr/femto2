@@ -1,6 +1,6 @@
 from functools import partial
 from itertools import cycle
-from typing import List
+from typing import List, Tuple
 
 
 def grouped(iterable, n):
@@ -12,7 +12,7 @@ def grouped(iterable, n):
 pairwise = partial(grouped, n=2)
 
 
-def swap(array, swap_pos: List[tuple], zero_index=False):
+def swap(array: List, swap_pos: List[Tuple], zero_index=False) -> List:
     # in case of a single swap, swap_pos can be (pos1, pos2).
     # Encapsulate the tuple in a list to have compatibility with general code
     if not isinstance(swap_pos, list):

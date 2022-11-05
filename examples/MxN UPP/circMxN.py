@@ -1,6 +1,6 @@
 import time
 
-from femto import Cell, _Marker, TrenchColumn, _Waveguide
+from src.femto import Cell, _Marker, TrenchColumn, _Waveguide
 from param import *
 
 t0 = time.perf_counter()

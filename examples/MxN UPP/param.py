@@ -1,4 +1,4 @@
-from femto.helpers import dotdict
+from src.femto import dotdict
 
 # GEOMETRICAL DATA
 MM = 20

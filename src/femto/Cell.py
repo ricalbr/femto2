@@ -4,8 +4,8 @@ import time
 import numpy as np
 import plotly.graph_objects as go
 
-from femto import _Marker, _Waveguide, PGMCompiler, PGMTrench, Trench, TrenchColumn
-from femto.helpers import dotdict, listcast, nest_level
+from src.femto import _Marker, _Waveguide, PGMCompiler, PGMTrench, Trench, TrenchColumn
+from src.femto.helpers import dotdict, listcast, nest_level
 
 
 class Device(PGMCompiler):
@@ -118,7 +118,7 @@ class Device(PGMCompiler):
         # GLASS
         self.fig.add_shape(type='rect', x0=0 - self.new_origin[0], y0=0 - self.new_origin[1],
                            x1=self.xsample - self.new_origin[0], y1=self.ysample - self.new_origin[1],
-                           **default_pcargs)
+                           **pcargs)
 
         # ORIGIN
         self.fig.add_trace(go.Scattergl(x=[0], y=[0],
@@ -378,7 +378,7 @@ class Cell(Device):
 
 
 def _example():
-    from femto.helpers import dotdict
+    from src.femto.helpers import dotdict
 
     PARAMETERS_GC = dotdict(
             filename='testMarker.pgm',

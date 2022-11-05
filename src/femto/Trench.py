@@ -6,9 +6,9 @@ import shapely.geometry
 from descartes import PolygonPatch
 from shapely.geometry import LineString, Polygon, polygon
 
-from femto.helpers import dotdict, flatten, listcast
-from femto.Parameters import TrenchParameters
-from femto.Waveguide import _Waveguide
+from src.femto.helpers import dotdict, flatten, listcast
+from src.femto.Parameters import TrenchParameters
+from src.femto.Waveguide import _Waveguide
 
 
 class Trench:

@@ -1,6 +1,6 @@
 import numpy as np
 
-from femto import Cell, PGMCompiler, _Waveguide
+from src.femto import Cell, PGMCompiler, _Waveguide
 from param import *
 
 np.set_printoptions(formatter={'float': "\t{: 0.6f}".format})

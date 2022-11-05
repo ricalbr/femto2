@@ -1,6 +1,6 @@
-from femto import Cell, _Marker, PGMCompiler, TrenchColumn, _Waveguide
-from femto.helpers import dotdict
-from femto.PGMCompiler import PGMTrench
+from src.femto import Cell, _Marker, PGMCompiler, TrenchColumn, _Waveguide
+from src.femto import dotdict
+from src.femto import PGMTrench
 
 # GEOMETRICAL DATA
 # Circuit

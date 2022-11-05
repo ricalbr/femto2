@@ -1,4 +1,4 @@
-from femto.helpers import dotdict
+from src.femto import dotdict
 
 # GEOMETRICAL DATA
 PARAMETERS_WG = dotdict(

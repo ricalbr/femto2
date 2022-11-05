@@ -8,16 +8,12 @@ from pathlib import Path
 
 import numpy as np
 
-from femto.helpers import dotdict, listcast
+from src.femto.helpers import dotdict, listcast
 
-try:
-    from typing import Self
-except ImportError:
-    from typing_extensions import Self
 from typing import List
 
-from femto import Trench, TrenchColumn
-from femto.Parameters import GcodeParameters
+from src.femto import Trench, TrenchColumn
+from src.femto.Parameters import GcodeParameters
 
 
 class PGMCompiler(GcodeParameters):
@@ -613,7 +609,7 @@ class PGMCompiler(GcodeParameters):
     def _enter_axis_rotation(self, angle: float = None):
         self.comment('ACTIVATE AXIS ROTATION')
         self._instructions.append(f'LINEAR X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{self.speed_pos:.6f}\n')
-        self._instructions.append(f'G84 X Y\n')
+        self._instructions.append('G84 X Y\n')
 
         if angle is None:
             return
@@ -624,7 +620,7 @@ class PGMCompiler(GcodeParameters):
     def _exit_axis_rotation(self):
         self.comment('DEACTIVATE AXIS ROTATION')
         self._instructions.append(f'LINEAR X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{self.speed_pos:.6f}\n')
-        self._instructions.append(f'G84 X Y\n')
+        self._instructions.append('G84 X Y\n')
 
 
 class PGMTrench(PGMCompiler):
@@ -780,7 +776,7 @@ class PGMTrench(PGMCompiler):
 
 
 def _example():
-    from femto import Waveguide, Cell
+    from src.femto import Waveguide, Cell
 
     # Data
     PARAMETERS_WG = dotdict(

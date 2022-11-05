@@ -4,10 +4,10 @@ import numpy as np
 from dacite import from_dict
 from PIL import Image
 
-from femto.helpers import dotdict
-from femto.LaserPath import LaserPath
-from femto.Parameters import RasterImageParameters
-from femto.utils.GCODE_plot_colored import GCODE_plot_colored
+from src.femto.helpers import dotdict
+from src.femto.LaserPath import LaserPath
+from src.femto.Parameters import RasterImageParameters
+from src.femto.utils.GCODE_plot_colored import GCODE_plot_colored
 
 
 @dataclass(kw_only=True)

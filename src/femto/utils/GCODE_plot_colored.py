@@ -5,12 +5,12 @@ Created on Thu Oct 13 22:02:29 2022
 @author: fedes
 """
 
+import numpy as np
+import pandas as pd
 import plotly.express as px
 import plotly.io as pio
 
 pio.renderers.default = 'browser'
-import pandas as pd
-import numpy as np
 
 
 def GCODE_plot_colored(GCODE_array: np.ndarray):

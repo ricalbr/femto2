@@ -21,7 +21,7 @@ class LaserPathParameters:
     scan: int = 1
     speed: float = 1.0
     x_init: float = -2.0
-    y_init: float = None
+    y_init: float = 0.0
     z_init: float = None
     lsafe: float = 2.0
     speed_closed: float = 5
@@ -31,21 +31,13 @@ class LaserPathParameters:
     samplesize: Tuple[float, float] = (None, None)
 
     def __post_init__(self):
-
         if not isinstance(self.scan, int):
             raise ValueError('Number of scan must be integer.')
 
     @property
     def init_point(self):
-        if self.y_init is None:
-            y0 = 0.0
-        else:
-            y0 = self.y_init
-        if self.z_init is None:
-            z0 = 0.0
-        else:
-            z0 = self.z_init
-        return [self.x_init, y0, z0]
+        z0 = self.z_init if self.z_init else 0.0
+        return [self.x_init, self.y_init, z0]
 
     @property
     def lvelo(self) -> float:

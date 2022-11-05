@@ -87,7 +87,7 @@ First, import all the required packages
 
 ```python
 import matplotlib.pyplot as plt
-from femto import Cell, PGMCompiler, Waveguide
+from src.femto import Cell, PGMCompiler, Waveguide
 ```
 
 Define a `Cell` which represents a circuit
