@@ -319,7 +319,7 @@ class Cell(Device):
             for bunch in self.waveguides:
                 with G.repeat(listcast(bunch)[0].scan):
                     for wg in listcast(bunch):
-                        _wg_fab_time += wg.wtime
+                        _wg_fab_time += wg.fabrication_time
                         G.write(wg.points)
             G.go_init()
         del G
@@ -348,7 +348,7 @@ class Cell(Device):
             for idx, bunch in enumerate(self.markers):
                 with G.repeat(listcast(bunch)[0].scan):
                     for mk in listcast(bunch):
-                        _mk_fab_time += mk.wtime
+                        _mk_fab_time += mk.fabrication_time
                         G.comment(f'MARKER {idx + 1}')
                         G.write(mk.points)
                         G.comment('')
@@ -369,7 +369,7 @@ class Cell(Device):
         if verbose:
             _tc_fab_time = 0.0
             for col in self.trench_cols:
-                _tc_fab_time += col.wtime
+                _tc_fab_time += col.fabrication_time
 
             print('G-code compilation completed.')
             print('Estimated fabrication time of the isolation trenches: ',

@@ -19,7 +19,6 @@ class LaserPath(LaserPathParameters):
     _z: Optional[np.ndarray] = None
     _f: Optional[np.ndarray] = None
     _s: Optional[np.ndarray] = None
-    _wtime: float = 0.0
 
     def __post_init__(self):
         super().__post_init__()
@@ -98,18 +97,6 @@ class LaserPath(LaserPathParameters):
         return np.array([])
 
     @property
-    def wtime(self) -> float:
-        """
-        Getter for the laserpath fabrication time.
-
-        :return: Fabrication time in seconds
-        :rtype: float
-        """
-
-        self.fabrication_time()
-        return self._wtime
-
-    @property
     def path(self) -> List:
         x, y, _ = self.path3d
         return [x, y]
@@ -150,15 +137,22 @@ class LaserPath(LaserPathParameters):
         self._f = np.append(self._f, f)
         self._s = np.append(self._s, s)
 
-    def fabrication_time(self):
+    @property
+    def fabrication_time(self) -> float:
         """
-        Computes the time needed to travel along the line. It assumes
+        Getter for the laserpath fabrication time.
+
+        :return: Fabrication time in seconds
+        :rtype: float
         """
-        x, y, z, f = self._x, self._y, self._z, self._f
+        x = np.tile(self._x, self.scan)
+        y = np.tile(self._y, self.scan)
+        z = np.tile(self._z, self.scan)
+        f = np.tile(self._f, self.scan)
 
         dists = np.sqrt(np.diff(x) ** 2 + np.diff(y) ** 2 + np.diff(z) ** 2)
         times = dists / f[1:]
-        self._wtime = (sum(times)) * self.scan
+        return sum(times)
 
     # Private interface
     def _unique_points(self):
@@ -222,11 +216,11 @@ def _example():
 
     lpath = LaserPath(**PARAMETERS_LP)
 
-    path_x = np.array([0, 1, 1, 2, 4, 4, 4, 4])
-    path_y = np.array([0, 0, 2, 3, 4, 4, 4, 4])
-    path_z = np.array([0, 0, 0, 3, 4, 4, 4, 4])
-    path_f = np.array([1, 2, 3, 4, 3, 1, 6, 1])
-    path_s = np.array([1, 1, 1, 1, 1, 1, 1, 0])
+    path_x = np.array([0, 1, 1, 2, 4, 4, 4, 4, 4, 6, 4, 4, 4, 4, 4])
+    path_y = np.array([0, 0, 2, 3, 4, 4, 4, 4, 4, 7, 4, 4, 4, 4, 4])
+    path_z = np.array([0, 0, 0, 3, 4, 4, 4, 4, 4, 6, 4, 4, 4, 4, 4])
+    path_f = np.array([1, 2, 3, 4, 3, 1, 1, 1, 1, 3, 1, 1, 1, 6, 1])
+    path_s = np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 1, 1, 1, 0])
     lpath.add_path(path_x, path_y, path_z, path_f, path_s)
 
     # Plot
@@ -241,7 +235,7 @@ def _example():
     ax.set_box_aspect(aspect=(3, 1, 0.5))
     plt.show()
 
-    print("Expected writing time {:.3f} seconds".format(lpath.wtime))
+    print("Expected writing time {:.3f} seconds".format(lpath.fabrication_time))
     print("Laser path length {:.3f} mm".format(lpath.length))
 
 

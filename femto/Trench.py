@@ -152,7 +152,7 @@ class TrenchColumn(TrenchParameters):
         return iter(self._trench_list)
 
     @property
-    def wtime(self) -> float:
+    def fabrication_time(self) -> float:
         l_tot = 0.0
         for trench in self._trench_list:
             l_tot += self.nboxz * (self.n_repeat * trench.wall_length + trench.floor_length)
