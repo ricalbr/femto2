@@ -491,8 +491,9 @@ class _Waveguide(LaserPath, WaveguideParameters):
         :return: Array of the curvature radii computed at each point of the curve.
         :rtype: numpy.ndarray
         """
-        (x, y, z, _, _) = self._unique_points().T
-
+        
+        (x, y, z) = self.path3d
+        
         dx_dt = np.gradient(x)
         dy_dt = np.gradient(y)
         dz_dt = np.gradient(z)
@@ -509,7 +510,7 @@ class _Waveguide(LaserPath, WaveguideParameters):
 
         # only divide nonzeros else Inf
         curvature_radius = np.divide(num, den, out=default_zero, where=(den != 0))
-        return curvature_radius
+        return curvature_radius[2:-2]
 
     def cmd_rate(self) -> np.ndarray:
         """
