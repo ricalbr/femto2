@@ -100,11 +100,11 @@ class _Waveguide(LaserPath, WaveguideParameters):
 
         :raise ValueError: Mode is neither INC nor ABS.
         """
-        if mode.upper() not in ['ABS', 'INC']:
+        if mode.lower() not in ['abs', 'inc']:
             raise ValueError(f'Mode should be either ABS or INC. {mode.upper()} was given.')
         x_inc, y_inc, z_inc = increment
         f = self.speed if speed is None else speed
-        if mode.upper() == 'ABS':
+        if mode.lower() == 'abs':
             self.add_path(x_inc, y_inc, z_inc, np.asarray(f), np.asarray(shutter))
         else:
             self.add_path(self._x[-1] + x_inc, self._y[-1] + y_inc, self._z[-1] + z_inc, np.asarray(f), np.asarray(

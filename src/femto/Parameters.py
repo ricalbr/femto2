@@ -315,7 +315,7 @@ class GcodeParameters:
     filename: str = None
     export_dir: str = ''
     samplesize: Tuple[float, float] = (None, None)
-    lab: str = 'CAPABLE'
+    laser: str = 'CAPABLE'
     home: bool = False
     new_origin: Tuple[float] = (0.0, 0.0)
     warp_flag: bool = False
@@ -369,10 +369,9 @@ class GcodeParameters:
         :return: shuttering time
         :rtype: float
         """
-        if self.lab.upper() not in ['CAPABLE', 'DIAMOND', 'FIRE']:
-            raise ValueError('Lab can be only CAPABLE, DIAMOND or FIRE',
-                             f'Given {self.lab}.')
-        if self.lab.upper() == 'CAPABLE':
+        if self.laser.lower() not in ['pharos', 'carbide', 'uwe']:
+            raise ValueError('Laser can be only PHAROS, CARBIDE or UWE. Given {self.laser.upper()}.')
+        if self.laser.lower() == 'pharos':
             return 0.000
         else:
             return 0.005
@@ -392,8 +391,7 @@ class GcodeParameters:
 
         if opt:
             if any(x is None for x in self.samplesize):
-                raise ValueError('Wrong sample size dimensions.',
-                                 f'Given ({self.samplesize[0]}, {self.samplesize[1]}).')
+                raise ValueError(f'Wrong sample size dimensions. Given ({self.samplesize[0]}, {self.samplesize[1]}).')
             function_pickle = os.path.join(self.CWD, "fwarp.pkl")
             if os.path.exists(function_pickle):
                 fwarp = pickle.load(open(function_pickle, "rb"))

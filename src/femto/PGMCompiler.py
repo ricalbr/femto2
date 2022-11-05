@@ -73,17 +73,17 @@ class PGMCompiler(GcodeParameters):
 
         :return: None
         """
-        if self.lab.upper() not in ['CAPABLE', 'FIRE', 'CARBIDE']:
-            raise ValueError(f'Fabrication line should be CAPABLE, CARBIDE or FIRE. Given {self.lab.upper()}.')
+        if self.laser.lower() not in ['pharos', 'carbide', 'uwe']:
+            raise ValueError(f'Fabrication line should be PHAROS, CARBIDE or UWE. Given {self.laser.upper()}.')
 
-        if self.lab.upper() == 'CAPABLE':
-            with open(os.path.join(self.CWD, 'utils', 'header_capable.txt')) as fd:
+        if self.laser.lower() == 'pharos':
+            with open(os.path.join(self.CWD, 'utils', 'header_pharos.txt')) as fd:
                 self._instructions.extend(fd.readlines())
-        elif self.lab.upper() == 'CARBIDE':
+        elif self.laser.lower() == 'carbide':
             with open(os.path.join(self.CWD, 'utils', 'header_carbide.txt')) as fd:
                 self._instructions.extend(fd.readlines())
         else:
-            with open(os.path.join(self.CWD, 'utils', 'header_fire.txt')) as fd:
+            with open(os.path.join(self.CWD, 'utils', 'header_uwe.txt')) as fd:
                 self._instructions.extend(fd.readlines())
 
     def dvar(self, variables: List[str]):
