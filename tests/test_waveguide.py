@@ -89,11 +89,114 @@ def test_wg_values(waveguide) -> None:
     assert waveguide.margin == float(1.0)
 
 
-def test_z_init():
-    wg = _Waveguide(z_init=None, depth=0.05)
+def test_z_init(param):
+    param['z_init'] = None
+    param['depth'] = 0.05
+    wg = _Waveguide(**param)
     assert wg.z_init == float(0.05)
 
 
-def test_scan():
+def test_scan(param):
+    param['scan'] = 1.2
     with pytest.raises(ValueError):
-        wg = _Waveguide(scan=1.2)
+        wg = _Waveguide(**param)
+
+
+def test_dy_bend_pitch_error(waveguide):
+    waveguide.pitch = None
+    with pytest.raises(ValueError):
+        waveguide.dy_bend
+
+
+def test_dy_bend_int_dist_error(waveguide):
+    waveguide.int_dist = None
+    with pytest.raises(ValueError):
+        waveguide.dy_bend
+
+
+def test_dy_bend(waveguide):
+    assert waveguide.dy_bend == 0.061
+
+
+def test_dx_bend_radius_error(waveguide):
+    waveguide.radius = None
+    with pytest.raises(ValueError):
+        waveguide.dx_bend
+
+
+def test_dx_bend(waveguide):
+    assert pytest.approx(waveguide.dx_bend, 2.469064)
+
+
+def test_dx_acc_None(param):
+    param['int_length'] = None
+    wg = _Waveguide(**param)
+    assert wg.dx_acc is None
+
+
+def test_dx_acc(waveguide):
+    assert pytest.approx(waveguide.dx_acc, 4.938129)
+
+
+def test_dx_acc_int_l(param):
+    param['int_length'] = 2
+    wg = _Waveguide(**param)
+    assert pytest.approx(wg.dx_acc, 6.938129)
+
+
+def test_dx_mzi_none_intl(param):
+    param['int_length'] = None
+    wg = _Waveguide(**param)
+    assert wg.dx_mzi is None
+
+
+def test_dx_mzi_none_arml(param):
+    param['arm_length'] = None
+    wg = _Waveguide(**param)
+    assert wg.dx_mzi is None
+
+
+def test_dx_mzi(waveguide):
+    assert pytest.approx(waveguide.dx_mzi, 10.876258)
+
+
+def test_dx_mzi_int_l(param):
+    param['int_length'] = 2
+    wg = _Waveguide(**param)
+    assert pytest.approx(wg.dx_mzi, 14.876258)
+
+
+def test_dx_mzi_arml(param):
+    param['arm_length'] = 3
+    wg = _Waveguide(**param)
+    assert pytest.approx(wg.dx_mzi, 13.876258)
+
+
+def test_get_sbend_param_error(waveguide):
+    dy = 0.08
+    r = 0
+    with pytest.raises(ValueError):
+        waveguide.get_sbend_parameter(dy, r)
+
+
+def test_get_sbend_param(waveguide):
+    dy = 0.08
+    r = 30
+    assert type(waveguide.get_sbend_parameter(dy, r)) == tuple
+    assert pytest.approx(waveguide.get_sbend_parameter(dy, r)[0], 0.999848)
+    assert pytest.approx(waveguide.get_sbend_parameter(dy, r)[1], 1.046985)
+
+
+def test_get_sbend_length(waveguide):
+    dy = 0.127
+    r = 15
+    assert pytest.approx(waveguide.sbend_length(dy, r), 2.757512)
+
+
+def test_get_sbend_length_nil_dy(waveguide):
+    dy = 0.0
+    r = 15
+    assert pytest.approx(waveguide.sbend_length(dy, r), 0.0)
+
+
+def test_get_spline(waveguide):
