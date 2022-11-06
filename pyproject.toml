@@ -4,6 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
 addopts = "--cov=femto"
+#addopts = "--cov-report html:tests/covreport_html"
 testpaths = [
     "tests",
 ]
