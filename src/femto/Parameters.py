@@ -142,38 +142,43 @@ class WaveguideParameters(LaserPathParameters):
         """
         return self.get_sbend_parameter(dy, radius)[1]
 
-    @staticmethod
-    def get_spline_parameter(init_pos: np.ndarray, dy: float, dz: float, radius: float = 20,
-                             disp_x: float = 0) -> tuple:
+    def get_spline_parameter(self, disp_x: float = None, disp_y: float = None, disp_z: float = None,
+                             radius: float = 20) -> tuple:
         """
-        Computes the delta displacements along x-, y- and z-direction and the total lenght of the curve.
+        Computes the displacements along x-, y- and z-direction and the total lenght of the curve.
+        The dy and dz displacements are given by the user. The dx displacement can be known (and thus given as input)
+        or unknown and it is computed using the get_sbend_parameter() method for the given radius.
 
-        :param init_pos: Initial position of the curve.
-        :type init_pos: np.ndarray
-        :param dy: Displacement along y-direction [mm].
-        :type dy: float
-        :param dz: Displacement along z-direction [mm].
-        :type dz: float
-        :param radius: Curvature radius of the spline [mm]. The default is 20 mm.
-        :type dz: radius
-        :param disp_x: Displacement along x-direction [mm]. The default is 0 mm.
+        If disp_x, disp_y, disp_z are given they are returned unchanged and unsed to compute l_curve.
+        On the other hand, if disp_x is None, it is computed using the get_sbend_parameters() method using the
+        displacement 'disp_yz' along both y- and z-direction and the given radius.
+        In this latter case, the l_curve is computed using the formula for the circular arc (radius * angle) which is
+        multiply by a factor of 2 in order to retrieve the S-bend shape.
+
+        :param disp_x: Displacement along x-direction [mm]. The default is None.
         :type disp_x: float
+        :param disp_y: Displacement along y-direction [mm]. The default is None.
+        :type disp_y: float
+        :param disp_z: Displacement along z-direction [mm]. The default is None.
+        :type disp_z: float
+        :param radius: Curvature radius of the spline [mm]. The default is 20 mm.
+        :type radius: float
         :return: (deltax [mm], deltay [mm], deltaz [mm], curve length [mm]).
         :rtype: Tuple[float, float, float, float]
         """
-        xl, yl, zl = init_pos
-        final_pos = np.array([yl + dy, zl + dz])
-        if disp_x != 0:
-            final_pos = np.insert(final_pos, 0, xl + disp_x)
-            pos_diff = np.subtract(final_pos, init_pos)
-            l_curve = np.sqrt(np.sum(pos_diff ** 2))
-        else:
-            final_pos = np.insert(final_pos, 0, xl)
-            pos_diff = np.subtract(final_pos, init_pos)
-            ang = np.arccos(1 - np.sqrt(pos_diff[1] ** 2 + pos_diff[2] ** 2) / (2 * radius))
-            pos_diff[0] = 2 * radius * np.sin(ang)
+        if disp_y is None:
+            raise ValueError('y-displacement is None. Give a valid disp_y')
+        if disp_z is None:
+            raise ValueError('z-displacement is None. Give a valid disp_z')
+
+        if disp_x is None:
+            disp_yz = np.sqrt(disp_y ** 2 + disp_z ** 2)
+            ang, disp_x = self.get_sbend_parameter(disp_yz, radius)
             l_curve = 2 * ang * radius
-        return pos_diff[0], pos_diff[1], pos_diff[2], l_curve
+        else:
+            disp = np.array([disp_x, disp_y, disp_z])
+            l_curve = np.sqrt(np.sum(disp ** 2))
+        return disp_x, disp_y, disp_z, l_curve
 
 
 @dataclass(kw_only=True)

@@ -216,11 +216,10 @@ def test_get_spline_raise_dz(waveguide):
 
 
 def test_get_spline_nil_dispx(waveguide):
-    disp_x = 0
     disp_y = 0.5
     disp_z = 0.6
     radius = 20
-    dx, dy, dz, lc = waveguide.get_spline_parameter(disp_x, disp_y, disp_z, radius)
+    dx, dy, dz, lc = waveguide.get_spline_parameter(disp_y=disp_y, disp_z=disp_z, radius=radius)
 
     assert pytest.approx(dx, 7.865876)
     assert dy == disp_y
@@ -233,7 +232,7 @@ def test_get_spline_dispx(waveguide):
     disp_y = 0.5
     disp_z = 0.6
     radius = 40
-    dx, dy, dz, lc = waveguide.get_spline_parameter(disp_x, disp_y, disp_z, radius)
+    dx, dy, dz, lc = waveguide.get_spline_parameter(disp_x=disp_x, disp_y=disp_y, disp_z=disp_z, radius=radius)
 
     assert dx == disp_x
     assert dy == disp_y

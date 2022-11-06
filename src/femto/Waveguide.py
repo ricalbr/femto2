@@ -417,7 +417,7 @@ class _Waveguide(LaserPath, WaveguideParameters):
         self.add_path(x_spl, y_spl, z_spl, f * np.ones(x_spl.shape), shutter * np.ones(x_spl.shape))
         return self
 
-    def spline_bridge(self, dy: float, dz: float, init_pos: list = None, radius: float = None, disp_x: float = 0,
+    def spline_bridge(self, dy: float, dz: float, init_pos: list = None, radius: float = None, disp_x: float = None,
                       shutter: int = 1, speed: float = None) -> Self:
         """
         Computes a spline bridge as a sequence of two spline segments. dy is the total displacement along the
@@ -462,8 +462,8 @@ class _Waveguide(LaserPath, WaveguideParameters):
         else:
             f = speed
 
-        dx, *_, l_curve = self.get_spline_parameter(init_pos, dy, 0, radius, disp_x)
-
+        dx, *_, l_curve = self.get_spline_parameter(disp_x=disp_x, disp_y=dy, disp_z=0.0, radius=radius)
+        print(dx)
         x1, y1, z1 = self._get_spline_points(dy / 2, dz, init_pos, radius, speed=speed,
                                              bc_y=((1, 0.0), (1, dy / dx)),
                                              bc_z=((1, 0.0), (1, 0.0)))
@@ -490,9 +490,9 @@ class _Waveguide(LaserPath, WaveguideParameters):
         :return: Array of the curvature radii computed at each point of the curve.
         :rtype: numpy.ndarray
         """
-        
+
         (x, y, z) = self.path3d
-        
+
         dx_dt = np.gradient(x)
         dy_dt = np.gradient(y)
         dz_dt = np.gradient(z)
@@ -533,7 +533,7 @@ class _Waveguide(LaserPath, WaveguideParameters):
 
     # Private interface
     def _get_spline_points(self, dy: float, dz: float, init_pos: np.ndarray = None, radius: float = 20,
-                           disp_x: float = 0, speed: float = None,
+                           disp_x: float = None, speed: float = None,
                            bc_y: tuple = ((1, 0.0), (1, 0.0)),
                            bc_z: tuple = ((1, 0.0), (1, 0.0))) -> tuple:
         """
@@ -568,7 +568,7 @@ class _Waveguide(LaserPath, WaveguideParameters):
         :return: (x-coordinates, y-coordinates, z-coordinates) of the spline curve.
         :rtype: Tuple(np.ndarray, np.ndarray, np.ndarray)
         """
-        xd, yd, zd, l_curve = self.get_spline_parameter(init_pos, dy, dz, radius, disp_x)
+        xd, yd, zd, l_curve = self.get_spline_parameter(disp_x=disp_x, disp_y=dy, disp_z=dz, radius=radius)
         f = self.speed if speed is None else speed
         num = self.subs_num(l_curve, f)
 
