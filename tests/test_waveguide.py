@@ -99,19 +99,19 @@ def test_z_init(param):
 def test_scan(param):
     param['scan'] = 1.2
     with pytest.raises(ValueError):
-        wg = _Waveguide(**param)
+        _Waveguide(**param)
 
 
 def test_dy_bend_pitch_error(waveguide):
     waveguide.pitch = None
     with pytest.raises(ValueError):
-        waveguide.dy_bend
+        waveguide.dy_bend()
 
 
 def test_dy_bend_int_dist_error(waveguide):
     waveguide.int_dist = None
     with pytest.raises(ValueError):
-        waveguide.dy_bend
+        waveguide.dy_bend()
 
 
 def test_dy_bend(waveguide):
@@ -121,14 +121,14 @@ def test_dy_bend(waveguide):
 def test_dx_bend_radius_error(waveguide):
     waveguide.radius = None
     with pytest.raises(ValueError):
-        waveguide.dx_bend
+        waveguide.dx_bend()
 
 
 def test_dx_bend(waveguide):
     assert pytest.approx(waveguide.dx_bend, 2.469064)
 
 
-def test_dx_acc_None(param):
+def test_dx_acc_none(param):
     param['int_length'] = None
     wg = _Waveguide(**param)
     assert wg.dx_acc is None
@@ -199,5 +199,43 @@ def test_get_sbend_length_nil_dy(waveguide):
     assert pytest.approx(waveguide.sbend_length(dy, r), 0.0)
 
 
-def test_get_spline(waveguide):
-    pass
+def test_get_spline_raise_dy(waveguide):
+    disp_x = 0.5
+    disp_z = 1
+    radius = 30
+    with pytest.raises(ValueError):
+        waveguide.get_spline_parameter(disp_x=disp_x, disp_z=disp_z, radius=radius)
+
+
+def test_get_spline_raise_dz(waveguide):
+    disp_x = 0.5
+    disp_y = 0.04
+    radius = 20
+    with pytest.raises(ValueError):
+        waveguide.get_spline_parameter(disp_x=disp_x, disp_y=disp_y, radius=radius)
+
+
+def test_get_spline_nil_dispx(waveguide):
+    disp_x = 0
+    disp_y = 0.5
+    disp_z = 0.6
+    radius = 20
+    dx, dy, dz, lc = waveguide.get_spline_parameter(disp_x, disp_y, disp_z, radius)
+
+    assert pytest.approx(dx, 7.865876)
+    assert dy == disp_y
+    assert dz == disp_z
+    assert pytest.approx(lc, 7.917474)
+
+
+def test_get_spline_dispx(waveguide):
+    disp_x = 0.9
+    disp_y = 0.5
+    disp_z = 0.6
+    radius = 40
+    dx, dy, dz, lc = waveguide.get_spline_parameter(disp_x, disp_y, disp_z, radius)
+
+    assert dx == disp_x
+    assert dy == disp_y
+    assert dz == disp_z
+    assert pytest.approx(lc, 1.191638)
