@@ -95,19 +95,17 @@ class WaveguideParameters(LaserPathParameters):
     def dx_bend(self) -> float or None:
         if self.radius is None:
             raise ValueError('Curvature radius is set to None.')
-        if self.dy_bend is None:
-            return None
         return self.sbend_length(self.dy_bend, self.radius)
 
     @property
     def dx_acc(self) -> float or None:
-        if self.dy_bend is None or self.dx_bend is None or self.int_length is None:
+        if self.dx_bend is None or self.int_length is None:
             return None
         return 2 * self.dx_bend + self.int_length
 
     @property
     def dx_mzi(self) -> float or None:
-        if self.dy_bend is None or self.dx_bend is None or self.int_length is None or self.arm_length is None:
+        if self.dx_bend is None or self.int_length is None or self.arm_length is None:
             return None
         return 4 * self.dx_bend + 2 * self.int_length + self.arm_length
 
@@ -125,6 +123,8 @@ class WaveguideParameters(LaserPathParameters):
         :return: (final rotation_angle [radians], x-displacement [mm])
         :rtype: tuple
         """
+        if radius <= 0:
+            raise ValueError(f'Radius should be a positive value. Given {radius:.3f}.')
         a = np.arccos(1 - (np.abs(dy / 2) / radius))
         dx = 2 * radius * np.sin(a)
         return a, dx
