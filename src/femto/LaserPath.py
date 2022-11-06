@@ -166,12 +166,12 @@ class LaserPath(LaserPathParameters):
         """
         f = self.speed if speed is None else speed
         if f < 1e-6:
-            raise ValueError('Speed set to 0.0 mm/s. Check speed parameter.')
+            raise ValueError("Speed set to 0.0 mm/s. Check speed parameter.")
 
         dl = f / self.cmd_rate_max
         num = int(np.ceil(l_curve / dl))
         if num <= 1:
-            print('I had to add use an higher instruction rate.\n')
+            print("I had to add use an higher instruction rate.\n")
             return 3
         return num
 
@@ -217,16 +217,16 @@ class LaserPath(LaserPathParameters):
         return unique_filter([self._x, self._y, self._z, self._f, self._s])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     from femto.helpers import dotdict
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
 
     # Data
     PARAMETERS_LP = dotdict(
-            scan=6,
-            speed=20,
-            lsafe=3,
+        scan=6,
+        speed=20,
+        lsafe=3,
     )
 
     lpath = LaserPath(**PARAMETERS_LP)
@@ -244,10 +244,10 @@ if __name__ == '__main__':
     fig.clf()
     ax = Axes3D(fig, auto_add_to_figure=False)
     fig.add_axes(ax)
-    ax.set_xlabel('X [mm]')
-    ax.set_ylabel('Y [mm]')
-    ax.set_zlabel('Z [mm]')
-    ax.plot(lpath.x, lpath.y, lpath.z, '-k', linewidth=2.5)
+    ax.set_xlabel("X [mm]")
+    ax.set_ylabel("Y [mm]")
+    ax.set_zlabel("Z [mm]")
+    ax.plot(lpath.x, lpath.y, lpath.z, "-k", linewidth=2.5)
     ax.set_box_aspect(aspect=(3, 1, 0.5))
     plt.show()
 

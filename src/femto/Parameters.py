@@ -32,7 +32,7 @@ class LaserPathParameters:
 
     def __post_init__(self):
         if not isinstance(self.scan, int):
-            raise ValueError('Number of scan must be integer.')
+            raise ValueError("Number of scan must be integer.")
 
     @property
     def init_point(self):
@@ -78,7 +78,7 @@ class WaveguideParameters(LaserPathParameters):
         # parent method redefinition, to include depth property
         if not isinstance(self.scan, int):
             print(self.scan)
-            raise ValueError('Number of scan must be integer.')
+            raise ValueError("Number of scan must be integer.")
 
         if self.z_init is None:
             self.z_init = self.depth
@@ -86,15 +86,15 @@ class WaveguideParameters(LaserPathParameters):
     @property
     def dy_bend(self):
         if self.pitch is None:
-            raise ValueError('Waveguide pitch is set to None.')
+            raise ValueError("Waveguide pitch is set to None.")
         if self.int_dist is None:
-            raise ValueError('Interaction distance is set to None.')
+            raise ValueError("Interaction distance is set to None.")
         return 0.5 * (self.pitch - self.int_dist)
 
     @property
     def dx_bend(self) -> float or None:
         if self.radius is None:
-            raise ValueError('Curvature radius is set to None.')
+            raise ValueError("Curvature radius is set to None.")
         return self.sbend_length(self.dy_bend, self.radius)
 
     @property
@@ -124,7 +124,7 @@ class WaveguideParameters(LaserPathParameters):
         :rtype: tuple
         """
         if radius <= 0:
-            raise ValueError(f'Radius should be a positive value. Given {radius:.3f}.')
+            raise ValueError(f"Radius should be a positive value. Given {radius:.3f}.")
         a = np.arccos(1 - (np.abs(dy / 2) / radius))
         dx = 2 * radius * np.sin(a)
         return a, dx
@@ -142,8 +142,13 @@ class WaveguideParameters(LaserPathParameters):
         """
         return self.get_sbend_parameter(dy, radius)[1]
 
-    def get_spline_parameter(self, disp_x: float = None, disp_y: float = None, disp_z: float = None,
-                             radius: float = 20) -> tuple:
+    def get_spline_parameter(
+        self,
+        disp_x: float = None,
+        disp_y: float = None,
+        disp_z: float = None,
+        radius: float = 20,
+    ) -> tuple:
         """
         Computes the displacements along x-, y- and z-direction and the total lenght of the curve.
         The dy and dz displacements are given by the user. The dx displacement can be known (and thus given as input)
@@ -167,9 +172,9 @@ class WaveguideParameters(LaserPathParameters):
         :rtype: Tuple[float, float, float, float]
         """
         if disp_y is None:
-            raise ValueError('y-displacement is None. Give a valid disp_y')
+            raise ValueError("y-displacement is None. Give a valid disp_y")
         if disp_z is None:
-            raise ValueError('z-displacement is None. Give a valid disp_z')
+            raise ValueError("z-displacement is None. Give a valid disp_z")
 
         if disp_x is None:
             disp_yz = np.sqrt(disp_y ** 2 + disp_z ** 2)
@@ -186,6 +191,7 @@ class MarkerParameters(LaserPathParameters):
     """
     Class containing the parameters for the surface ablation marker fabrication.
     """
+
     depth: float = 0.0
     lx: float = 1.0
     ly: float = 0.060
@@ -195,7 +201,7 @@ class MarkerParameters(LaserPathParameters):
 
         # parent method redefinition, to include depth property
         if not isinstance(self.scan, int):
-            raise ValueError('Number of scan must be integer.')
+            raise ValueError("Number of scan must be integer.")
 
         if self.z_init is None:
             self.z_init = self.depth
@@ -206,7 +212,10 @@ class RasterImageParameters(LaserPathParameters):
     """
     Class containing the parameters for generic FLM written structure fabrication.
     """
-    px_to_mm: float = 0.01  # pixel to millimeter scale when converting image to laser path
+
+    px_to_mm: float = (
+        0.01  # pixel to millimeter scale when converting image to laser path
+    )
     img_size: Tuple[int, int] = (None, None)
 
     def __post_init__(self):
@@ -234,7 +243,7 @@ class TrenchParameters:
     nboxz: int = 4
     z_off: float = 0.020
     h_box: float = 0.075
-    base_folder: str = ''
+    base_folder: str = ""
     deltaz: float = 0.0015
     delta_floor: float = 0.001
     beam_waist: float = 0.004
@@ -278,8 +287,12 @@ class TrenchParameters:
         if self.x_center is None or self.y_min is None or self.y_max is None:
             return None
         else:
-            return box(self.x_center - self.length / 2, self.y_min,
-                       self.x_center + self.length / 2, self.y_max)
+            return box(
+                self.x_center - self.length / 2,
+                self.y_min,
+                self.x_center + self.length / 2,
+                self.y_max,
+            )
 
 
 @dataclass(kw_only=True)
@@ -289,9 +302,9 @@ class GcodeParameters:
     """
 
     filename: str = None
-    export_dir: str = ''
+    export_dir: str = ""
     samplesize: Tuple[float, float] = (None, None)
-    laser: str = 'CAPABLE'
+    laser: str = "CAPABLE"
     home: bool = False
     new_origin: Tuple[float] = (0.0, 0.0)
     warp_flag: bool = False
@@ -308,20 +321,20 @@ class GcodeParameters:
 
     def __post_init__(self):
         if self.filename is None:
-            raise ValueError('Filename is None, set GcodeParameters.filename.')
+            raise ValueError("Filename is None, set GcodeParameters.filename.")
         self.CWD = os.path.dirname(os.path.abspath(__file__))
 
         self.fwarp = self.antiwarp_management(self.warp_flag)
 
         if self.rotation_angle != 0:
-            print(' BEWARE, ANGLE MUST BE IN DEGREE! '.center(39, "*"))
-            print(f' Rotation angle is {self.rotation_angle % 360:.3f} deg. '.center(39, "*"))
+            print(" BEWARE, ANGLE MUST BE IN DEGREE! ".center(39, "*"))
+            print(f" Rotation angle is {self.rotation_angle % 360:.3f} deg. ".center(39, "*"))
         self.rotation_angle = radians(self.rotation_angle % 360)
 
         if self.aerotech_angle:
-            print(' BEWARE, G84 COMMAND WILL BE USED!!! '.center(39, "*"))
-            print(' ANGLE MUST BE IN DEGREE! '.center(39, "*"))
-            print(f' Rotation angle is {self.aerotech_angle % 360:.3f} deg. '.center(39, "*"))
+            print(" BEWARE, G84 COMMAND WILL BE USED!!! ".center(39, "*"))
+            print(" ANGLE MUST BE IN DEGREE! ".center(39, "*"))
+            print(f" Rotation angle is {self.aerotech_angle % 360:.3f} deg. ".center(39, "*"))
             print()
             self.aerotech_angle = self.aerotech_angle % 360
 
@@ -345,9 +358,9 @@ class GcodeParameters:
         :return: shuttering time
         :rtype: float
         """
-        if self.laser.lower() not in ['pharos', 'carbide', 'uwe']:
-            raise ValueError('Laser can be only PHAROS, CARBIDE or UWE. Given {self.laser.upper()}.')
-        if self.laser.lower() == 'pharos':
+        if self.laser.lower() not in ["pharos", "carbide", "uwe"]:
+            raise ValueError("Laser can be only PHAROS, CARBIDE or UWE. Given {self.laser.upper()}.")
+        if self.laser.lower() == "pharos":
             return 0.000
         else:
             return 0.005
@@ -367,7 +380,7 @@ class GcodeParameters:
 
         if opt:
             if any(x is None for x in self.samplesize):
-                raise ValueError(f'Wrong sample size dimensions. Given ({self.samplesize[0]}, {self.samplesize[1]}).')
+                raise ValueError(f"Wrong sample size dimensions. Given ({self.samplesize[0]}, {self.samplesize[1]}).")
             function_pickle = os.path.join(self.CWD, "fwarp.pkl")
             if os.path.exists(function_pickle):
                 fwarp = pickle.load(open(function_pickle, "rb"))
@@ -375,8 +388,10 @@ class GcodeParameters:
                 fwarp = self.antiwarp_generation(self.samplesize, num)
                 pickle.dump(fwarp, open(function_pickle, "wb"))
         else:
+
             def fwarp(x, y):
                 return 0
+
         return fwarp
 
     @staticmethod
@@ -397,7 +412,7 @@ class GcodeParameters:
         """
 
         if num_tot < 4 ** 2:
-            raise ValueError('I need more values to compute the interpolation.')
+            raise ValueError("I need more values to compute the interpolation.")
 
         num_side = int(np.ceil(np.sqrt(num_tot)))
         xpos = np.linspace(margin, samplesize[0] - margin, num_side)
@@ -406,26 +421,26 @@ class GcodeParameters:
         ylist = []
         zlist = []
 
-        print('Focus height in µm (!!!) at:')
+        print("Focus height in µm (!!!) at:")
         for pos in list(product(xpos, ypos)):
             xlist.append(pos[0])
             ylist.append(pos[1])
-            zlist.append(float(input('X={:.1f} Y={:.1f}: \t'.format(pos[0], pos[1]))) / 1000)
-            if zlist[-1] == '':
-                raise ValueError('You have missed the last value.')
+            zlist.append(float(input("X={:.1f} Y={:.1f}: \t".format(pos[0], pos[1]))) / 1000)
+            if zlist[-1] == "":
+                raise ValueError("You have missed the last value.")
 
         # surface interpolation
-        func_antiwarp = interp2d(xlist, ylist, zlist, kind='cubic')
+        func_antiwarp = interp2d(xlist, ylist, zlist, kind="cubic")
 
         # plot the surface
         xprobe = np.linspace(-3, samplesize[0] + 3)
         yprobe = np.linspace(-3, samplesize[1] + 3)
         zprobe = func_antiwarp(xprobe, yprobe)
-        ax = plt.axes(projection='3d')
-        ax.contour3D(xprobe, yprobe, zprobe, 200, cmap='viridis')
-        ax.set_xlabel('X [mm]')
-        ax.set_ylabel('Y [mm]')
-        ax.set_zlabel('Z [mm]')
+        ax = plt.axes(projection="3d")
+        ax.contour3D(xprobe, yprobe, zprobe, 200, cmap="viridis")
+        ax.set_xlabel("X [mm]")
+        ax.set_ylabel("Y [mm]")
+        ax.set_zlabel("Z [mm]")
         plt.show()
 
         return func_antiwarp

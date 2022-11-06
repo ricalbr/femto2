@@ -6,20 +6,20 @@ from src.femto.Waveguide import _Waveguide
 @pytest.fixture
 def param() -> dict:
     p = {
-            'scan'        : 6,
-            'speed'       : 20.0,
-            'y_init'      : 1.5,
-            'z_init'      : 0.050,
-            'speed_closed': 75,
-            'samplesize'  : (100, 15),
-            'depth'       : 0.035,
-            'radius'      : 25,
-            'pitch'       : 0.127,
-            'int_dist'    : 0.005,
-            'int_length'  : 0.0,
-            'arm_length'  : 1.0,
-            'ltrench'     : 1.5,
-            'dz_bridge'   : 0.006,
+        "scan": 6,
+        "speed": 20.0,
+        "y_init": 1.5,
+        "z_init": 0.050,
+        "speed_closed": 75,
+        "samplesize": (100, 15),
+        "depth": 0.035,
+        "radius": 25,
+        "pitch": 0.127,
+        "int_dist": 0.005,
+        "int_length": 0.0,
+        "arm_length": 1.0,
+        "ltrench": 1.5,
+        "dz_bridge": 0.006,
     }
     return p
 
@@ -90,14 +90,14 @@ def test_wg_values(waveguide) -> None:
 
 
 def test_z_init(param):
-    param['z_init'] = None
-    param['depth'] = 0.05
+    param["z_init"] = None
+    param["depth"] = 0.05
     wg = _Waveguide(**param)
     assert wg.z_init == float(0.05)
 
 
 def test_scan(param):
-    param['scan'] = 1.2
+    param["scan"] = 1.2
     with pytest.raises(ValueError):
         _Waveguide(**param)
 
@@ -129,7 +129,7 @@ def test_dx_bend(waveguide):
 
 
 def test_dx_acc_none(param):
-    param['int_length'] = None
+    param["int_length"] = None
     wg = _Waveguide(**param)
     assert wg.dx_acc is None
 
@@ -139,19 +139,19 @@ def test_dx_acc(waveguide):
 
 
 def test_dx_acc_int_l(param):
-    param['int_length'] = 2
+    param["int_length"] = 2
     wg = _Waveguide(**param)
     assert pytest.approx(wg.dx_acc, 6.938129)
 
 
 def test_dx_mzi_none_intl(param):
-    param['int_length'] = None
+    param["int_length"] = None
     wg = _Waveguide(**param)
     assert wg.dx_mzi is None
 
 
 def test_dx_mzi_none_arml(param):
-    param['arm_length'] = None
+    param["arm_length"] = None
     wg = _Waveguide(**param)
     assert wg.dx_mzi is None
 
@@ -161,13 +161,13 @@ def test_dx_mzi(waveguide):
 
 
 def test_dx_mzi_int_l(param):
-    param['int_length'] = 2
+    param["int_length"] = 2
     wg = _Waveguide(**param)
     assert pytest.approx(wg.dx_mzi, 14.876258)
 
 
 def test_dx_mzi_arml(param):
-    param['arm_length'] = 3
+    param["arm_length"] = 3
     wg = _Waveguide(**param)
     assert pytest.approx(wg.dx_mzi, 13.876258)
 
@@ -219,7 +219,9 @@ def test_get_spline_nil_dispx(waveguide):
     disp_y = 0.5
     disp_z = 0.6
     radius = 20
-    dx, dy, dz, lc = waveguide.get_spline_parameter(disp_y=disp_y, disp_z=disp_z, radius=radius)
+    dx, dy, dz, lc = waveguide.get_spline_parameter(
+        disp_y=disp_y, disp_z=disp_z, radius=radius
+    )
 
     assert pytest.approx(dx, 7.865876)
     assert dy == disp_y
@@ -232,7 +234,9 @@ def test_get_spline_dispx(waveguide):
     disp_y = 0.5
     disp_z = 0.6
     radius = 40
-    dx, dy, dz, lc = waveguide.get_spline_parameter(disp_x=disp_x, disp_y=disp_y, disp_z=disp_z, radius=radius)
+    dx, dy, dz, lc = waveguide.get_spline_parameter(
+        disp_x=disp_x, disp_y=disp_y, disp_z=disp_z, radius=radius
+    )
 
     assert dx == disp_x
     assert dy == disp_y

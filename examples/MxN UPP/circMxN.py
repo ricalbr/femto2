@@ -11,7 +11,11 @@ circ = Cell(PARAMETERS_GC)
 x_trench = []
 upp = []
 for i in range(MM):
-    [xi, yi, zi] = [x0, y0 + (i - 0.5 * (MM - 1)) * PARAMETERS_WG.pitch, PARAMETERS_WG.depth]
+    [xi, yi, zi] = [
+        x0,
+        y0 + (i - 0.5 * (MM - 1)) * PARAMETERS_WG.pitch,
+        PARAMETERS_WG.depth,
+    ]
 
     wg = _Waveguide(PARAMETERS_WG)
     wg.start([xi, yi, zi])
@@ -35,17 +39,17 @@ for i in range(MM):
         circ.append(mk)
         x_trench.append(xl)
     wg.sin_acc((-1) ** (j + i % 2 + 1) * d1)
-    wg.linear([wg.x_end, wg.lasty, wg.lastz], mode='ABS')
+    wg.linear([wg.x_end, wg.lasty, wg.lastz], mode="ABS")
     wg.end()
     upp.append(wg)
 
 wgp1 = _Waveguide(PARAMETERS_WG)
 p_init = [x0, y0 - 0.5 * (MM + 1) * wgp1.pitch, wgp1.depth]
-wgp1.start(p_init).linear([wgp1.x_end, wgp1.lasty, wgp1.lastz], mode='ABS').end()
+wgp1.start(p_init).linear([wgp1.x_end, wgp1.lasty, wgp1.lastz], mode="ABS").end()
 
 wgp2 = _Waveguide(PARAMETERS_WG)
 p_init = [x0, y0 + 0.5 * (MM + 1) * wgp1.pitch, wgp1.depth]
-wgp2.start(p_init).linear([wgp2.x_end, wgp2.lasty, wgp2.lastz], mode='ABS').end()
+wgp2.start(p_init).linear([wgp2.x_end, wgp2.lasty, wgp2.lastz], mode="ABS").end()
 
 # Add waveguides and circuit to the cell
 circ.append(wgp1)
