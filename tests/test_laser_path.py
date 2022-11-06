@@ -92,13 +92,6 @@ def test_add_path(laser_path) -> None:
     np.testing.assert_almost_equal(laser_path._s, np.array([1, 1, 1, 1, 1, 1, 1, 1, 1]))
 
 
-def test_fabrication_time(laser_path) -> None:
-    assert pytest.approx(laser_path.fabrication_time == 19.288646)
-
-
-def test_fabrication_time_empty(empty_path) -> None:
-    assert pytest.approx(empty_path.fabrication_time == 0.0)
-
 
 def test_x(laser_path) -> None:
     np.testing.assert_almost_equal(laser_path.x, np.array([0.0, 1.0, 1.0, 1.0, 2.0]))
@@ -154,3 +147,78 @@ def test_last_point(laser_path) -> None:
 
 def test_last_point_empty(empty_path) -> None:
     np.testing.assert_array_equal(empty_path.lastpt, np.array([]))
+
+
+def test_path3d(laser_path) -> None:
+    xpath, ypath, zpath = laser_path.path3d
+
+    np.testing.assert_almost_equal(xpath, np.array([0.0, 1.0, 1.0, 1.0, 2.0]))
+    np.testing.assert_almost_equal(ypath, np.array([0.0, 0.0, 1.0, 2.0, 3.0]))
+    np.testing.assert_almost_equal(zpath, np.array([0.0, 0.0, 1.0, 0.0, 3.0]))
+
+
+def test_path3d_empty(empty_path) -> None:
+    xpath, ypath, zpath = empty_path.path3d
+
+    np.testing.assert_array_equal(xpath, np.array([]))
+    np.testing.assert_array_equal(ypath, np.array([]))
+    np.testing.assert_array_equal(zpath, np.array([]))
+
+
+def test_path(laser_path) -> None:
+    xpath, ypath = laser_path.path
+
+    np.testing.assert_almost_equal(xpath, np.array([0.0, 1.0, 1.0, 1.0, 2.0]))
+    np.testing.assert_almost_equal(ypath, np.array([0.0, 0.0, 1.0, 2.0, 3.0]))
+
+
+def test_path_empty(empty_path) -> None:
+    xpath, ypath = empty_path.path
+
+    np.testing.assert_array_equal(xpath, np.array([]))
+    np.testing.assert_array_equal(ypath, np.array([]))
+
+
+def test_length(laser_path) -> None:
+    assert pytest.approx(laser_path.length, 7.145052)
+
+
+def test_length_empty(empty_path) -> None:
+    assert empty_path.length == 0.0
+
+
+def test_fabrication_time(laser_path) -> None:
+    assert pytest.approx(laser_path.fabrication_time == 19.288646)
+
+
+def test_fabrication_time_empty(empty_path) -> None:
+    assert pytest.approx(empty_path.fabrication_time == 0.0)
+
+
+def test_subs_num_exception(laser_path) -> None:
+    with pytest.raises(ValueError):
+        laser_path.subs_num(10, 0)
+
+
+def test_subs_num_custom_inputs(laser_path) -> None:
+    assert laser_path.subs_num(103.45, 34), 3652
+
+
+def test_subs_num_empty_custom_inputs(empty_path) -> None:
+    assert empty_path.subs_num(103.45, 34), 3652
+
+
+def test_subs_num(laser_path) -> None:
+    assert laser_path.subs_num(10), 600
+
+
+def test_subs_num_empty(empty_path) -> None:
+    assert empty_path.subs_num(10), 600
+
+
+def test_subs_num_base_case(laser_path) -> None:
+    assert laser_path.subs_num(0.010), 3
+
+
+def test_subs_num_empty_base_case(empty_path) -> None:
+    assert empty_path.subs_num(0.010), 3
