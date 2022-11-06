@@ -7,14 +7,14 @@ from femto.LaserPath import LaserPath
 @pytest.fixture
 def param() -> dict:
     p = {
-        "scan": 6,
-        "speed": 20.0,
-        "y_init": 1.5,
-        "z_init": 0.035,
-        "lsafe": 4.3,
-        "speed_closed": 75,
-        "speed_pos": 0.1,
-        "samplesize": (100, 15),
+            'scan'        : 6,
+            'speed'       : 20.0,
+            'y_init'      : 1.5,
+            'z_init'      : 0.035,
+            'lsafe'       : 4.3,
+            'speed_closed': 75,
+            'speed_pos'   : 0.1,
+            'samplesize'  : (100, 15)
     }
     return p
 
@@ -90,6 +90,7 @@ def test_add_path(laser_path) -> None:
     np.testing.assert_almost_equal(laser_path._z, np.array([0, 0, 1, 1, 1, 0, 3, 3, 3]))
     np.testing.assert_almost_equal(laser_path._f, np.array([1, 2, 1, 1, 1, 3, 4, 4, 4]))
     np.testing.assert_almost_equal(laser_path._s, np.array([1, 1, 1, 1, 1, 1, 1, 1, 1]))
+
 
 
 def test_x(laser_path) -> None:

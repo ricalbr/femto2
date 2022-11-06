@@ -11,6 +11,7 @@ from src.femto.Parameters import TrenchParameters
 from src.femto.Waveguide import _Waveguide
 
 
+
 class Trench:
     """
     Class representing a single trench block.
@@ -24,7 +25,7 @@ class Trench:
         self.wall_length = 0.0
 
     def __lt__(self, other):
-        return (self.block.exterior.coords.xy[1][0] < other.block.exterior.coords.xy[1][0])
+        return self.block.exterior.coords.xy[1][0] < other.block.exterior.coords.xy[1][0]
 
     @property
     def center(self) -> list:
@@ -48,7 +49,7 @@ class Trench:
         """
         if kwargs is None:
             kwargs = {}
-        default_kwargs = {"facecolor": "k", "edgecolor": None, "alpha": 1, "zorder": 1}
+        default_kwargs = {'facecolor': 'k', 'edgecolor': None, 'alpha': 1, 'zorder': 1}
         kwargs = {**default_kwargs, **kwargs}
         return PolygonPatch(self.block, **kwargs)
 
@@ -92,17 +93,17 @@ class Trench:
         while polygon_list:
             current_poly = polygon_list.pop(0)
             inset_polygon = self._buffer_polygon(current_poly)
-            if inset_polygon and inset_polygon.type == "MultiPolygon":
+            if inset_polygon and inset_polygon.type == 'MultiPolygon':
                 polygon_list.extend(list(inset_polygon.geoms))
                 for poly in list(inset_polygon.geoms):
                     self.floor_length += poly.length
                     yield np.array(poly.exterior.coords).T
-            elif inset_polygon and inset_polygon.type == "Polygon":
+            elif inset_polygon and inset_polygon.type == 'Polygon':
                 self.floor_length += inset_polygon.length
                 polygon_list.append(inset_polygon)
                 yield np.array(inset_polygon.exterior.coords).T
             elif inset_polygon:
-                raise ValueError(f"Trench block should be either Polygon or Multipolygon. Given {inset_polygon.type}")
+                raise ValueError(f'Trench block should be either Polygon or Multipolygon. Given {inset_polygon.type}')
 
     # Private interface
     def _buffer_polygon(self, shape: Polygon, inset: bool = True) -> shapely.geometry.shape:
@@ -188,11 +189,11 @@ class TrenchColumn(TrenchParameters):
         trench_block = self.rect
         for wg in waveguides:
             x, y = self._extract_path(wg)
-            dilated = LineString(list(zip(x, y))).buffer(self.adj_bridge, cap_style=1)
+            dilated = (LineString(list(zip(x, y))).buffer(self.adj_bridge, cap_style=1))
             trench_block = trench_block.difference(dilated)
 
         for block in listcast(sorted(trench_block.geoms, key=Trench)):
-            block = polygon.orient(block).buffer(self.round_corner, resolution=250, cap_style=1)
+            block = (polygon.orient(block).buffer(self.round_corner, resolution=250, cap_style=1))
             trench = Trench(block, self.delta_floor)
             self._trench_list.append(trench)
 
@@ -218,7 +219,7 @@ class TrenchColumn(TrenchParameters):
         elif isinstance(waveguide, np.ndarray):
             x, y = waveguide.T
         else:
-            raise TypeError("Elements circuit list must be of type _Waveguide or 2D numpy.array.")
+            raise TypeError('Elements circuit list must be of type _Waveguide or 2D numpy.array.')
         return x, y
 
 
@@ -229,25 +230,25 @@ def _example():
     x_mid = None
 
     PARAMETERS_WG = dotdict(
-        scan=6,
-        speed=20,
-        radius=15,
-        pitch=0.080,
-        int_dist=0.007,
+            scan=6,
+            speed=20,
+            radius=15,
+            pitch=0.080,
+            int_dist=0.007,
     )
 
     PARAMETERS_TC = dotdict(
-        length=1.0,
-        nboxz=4,
-        deltaz=0.0015,
-        h_box=0.075,
-        base_folder=r"",
-        y_min=-0.1,
-        y_max=19 * PARAMETERS_WG["pitch"] + 0.1,
+            length=1.0,
+            nboxz=4,
+            deltaz=0.0015,
+            h_box=0.075,
+            base_folder=r'',
+            y_min=-0.1,
+            y_max=19 * PARAMETERS_WG['pitch'] + 0.1
     )
 
     # Calculations
-    coup = [_Waveguide(**PARAMETERS_WG) for _ in range(20)]
+    coup = [Waveguide(PARAMETERS_WG) for _ in range(20)]
     for i, wg in enumerate(coup):
         wg.start([-2, i * wg.pitch, 0.035]).sin_acc((-1) ** i * wg.dy_bend)
         x_mid = wg.x[-1]
@@ -259,12 +260,12 @@ def _example():
 
     fig, ax = plt.subplots()
     for wg in coup:
-        ax.plot(wg.x[:-1], wg.y[:-1], "b")
+        ax.plot(wg.x[:-1], wg.y[:-1], 'b')
     for t in trench_col:
         ax.add_patch(t.patch)
-    ax.set_aspect("equal")
+    ax.set_aspect('equal')
     plt.show()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     _example()
