@@ -118,39 +118,20 @@ class LaserPath(LaserPathParameters):
 
     @property
     def path3d(self) -> List:
-        # filter 3D points without F
-        x, y, z, s = unique_filter([self._x, self._y, self._z, self._s]).T
-        # mask and select just those with s = 1
-        x = np.delete(x, np.where(np.invert(s.astype(bool))))
-        y = np.delete(y, np.where(np.invert(s.astype(bool))))
-        z = np.delete(z, np.where(np.invert(s.astype(bool))))
-        return [x, y, z]
+        if self._x.size:
+            # filter 3D points without F
+            x, y, z, s = unique_filter([self._x, self._y, self._z, self._s]).T
+            # mask and select just those with s = 1
+            x = np.delete(x, np.where(np.invert(s.astype(bool))))
+            y = np.delete(y, np.where(np.invert(s.astype(bool))))
+            z = np.delete(z, np.where(np.invert(s.astype(bool))))
+            return [x, y, z]
+        return [np.array([]), np.array([]), np.array([])]
 
     @property
     def length(self) -> float:
         x, y, z = self.path3d
         return float(np.sum(np.sqrt(np.diff(x) ** 2 + np.diff(y) ** 2 + np.diff(z) ** 2)))
-
-    def add_path(self, x: np.ndarray, y: np.ndarray, z: np.ndarray, f: np.ndarray, s: np.ndarray):
-        """
-        Takes [x, y, z, f, s] numpy.ndarrays and adds it to the class coordinates.
-
-        :param x: array of x-coordinates.
-        :type x: numpy.ndarray
-        :param y: array of y-coordinates.
-        :type y: numpy.ndarray
-        :param z: array of z-coordinates.
-        :type z: numpy.ndarray
-        :param f: array of feed rates (speed) coordinates.
-        :type f: numpy.ndarray
-        :param s: array of shutter coordinates.
-        :type s: numpy.ndarray
-        """
-        self._x = np.append(self._x, x)
-        self._y = np.append(self._y, y)
-        self._z = np.append(self._z, z)
-        self._f = np.append(self._f, f)
-        self._s = np.append(self._s, s)
 
     @property
     def fabrication_time(self) -> float:
@@ -169,27 +150,7 @@ class LaserPath(LaserPathParameters):
         times = dists / f[1:]
         return sum(times)
 
-    # Private interface
-    def _unique_points(self):
-        """
-        Remove duplicate subsequent points. At least one coordinate have to change between two consecutive lines of the
-        (X,Y,Z,F,S) matrix.
-
-        Duplicates can be selected by creating a boolean index mask as follows:
-            - make a row-wise diff (`numpy.diff <https://numpy.org/doc/stable/reference/generated/numpy.diff.html>`_)
-            - compute absolute value of all elements in order to work only with positive numbers
-            - make a column-wise sum (`numpy.diff <https://numpy.org/doc/stable/reference/generated/numpy.sum.html>`_)
-            - mask is converted to boolean values
-        In this way consecutive duplicates correspond to a 0 value in the latter array.
-        Converting this array to boolean (all non-zero values are True) the index mask can be retrieved.
-        The first element is set to True by default since it is lost by the diff operation.
-
-        :return: Modified coordinate matrix (x, y, z, f, s) without duplicates.
-        :rtype: numpy.ndarray
-        """
-        return unique_filter([self._x, self._y, self._z, self._f, self._s])
-
-    def _get_num(self, l_curve: float = 0, speed: float = 0) -> int:
+    def subs_num(self, l_curve: float = 0, speed: float = None) -> int:
         """
         Utility function that, given the length of a segment and the fabrication speed, computes the number of points
         required to work at the maximum command rate (attribute of _Waveguide obj).
@@ -214,10 +175,49 @@ class LaserPath(LaserPathParameters):
             return 3
         return num
 
+    def add_path(self, x: np.ndarray, y: np.ndarray, z: np.ndarray, f: np.ndarray, s: np.ndarray):
+        """
+        Takes [x, y, z, f, s] numpy.ndarrays and adds it to the class coordinates.
 
-def _example():
-    # Example usefull to test Waveguide, but not Laserpath as stand alone
+        :param x: array of x-coordinates.
+        :type x: numpy.ndarray
+        :param y: array of y-coordinates.
+        :type y: numpy.ndarray
+        :param z: array of z-coordinates.
+        :type z: numpy.ndarray
+        :param f: array of feed rates (speed) coordinates.
+        :type f: numpy.ndarray
+        :param s: array of shutter coordinates.
+        :type s: numpy.ndarray
+        """
+        self._x = np.append(self._x, x)
+        self._y = np.append(self._y, y)
+        self._z = np.append(self._z, z)
+        self._f = np.append(self._f, f)
+        self._s = np.append(self._s, s)
 
+    # Private interface
+    def _unique_points(self):
+        """
+        Remove duplicate subsequent points. At least one coordinate have to change between two consecutive lines of the
+        (X,Y,Z,F,S) matrix.
+
+        Duplicates can be selected by creating a boolean index mask as follows:
+            - make a row-wise diff (`numpy.diff <https://numpy.org/doc/stable/reference/generated/numpy.diff.html>`_)
+            - compute absolute value of all elements in order to work only with positive numbers
+            - make a column-wise sum (`numpy.diff <https://numpy.org/doc/stable/reference/generated/numpy.sum.html>`_)
+            - mask is converted to boolean values
+        In this way consecutive duplicates correspond to a 0 value in the latter array.
+        Converting this array to boolean (all non-zero values are True) the index mask can be retrieved.
+        The first element is set to True by default since it is lost by the diff operation.
+
+        :return: Modified coordinate matrix (x, y, z, f, s) without duplicates.
+        :rtype: numpy.ndarray
+        """
+        return unique_filter([self._x, self._y, self._z, self._f, self._s])
+
+
+if __name__ == '__main__':
     from femto.helpers import dotdict
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
@@ -249,11 +249,7 @@ def _example():
     ax.set_zlabel('Z [mm]')
     ax.plot(lpath.x, lpath.y, lpath.z, '-k', linewidth=2.5)
     ax.set_box_aspect(aspect=(3, 1, 0.5))
-    # plt.show()
+    plt.show()
 
     print("Expected writing time {:.3f} seconds".format(lpath.fabrication_time))
-    print("Laser path length {:.3f} mm".format(lpath.length))
-
-
-if __name__ == '__main__':
-    _example()
+    print("Laser path length {:.6f} mm".format(lpath.length))
