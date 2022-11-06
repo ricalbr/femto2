@@ -200,3 +200,4 @@ def test_get_sbend_length_nil_dy(waveguide):
 
 
 def test_get_spline(waveguide):
+    pass
