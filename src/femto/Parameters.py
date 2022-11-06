@@ -84,19 +84,6 @@ class WaveguideParameters(LaserPathParameters):
             self.z_init = self.depth
 
     @property
-    def init_point(self):
-        # parent method redefinition, to inclure depth property
-        if self.y_init is None:
-            y0 = 0.0
-        else:
-            y0 = self.y_init
-        if self.z_init is None:
-            z0 = self.depth
-        else:
-            z0 = self.z_init
-        return [self.x_init, y0, z0]
-
-    @property
     def dx_bend(self) -> float or None:
         if self.radius is None:
             raise ValueError('Curvature radius is set to None.')
@@ -210,19 +197,6 @@ class MarkerParameters(LaserPathParameters):
 
         if self.z_init is None:
             self.z_init = self.depth
-
-    @property
-    def init_point(self):
-        # parent method redefinition, to include depth property
-        if self.y_init is None:
-            y0 = 0.0
-        else:
-            y0 = self.y_init
-        if self.z_init is None:
-            z0 = self.depth
-        else:
-            z0 = self.z_init
-        return [self.x_init, y0, z0]
 
 
 @dataclass(kw_only=True)
