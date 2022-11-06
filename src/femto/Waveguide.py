@@ -11,7 +11,7 @@ except ImportError:
 from scipy.interpolate import CubicSpline, InterpolatedUnivariateSpline
 from functools import partialmethod
 from src.femto.helpers import dotdict
-from src.femto import LaserPath
+from src.femto.LaserPath import LaserPath
 from src.femto.Parameters import WaveguideParameters
 
 
