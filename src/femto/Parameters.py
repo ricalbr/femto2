@@ -84,6 +84,14 @@ class WaveguideParameters(LaserPathParameters):
             self.z_init = self.depth
 
     @property
+    def dy_bend(self):
+        if self.pitch is None:
+            raise ValueError('Waveguide pitch is set to None.')
+        if self.int_dist is None:
+            raise ValueError('Interaction distance is set to None.')
+        return 0.5 * (self.pitch - self.int_dist)
+
+    @property
     def dx_bend(self) -> float or None:
         if self.radius is None:
             raise ValueError('Curvature radius is set to None.')
@@ -102,17 +110,6 @@ class WaveguideParameters(LaserPathParameters):
         if self.dy_bend is None or self.dx_bend is None or self.int_length is None or self.arm_length is None:
             return None
         return 4 * self.dx_bend + 2 * self.int_length + self.arm_length
-
-    @property
-    def dy_bend(self):
-        if self.pitch is None:
-            print('WARNING: Waveguide pitch is set to None.')
-            return None
-        if self.int_dist is None:
-            print('WARNING: Interaction distance is set to None.')
-            return None
-        else:
-            return 0.5 * (self.pitch - self.int_dist)
 
     @staticmethod
     def get_sbend_parameter(dy: float, radius: float) -> tuple:
