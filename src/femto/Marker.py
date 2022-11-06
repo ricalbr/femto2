@@ -74,7 +74,6 @@ class _Marker(LaserPath, MarkerParameters):
         f = np.array([self.speed_closed]).astype(np.float32)
         s = np.array([0]).astype(np.float32)
         self.add_path(x, y, z, f, s)
-        self.fabrication_time()
 
     def linear(self, increment: list, mode: str = 'INC', shutter: int = 1, speed: float = None) -> Self:
         """

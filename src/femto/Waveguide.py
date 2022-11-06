@@ -77,7 +77,6 @@ class _Waveguide(LaserPath, WaveguideParameters):
         f = np.array([self._f[-1], self.speed_closed]).astype(np.float32)
         s = np.array([0, 0]).astype(np.float32)
         self.add_path(x, y, z, f, s)
-        self.fabrication_time()
 
     def linear(self, increment: list, mode: str = 'INC', shutter: int = 1, speed: float = None) -> Self:
         """
@@ -656,7 +655,7 @@ def _example():
     ax.set_box_aspect(aspect=(3, 1, 0.5))
     plt.show()
 
-    print("Expected writing time {:.3f} seconds".format(wg.wtime))
+    print("Expected writing time {:.3f} seconds".format(wg.fabrication_time))
     print("Laser path length {:.3f} mm".format(wg.length))
 
 

@@ -794,7 +794,7 @@ def _example():
             filename='testPGMcompiler.pgm',
             lab='CAPABLE',
             samplesize=PARAMETERS_WG.samplesize,
-            angle=2.0,
+            rotation_angle=2.0,
             flip_x=True,
     )
 
