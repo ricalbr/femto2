@@ -109,7 +109,7 @@ def _example():
     fig_colored = GCODE_plot_colored(GCODE_array)
     fig_colored.show()
 
-    print("Expected writing time {:.3f} seconds".format(r_img.wtime))
+    print("Expected writing time {:.3f} seconds".format(r_img.fabrication_time))
     print("Laser path length {:.3f} mm".format(r_img.length))
 
 

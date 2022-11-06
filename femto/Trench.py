@@ -8,7 +8,7 @@ from shapely.geometry import LineString, Polygon, polygon
 
 from femto.helpers import dotdict, flatten, listcast
 from femto.Parameters import TrenchParameters
-from femto.Waveguide import _Waveguide
+from femto.Waveguide import _Waveguide, Waveguide
 
 
 class Trench:
@@ -247,7 +247,7 @@ def _example():
     )
 
     # Calculations
-    coup = [_Waveguide(PARAMETERS_WG) for _ in range(20)]
+    coup = [Waveguide(PARAMETERS_WG) for _ in range(20)]
     for i, wg in enumerate(coup):
         wg.start([-2, i * wg.pitch, 0.035]).sin_acc((-1) ** i * wg.dy_bend)
         x_mid = wg.x[-1]
