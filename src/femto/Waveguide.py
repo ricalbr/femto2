@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from typing import List
 
 import numpy as np
-from dacite import from_dict
 
 try:
     from typing import Self
@@ -12,20 +11,129 @@ from scipy.interpolate import CubicSpline, InterpolatedUnivariateSpline
 from functools import partialmethod
 from src.femto.helpers import dotdict
 from src.femto.LaserPath import LaserPath
-from src.femto.Parameters import WaveguideParameters
 
 
-@dataclass(kw_only=True)
-class _Waveguide(LaserPath, WaveguideParameters):
+@dataclass
+class Waveguide(LaserPath):
     """
     Class representing an optical waveguide.
     """
 
+    depth: float = 0.035
+    radius: float = 15
+    pitch: float = 0.080
+    pitch_fa: float = 0.127
+    int_dist: float = None
+    int_length: float = 0.0
+    arm_length: float = 0.0
+    ltrench: float = 1.0
+    dz_bridge: float = 0.007
+    margin: float = 1.0
+
     def __post_init__(self):
         super().__post_init__()
+        if self.z_init is None:
+            self.z_init = self.depth
 
     def __repr__(self):
         return "{cname}@{id:x}".format(cname=self.__class__.__name__, id=id(self) & 0xFFFFFF)
+
+    @property
+    def dy_bend(self):
+        if self.pitch is None:
+            raise ValueError('Waveguide pitch is set to None.')
+        if self.int_dist is None:
+            raise ValueError('Interaction distance is set to None.')
+        return 0.5 * (self.pitch - self.int_dist)
+
+    @property
+    def dx_bend(self) -> float or None:
+        if self.radius is None:
+            raise ValueError('Curvature radius is set to None.')
+        return self.sbend_length(self.dy_bend, self.radius)
+
+    @property
+    def dx_acc(self) -> float or None:
+        if self.dx_bend is None or self.int_length is None:
+            return None
+        return 2 * self.dx_bend + self.int_length
+
+    @property
+    def dx_mzi(self) -> float or None:
+        if self.dx_bend is None or self.int_length is None or self.arm_length is None:
+            return None
+        return 4 * self.dx_bend + 2 * self.int_length + self.arm_length
+
+    @staticmethod
+    def get_sbend_parameter(dy: float, radius: float) -> tuple:
+        """
+        Computes the final rotation_angle, and x-displacement for a circular S-bend given the y-displacement dy and
+        curvature
+        radius.
+
+        :param dy: Displacement along y-direction [mm].
+        :type dy: float
+        :param radius: Curvature radius of the S-bend [mm].
+        :type radius: float
+        :return: (final rotation_angle [radians], x-displacement [mm])
+        :rtype: tuple
+        """
+        if radius <= 0:
+            raise ValueError(f'Radius should be a positive value. Given {radius:.3f}.')
+        a = np.arccos(1 - (np.abs(dy / 2) / radius))
+        dx = 2 * radius * np.sin(a)
+        return a, dx
+
+    def sbend_length(self, dy: float, radius: float) -> float:
+        """
+        Computes the x-displacement for a circular S-bend given the y-displacement dy and curvature radius.
+
+        :param dy: Displacement along y-direction [mm].
+        :type dy: float
+        :param radius: Curvature radius of the S-bend [mm].
+        :type radius: float
+        :return: x-displacement [mm]
+        :rtype: float
+        """
+        return self.get_sbend_parameter(dy, radius)[1]
+
+    def get_spline_parameter(self, disp_x: float = None, disp_y: float = None, disp_z: float = None,
+                             radius: float = 20) -> tuple:
+        """
+        Computes the displacements along x-, y- and z-direction and the total lenght of the curve.
+        The dy and dz displacements are given by the user. The dx displacement can be known (and thus given as input)
+        or unknown and it is computed using the get_sbend_parameter() method for the given radius.
+
+        If disp_x, disp_y, disp_z are given they are returned unchanged and unsed to compute l_curve.
+        On the other hand, if disp_x is None, it is computed using the get_sbend_parameters() method using the
+        displacement 'disp_yz' along both y- and z-direction and the given radius.
+        In this latter case, the l_curve is computed using the formula for the circular arc (radius * angle) which is
+        multiply by a factor of 2 in order to retrieve the S-bend shape.
+
+        :param disp_x: Displacement along x-direction [mm]. The default is None.
+        :type disp_x: float
+        :param disp_y: Displacement along y-direction [mm]. The default is None.
+        :type disp_y: float
+        :param disp_z: Displacement along z-direction [mm]. The default is None.
+        :type disp_z: float
+        :param radius: Curvature radius of the spline [mm]. The default is 20 mm.
+        :type radius: float
+        :return: (deltax [mm], deltay [mm], deltaz [mm], curve length [mm]).
+        :rtype: Tuple[float, float, float, float]
+        """
+        if disp_y is None:
+            raise ValueError('y-displacement is None. Give a valid disp_y')
+        if disp_z is None:
+            raise ValueError('z-displacement is None. Give a valid disp_z')
+
+        if disp_x is None:
+            disp_yz = np.sqrt(disp_y ** 2 + disp_z ** 2)
+            ang, disp_x = self.get_sbend_parameter(disp_yz, radius)
+            l_curve = 2 * ang * radius
+        else:
+            disp = np.array([disp_x, disp_y, disp_z])
+            l_curve = np.sqrt(np.sum(disp ** 2))
+        return disp_x, disp_y, disp_z, l_curve
 
     # Methods
     def start(self, init_pos: List[float] = None, speed_pos: float = None) -> Self:
@@ -41,7 +149,7 @@ class _Waveguide(LaserPath, WaveguideParameters):
         :param speed_pos: Translation speed [mm/s].
         :type speed_pos: float
         :return: Self
-        :rtype: _Waveguide
+        :rtype: Waveguide
         """
         if self._x.size != 0:
             raise ValueError('Coordinate matrix is not empty. Cannot start a new waveguide in this point.')
@@ -62,7 +170,7 @@ class _Waveguide(LaserPath, WaveguideParameters):
         f0 = np.asarray(speed_pos)
         s0 = np.asarray(0.0)
         s1 = np.asarray(1.0)
-       
+
         self.add_path(x0, y0, z0, f0, s0)
         self.add_path(x0, y0, z0, f0, s1)
         return self
@@ -73,7 +181,7 @@ class _Waveguide(LaserPath, WaveguideParameters):
         speed specified by the user.
 
         :return: Self
-        :rtype: _Waveguide
+        :rtype: Waveguide
         """
 
         # append the transformed path and add the coordinates to return to the initial point
@@ -101,7 +209,7 @@ class _Waveguide(LaserPath, WaveguideParameters):
         :param speed: Transition speed [mm/s]. The default is self.param.speed.
         :type speed: float
         :return: Self
-        :rtype: _Waveguide
+        :rtype: Waveguide
 
         :raise ValueError: Mode is neither INC nor ABS.
         """
@@ -134,7 +242,7 @@ class _Waveguide(LaserPath, WaveguideParameters):
         :param speed: Transition speed [mm/s]. The default is self.speed.
         :type speed: int
         :return: Self
-        :rtype: _Waveguide
+        :rtype: Waveguide
         """
         if radius is None:
             radius = self.radius
@@ -171,7 +279,7 @@ class _Waveguide(LaserPath, WaveguideParameters):
         :param speed: Transition speed [mm/s]. The default is self.speed.
         :type speed: float
         :return: Self
-        :rtype: _Waveguide
+        :rtype: Waveguide
         """
         if radius is None:
             radius = self.radius
@@ -206,7 +314,7 @@ class _Waveguide(LaserPath, WaveguideParameters):
         :param speed: Transition speed [mm/s]. The default is self.speed.
         :type speed: float
         :return: Self
-        :rtype: _Waveguide
+        :rtype: Waveguide
         """
         if int_length is None:
             int_length = self.int_length
@@ -239,7 +347,7 @@ class _Waveguide(LaserPath, WaveguideParameters):
         :param speed: Transition speed [mm/s]. The default is self.speed.
         :type speed: float
         :return: Self
-        :rtype: _Waveguide
+        :rtype: Waveguide
         """
         if arm_length is None:
             arm_length = self.arm_length
@@ -282,7 +390,7 @@ class _Waveguide(LaserPath, WaveguideParameters):
         :param speed: Transition speed [mm/s]. The default is self.speed.
         :type speed: float
         :return: Self
-        :rtype: _Waveguide
+        :rtype: Waveguide
         """
 
         if radius is None:
@@ -340,7 +448,7 @@ class _Waveguide(LaserPath, WaveguideParameters):
         :param speed: Transition speed [mm/s]. The default is self.speed.
         :type speed: float
         :return: Self
-        :rtype: _Waveguide
+        :rtype: Waveguide
         """
         if int_length is None:
             int_length = self.int_length
@@ -373,7 +481,7 @@ class _Waveguide(LaserPath, WaveguideParameters):
         :param speed: Transition speed [mm/s]. The default is self.speed.
         :type speed: float
         :return: Self
-        :rtype: _Waveguide
+        :rtype: Waveguide
         """
         if arm_length is None:
             arm_length = self.arm_length
@@ -412,7 +520,7 @@ class _Waveguide(LaserPath, WaveguideParameters):
         :param bc_z:
         :type bc_z: tuple
         :return: Self
-        :rtype: _Waveguide
+        :rtype: Waveguide
         """
         if radius is None:
             radius = self.radius
@@ -457,7 +565,7 @@ class _Waveguide(LaserPath, WaveguideParameters):
         :param speed: Transition speed [mm/s]. The default is self.speed.
         :type speed: float
         :return: Self
-        :rtype: _Waveguide
+        :rtype: Waveguide
         """
         if init_pos is None:
             init_pos = self.lastpt
@@ -469,7 +577,6 @@ class _Waveguide(LaserPath, WaveguideParameters):
             f = speed
 
         dx, *_, l_curve = self.get_spline_parameter(disp_x=disp_x, disp_y=dy, disp_z=0.0, radius=radius)
-        print(dx)
         x1, y1, z1 = self._get_spline_points(dy / 2, dz, init_pos, radius, speed=speed,
                                              bc_y=((1, 0.0), (1, dy / dx)),
                                              bc_z=((1, 0.0), (1, 0.0)))
@@ -585,10 +692,6 @@ class _Waveguide(LaserPath, WaveguideParameters):
         return xcoord + init_pos[0], cs_y(xcoord) + init_pos[1], cs_z(xcoord) + init_pos[2]
 
 
-def Waveguide(param):
-    return from_dict(data_class=_Waveguide, data=param)
-
-
 def coupler(param, d=None):
     p = dotdict(param.copy())
 
@@ -598,7 +701,7 @@ def coupler(param, d=None):
     if p.y_init is None:
         p.y_init = 0.0
 
-    mode1 = Waveguide(p)
+    mode1 = Waveguide(**p)
     mode1.start() \
         .linear([(mode1.samplesize[0] - mode1.dx_bend) / 2, mode1.lasty, mode1.lastz], mode='ABS') \
         .sin_acc(mode1.dy_bend) \
@@ -606,7 +709,7 @@ def coupler(param, d=None):
         .end()
 
     p.y_init += p.pitch
-    mode2 = Waveguide(p)
+    mode2 = Waveguide(**p)
     mode2.start() \
         .linear([(mode2.samplesize[0] - mode2.dx_bend) / 2, mode2.lasty, mode2.lastz], mode='ABS') \
         .sin_acc(-mode2.dy_bend) \
@@ -636,7 +739,7 @@ def _example():
     for index in range(2):
         PARAMETERS_WG.y_init = -PARAMETERS_WG.pitch / 2 + index * PARAMETERS_WG.pitch
 
-        wg = Waveguide(PARAMETERS_WG)
+        wg = Waveguide(**PARAMETERS_WG)
         wg.start() \
             .linear(increment) \
             .sin_mzi((-1) ** index * wg.dy_bend) \
@@ -659,7 +762,7 @@ def _example():
         ax.plot(wg.x[:-1], wg.y[:-1], wg.z[:-1], '-k', linewidth=2.5)
         ax.plot(wg.x[-2:], wg.y[-2:], wg.z[-2:], ':b', linewidth=1.0)
     ax.set_box_aspect(aspect=(3, 1, 0.5))
-    plt.show()
+    # plt.show()
 
     print("Expected writing time {:.3f} seconds".format(wg.fabrication_time))
     print("Laser path length {:.3f} mm".format(wg.length))

@@ -36,7 +36,7 @@ class _Marker(LaserPath, MarkerParameters):
         :param speedpos: Translation speed [mm/s].
         :type speedpos: float
         :return: Self
-        :rtype: _Waveguide
+        :rtype: Waveguide
         """
 
         if init_pos is None:
@@ -66,7 +66,7 @@ class _Marker(LaserPath, MarkerParameters):
         speed specified by the user.
 
         :return: Self
-        :rtype: _Waveguide
+        :rtype: Waveguide
         """
         x = np.array([self._x[-1]]).astype(np.float32)
         y = np.array([self._y[-1]]).astype(np.float32)
@@ -92,7 +92,7 @@ class _Marker(LaserPath, MarkerParameters):
         :param speed: Transition speed [mm/s]. The default is self.param.speed.
         :type speed: float
         :return: Self
-        :rtype: _Waveguide
+        :rtype: Waveguide
 
         :raise ValueError: Mode is neither INC nor ABS.
         """

@@ -8,8 +8,7 @@ from shapely.geometry import LineString, Polygon, polygon
 
 from src.femto.helpers import dotdict, flatten, listcast
 from src.femto.Parameters import TrenchParameters
-from src.femto.Waveguide import _Waveguide
-
+from src.femto.Waveguide import Waveguide
 
 
 class Trench:
@@ -177,7 +176,7 @@ class TrenchColumn(TrenchParameters):
         ``trench_list``.
 
         :param waveguides: List of the waveguides composing the optical circuit.
-        :type waveguides: List[_Waveguide]
+        :type waveguides: List[Waveguide]
         :param remove: List of trench to remove.
         :type remove: List[int]
         """
@@ -211,15 +210,15 @@ class TrenchColumn(TrenchParameters):
         just the shutter-open path. (x, y) coordinates are extracted and returned.
 
         :param waveguide: Waveguide object or 2D numpy.ndarray with the path xy-points.
-        :type waveguide: _Waveguide or numpy.ndarray
+        :type waveguide: Waveguide or numpy.ndarray
         """
 
-        if isinstance(waveguide, _Waveguide):
+        if isinstance(waveguide, Waveguide):
             x, y = waveguide.path
         elif isinstance(waveguide, np.ndarray):
             x, y = waveguide.T
         else:
-            raise TypeError('Elements circuit list must be of type _Waveguide or 2D numpy.array.')
+            raise TypeError('Elements circuit list must be of type Waveguide or 2D numpy.array.')
         return x, y
 
 

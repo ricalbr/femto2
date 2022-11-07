@@ -1,6 +1,4 @@
-from src.femto import Cell, _Marker, PGMCompiler, TrenchColumn, _Waveguide
-from src.femto import dotdict
-from src.femto import PGMTrench
+from src.femto import _Marker, _Waveguide, Cell, dotdict, PGMCompiler, PGMTrench, TrenchColumn
 
 # GEOMETRICAL DATA
 # Circuit
@@ -90,7 +88,7 @@ circ.append(col)
 circ.plot2d()
 # plt.show()
 
-# _Waveguide G-Code
+# Waveguide G-Code
 with PGMCompiler(PARAMETERS_GC) as gc:
     with gc.repeat(PARAMETERS_WG.scan):
         for i, wg in enumerate(circ.waveguides):

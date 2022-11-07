@@ -16,7 +16,6 @@
 #     'TrenchParameters',
 #     'GcodeParameters',
 #     'LaserPath',
-#     '_Waveguide',
 #     'Waveguide',
 #     'coupler',
 #     '_Marker',
@@ -35,7 +34,7 @@
 # from .Parameters import LaserPathParameters, WaveguideParameters, MarkerParameters, RasterImageParameters, \
 #     TrenchParameters, GcodeParameters
 # from .LaserPath import LaserPath
-# from .Waveguide import _Waveguide, Waveguide, coupler
+# from .Waveguide import Waveguide, Waveguide, coupler
 # from .Marker import _Marker, Marker
 # from .RasterImage import _RasterImage, RasterImage
 # from .Trench import Trench, TrenchColumn

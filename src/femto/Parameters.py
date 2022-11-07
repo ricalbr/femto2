@@ -18,42 +18,6 @@ class LaserPathParameters:
     Class containing the parameters for generic FLM written structure fabrication.
     """
 
-    scan: int = 1
-    speed: float = 1.0
-    x_init: float = -2.0
-    y_init: float = 0.0
-    z_init: float = None
-    lsafe: float = 2.0
-    speed_closed: float = 5
-    speed_pos: float = 0.5
-    cmd_rate_max: float = 1200
-    acc_max: float = 500
-    samplesize: Tuple[float, float] = (None, None)
-
-    def __post_init__(self):
-        if not isinstance(self.scan, int):
-            raise ValueError('Number of scan must be integer.')
-
-    @property
-    def init_point(self):
-        z0 = self.z_init if self.z_init else 0.0
-        return [self.x_init, self.y_init, z0]
-
-    @property
-    def lvelo(self) -> float:
-        # length needed to acquire the writing speed [mm]
-        return 3 * (0.5 * self.speed ** 2 / self.acc_max)
-
-    @property
-    def dl(self) -> float:
-        # minimum separation between two points [mm]
-        return self.speed / self.cmd_rate_max
-
-    @property
-    def x_end(self) -> float:
-        # end of laser path (outside the sample)
-        return self.samplesize[0] + self.lsafe
-
 
 @dataclass(kw_only=True)
 class WaveguideParameters(LaserPathParameters):
