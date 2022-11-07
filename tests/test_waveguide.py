@@ -1,38 +1,38 @@
 import pytest
 
-from src.femto.Waveguide import _Waveguide
+from src.femto.Waveguide import Waveguide
 
 
 @pytest.fixture
 def param() -> dict:
     p = {
-            'scan'        : 6,
-            'speed'       : 20.0,
-            'y_init'      : 1.5,
-            'z_init'      : 0.050,
+            'scan': 6,
+            'speed': 20.0,
+            'y_init': 1.5,
+            'z_init': 0.050,
             'speed_closed': 75,
-            'samplesize'  : (100, 15),
-            'depth'       : 0.035,
-            'radius'      : 25,
-            'pitch'       : 0.127,
-            'int_dist'    : 0.005,
-            'int_length'  : 0.0,
-            'arm_length'  : 1.0,
-            'ltrench'     : 1.5,
-            'dz_bridge'   : 0.006,
+            'samplesize': (100, 15),
+            'depth': 0.035,
+            'radius': 25,
+            'pitch': 0.127,
+            'int_dist': 0.005,
+            'int_length': 0.0,
+            'arm_length': 1.0,
+            'ltrench': 1.5,
+            'dz_bridge': 0.006,
     }
     return p
 
 
 @pytest.fixture
-def empty_path(param) -> _Waveguide:
-    return _Waveguide(**param)
+def empty_path(param) -> Waveguide:
+    return Waveguide(**param)
 
 
 @pytest.fixture
-def waveguide(param) -> _Waveguide:
+def waveguide(param) -> Waveguide:
     # create LaserPath instance
-    wg = _Waveguide(**param)
+    wg = Waveguide(**param)
 
     # add path
     pass
@@ -41,7 +41,7 @@ def waveguide(param) -> _Waveguide:
 
 
 def test_default_values() -> None:
-    wg = _Waveguide()
+    wg = Waveguide()
     assert wg.scan == int(1)
     assert wg.speed == float(1.0)
     assert wg.x_init == float(-2.0)
@@ -92,14 +92,14 @@ def test_wg_values(waveguide) -> None:
 def test_z_init(param):
     param['z_init'] = None
     param['depth'] = 0.05
-    wg = _Waveguide(**param)
+    wg = Waveguide(**param)
     assert wg.z_init == float(0.05)
 
 
 def test_scan(param):
     param['scan'] = 1.2
     with pytest.raises(ValueError):
-        _Waveguide(**param)
+        Waveguide(**param)
 
 
 def test_dy_bend_pitch_error(waveguide):
@@ -125,51 +125,51 @@ def test_dx_bend_radius_error(waveguide):
 
 
 def test_dx_bend(waveguide):
-    assert pytest.approx(waveguide.dx_bend, 2.469064)
+    assert pytest.approx(waveguide.dx_bend) == 2.469064
 
 
 def test_dx_acc_none(param):
     param['int_length'] = None
-    wg = _Waveguide(**param)
+    wg = Waveguide(**param)
     assert wg.dx_acc is None
 
 
 def test_dx_acc(waveguide):
-    assert pytest.approx(waveguide.dx_acc, 4.938129)
+    assert pytest.approx(waveguide.dx_acc) == 4.938129
 
 
 def test_dx_acc_int_l(param):
     param['int_length'] = 2
-    wg = _Waveguide(**param)
-    assert pytest.approx(wg.dx_acc, 6.938129)
+    wg = Waveguide(**param)
+    assert pytest.approx(wg.dx_acc) == 6.938129
 
 
 def test_dx_mzi_none_intl(param):
     param['int_length'] = None
-    wg = _Waveguide(**param)
+    wg = Waveguide(**param)
     assert wg.dx_mzi is None
 
 
 def test_dx_mzi_none_arml(param):
     param['arm_length'] = None
-    wg = _Waveguide(**param)
+    wg = Waveguide(**param)
     assert wg.dx_mzi is None
 
 
 def test_dx_mzi(waveguide):
-    assert pytest.approx(waveguide.dx_mzi, 10.876258)
+    assert pytest.approx(waveguide.dx_mzi) == 10.876258
 
 
 def test_dx_mzi_int_l(param):
     param['int_length'] = 2
-    wg = _Waveguide(**param)
-    assert pytest.approx(wg.dx_mzi, 14.876258)
+    wg = Waveguide(**param)
+    assert pytest.approx(wg.dx_mzi) == 14.876258
 
 
 def test_dx_mzi_arml(param):
     param['arm_length'] = 3
-    wg = _Waveguide(**param)
-    assert pytest.approx(wg.dx_mzi, 13.876258)
+    wg = Waveguide(**param)
+    assert pytest.approx(wg.dx_mzi) == 12.876258
 
 
 def test_get_sbend_param_error(waveguide):
@@ -183,20 +183,20 @@ def test_get_sbend_param(waveguide):
     dy = 0.08
     r = 30
     assert type(waveguide.get_sbend_parameter(dy, r)) == tuple
-    assert pytest.approx(waveguide.get_sbend_parameter(dy, r)[0], 0.999848)
-    assert pytest.approx(waveguide.get_sbend_parameter(dy, r)[1], 1.046985)
+    assert pytest.approx(waveguide.get_sbend_parameter(dy, r)[0]) == 0.0516455
+    assert pytest.approx(waveguide.get_sbend_parameter(dy, r)[1]) == 3.097354
 
 
 def test_get_sbend_length(waveguide):
     dy = 0.127
     r = 15
-    assert pytest.approx(waveguide.sbend_length(dy, r), 2.757512)
+    assert pytest.approx(waveguide.sbend_length(dy, r)) == 2.757512
 
 
 def test_get_sbend_length_nil_dy(waveguide):
     dy = 0.0
     r = 15
-    assert pytest.approx(waveguide.sbend_length(dy, r), 0.0)
+    assert pytest.approx(waveguide.sbend_length(dy, r)) == 0.0
 
 
 def test_get_spline_raise_dy(waveguide):
@@ -221,10 +221,10 @@ def test_get_spline_nil_dispx(waveguide):
     radius = 20
     dx, dy, dz, lc = waveguide.get_spline_parameter(disp_y=disp_y, disp_z=disp_z, radius=radius)
 
-    assert pytest.approx(dx, 7.865876)
+    assert pytest.approx(dx) == 7.865876
     assert dy == disp_y
     assert dz == disp_z
-    assert pytest.approx(lc, 7.917474)
+    assert pytest.approx(lc) == 7.917474
 
 
 def test_get_spline_dispx(waveguide):
@@ -237,10 +237,10 @@ def test_get_spline_dispx(waveguide):
     assert dx == disp_x
     assert dy == disp_y
     assert dz == disp_z
-    assert pytest.approx(lc, 1.191638)
+    assert pytest.approx(lc) == 1.191638
 
 
 def test_repr(waveguide):
     repr = waveguide.__repr__()
     cname, _ = repr.split('@')
-    assert cname == '_Waveguide'
+    assert cname == 'Waveguide'
