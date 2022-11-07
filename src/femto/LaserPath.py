@@ -1,19 +1,34 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import List, Optional, Tuple, Type, TypeVar
 
 import numpy as np
 
 from src.femto.helpers import unique_filter
-from src.femto.Parameters import LaserPathParameters
+
+# Create a generic variable that can be 'Parent', or any subclass.
+C = TypeVar('C', bound='Parent')
 
 
-@dataclass(kw_only=True)
-class LaserPath(LaserPathParameters):
+@dataclass
+class LaserPath:
     """
     Class of irradiated paths. It manages all the coordinates of the laser path and computes the fabrication writing
-    time. It is the parent of all other classes through thier *ClassParameter*
+    time.
     """
 
+    scan: int = 1
+    speed: float = 1.0
+    x_init: float = -2.0
+    y_init: float = 0.0
+    z_init: float = None
+    lsafe: float = 2.0
+    speed_closed: float = 5
+    speed_pos: float = 0.5
+    cmd_rate_max: float = 1200
+    acc_max: float = 500
+    samplesize: Tuple[float, float] = (None, None)
     _x: Optional[np.ndarray] = None
     _y: Optional[np.ndarray] = None
     _z: Optional[np.ndarray] = None
@@ -21,12 +36,38 @@ class LaserPath(LaserPathParameters):
     _s: Optional[np.ndarray] = None
 
     def __post_init__(self):
-        super().__post_init__()
+        if not isinstance(self.scan, int):
+            raise ValueError(f'Number of scan must be integer. Given {self.scan}.')
+
         self._x = np.array([])
         self._y = np.array([])
         self._z = np.array([])
         self._f = np.array([])
         self._s = np.array([])
+
+    @classmethod
+    def from_dict(cls: Type[C], param: dict | dotdict) -> C:
+        return cls(**param)
+
+    @property
+    def init_point(self) -> List:
+        z0 = self.z_init if self.z_init else 0.0
+        return [self.x_init, self.y_init, z0]
+
+    @property
+    def lvelo(self) -> float:
+        # length needed to acquire the writing speed [mm]
+        return 3 * (0.5 * self.speed ** 2 / self.acc_max)
+
+    @property
+    def dl(self) -> float:
+        # minimum separation between two points [mm]
+        return self.speed / self.cmd_rate_max
+
+    @property
+    def x_end(self) -> float:
+        # end of laser path (outside the sample)
+        return self.samplesize[0] + self.lsafe
 
     @property
     def points(self) -> np.ndarray:
@@ -53,7 +94,7 @@ class LaserPath(LaserPathParameters):
         return np.array([])
 
     @property
-    def lastx(self) -> float:
+    def lastx(self) -> float or None:
         arrx = self.x
         if arrx.size:
             return arrx[-1]
@@ -73,7 +114,7 @@ class LaserPath(LaserPathParameters):
         return np.array([])
 
     @property
-    def lasty(self) -> float:
+    def lasty(self) -> float or None:
         arry = self.y
         if arry.size:
             return arry[-1]
@@ -93,7 +134,7 @@ class LaserPath(LaserPathParameters):
         return np.array([])
 
     @property
-    def lastz(self) -> float:
+    def lastz(self) -> float or None:
         arrz = self.z
         if arrz.size:
             return arrz[-1]
@@ -153,7 +194,7 @@ class LaserPath(LaserPathParameters):
     def subs_num(self, l_curve: float = 0, speed: float = None) -> int:
         """
         Utility function that, given the length of a segment and the fabrication speed, computes the number of points
-        required to work at the maximum command rate (attribute of _Waveguide obj).
+        required to work at the maximum command rate (attribute of Waveguide obj).
 
         :param l_curve: Length of the waveguide segment [mm]. The default is 0 mm.
         :type l_curve: float
