@@ -238,3 +238,9 @@ def test_get_spline_dispx(waveguide):
     assert dy == disp_y
     assert dz == disp_z
     assert pytest.approx(lc, 1.191638)
+
+
+def test_repr(waveguide):
+    repr = waveguide.__repr__()
+    cname, _ = repr.split('@')
+    assert cname == '_Waveguide'
