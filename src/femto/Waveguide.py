@@ -28,7 +28,7 @@ class _Waveguide(LaserPath, WaveguideParameters):
         return "{cname}@{id:x}".format(cname=self.__class__.__name__, id=id(self) & 0xFFFFFF)
 
     # Methods
-    def start(self, init_pos: List[float] = None, speedpos: float = None) -> Self:
+    def start(self, init_pos: List[float] = None, speed_pos: float = None) -> Self:
         """
         Starts a waveguide in the initial position given as input.
         The coordinates of the initial position are the first added to the matrix that describes the waveguide.
@@ -38,25 +38,31 @@ class _Waveguide(LaserPath, WaveguideParameters):
             init_pos[1] -> Y
             init_pos[2] -> Z
         :type init_pos: List[float]
-        :param speedpos: Translation speed [mm/s].
-        :type speedpos: float
+        :param speed_pos: Translation speed [mm/s].
+        :type speed_pos: float
         :return: Self
         :rtype: _Waveguide
         """
+        if self._x.size != 0:
+            raise ValueError('Coordinate matrix is not empty. Cannot start a new waveguide in this point.')
+
         if init_pos is None:
             x0, y0, z0 = self.init_point
         else:
             if np.size(init_pos) != 3:
                 raise ValueError(f'Given initial position is not valid. 3 values required. {np.size(init_pos)} given.')
             x0, y0, z0 = init_pos
-        if self._x.size != 0:
-            raise ValueError('Coordinate matrix is not empty. Cannot start a new waveguide in this point.')
-        if speedpos is None:
-            speedpos = self.speed_pos
 
-        f0 = np.asarray(speedpos, dtype=np.float32)
-        s0 = np.asarray(0.0, dtype=np.float32)
-        s1 = np.asarray(1.0, dtype=np.float32)
+        if speed_pos is None:
+            speed_pos = self.speed_pos
+
+        x0 = np.asarray(x0)
+        y0 = np.asarray(y0)
+        z0 = np.asarray(z0)
+        f0 = np.asarray(speed_pos)
+        s0 = np.asarray(0.0)
+        s1 = np.asarray(1.0)
+       
         self.add_path(x0, y0, z0, f0, s0)
         self.add_path(x0, y0, z0, f0, s1)
         return self

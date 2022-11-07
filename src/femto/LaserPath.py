@@ -190,11 +190,11 @@ class LaserPath(LaserPathParameters):
         :param s: array of shutter coordinates.
         :type s: numpy.ndarray
         """
-        self._x = np.append(self._x, x)
-        self._y = np.append(self._y, y)
-        self._z = np.append(self._z, z)
-        self._f = np.append(self._f, f)
-        self._s = np.append(self._s, s)
+        self._x = np.append(self._x, x.astype(np.float32))
+        self._y = np.append(self._y, y.astype(np.float32))
+        self._z = np.append(self._z, z.astype(np.float32))
+        self._f = np.append(self._f, f.astype(np.float32))
+        self._s = np.append(self._s, s.astype(np.float32))
 
     # Private interface
     def _unique_points(self):
