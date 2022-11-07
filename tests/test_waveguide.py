@@ -249,8 +249,32 @@ def test_repr(waveguide) -> None:
 
 def test_start(waveguide) -> None:
     waveguide.start()
-    np.testing.assert_array_equal(waveguide._x, np.array([-2.0, -2.0]))
-    np.testing.assert_array_equal(waveguide._y, np.array([1.5, 1.5]))
-    np.testing.assert_array_equal(waveguide._z, np.array([0.05, 0.05]))
-    np.testing.assert_array_equal(waveguide._f, np.array([0.5, 0.5]))
-    np.testing.assert_array_equal(waveguide._s, np.array([0.0, 1.0]))
+    np.testing.assert_almost_equal(waveguide._x, np.array([-2.0, -2.0]))
+    np.testing.assert_almost_equal(waveguide._y, np.array([1.5, 1.5]))
+    np.testing.assert_almost_equal(waveguide._z, np.array([0.05, 0.05]))
+    np.testing.assert_almost_equal(waveguide._f, np.array([0.5, 0.5]))
+    np.testing.assert_almost_equal(waveguide._s, np.array([0.0, 1.0]))
+
+
+def test_start_values(waveguide) -> None:
+    init_p = [0.0, 1.0, -0.1]
+    speed_p = 1.25
+
+    waveguide.start(init_pos=init_p, speed_pos=speed_p)
+    np.testing.assert_almost_equal(waveguide._x, np.array([0.0, 0.0]))
+    np.testing.assert_almost_equal(waveguide._y, np.array([1.0, 1.0]))
+    np.testing.assert_almost_equal(waveguide._z, np.array([-0.1, -0.1]))
+    np.testing.assert_almost_equal(waveguide._f, np.array([1.25, 1.25]))
+    np.testing.assert_almost_equal(waveguide._s, np.array([0.0, 1.0]))
+
+
+def test_start_value_error(waveguide) -> None:
+    init_p = [0.0, 1.0, -0.1, 0.3]
+    with pytest.raises(ValueError):
+        waveguide.start(init_p)
+    init_p = [0.0, ]
+    with pytest.raises(ValueError):
+        waveguide.start(init_p)
+    init_p = []
+    with pytest.raises(ValueError):
+        waveguide.start(init_p)
