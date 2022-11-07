@@ -7,14 +7,14 @@ from femto.LaserPath import LaserPath
 @pytest.fixture
 def param() -> dict:
     p = {
-            'scan'        : 6,
-            'speed'       : 20.0,
-            'y_init'      : 1.5,
-            'z_init'      : 0.035,
-            'lsafe'       : 4.3,
+            'scan': 6,
+            'speed': 20.0,
+            'y_init': 1.5,
+            'z_init': 0.035,
+            'lsafe': 4.3,
             'speed_closed': 75,
-            'speed_pos'   : 0.1,
-            'samplesize'  : (100, 15)
+            'speed_pos': 0.1,
+            'samplesize': (100, 15)
     }
     return p
 
@@ -68,20 +68,36 @@ def test_laserpath_values(laser_path) -> None:
     assert laser_path.samplesize == (100, 15)
 
 
+def test_from_dict(param) -> None:
+    lp = LaserPath.from_dict(param)
+
+    assert lp.scan == int(6)
+    assert lp.speed == float(20.0)
+    assert lp.x_init == float(-2.0)
+    assert lp.y_init == float(1.5)
+    assert lp.z_init == float(0.035)
+    assert lp.lsafe == float(4.3)
+    assert lp.speed_closed == float(75)
+    assert lp.speed_pos == float(0.1)
+    assert lp.cmd_rate_max == int(1200)
+    assert lp.acc_max == int(500)
+    assert lp.samplesize == (100, 15)
+
+
 def test_init_point(laser_path) -> None:
     assert laser_path.init_point == [-2.0, 1.5, 0.035]
 
 
 def test_lvelo(laser_path) -> None:
-    assert pytest.approx(laser_path.lvelo, 1.2)
+    assert pytest.approx(laser_path.lvelo) == 1.2
 
 
 def test_dl(laser_path) -> None:
-    assert pytest.approx(laser_path.dl, (1 / 60))
+    assert pytest.approx(laser_path.dl) == (1 / 60)
 
 
 def test_x_end(laser_path) -> None:
-    assert pytest.approx(laser_path.x_end, 104.3)
+    assert pytest.approx(laser_path.x_end) == 104.3
 
 
 def test_add_path(laser_path) -> None:
@@ -90,7 +106,6 @@ def test_add_path(laser_path) -> None:
     np.testing.assert_almost_equal(laser_path._z, np.array([0, 0, 1, 1, 1, 0, 3, 3, 3]))
     np.testing.assert_almost_equal(laser_path._f, np.array([1, 2, 1, 1, 1, 3, 4, 4, 4]))
     np.testing.assert_almost_equal(laser_path._s, np.array([1, 1, 1, 1, 1, 1, 1, 1, 1]))
-
 
 
 def test_x(laser_path) -> None:
@@ -180,7 +195,7 @@ def test_path_empty(empty_path) -> None:
 
 
 def test_length(laser_path) -> None:
-    assert pytest.approx(laser_path.length, 7.145052)
+    assert pytest.approx(laser_path.length) == 7.145052
 
 
 def test_length_empty(empty_path) -> None:
@@ -188,11 +203,11 @@ def test_length_empty(empty_path) -> None:
 
 
 def test_fabrication_time(laser_path) -> None:
-    assert pytest.approx(laser_path.fabrication_time == 19.288646)
+    assert pytest.approx(laser_path.fabrication_time) == 42.740724
 
 
 def test_fabrication_time_empty(empty_path) -> None:
-    assert pytest.approx(empty_path.fabrication_time == 0.0)
+    assert pytest.approx(empty_path.fabrication_time) == 0.0
 
 
 def test_subs_num_exception(laser_path) -> None:
