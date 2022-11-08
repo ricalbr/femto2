@@ -7,20 +7,20 @@ from src.femto.Waveguide import Waveguide
 @pytest.fixture
 def param() -> dict:
     p = {
-            'scan': 6,
-            'speed': 20.0,
-            'y_init': 1.5,
-            'z_init': 0.050,
+            'scan'        : 6,
+            'speed'       : 20.0,
+            'y_init'      : 1.5,
+            'z_init'      : 0.050,
             'speed_closed': 75,
-            'samplesize': (100, 15),
-            'depth': 0.035,
-            'radius': 25,
-            'pitch': 0.127,
-            'int_dist': 0.005,
-            'int_length': 0.0,
-            'arm_length': 1.0,
-            'ltrench': 1.5,
-            'dz_bridge': 0.006,
+            'samplesize'  : (100, 15),
+            'depth'       : 0.035,
+            'radius'      : 25,
+            'pitch'       : 0.127,
+            'int_dist'    : 0.005,
+            'int_length'  : 0.0,
+            'arm_length'  : 1.0,
+            'ltrench'     : 1.5,
+            'dz_bridge'   : 0.006,
     }
     return p
 
@@ -326,3 +326,74 @@ def test_empty_end(param) -> None:
     wg = Waveguide(**param)
     with pytest.raises(IndexError):
         wg.end()
+
+
+def test_linear_value_error(param) -> None:
+    wg = Waveguide(**param)
+    with pytest.raises(ValueError):
+        wg.start().linear([1, 1, 1], mode='rand').end()
+
+
+def test_linear_invalid_increment(param) -> None:
+    wg = Waveguide(**param)
+    with pytest.raises(ValueError):
+        wg.start().linear([1, 2]).end()
+
+    with pytest.raises(ValueError):
+        wg.start().linear([1, 2, 3, 4]).end()
+
+
+def test_linear_default_speed(param) -> None:
+    wg = Waveguide(**param)
+    wg.start().linear([1, 2, 3])
+    assert wg._f[-1] == param['speed']
+
+
+def test_linear_abs(param) -> None:
+    wg = Waveguide(**param)
+    init_p = [1, 1, 1]
+    increm = [3, 4, 5]
+    wg.start(init_p).linear(increm, mode='abs').end()
+
+    np.testing.assert_almost_equal(wg._x, np.array([1.0, 1.0, 3.0, 3.0, 1.0]))
+    np.testing.assert_almost_equal(wg._y, np.array([1.0, 1.0, 4.0, 4.0, 1.0]))
+    np.testing.assert_almost_equal(wg._z, np.array([1.0, 1.0, 5.0, 5.0, 1.0]))
+    np.testing.assert_almost_equal(wg._f, np.array([0.5, 0.5, 20., 20., 75.0]))
+    np.testing.assert_almost_equal(wg._s, np.array([0.0, 1.0, 1.0, 0.0, 0.0]))
+
+
+def test_linear_inc(param) -> None:
+    wg = Waveguide(**param)
+    init_p = [1, 1, 1]
+    increm = [3, 4, 5]
+    wg.start(init_p).linear(increm, mode='inc').end()
+
+    np.testing.assert_almost_equal(wg._x, np.array([1.0, 1.0, 4.0, 4.0, 1.0]))
+    np.testing.assert_almost_equal(wg._y, np.array([1.0, 1.0, 5.0, 5.0, 1.0]))
+    np.testing.assert_almost_equal(wg._z, np.array([1.0, 1.0, 6.0, 6.0, 1.0]))
+    np.testing.assert_almost_equal(wg._f, np.array([0.5, 0.5, 20., 20., 75.0]))
+    np.testing.assert_almost_equal(wg._s, np.array([0.0, 1.0, 1.0, 0.0, 0.0]))
+
+
+def test_linear_none(param) -> None:
+    wg = Waveguide(**param)
+    init_p = [1, 1, 1]
+    increm = [4, None, None]
+    wg.start(init_p).linear(increm, mode='abs').end()
+
+    np.testing.assert_almost_equal(wg._x, np.array([1.0, 1.0, 4.0, 4.0, 1.0]))
+    np.testing.assert_almost_equal(wg._y, np.array([1.0, 1.0, 1.0, 1.0, 1.0]))
+    np.testing.assert_almost_equal(wg._z, np.array([1.0, 1.0, 1.0, 1.0, 1.0]))
+    np.testing.assert_almost_equal(wg._f, np.array([0.5, 0.5, 20., 20., 75.0]))
+    np.testing.assert_almost_equal(wg._s, np.array([0.0, 1.0, 1.0, 0.0, 0.0]))
+
+    wg = Waveguide(**param)
+    init_p = [1, 1, 1]
+    increm = [5, None, None]
+    wg.start(init_p).linear(increm, mode='inc').end()
+
+    np.testing.assert_almost_equal(wg._x, np.array([1.0, 1.0, 6.0, 6.0, 1.0]))
+    np.testing.assert_almost_equal(wg._y, np.array([1.0, 1.0, 1.0, 1.0, 1.0]))
+    np.testing.assert_almost_equal(wg._z, np.array([1.0, 1.0, 1.0, 1.0, 1.0]))
+    np.testing.assert_almost_equal(wg._f, np.array([0.5, 0.5, 20., 20., 75.0]))
+    np.testing.assert_almost_equal(wg._s, np.array([0.0, 1.0, 1.0, 0.0, 0.0]))
