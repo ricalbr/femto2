@@ -266,14 +266,14 @@ class Waveguide(LaserPath):
         num = self.subs_num(delta_angle * radius, f)
 
         t = np.linspace(initial_angle, final_angle, num)
-        new_x = self._x[-1] - radius * np.cos(initial_angle) + radius * np.cos(t)
-        new_y = self._y[-1] - radius * np.sin(initial_angle) + radius * np.sin(t)
-        new_z = np.repeat(self._z[-1], new_x.shape)
-        f = np.repeat(f)
-        s = np.repeat(shutter)
+        x_circ = self._x[-1] - radius * np.cos(initial_angle) + radius * np.cos(t)
+        y_circ = self._y[-1] - radius * np.sin(initial_angle) + radius * np.sin(t)
+        z_circ = np.repeat(self._z[-1], num)
+        f_circ = np.repeat(f)
+        s_circ = np.repeat(shutter)
 
         # update coordinates
-        self.add_path(new_x, new_y, new_z, f, s)
+        self.add_path(x_circ, y_circ, z_circ, f_circ, s_circ)
         return self
 
     def arc_bend(self, dy: float, radius: float = None, shutter: int = 1, speed: float = None) -> Self:
