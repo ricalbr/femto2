@@ -35,9 +35,14 @@ def waveguide(param) -> Waveguide:
     # create LaserPath instance
     wg = Waveguide(**param)
 
-    # add path
-    pass
-
+    # init_p = [0.0, 0.0, 0.0]
+    # wg.start(init_p)
+    # wg.linear([1, 2, 3], mode='ABS')
+    # wg.arc_bend(wg.dy_bend)
+    # wg.linear([5, 0, 0], mode='INC')
+    # wg.spline_bridge(wg.pitch, wg.dz_bridge, )
+    # wg.linear([30, wg.lasty, wg.lastz], mode='ABS')
+    # wg.end()
     return wg
 
 
@@ -88,6 +93,31 @@ def test_wg_values(waveguide) -> None:
     assert waveguide.ltrench == float(1.5)
     assert waveguide.dz_bridge == float(0.006)
     assert waveguide.margin == float(1.0)
+
+
+def test_from_dict(param) -> None:
+    wg = Waveguide.from_dict(param)
+    assert wg.scan == int(6)
+    assert wg.speed == float(20.0)
+    assert wg.x_init == float(-2.0)
+    assert wg.y_init == float(1.5)
+    assert wg.z_init == float(0.050)
+    assert wg.lsafe == float(2.0)
+    assert wg.speed_closed == float(75)
+    assert wg.speed_pos == float(0.5)
+    assert wg.cmd_rate_max == int(1200)
+    assert wg.acc_max == int(500)
+    assert wg.samplesize == (100, 15)
+    assert wg.depth == float(0.035)
+    assert wg.radius == float(25)
+    assert wg.pitch == float(0.127)
+    assert wg.pitch_fa == float(0.127)
+    assert wg.int_dist == float(0.005)
+    assert wg.int_length == float(0.0)
+    assert wg.arm_length == float(1.0)
+    assert wg.ltrench == float(1.5)
+    assert wg.dz_bridge == float(0.006)
+    assert wg.margin == float(1.0)
 
 
 def test_z_init(param) -> None:
@@ -278,3 +308,21 @@ def test_start_value_error(waveguide) -> None:
     init_p = []
     with pytest.raises(ValueError):
         waveguide.start(init_p)
+
+
+def test_end(param) -> None:
+    wg = Waveguide(**param)
+    wg.start([0.0, 0.0, 0.0])
+    wg.end()
+
+    np.testing.assert_almost_equal(wg._x, np.array([0.0, 0.0, 0.0, 0.0]))
+    np.testing.assert_almost_equal(wg._y, np.array([0.0, 0.0, 0.0, 0.0]))
+    np.testing.assert_almost_equal(wg._z, np.array([0.0, 0.0, 0.0, 0.0]))
+    np.testing.assert_almost_equal(wg._f, np.array([0.5, 0.5, 0.5, 75.0]))
+    np.testing.assert_almost_equal(wg._s, np.array([0.0, 1.0, 0.0, 0.0]))
+
+
+def test_empty_end(param) -> None:
+    wg = Waveguide(**param)
+    with pytest.raises(IndexError):
+        wg.end()
