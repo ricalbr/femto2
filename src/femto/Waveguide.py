@@ -216,13 +216,26 @@ class Waveguide(LaserPath):
         """
         if mode.lower() not in ['abs', 'inc']:
             raise ValueError(f'Mode should be either ABS or INC. {mode.upper()} was given.')
-        x_inc, y_inc, z_inc = increment
+
+        if len(increment) != 3:
+            raise ValueError(f'Increment should be a list of three values. Increment has {len(increment)} entries.')
+
         f = self.speed if speed is None else speed
+
         if mode.lower() == 'abs':
-            self.add_path(x_inc, y_inc, z_inc, np.asarray(f), np.asarray(shutter))
+            x_inc = np.array([increment[0] or self._x[-1]])
+            y_inc = np.array([increment[1] or self._y[-1]])
+            z_inc = np.array([increment[2] or self._z[-1]])
         else:
-            self.add_path(self._x[-1] + x_inc, self._y[-1] + y_inc, self._z[-1] + z_inc, np.asarray(f), np.asarray(
-                    shutter))
+            x, y, z = map(lambda k: k or 0, increment)
+            x_inc = np.array([self._x[-1] + x])
+            y_inc = np.array([self._y[-1] + y])
+            z_inc = np.array([self._z[-1] + z])
+
+        f_inc = np.array([f])
+        s_inc = np.array([shutter])
+
+        self.add_path(x_inc, y_inc, z_inc, f_inc, s_inc)
         return self
 
     def circ(self, initial_angle: float, final_angle: float, radius: float = None, shutter: int = 1,
@@ -245,20 +258,22 @@ class Waveguide(LaserPath):
         :return: Self
         :rtype: Waveguide
         """
-        if radius is None:
-            radius = self.radius
+
+        radius = self.radius if radius is None else radius
         f = self.speed if speed is None else speed
 
-        delta_angle = abs(final_angle - initial_angle)
+        delta_angle = np.abs(final_angle - initial_angle)
         num = self.subs_num(delta_angle * radius, f)
 
         t = np.linspace(initial_angle, final_angle, num)
         new_x = self._x[-1] - radius * np.cos(initial_angle) + radius * np.cos(t)
         new_y = self._y[-1] - radius * np.sin(initial_angle) + radius * np.sin(t)
-        new_z = self._z[-1] * np.ones(new_x.shape)
+        new_z = np.repeat(self._z[-1], new_x.shape)
+        f = np.repeat(f)
+        s = np.repeat(shutter)
 
         # update coordinates
-        self.add_path(new_x, new_y, new_z, f * np.ones(new_x.shape), shutter * np.ones(new_x.shape))
+        self.add_path(new_x, new_y, new_z, f, s)
         return self
 
     def arc_bend(self, dy: float, radius: float = None, shutter: int = 1, speed: float = None) -> Self:
