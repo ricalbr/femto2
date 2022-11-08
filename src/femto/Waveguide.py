@@ -164,15 +164,13 @@ class Waveguide(LaserPath):
         if speed_pos is None:
             speed_pos = self.speed_pos
 
-        x0 = np.asarray(x0)
-        y0 = np.asarray(y0)
-        z0 = np.asarray(z0)
-        f0 = np.asarray(speed_pos)
-        s0 = np.asarray(0.0)
-        s1 = np.asarray(1.0)
+        x0 = np.asarray([x0, x0])
+        y0 = np.asarray([y0, y0])
+        z0 = np.asarray([z0, z0])
+        f0 = np.asarray([speed_pos, speed_pos])
+        s0 = np.asarray([0.0, 1.0])
 
         self.add_path(x0, y0, z0, f0, s0)
-        self.add_path(x0, y0, z0, f0, s1)
         return self
 
     def end(self):
@@ -184,12 +182,15 @@ class Waveguide(LaserPath):
         :rtype: Waveguide
         """
 
+        if not self._x.size:
+            raise IndexError('Try to access an empty array. Use the start() method before the end() method.')
+
         # append the transformed path and add the coordinates to return to the initial point
-        x = np.array([self._x[-1], self._x[0]]).astype(np.float32)
-        y = np.array([self._y[-1], self._y[0]]).astype(np.float32)
-        z = np.array([self._z[-1], self._z[0]]).astype(np.float32)
-        f = np.array([self._f[-1], self.speed_closed]).astype(np.float32)
-        s = np.array([0, 0]).astype(np.float32)
+        x = np.array([self._x[-1], self._x[0]])
+        y = np.array([self._y[-1], self._y[0]])
+        z = np.array([self._z[-1], self._z[0]])
+        f = np.array([self._f[-1], self.speed_closed])
+        s = np.array([0, 0])
         self.add_path(x, y, z, f, s)
 
     def linear(self, increment: list, mode: str = 'INC', shutter: int = 1, speed: float = None) -> Self:
