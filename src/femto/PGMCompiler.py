@@ -5,15 +5,13 @@ from copy import deepcopy
 from itertools import zip_longest
 from operator import add
 from pathlib import Path
+from typing import List
 
 import numpy as np
 
 from src.femto.helpers import dotdict, listcast
-
-from typing import List
-
-from src.femto import Trench, TrenchColumn
 from src.femto.Parameters import GcodeParameters
+from src.femto.Trench import Trench, TrenchColumn
 
 
 class PGMCompiler(GcodeParameters):

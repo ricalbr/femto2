@@ -10,7 +10,7 @@ except ImportError:
 import numpy as np
 
 from src.femto.Parameters import MarkerParameters
-from src.femto import LaserPath
+from src.femto.LaserPath import LaserPath
 from src.femto.helpers import sign
 
 

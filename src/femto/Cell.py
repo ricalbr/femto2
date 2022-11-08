@@ -4,8 +4,11 @@ import time
 import numpy as np
 import plotly.graph_objects as go
 
-from src.femto import _Marker, _Waveguide, PGMCompiler, PGMTrench, Trench, TrenchColumn
 from src.femto.helpers import dotdict, listcast, nest_level
+from src.femto.Marker import _Marker
+from src.femto.PGMCompiler import PGMCompiler, PGMTrench
+from src.femto.Trench import Trench, TrenchColumn
+from src.femto.Waveguide import Waveguide
 
 
 class Device(PGMCompiler):
@@ -27,7 +30,7 @@ class Device(PGMCompiler):
             self.trenches.extend(obj.trenches)
         elif isinstance(obj, _Marker):
             self.markers.append(obj)
-        elif isinstance(obj, _Waveguide) or (isinstance(obj, list) and all(isinstance(x, _Waveguide) for x in obj)):
+        elif isinstance(obj, Waveguide) or (isinstance(obj, list) and all(isinstance(x, Waveguide) for x in obj)):
             self.waveguides.append(obj)
         elif isinstance(obj, Trench):
             self.trenches.append(obj)
@@ -401,7 +404,7 @@ def _example():
     c = Cell(PARAMETERS_GC)
 
     # Calculations
-    mzi = [_Waveguide(PARAMETERS_WG) for _ in range(2)]
+    mzi = [Waveguide(**PARAMETERS_WG) for _ in range(2)]
     y0 = PARAMETERS_GC.samplesize[1] / 2
     for index, wg in enumerate(mzi):
         [xi, yi, zi] = [-2, -wg.pitch / 2 + index * wg.pitch + y0, 0.035]
