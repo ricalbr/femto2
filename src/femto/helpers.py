@@ -1,8 +1,9 @@
 from functools import partial
 from itertools import cycle
-from typing import List, Tuple
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
+import numpy.typing as npt
 
 
 def grouped(iterable, n):
@@ -14,11 +15,12 @@ def grouped(iterable, n):
 pairwise = partial(grouped, n=2)
 
 
-def swap(array: List, swap_pos: List[Tuple], zero_index=False) -> List:
+def swap(array: List[npt.NDArray[np.float32]], swap_pos: List[Tuple[int, int]], zero_index: bool = False) -> List[
+    npt.NDArray[np.float32]]:
     # in case of a single swap, swap_pos can be (pos1, pos2).
-    # Encapsulate the tuple in a list to have compatibility with general code
-    if not isinstance(swap_pos, list):
-        swap_pos = [swap_pos]
+    # # Encapsulate the tuple in a list to have compatibility with general code
+    # if not isinstance(swap_pos, list):
+    #     swap_pos = [swap_pos]
 
     for pos1, pos2 in swap_pos:
         if zero_index is False:
@@ -40,14 +42,14 @@ def listcast(x):
         return [x]
 
 
-class dotdict(dict):
+class dotdict(Dict[Any, Any]):
     """dot.notation access to dictionary attributes"""
     __getattr__ = dict.get
     __setattr__ = dict.__setitem__
     __delattr__ = dict.__delitem__
 
 
-def nest_level(lst):
+def nest_level(lst) -> int:
     if not isinstance(lst, list):
         return 0
     if not lst:
@@ -55,7 +57,7 @@ def nest_level(lst):
     return max(nest_level(item) for item in lst) + 1
 
 
-def flatten(items, seqtypes=(list, tuple)):
+def flatten(items, seqtypes: tuple = (list, tuple)):
     try:
         for i, x in enumerate(items):
             while isinstance(x, seqtypes):
@@ -70,7 +72,7 @@ def sign():
     return cycle([1, -1])
 
 
-def unique_filter(arrays: List) -> np.ndarray:
+def unique_filter(arrays: List[npt.NDArray[np.float32]]) -> npt.NDArray[np.float32]:
     # data matrix
     data = np.stack(arrays, axis=-1).astype(np.float32)
 
@@ -82,4 +84,6 @@ def unique_filter(arrays: List) -> np.ndarray:
     mask = np.diff(data, axis=0)
     mask = np.sum(np.abs(mask), axis=1, dtype=bool)
     mask = np.insert(mask, 0, True)
-    return data[mask]
+
+    # filtered data
+    return np.array(data[mask])

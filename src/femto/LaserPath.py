@@ -1,14 +1,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Optional, Tuple, Type, TypeVar
+from typing import List, Optional, Tuple, Type, TypeVar, Union
 
 import numpy as np
+import numpy.typing as npt
 
-from src.femto.helpers import unique_filter
+from femto.helpers import unique_filter
 
-# Create a generic variable that can be 'Parent', or any subclass.
-C = TypeVar('C', bound='Parent')
+# Create a generic variable that can be 'LaserPath', or any subclass.
+C = TypeVar('C', bound='LaserPath')
 
 
 @dataclass
@@ -22,31 +23,25 @@ class LaserPath:
     speed: float = 1.0
     x_init: float = -2.0
     y_init: float = 0.0
-    z_init: float = None
+    z_init: Optional[float] = None
     lsafe: float = 2.0
     speed_closed: float = 5
     speed_pos: float = 0.5
     cmd_rate_max: float = 1200
     acc_max: float = 500
-    samplesize: Tuple[float, float] = (None, None)
-    _x: Optional[np.ndarray] = None
-    _y: Optional[np.ndarray] = None
-    _z: Optional[np.ndarray] = None
-    _f: Optional[np.ndarray] = None
-    _s: Optional[np.ndarray] = None
+    samplesize: Tuple[Optional[float], Optional[float]] = (None, None)
+    _x: npt.NDArray = np.array([])
+    _y: npt.NDArray = np.array([])
+    _z: npt.NDArray = np.array([])
+    _f: npt.NDArray = np.array([])
+    _s: npt.NDArray = np.array([])
 
     def __post_init__(self):
         if not isinstance(self.scan, int):
             raise ValueError(f'Number of scan must be integer. Given {self.scan}.')
 
-        self._x = np.array([])
-        self._y = np.array([])
-        self._z = np.array([])
-        self._f = np.array([])
-        self._s = np.array([])
-
     @classmethod
-    def from_dict(cls: Type[C], param: dict | dotdict) -> C:
+    def from_dict(cls: Type[C], param: Union[dict, dotdict]) -> C:
         return cls(**param)
 
     @property
@@ -65,12 +60,14 @@ class LaserPath:
         return self.speed / self.cmd_rate_max
 
     @property
-    def x_end(self) -> float:
+    def x_end(self) -> Optional[float]:
         # end of laser path (outside the sample)
+        if self.samplesize[0] is None:
+            return None
         return self.samplesize[0] + self.lsafe
 
     @property
-    def points(self) -> np.ndarray:
+    def points(self) -> npt.NDArray[np.float32]:
         """
         Getter for the coordinates' matrix as a numpy.ndarray matrix. The dataframe is parsed through a unique functions
         that removes all the subsequent identical points in the set.
@@ -78,10 +75,10 @@ class LaserPath:
         :return: [X, Y, Z, F, S] unique point matrix
         :rtype: numpy.ndarray
         """
-        return self._unique_points()
+        return np.array(self._unique_points())
 
     @property
-    def x(self) -> np.ndarray:
+    def x(self) -> npt.NDArray[np.float32]:
         """
         Getter for the x-coordinate vector as a numpy array. The subsequent identical points in the vector are removed.
 
@@ -90,18 +87,18 @@ class LaserPath:
         """
         coords = self._unique_points().T
         if coords.ndim == 2:
-            return coords[0]
+            return np.array(coords[0])
         return np.array([])
 
     @property
-    def lastx(self) -> float or None:
+    def lastx(self) -> Optional[float]:
         arrx = self.x
         if arrx.size:
-            return arrx[-1]
+            return float(arrx[-1])
         return None
 
     @property
-    def y(self) -> np.ndarray:
+    def y(self) -> npt.NDArray[np.float32]:
         """
         Getter for the y-coordinate vector as a numpy array. The subsequent identical points in the vector are removed.
 
@@ -110,18 +107,18 @@ class LaserPath:
         """
         coords = self._unique_points().T
         if coords.ndim == 2:
-            return coords[1]
+            return np.array(coords[1])
         return np.array([])
 
     @property
-    def lasty(self) -> float or None:
+    def lasty(self) -> Optional[float]:
         arry = self.y
         if arry.size:
-            return arry[-1]
+            return float(arry[-1])
         return None
 
     @property
-    def z(self) -> np.ndarray:
+    def z(self) -> npt.NDArray[np.float32]:
         """
         Getter for the z-coordinate vector as a numpy array. The subsequent identical points in the vector are removed.
 
@@ -130,18 +127,18 @@ class LaserPath:
         """
         coords = self._unique_points().T
         if coords.ndim == 2:
-            return coords[2]
+            return np.array(coords[2])
         return np.array([])
 
     @property
-    def lastz(self) -> float or None:
+    def lastz(self) -> Optional[float]:
         arrz = self.z
         if arrz.size:
-            return arrz[-1]
+            return float(arrz[-1])
         return None
 
     @property
-    def lastpt(self) -> np.ndarray:
+    def lastpt(self) -> npt.NDArray[np.float32]:
         """
         Getter for the last point of the waveguide.
 
@@ -153,7 +150,7 @@ class LaserPath:
         return np.array([])
 
     @property
-    def path(self) -> List:
+    def path(self) -> List[npt.NDArray[np.float32]]:
         x, y, _ = self.path3d
         return [x, y]
 
@@ -189,9 +186,9 @@ class LaserPath:
 
         dists = np.sqrt(np.diff(x) ** 2 + np.diff(y) ** 2 + np.diff(z) ** 2)
         times = dists / f[1:]
-        return sum(times)
+        return float(sum(times))
 
-    def subs_num(self, l_curve: float = 0, speed: float = None) -> int:
+    def subs_num(self, l_curve: float = 0, speed: Optional[float] = None) -> int:
         """
         Utility function that, given the length of a segment and the fabrication speed, computes the number of points
         required to work at the maximum command rate (attribute of Waveguide obj).
@@ -216,7 +213,8 @@ class LaserPath:
             return 3
         return num
 
-    def add_path(self, x: np.ndarray, y: np.ndarray, z: np.ndarray, f: np.ndarray, s: np.ndarray):
+    def add_path(self, x: npt.NDArray[np.float32], y: npt.NDArray[np.float32], z: npt.NDArray[np.float32],
+                 f: npt.NDArray[np.float32], s: npt.NDArray[np.float32]):
         """
         Takes [x, y, z, f, s] numpy.ndarrays and adds it to the class coordinates.
 

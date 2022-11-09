@@ -19,130 +19,130 @@ class LaserPathParameters:
     """
 
 
-@dataclass(kw_only=True)
-class WaveguideParameters(LaserPathParameters):
-    """
-    Class containing the parameters for the waveguide fabrication.
-    """
-
-    depth: float = 0.035
-    radius: float = 15
-    pitch: float = 0.080
-    pitch_fa: float = 0.127
-    int_dist: float = None
-    int_length: float = 0.0
-    arm_length: float = 0.0
-    ltrench: float = 1.0
-    dz_bridge: float = 0.007
-    margin: float = 1.0
-
-    def __post_init__(self):
-        super().__post_init__()
-
-        # parent method redefinition, to include depth property
-        if not isinstance(self.scan, int):
-            print(self.scan)
-            raise ValueError('Number of scan must be integer.')
-
-        if self.z_init is None:
-            self.z_init = self.depth
-
-    @property
-    def dy_bend(self):
-        if self.pitch is None:
-            raise ValueError('Waveguide pitch is set to None.')
-        if self.int_dist is None:
-            raise ValueError('Interaction distance is set to None.')
-        return 0.5 * (self.pitch - self.int_dist)
-
-    @property
-    def dx_bend(self) -> float or None:
-        if self.radius is None:
-            raise ValueError('Curvature radius is set to None.')
-        return self.sbend_length(self.dy_bend, self.radius)
-
-    @property
-    def dx_acc(self) -> float or None:
-        if self.dx_bend is None or self.int_length is None:
-            return None
-        return 2 * self.dx_bend + self.int_length
-
-    @property
-    def dx_mzi(self) -> float or None:
-        if self.dx_bend is None or self.int_length is None or self.arm_length is None:
-            return None
-        return 4 * self.dx_bend + 2 * self.int_length + self.arm_length
-
-    @staticmethod
-    def get_sbend_parameter(dy: float, radius: float) -> tuple:
-        """
-        Computes the final rotation_angle, and x-displacement for a circular S-bend given the y-displacement dy and
-        curvature
-        radius.
-
-        :param dy: Displacement along y-direction [mm].
-        :type dy: float
-        :param radius: Curvature radius of the S-bend [mm].
-        :type radius: float
-        :return: (final rotation_angle [radians], x-displacement [mm])
-        :rtype: tuple
-        """
-        if radius <= 0:
-            raise ValueError(f'Radius should be a positive value. Given {radius:.3f}.')
-        a = np.arccos(1 - (np.abs(dy / 2) / radius))
-        dx = 2 * radius * np.sin(a)
-        return a, dx
-
-    def sbend_length(self, dy: float, radius: float) -> float:
-        """
-        Computes the x-displacement for a circular S-bend given the y-displacement dy and curvature radius.
-
-        :param dy: Displacement along y-direction [mm].
-        :type dy: float
-        :param radius: Curvature radius of the S-bend [mm].
-        :type radius: float
-        :return: x-displacement [mm]
-        :rtype: float
-        """
-        return self.get_sbend_parameter(dy, radius)[1]
-
-    def get_spline_parameter(self, disp_x: float = None, disp_y: float = None, disp_z: float = None,
-                             radius: float = 20) -> tuple:
-        """
-        Computes the displacements along x-, y- and z-direction and the total lenght of the curve.
-        The dy and dz displacements are given by the user. The dx displacement can be known (and thus given as input)
-        or unknown and it is computed using the get_sbend_parameter() method for the given radius.
-
-        If disp_x, disp_y, disp_z are given they are returned unchanged and unsed to compute l_curve.
-        On the other hand, if disp_x is None, it is computed using the get_sbend_parameters() method using the
-        displacement 'disp_yz' along both y- and z-direction and the given radius.
-        In this latter case, the l_curve is computed using the formula for the circular arc (radius * angle) which is
-        multiply by a factor of 2 in order to retrieve the S-bend shape.
-
-        :param disp_x: Displacement along x-direction [mm]. The default is None.
-        :type disp_x: float
-        :param disp_y: Displacement along y-direction [mm]. The default is None.
-        :type disp_y: float
-        :param disp_z: Displacement along z-direction [mm]. The default is None.
-        :type disp_z: float
-        :param radius: Curvature radius of the spline [mm]. The default is 20 mm.
-        :type radius: float
-        :return: (deltax [mm], deltay [mm], deltaz [mm], curve length [mm]).
-        :rtype: Tuple[float, float, float, float]
-        """
-        if disp_y is None:
-            raise ValueError('y-displacement is None. Give a valid disp_y')
-        if disp_z is None:
-            raise ValueError('z-displacement is None. Give a valid disp_z')
-
-        if disp_x is None:
-            disp_yz = np.sqrt(disp_y ** 2 + disp_z ** 2)
-            ang, disp_x = self.get_sbend_parameter(disp_yz, radius)
-            l_curve = 2 * ang * radius
-        else:
-            disp = np.array([disp_x, disp_y, disp_z])
-            l_curve = np.sqrt(np.sum(disp ** 2))
-        return disp_x, disp_y, disp_z, l_curve
+# @dataclass(kw_only=True)
+# class WaveguideParameters(LaserPathParameters):
+#     """
+#     Class containing the parameters for the waveguide fabrication.
+#     """
+#
+#     depth: float = 0.035
+#     radius: float = 15
+#     pitch: float = 0.080
+#     pitch_fa: float = 0.127
+#     int_dist: float = None
+#     int_length: float = 0.0
+#     arm_length: float = 0.0
+#     ltrench: float = 1.0
+#     dz_bridge: float = 0.007
+#     margin: float = 1.0
+#
+#     def __post_init__(self):
+#         super().__post_init__()
+#
+#         # parent method redefinition, to include depth property
+#         if not isinstance(self.scan, int):
+#             print(self.scan)
+#             raise ValueError('Number of scan must be integer.')
+#
+#         if self.z_init is None:
+#             self.z_init = self.depth
+#
+#     @property
+#     def dy_bend(self):
+#         if self.pitch is None:
+#             raise ValueError('Waveguide pitch is set to None.')
+#         if self.int_dist is None:
+#             raise ValueError('Interaction distance is set to None.')
+#         return 0.5 * (self.pitch - self.int_dist)
+#
+#     @property
+#     def dx_bend(self) -> float or None:
+#         if self.radius is None:
+#             raise ValueError('Curvature radius is set to None.')
+#         return self.sbend_length(self.dy_bend, self.radius)
+#
+#     @property
+#     def dx_acc(self) -> float or None:
+#         if self.dx_bend is None or self.int_length is None:
+#             return None
+#         return 2 * self.dx_bend + self.int_length
+#
+#     @property
+#     def dx_mzi(self) -> float or None:
+#         if self.dx_bend is None or self.int_length is None or self.arm_length is None:
+#             return None
+#         return 4 * self.dx_bend + 2 * self.int_length + self.arm_length
+#
+#     @staticmethod
+#     def get_sbend_parameter(dy: float, radius: float) -> tuple:
+#         """
+#         Computes the final rotation_angle, and x-displacement for a circular S-bend given the y-displacement dy and
+#         curvature
+#         radius.
+#
+#         :param dy: Displacement along y-direction [mm].
+#         :type dy: float
+#         :param radius: Curvature radius of the S-bend [mm].
+#         :type radius: float
+#         :return: (final rotation_angle [radians], x-displacement [mm])
+#         :rtype: tuple
+#         """
+#         if radius <= 0:
+#             raise ValueError(f'Radius should be a positive value. Given {radius:.3f}.')
+#         a = np.arccos(1 - (np.abs(dy / 2) / radius))
+#         dx = 2 * radius * np.sin(a)
+#         return a, dx
+#
+#     def sbend_length(self, dy: float, radius: float) -> float:
+#         """
+#         Computes the x-displacement for a circular S-bend given the y-displacement dy and curvature radius.
+#
+#         :param dy: Displacement along y-direction [mm].
+#         :type dy: float
+#         :param radius: Curvature radius of the S-bend [mm].
+#         :type radius: float
+#         :return: x-displacement [mm]
+#         :rtype: float
+#         """
+#         return self.get_sbend_parameter(dy, radius)[1]
+#
+#     def get_spline_parameter(self, disp_x: float = None, disp_y: float = None, disp_z: float = None,
+#                              radius: float = 20) -> tuple:
+#         """
+#         Computes the displacements along x-, y- and z-direction and the total lenght of the curve.
+#         The dy and dz displacements are given by the user. The dx displacement can be known (and thus given as input)
+#         or unknown and it is computed using the get_sbend_parameter() method for the given radius.
+#
+#         If disp_x, disp_y, disp_z are given they are returned unchanged and unsed to compute l_curve.
+#         On the other hand, if disp_x is None, it is computed using the get_sbend_parameters() method using the
+#         displacement 'disp_yz' along both y- and z-direction and the given radius.
+#         In this latter case, the l_curve is computed using the formula for the circular arc (radius * angle) which is
+#         multiply by a factor of 2 in order to retrieve the S-bend shape.
+#
+#         :param disp_x: Displacement along x-direction [mm]. The default is None.
+#         :type disp_x: float
+#         :param disp_y: Displacement along y-direction [mm]. The default is None.
+#         :type disp_y: float
+#         :param disp_z: Displacement along z-direction [mm]. The default is None.
+#         :type disp_z: float
+#         :param radius: Curvature radius of the spline [mm]. The default is 20 mm.
+#         :type radius: float
+#         :return: (deltax [mm], deltay [mm], deltaz [mm], curve length [mm]).
+#         :rtype: Tuple[float, float, float, float]
+#         """
+#         if disp_y is None:
+#             raise ValueError('y-displacement is None. Give a valid disp_y')
+#         if disp_z is None:
+#             raise ValueError('z-displacement is None. Give a valid disp_z')
+#
+#         if disp_x is None:
+#             disp_yz = np.sqrt(disp_y ** 2 + disp_z ** 2)
+#             ang, disp_x = self.get_sbend_parameter(disp_yz, radius)
+#             l_curve = 2 * ang * radius
+#         else:
+#             disp = np.array([disp_x, disp_y, disp_z])
+#             l_curve = np.sqrt(np.sum(disp ** 2))
+#         return disp_x, disp_y, disp_z, l_curve
 
 
 @dataclass(kw_only=True)

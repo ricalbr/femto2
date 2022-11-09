@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from src.femto.Waveguide import Waveguide
+from femto.Waveguide import Waveguide
 
 
 @pytest.fixture
@@ -536,9 +536,10 @@ def test_circ_negative_radius(param) -> None:
     assert wg._z[-1] == wg._z[0]
     wg.end()
 
+# def test_arc_bend(param):
+# assert dy sia giusto
+# assert segno di dy
+# assert lunghezza sia 2 dx
+# assert raggio None (?)
 
-def test_arc_bend(param):
-    wg = Waveguide(scan=1, **param)
-
-
-    
+# def test_arc_acc(param):
