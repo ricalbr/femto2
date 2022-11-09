@@ -220,9 +220,11 @@ class Waveguide(LaserPath):
         if len(increment) != 3:
             raise ValueError(f'Increment should be a list of three values. Increment has {len(increment)} entries.')
 
-        f = self.speed if speed is None else speed
+        if not (speed or self.speed):
+            raise ValueError('Speed is None. Set Waveguide\'s "speed" attribute or give a speed as input.')
 
         if mode.lower() == 'abs':
+            # If increment is None use the last value on the coordinate-array
             x_inc = np.array([increment[0] or self._x[-1]])
             y_inc = np.array([increment[1] or self._y[-1]])
             z_inc = np.array([increment[2] or self._z[-1]])
@@ -232,7 +234,7 @@ class Waveguide(LaserPath):
             y_inc = np.array([self._y[-1] + y])
             z_inc = np.array([self._z[-1] + z])
 
-        f_inc = np.array([f])
+        f_inc = np.array([speed or self.speed])
         s_inc = np.array([shutter])
 
         self.add_path(x_inc, y_inc, z_inc, f_inc, s_inc)
@@ -259,18 +261,23 @@ class Waveguide(LaserPath):
         :rtype: Waveguide
         """
 
-        radius = self.radius if radius is None else radius
-        f = self.speed if speed is None else speed
+        if not (radius or self.radius):
+            raise ValueError('Radius is None. Set Waveguide\'s "radius" attribute or give a radius as input.')
+        if not (speed or self.speed):
+            raise ValueError('Speed is None. Set Waveguide\'s "speed" attribute or give a speed as input.')
 
-        delta_angle = np.abs(final_angle - initial_angle)
-        num = self.subs_num(delta_angle * radius, f)
+        r = np.abs(radius or self.radius)
+        f = speed or self.speed
+
+        delta_angle = final_angle - initial_angle
+        num = self.subs_num(np.abs(delta_angle) * r, f)
 
         t = np.linspace(initial_angle, final_angle, num)
-        x_circ = self._x[-1] - radius * np.cos(initial_angle) + radius * np.cos(t)
-        y_circ = self._y[-1] - radius * np.sin(initial_angle) + radius * np.sin(t)
+        x_circ = self._x[-1] + r * (-np.cos(initial_angle) + np.cos(t))
+        y_circ = self._y[-1] + r * (-np.sin(initial_angle) + np.sin(t))
         z_circ = np.repeat(self._z[-1], num)
-        f_circ = np.repeat(f)
-        s_circ = np.repeat(shutter)
+        f_circ = np.repeat(f, num)
+        s_circ = np.repeat(shutter, num)
 
         # update coordinates
         self.add_path(x_circ, y_circ, z_circ, f_circ, s_circ)
