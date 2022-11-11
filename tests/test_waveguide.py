@@ -7,20 +7,20 @@ from femto.Waveguide import Waveguide
 @pytest.fixture
 def param() -> dict:
     p = {
-            'scan': 6,
-            'speed': 20.0,
-            'y_init': 1.5,
-            'z_init': 0.050,
-            'speed_closed': 75,
-            'samplesize': (100, 15),
-            'depth': 0.035,
-            'radius': 25,
-            'pitch': 0.127,
-            'int_dist': 0.005,
-            'int_length': 0.0,
-            'arm_length': 1.0,
-            'ltrench': 1.5,
-            'dz_bridge': 0.006,
+        "scan": 6,
+        "speed": 20.0,
+        "y_init": 1.5,
+        "z_init": 0.050,
+        "speed_closed": 75,
+        "samplesize": (100, 15),
+        "depth": 0.035,
+        "radius": 25,
+        "pitch": 0.127,
+        "int_dist": 0.005,
+        "int_length": 0.0,
+        "arm_length": 1.0,
+        "ltrench": 1.5,
+        "dz_bridge": 0.006,
     }
     return p
 
@@ -122,14 +122,14 @@ def test_from_dict(param) -> None:
 
 
 def test_z_init(param) -> None:
-    param['z_init'] = None
-    param['depth'] = 0.05
+    param["z_init"] = None
+    param["depth"] = 0.05
     wg = Waveguide(**param)
     assert wg.z_init == float(0.05)
 
 
 def test_scan(param) -> None:
-    param['scan'] = 1.2
+    param["scan"] = 1.2
     with pytest.raises(ValueError):
         Waveguide(**param)
 
@@ -140,7 +140,7 @@ def test_dy_bend_pitch_error(param) -> None:
     with pytest.raises(ValueError):
         wg.dy_bend()
 
-    param['pitch'] = None
+    param["pitch"] = None
     wg = Waveguide(**param)
     with pytest.raises(ValueError):
         wg.dy_bend()
@@ -152,7 +152,7 @@ def test_dy_bend_int_dist_error(param) -> None:
     with pytest.raises(ValueError):
         wg.dy_bend()
 
-    param['int_dist'] = None
+    param["int_dist"] = None
     wg = Waveguide(**param)
     with pytest.raises(ValueError):
         wg.dy_bend()
@@ -169,7 +169,7 @@ def test_dx_bend_radius_error(param) -> None:
     with pytest.raises(ValueError):
         wg.dx_bend()
 
-    param['radius'] = None
+    param["radius"] = None
     wg = Waveguide(**param)
     with pytest.raises(ValueError):
         wg.dx_bend()
@@ -181,7 +181,7 @@ def test_dx_bend(param) -> None:
 
 
 def test_dx_acc_none(param) -> None:
-    param['int_length'] = None
+    param["int_length"] = None
     wg = Waveguide(**param)
     assert wg.dx_acc is None
 
@@ -192,19 +192,19 @@ def test_dx_acc(param) -> None:
 
 
 def test_dx_acc_int_l(param) -> None:
-    param['int_length'] = 2
+    param["int_length"] = 2
     wg = Waveguide(**param)
     assert pytest.approx(wg.dx_acc) == 6.938129
 
 
 def test_dx_mzi_none_intl(param) -> None:
-    param['int_length'] = None
+    param["int_length"] = None
     wg = Waveguide(**param)
     assert wg.dx_mzi is None
 
 
 def test_dx_mzi_none_arml(param) -> None:
-    param['arm_length'] = None
+    param["arm_length"] = None
     wg = Waveguide(**param)
     assert wg.dx_mzi is None
 
@@ -215,13 +215,13 @@ def test_dx_mzi(param) -> None:
 
 
 def test_dx_mzi_int_l(param) -> None:
-    param['int_length'] = 2
+    param["int_length"] = 2
     wg = Waveguide(**param)
     assert pytest.approx(wg.dx_mzi) == 14.876258
 
 
 def test_dx_mzi_arml(param) -> None:
-    param['arm_length'] = 3
+    param["arm_length"] = 3
     wg = Waveguide(**param)
     assert pytest.approx(wg.dx_mzi) == 12.876258
 
@@ -304,8 +304,8 @@ def test_get_spline_dispx(param) -> None:
 
 def test_repr(param) -> None:
     r = Waveguide(**param).__repr__()
-    cname, _ = r.split('@')
-    assert cname == 'Waveguide'
+    cname, _ = r.split("@")
+    assert cname == "Waveguide"
 
 
 def test_start(param) -> None:
@@ -337,7 +337,9 @@ def test_start_value_error(param) -> None:
     with pytest.raises(ValueError):
         wg.start(init_p)
 
-    init_p = [0.0, ]
+    init_p = [
+        0.0,
+    ]
     wg = Waveguide(**param)
     with pytest.raises(ValueError):
         wg.start(init_p)
@@ -369,7 +371,7 @@ def test_empty_end(param) -> None:
 def test_linear_value_error(param) -> None:
     wg = Waveguide(**param)
     with pytest.raises(ValueError):
-        wg.start().linear([1, 1, 1], mode='rand').end()
+        wg.start().linear([1, 1, 1], mode="rand").end()
 
 
 def test_linear_invalid_increment(param) -> None:
@@ -384,19 +386,19 @@ def test_linear_invalid_increment(param) -> None:
 def test_linear_default_speed(param) -> None:
     wg = Waveguide(**param)
     wg.start().linear([1, 2, 3])
-    assert wg._f[-1] == param['speed']
+    assert wg._f[-1] == param["speed"]
 
 
 def test_linear_abs(param) -> None:
     wg = Waveguide(**param)
     init_p = [1, 1, 1]
     increm = [3, 4, 5]
-    wg.start(init_p).linear(increm, mode='abs').end()
+    wg.start(init_p).linear(increm, mode="abs").end()
 
     np.testing.assert_almost_equal(wg._x, np.array([1.0, 1.0, 3.0, 3.0, 1.0]))
     np.testing.assert_almost_equal(wg._y, np.array([1.0, 1.0, 4.0, 4.0, 1.0]))
     np.testing.assert_almost_equal(wg._z, np.array([1.0, 1.0, 5.0, 5.0, 1.0]))
-    np.testing.assert_almost_equal(wg._f, np.array([0.5, 0.5, 20., 20., 75.0]))
+    np.testing.assert_almost_equal(wg._f, np.array([0.5, 0.5, 20.0, 20.0, 75.0]))
     np.testing.assert_almost_equal(wg._s, np.array([0.0, 1.0, 1.0, 0.0, 0.0]))
 
 
@@ -404,12 +406,12 @@ def test_linear_inc(param) -> None:
     wg = Waveguide(**param)
     init_p = [1, 1, 1]
     increm = [3, 4, 5]
-    wg.start(init_p).linear(increm, mode='inc').end()
+    wg.start(init_p).linear(increm, mode="inc").end()
 
     np.testing.assert_almost_equal(wg._x, np.array([1.0, 1.0, 4.0, 4.0, 1.0]))
     np.testing.assert_almost_equal(wg._y, np.array([1.0, 1.0, 5.0, 5.0, 1.0]))
     np.testing.assert_almost_equal(wg._z, np.array([1.0, 1.0, 6.0, 6.0, 1.0]))
-    np.testing.assert_almost_equal(wg._f, np.array([0.5, 0.5, 20., 20., 75.0]))
+    np.testing.assert_almost_equal(wg._f, np.array([0.5, 0.5, 20.0, 20.0, 75.0]))
     np.testing.assert_almost_equal(wg._s, np.array([0.0, 1.0, 1.0, 0.0, 0.0]))
 
 
@@ -417,30 +419,30 @@ def test_linear_none(param) -> None:
     wg = Waveguide(**param)
     init_p = [1, 1, 1]
     increm = [4, None, None]
-    wg.start(init_p).linear(increm, mode='abs').end()
+    wg.start(init_p).linear(increm, mode="abs").end()
 
     np.testing.assert_almost_equal(wg._x, np.array([1.0, 1.0, 4.0, 4.0, 1.0]))
     np.testing.assert_almost_equal(wg._y, np.array([1.0, 1.0, 1.0, 1.0, 1.0]))
     np.testing.assert_almost_equal(wg._z, np.array([1.0, 1.0, 1.0, 1.0, 1.0]))
-    np.testing.assert_almost_equal(wg._f, np.array([0.5, 0.5, 20., 20., 75.0]))
+    np.testing.assert_almost_equal(wg._f, np.array([0.5, 0.5, 20.0, 20.0, 75.0]))
     np.testing.assert_almost_equal(wg._s, np.array([0.0, 1.0, 1.0, 0.0, 0.0]))
 
     wg = Waveguide(**param)
     init_p = [1, 1, 1]
     increm = [5, None, None]
-    wg.start(init_p).linear(increm, mode='inc').end()
+    wg.start(init_p).linear(increm, mode="inc").end()
 
     np.testing.assert_almost_equal(wg._x, np.array([1.0, 1.0, 6.0, 6.0, 1.0]))
     np.testing.assert_almost_equal(wg._y, np.array([1.0, 1.0, 1.0, 1.0, 1.0]))
     np.testing.assert_almost_equal(wg._z, np.array([1.0, 1.0, 1.0, 1.0, 1.0]))
-    np.testing.assert_almost_equal(wg._f, np.array([0.5, 0.5, 20., 20., 75.0]))
+    np.testing.assert_almost_equal(wg._f, np.array([0.5, 0.5, 20.0, 20.0, 75.0]))
     np.testing.assert_almost_equal(wg._s, np.array([0.0, 1.0, 1.0, 0.0, 0.0]))
 
 
 def test_circ_input_validation(param) -> None:
     a_i, a_f = 0, np.pi / 2
 
-    param['radius'] = None
+    param["radius"] = None
     wg = Waveguide(**param)
     with pytest.raises(ValueError):
         wg.start([0, 0, 0]).circ(a_i, a_f)
@@ -449,13 +451,13 @@ def test_circ_input_validation(param) -> None:
     with pytest.raises(ValueError):
         wg.start([0, 0, 0]).circ(a_i, a_f, radius=None)
 
-    param['radius'] = 20
+    param["radius"] = 20
     wg = Waveguide(**param)
     wg.radius = None
     with pytest.raises(ValueError):
         wg.start([0, 0, 0]).circ(a_i, a_f)
 
-    param['speed'] = None
+    param["speed"] = None
     wg = Waveguide(**param)
     with pytest.raises(ValueError):
         wg.start([0, 0, 0]).circ(a_i, a_f)
@@ -464,7 +466,7 @@ def test_circ_input_validation(param) -> None:
     with pytest.raises(ValueError):
         wg.start([0, 0, 0]).circ(a_i, a_f, speed=None)
 
-    param['speed'] = 15
+    param["speed"] = 15
     wg = Waveguide(**param)
     wg.speed = None
     with pytest.raises(ValueError):
@@ -517,7 +519,7 @@ def test_circ_coordinates(param) -> None:
 
 
 def test_circ_negative_radius(param) -> None:
-    param['radius'] = -60
+    param["radius"] = -60
     a_i, a_f = 1.5 * np.pi, 0
 
     wg = Waveguide(**param)
@@ -536,10 +538,152 @@ def test_circ_negative_radius(param) -> None:
     assert wg._z[-1] == wg._z[0]
     wg.end()
 
-# def test_arc_bend(param):
-# assert dy sia giusto
-# assert segno di dy
-# assert lunghezza sia 2 dx
-# assert raggio None (?)
 
-# def test_arc_acc(param):
+def test_arc_bend_dy(param):
+    dy = 0.09
+    wg = Waveguide(**param)
+    wg.start([0, 0, 0]).arc_bend(dy).end()
+
+    x, y, z, *_ = wg.points
+    assert pytest.approx(np.max(z) - np.min(z)) == 0
+    assert pytest.approx(np.max(y) - np.min(y)) == dy
+
+
+def test_arc_bend_dy_default(param):
+    wg = Waveguide(**param)
+    wg.start([0, 0, 0]).arc_bend(wg.dy_bend).end()
+
+    y = wg.y
+    assert pytest.approx(np.max(y) - np.min(y)) == wg.dy_bend
+
+
+def test_arc_bend_sign(param):
+    dy = 0.03
+    wg = Waveguide(**param)
+    wg.start([0, 0, 0]).arc_bend(dy)
+    y = wg.y
+    assert y[-1] > y[0]
+    wg.end()
+
+    dy = -0.04
+    wg = Waveguide(**param)
+    wg.start([0, 0, 0]).arc_bend(dy)
+    y = wg.y
+    assert y[-1] < y[0]
+    wg.end()
+
+
+def test_arc_bend_xlength(param):
+    dy = 0.03
+
+    wg = Waveguide(**param)
+    wg.start([0, 0, 0]).arc_bend(dy)
+    x = wg.x
+    assert pytest.approx(x[-1] - x[0]) == wg.get_sbend_parameter(dy, wg.radius)[1]
+    wg.end()
+
+    dy = 0.03
+    r = 19
+    wg = Waveguide(**param)
+    wg.start([0, 0, 0]).arc_bend(dy=dy, radius=r)
+    x = wg.x
+    assert pytest.approx(x[-1] - x[0]) == wg.get_sbend_parameter(dy, r)[1]
+    wg.end()
+
+
+def test_arc_bend_shutter(param):
+    wg = Waveguide(**param)
+    wg.start([0, 0, 0]).arc_bend(wg.dy_bend)
+    *_, s = wg.points
+    assert s[-1] == 1
+    wg.end()
+
+    wg = Waveguide(**param)
+    wg.start([0, 0, 0]).arc_bend(wg.dy_bend, shutter=0)
+    *_, s = wg.points
+    assert s[-1] == 0
+    wg.end()
+
+
+def test_arc_acc_len(param):
+    dy = 0.055
+    r = 32
+    i_len = 1
+
+    wg = Waveguide(**param)
+    wg.start([0, 0, 0]).arc_acc(dy=wg.dy_bend)
+    x = wg.x
+    assert pytest.approx(x[-1] - x[0]) == 2 * wg.get_sbend_parameter(wg.dy_bend, wg.radius)[1] + wg.int_length
+    wg.end()
+
+    wg = Waveguide(**param)
+    wg.start([0, 0, 0]).arc_acc(dy=dy)
+    x = wg.x
+    assert pytest.approx(x[-1] - x[0]) == 2 * wg.get_sbend_parameter(dy, wg.radius)[1] + wg.int_length
+    wg.end()
+
+    wg = Waveguide(**param)
+    wg.start([0, 0, 0]).arc_acc(dy=dy, radius=r)
+    x = wg.x
+    assert pytest.approx(x[-1] - x[0]) == 2 * wg.get_sbend_parameter(dy, r)[1] + wg.int_length
+    wg.end()
+
+    wg = Waveguide(**param)
+    wg.start([0, 0, 0]).arc_acc(dy=dy, radius=r, int_length=i_len)
+    x = wg.x
+    assert pytest.approx(x[-1] - x[0]) == 2 * wg.get_sbend_parameter(dy, r)[1] + i_len
+    wg.end()
+
+    wg = Waveguide(**param)
+    wg.start([0, 0, 0]).arc_acc(dy=wg.dy_bend, int_length=-i_len)
+    x = wg.x
+    assert pytest.approx(x[-1] - x[0]) == 2 * wg.get_sbend_parameter(wg.dy_bend, wg.radius)[1] + i_len
+    wg.end()
+
+
+def test_arc_mzi_len(param):
+    dy = 0.065
+    r = 24.6
+    i_len = 5
+    a_len = 8
+
+    wg = Waveguide(**param)
+    wg.start([0, 0, 0]).arc_mzi(dy=wg.dy_bend)
+    x = wg.x
+    assert (
+        pytest.approx(x[-1] - x[0])
+        == 4 * wg.get_sbend_parameter(wg.dy_bend, wg.radius)[1] + 2 * wg.int_length + wg.arm_length
+    )
+    wg.end()
+
+    wg = Waveguide(**param)
+    wg.start([0, 0, 0]).arc_mzi(dy=dy)
+    x = wg.x
+    assert (
+        pytest.approx(x[-1] - x[0]) == 4 * wg.get_sbend_parameter(dy, wg.radius)[1] + 2 * wg.int_length + wg.arm_length
+    )
+    wg.end()
+
+    wg = Waveguide(**param)
+    wg.start([0, 0, 0]).arc_mzi(dy=dy, radius=r)
+    x = wg.x
+    assert pytest.approx(x[-1] - x[0]) == 4 * wg.get_sbend_parameter(dy, r)[1] + 2 * wg.int_length + wg.arm_length
+    wg.end()
+
+    wg = Waveguide(**param)
+    wg.start([0, 0, 0]).arc_mzi(dy=dy, radius=r, int_length=i_len)
+    x = wg.x
+    assert pytest.approx(x[-1] - x[0]) == 4 * wg.get_sbend_parameter(dy, r)[1] + 2 * i_len + wg.arm_length
+    wg.end()
+
+    wg = Waveguide(**param)
+    wg.start([0, 0, 0]).arc_mzi(dy=dy, radius=r, int_length=i_len, arm_length=a_len)
+    x = wg.x
+    assert pytest.approx(x[-1] - x[0]) == 4 * wg.get_sbend_parameter(dy, r)[1] + 2 * i_len + a_len
+    wg.end()
+
+    wg = Waveguide(**param)
+    wg.start([0, 0, 0]).arc_mzi(dy=wg.dy_bend, int_length=-i_len, arm_length=-a_len)
+    x = wg.x
+    assert pytest.approx(x[-1] - x[0]) == 4 * wg.get_sbend_parameter(wg.dy_bend, wg.radius)[1] + 2 * i_len + a_len
+    wg.end()
