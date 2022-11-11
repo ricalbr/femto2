@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from typing import Optional, Union
+from typing import Optional
+from typing import Union
 
 import numpy as np
 import numpy.typing as npt
@@ -37,7 +38,7 @@ class Waveguide(LaserPath):
             self.z_init = self.depth
 
     def __repr__(self):
-        return "{cname}@{id:x}".format(cname=self.__class__.__name__, id=id(self) & 0xFFFFFF)
+        return f"{self.__class__.__name__}@{id(self) & 0xFFFFFF:x}"
 
     @property
     def dy_bend(self):
@@ -133,12 +134,12 @@ class Waveguide(LaserPath):
             raise ValueError("z-displacement is None. Give a valid disp_z")
 
         if disp_x is None:
-            disp_yz = np.sqrt(disp_y**2 + disp_z**2)
+            disp_yz = np.sqrt(disp_y ** 2 + disp_z ** 2)
             ang, disp_x = self.get_sbend_parameter(disp_yz, radius)
             l_curve = 2 * ang * radius
         else:
             disp = np.array([disp_x, disp_y, disp_z])
-            l_curve = np.sqrt(np.sum(disp**2))
+            l_curve = np.sqrt(np.sum(disp ** 2))
         return disp_x, disp_y, disp_z, l_curve
 
     # Methods
@@ -287,7 +288,7 @@ class Waveguide(LaserPath):
             int_length = self.int_length
 
         self.arc_bend(dy, radius=radius, speed=speed, shutter=shutter)
-        self.linear([int_length, 0, 0], speed=speed, shutter=shutter)
+        self.linear([np.abs(int_length), 0, 0], speed=speed, shutter=shutter)
         self.arc_bend(-dy, radius=radius, speed=speed, shutter=shutter)
         return self
 
@@ -327,7 +328,7 @@ class Waveguide(LaserPath):
             arm_length = self.arm_length
 
         self.arc_acc(dy, radius=radius, int_length=int_length, speed=speed, shutter=shutter)
-        self.linear([arm_length, 0, 0], speed=speed, shutter=shutter)
+        self.linear([np.abs(arm_length), 0, 0], speed=speed, shutter=shutter)
         self.arc_acc(dy, radius=radius, int_length=int_length, speed=speed, shutter=shutter)
         return self
 
@@ -361,7 +362,7 @@ class Waveguide(LaserPath):
 
         :param dy: Amplitude of the Sin-bend along the y direction [mm].
         :type dy: float
-        :param dz: Amplitude of the S-bend along the y direction [mm].
+        :param dz: Amplitude of the S-bend along the y direction [mm]. The default is self.dz_bridge.
         :type dz: float
         :param radius: Curvature radius of the Sin-bend [mm]. The default is self.radius.
         :type radius: float
@@ -373,31 +374,30 @@ class Waveguide(LaserPath):
         :rtype: Waveguide
         """
 
-        if radius is None:
-            radius = self.radius
-        f = self.speed if speed is None else speed
+        if not (radius or self.radius):
+            raise ValueError('Radius is None. Set Waveguide\'s "radius" attribute or give a radius as input.')
+        if not (speed or self.speed):
+            raise ValueError('Speed is None. Set Waveguide\'s "speed" attribute or give a speed as input.')
 
-        _, dx = self.get_sbend_parameter(dy, radius)
+        r = np.abs(radius or self.radius)
+        f = speed or self.speed
+        if dz is None:
+            dz = self.dz_bridge
+
+        _, dx = self.get_sbend_parameter(dy, r)
         num = self.subs_num(dx, f)
 
-        new_x = np.linspace(self._x[-1], self._x[-1] + dx, num)
-        new_y = self._y[-1] + 0.5 * dy * (1 - np.cos(np.pi / dx * (new_x - self._x[-1])))
-        if dz:
-            new_z = self._z[-1] + 0.5 * dz * (1 - np.cos(2 * np.pi / dx * (new_x - self._x[-1])))
-        else:
-            new_z = self._z[-1] * np.ones(new_x.shape)
+        x_sin = np.linspace(self._x[-1], self._x[-1] + dx, num)
+        y_sin = self._y[-1] + 0.5 * dy * (1 - np.cos(np.pi / dx * (x_sin - self._x[-1])))
+        z_sin = np.repeat(self._z[-1], num) + 0.5 * dz * (1 - np.cos(2 * np.pi / dx * (x_sin - self._x[-1])))
+        f_sin = np.repeat(f, num)
+        s_sin = np.repeat(shutter, num)
 
         # update coordinates
-        self.add_path(
-            new_x,
-            new_y,
-            new_z,
-            f * np.ones(new_x.shape),
-            shutter * np.ones(new_x.shape),
-        )
+        self.add_path(x_sin, y_sin, z_sin, f_sin, s_sin)
         return self
 
-    sin_bend = partialmethod(sin_bridge, dz=None)
+    sin_bend = partialmethod(sin_bridge, dz=0.0)
 
     def sin_bend_comp(self, dx: float, dy: float, shutter: int = 1, speed: Optional[float] = None) -> Self:
 
@@ -653,7 +653,7 @@ class Waveguide(LaserPath):
         d2y_dt2 = np.gradient(dy_dt)
         d2z_dt2 = np.gradient(dz_dt)
 
-        num = (dx_dt**2 + dy_dt**2 + dz_dt**2) ** 1.5
+        num = (dx_dt ** 2 + dy_dt ** 2 + dz_dt ** 2) ** 1.5
         den = np.sqrt(
             (d2z_dt2 * dy_dt - d2y_dt2 * dz_dt) ** 2
             + (d2x_dt2 * dz_dt - d2z_dt2 * dx_dt) ** 2
@@ -678,7 +678,7 @@ class Waveguide(LaserPath):
         dx_dt = np.gradient(x)
         dy_dt = np.gradient(y)
         dz_dt = np.gradient(z)
-        dt = np.sqrt(dx_dt**2 + dy_dt**2 + dz_dt**2)
+        dt = np.sqrt(dx_dt ** 2 + dy_dt ** 2 + dz_dt ** 2)
 
         default_zero = np.zeros(np.size(dt))
         # only divide nonzeros else Inf
@@ -792,9 +792,25 @@ def main():
         PARAMETERS_WG.y_init = -PARAMETERS_WG.pitch / 2 + index * PARAMETERS_WG.pitch
 
         wg = Waveguide(**PARAMETERS_WG)
-        wg.start().linear(increment).sin_mzi((-1) ** index * wg.dy_bend).spline_bridge(
+        wg.start().linear(increment).sin_mzi((-1) ** index * wg.dy_bend).sin_bridge(
             (-1) ** index * 0.08, (-1) ** index * 0.015
-        ).sin_mzi((-1) ** (index + 1) * wg.dy_bend).sin_mzi((-1) ** (index + 1) * wg.dy_bend).linear(increment)
+        ).sin_mzi((-1) ** (index + 1) * wg.dy_bend).sin_mzi((-1) ** (index + 1) * wg.dy_bend).linear(increment).linear(
+            increment
+        ).linear(
+            increment
+        ).linear(
+            increment
+        ).linear(
+            increment
+        ).linear(
+            increment
+        ).linear(
+            increment
+        ).arc_bend(
+            (-1) ** (index + 1) * wg.dy_bend
+        ).linear(
+            increment
+        )
         wg.end()
         mzi.append(wg)
 
@@ -810,10 +826,10 @@ def main():
         ax.plot(wg.x[:-1], wg.y[:-1], wg.z[:-1], "-k", linewidth=2.5)
         ax.plot(wg.x[-2:], wg.y[-2:], wg.z[-2:], ":b", linewidth=1.0)
     ax.set_box_aspect(aspect=(3, 1, 0.5))
-    # plt.show()
+    plt.show()
 
-    print("Expected writing time {:.3f} seconds".format(wg.fabrication_time))
-    print("Laser path length {:.3f} mm".format(wg.length))
+    print(f"Expected writing time {wg.fabrication_time:.3f} seconds")
+    print(f"Laser path length {wg.length:.3f} mm")
 
 
 if __name__ == "__main__":

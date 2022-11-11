@@ -1,7 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Optional, Tuple, Type, TypeVar, Union
+from typing import List
+from typing import Optional
+from typing import Tuple
+from typing import Type
+from typing import TypeVar
+from typing import Union
 
 import numpy as np
 import numpy.typing as npt
@@ -23,13 +28,13 @@ class LaserPath:
     speed: float = 1.0
     x_init: float = -2.0
     y_init: float = 0.0
-    z_init: Optional[float] = None
+    z_init: float | None = None
     lsafe: float = 2.0
     speed_closed: float = 5
     speed_pos: float = 0.5
     cmd_rate_max: float = 1200
     acc_max: float = 500
-    samplesize: Tuple[Optional[float], Optional[float]] = (None, None)
+    samplesize: tuple[float | None, float | None] = (None, None)
     _x: npt.NDArray = np.array([])
     _y: npt.NDArray = np.array([])
     _z: npt.NDArray = np.array([])
@@ -41,18 +46,18 @@ class LaserPath:
             raise ValueError(f"Number of scan must be integer. Given {self.scan}.")
 
     @classmethod
-    def from_dict(cls: Type[C], param: Union[dict, dotdict]) -> C:
+    def from_dict(cls: type[C], param: dict | dotdict) -> C:
         return cls(**param)
 
     @property
-    def init_point(self) -> List:
+    def init_point(self) -> list:
         z0 = self.z_init if self.z_init else 0.0
         return [self.x_init, self.y_init, z0]
 
     @property
     def lvelo(self) -> float:
         # length needed to acquire the writing speed [mm]
-        return 3 * (0.5 * self.speed**2 / self.acc_max)
+        return 3 * (0.5 * self.speed ** 2 / self.acc_max)
 
     @property
     def dl(self) -> float:
@@ -60,7 +65,7 @@ class LaserPath:
         return self.speed / self.cmd_rate_max
 
     @property
-    def x_end(self) -> Optional[float]:
+    def x_end(self) -> float | None:
         # end of laser path (outside the sample)
         if self.samplesize[0] is None:
             return None
@@ -75,7 +80,7 @@ class LaserPath:
         :return: [X, Y, Z, F, S] unique point matrix
         :rtype: numpy.ndarray
         """
-        return np.array(self._unique_points())
+        return np.array(self._unique_points()).T
 
     @property
     def x(self) -> npt.NDArray[np.float32]:
@@ -91,7 +96,7 @@ class LaserPath:
         return np.array([])
 
     @property
-    def lastx(self) -> Optional[float]:
+    def lastx(self) -> float | None:
         arrx = self.x
         if arrx.size:
             return float(arrx[-1])
@@ -111,7 +116,7 @@ class LaserPath:
         return np.array([])
 
     @property
-    def lasty(self) -> Optional[float]:
+    def lasty(self) -> float | None:
         arry = self.y
         if arry.size:
             return float(arry[-1])
@@ -131,7 +136,7 @@ class LaserPath:
         return np.array([])
 
     @property
-    def lastz(self) -> Optional[float]:
+    def lastz(self) -> float | None:
         arrz = self.z
         if arrz.size:
             return float(arrz[-1])
@@ -150,12 +155,12 @@ class LaserPath:
         return np.array([])
 
     @property
-    def path(self) -> List[npt.NDArray[np.float32]]:
+    def path(self) -> list[npt.NDArray[np.float32]]:
         x, y, _ = self.path3d
         return [x, y]
 
     @property
-    def path3d(self) -> List:
+    def path3d(self) -> list:
         if self._x.size:
             # filter 3D points without F
             x, y, z, s = unique_filter([self._x, self._y, self._z, self._s]).T
@@ -189,7 +194,7 @@ class LaserPath:
         return float(sum(times))
 
     # Methods
-    def start(self, init_pos: Optional[List[float]] = None, speed_pos: Optional[float] = None) -> C:
+    def start(self, init_pos: list[float] | None = None, speed_pos: float | None = None) -> C:
         """
         Starts a waveguide in the initial position given as input.
         The coordinates of the initial position are the first added to the matrix that describes the waveguide.
@@ -251,7 +256,7 @@ class LaserPath:
         increment: list,
         mode: str = "INC",
         shutter: int = 1,
-        speed: Optional[float] = None,
+        speed: float | None = None,
     ) -> C:
         """
         Adds a linear increment to the last point of the current waveguide.
@@ -299,7 +304,7 @@ class LaserPath:
         self.add_path(x_inc, y_inc, z_inc, f_inc, s_inc)
         return self
 
-    def subs_num(self, l_curve: float = 0, speed: Optional[float] = None) -> int:
+    def subs_num(self, l_curve: float = 0, speed: float | None = None) -> int:
         """
         Utility function that, given the length of a segment and the fabrication speed, computes the number of points
         required to work at the maximum command rate (attribute of Waveguide obj).
@@ -407,8 +412,8 @@ def main():
     ax.set_box_aspect(aspect=(3, 1, 0.5))
     plt.show()
 
-    print("Expected writing time {:.3f} seconds".format(lpath.fabrication_time))
-    print("Laser path length {:.6f} mm".format(lpath.length))
+    print(f"Expected writing time {lpath.fabrication_time:.3f} seconds")
+    print(f"Laser path length {lpath.length:.6f} mm")
 
 
 if __name__ == "__main__":
