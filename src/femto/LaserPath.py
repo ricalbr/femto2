@@ -9,7 +9,7 @@ import numpy.typing as npt
 from femto.helpers import unique_filter
 
 # Create a generic variable that can be 'LaserPath', or any subclass.
-C = TypeVar('C', bound='LaserPath')
+C = TypeVar("C", bound="LaserPath")
 
 
 @dataclass
@@ -38,7 +38,7 @@ class LaserPath:
 
     def __post_init__(self):
         if not isinstance(self.scan, int):
-            raise ValueError(f'Number of scan must be integer. Given {self.scan}.')
+            raise ValueError(f"Number of scan must be integer. Given {self.scan}.")
 
     @classmethod
     def from_dict(cls: Type[C], param: Union[dict, dotdict]) -> C:
@@ -52,7 +52,7 @@ class LaserPath:
     @property
     def lvelo(self) -> float:
         # length needed to acquire the writing speed [mm]
-        return 3 * (0.5 * self.speed ** 2 / self.acc_max)
+        return 3 * (0.5 * self.speed**2 / self.acc_max)
 
     @property
     def dl(self) -> float:
@@ -205,13 +205,13 @@ class LaserPath:
         :rtype: LaserPath
         """
         if self._x.size != 0:
-            raise ValueError('Coordinate matrix is not empty. Cannot start a new waveguide in this point.')
+            raise ValueError("Coordinate matrix is not empty. Cannot start a new waveguide in this point.")
 
         if init_pos is None:
             xi, yi, zi = self.init_point
         else:
             if np.size(init_pos) != 3:
-                raise ValueError(f'Given initial position is not valid. 3 values required. {np.size(init_pos)} given.')
+                raise ValueError(f"Given initial position is not valid. 3 values required. {np.size(init_pos)} given.")
             xi, yi, zi = init_pos
 
         if speed_pos is None:
@@ -236,7 +236,7 @@ class LaserPath:
         """
 
         if not self._x.size:
-            raise IndexError('Try to access an empty array. Use the start() method before the end() method.')
+            raise IndexError("Try to access an empty array. Use the start() method before the end() method.")
 
         # append the transformed path and add the coordinates to return to the initial point
         x = np.array([self._x[-1], self._x[0]])
@@ -246,7 +246,13 @@ class LaserPath:
         s = np.array([0, 0])
         self.add_path(x, y, z, f, s)
 
-    def linear(self, increment: list, mode: str = 'INC', shutter: int = 1, speed: Optional[float] = None) -> C:
+    def linear(
+        self,
+        increment: list,
+        mode: str = "INC",
+        shutter: int = 1,
+        speed: Optional[float] = None,
+    ) -> C:
         """
         Adds a linear increment to the last point of the current waveguide.
 
@@ -267,16 +273,16 @@ class LaserPath:
 
         :raise ValueError: Mode is neither INC nor ABS.
         """
-        if mode.lower() not in ['abs', 'inc']:
-            raise ValueError(f'Mode should be either ABS or INC. {mode.upper()} was given.')
+        if mode.lower() not in ["abs", "inc"]:
+            raise ValueError(f"Mode should be either ABS or INC. {mode.upper()} was given.")
 
         if len(increment) != 3:
-            raise ValueError(f'Increment should be a list of three values. Increment has {len(increment)} entries.')
+            raise ValueError(f"Increment should be a list of three values. Increment has {len(increment)} entries.")
 
         if not (speed or self.speed):
             raise ValueError('Speed is None. Set Waveguide\'s "speed" attribute or give a speed as input.')
 
-        if mode.lower() == 'abs':
+        if mode.lower() == "abs":
             # If increment is None use the last value on the coordinate-array
             x_inc = np.array([increment[0] or self._x[-1]])
             y_inc = np.array([increment[1] or self._y[-1]])
@@ -309,17 +315,23 @@ class LaserPath:
         """
         f = self.speed if speed is None else speed
         if f < 1e-6:
-            raise ValueError('Speed set to 0.0 mm/s. Check speed parameter.')
+            raise ValueError("Speed set to 0.0 mm/s. Check speed parameter.")
 
         dl = f / self.cmd_rate_max
         num = int(np.ceil(l_curve / dl))
         if num <= 1:
-            print('I had to add use an higher instruction rate.\n')
+            print("I had to add use an higher instruction rate.\n")
             return 3
         return num
 
-    def add_path(self, x: npt.NDArray[np.float32], y: npt.NDArray[np.float32], z: npt.NDArray[np.float32],
-                 f: npt.NDArray[np.float32], s: npt.NDArray[np.float32]):
+    def add_path(
+        self,
+        x: npt.NDArray[np.float32],
+        y: npt.NDArray[np.float32],
+        z: npt.NDArray[np.float32],
+        f: npt.NDArray[np.float32],
+        s: npt.NDArray[np.float32],
+    ):
         """
         Takes [x, y, z, f, s] numpy.ndarrays and adds it to the class coordinates.
 
@@ -368,9 +380,9 @@ def main():
 
     # Data
     PARAMETERS_LP = dotdict(
-            scan=6,
-            speed=20,
-            lsafe=3,
+        scan=6,
+        speed=20,
+        lsafe=3,
     )
 
     lpath = LaserPath(**PARAMETERS_LP)
@@ -388,10 +400,10 @@ def main():
     fig.clf()
     ax = Axes3D(fig, auto_add_to_figure=False)
     fig.add_axes(ax)
-    ax.set_xlabel('X [mm]')
-    ax.set_ylabel('Y [mm]')
-    ax.set_zlabel('Z [mm]')
-    ax.plot(lpath.x, lpath.y, lpath.z, '-k', linewidth=2.5)
+    ax.set_xlabel("X [mm]")
+    ax.set_ylabel("Y [mm]")
+    ax.set_zlabel("Z [mm]")
+    ax.plot(lpath.x, lpath.y, lpath.z, "-k", linewidth=2.5)
     ax.set_box_aspect(aspect=(3, 1, 0.5))
     plt.show()
 
@@ -399,5 +411,5 @@ def main():
     print("Laser path length {:.6f} mm".format(lpath.length))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

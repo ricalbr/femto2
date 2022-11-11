@@ -25,9 +25,9 @@ class PGMCompiler:
     """
 
     filename: str = None
-    export_dir: str = ''
+    export_dir: str = ""
     samplesize: Tuple[float, float] = (None, None)
-    laser: str = 'PHAROS'
+    laser: str = "PHAROS"
     home: bool = False
     new_origin: Tuple[float] = (0.0, 0.0)
     warp_flag: bool = False
@@ -49,21 +49,21 @@ class PGMCompiler:
 
     def __post_init__(self):
         if self.filename is None:
-            raise ValueError('Filename is None, set GcodeParameters.filename.')
+            raise ValueError("Filename is None, set GcodeParameters.filename.")
         self.CWD = os.path.dirname(os.path.abspath(__file__))
         self._loaded_files: list = []
 
         self.fwarp = self.antiwarp_management(self.warp_flag)
 
         if self.rotation_angle != 0:
-            print(' BEWARE, ANGLE MUST BE IN DEGREE! '.center(39, "*"))
-            print(f' Rotation angle is {self.rotation_angle % 360:.3f} deg. '.center(39, "*"))
+            print(" BEWARE, ANGLE MUST BE IN DEGREE! ".center(39, "*"))
+            print(f" Rotation angle is {self.rotation_angle % 360:.3f} deg. ".center(39, "*"))
         self.rotation_angle = radians(self.rotation_angle % 360)
 
         if self.aerotech_angle:
-            print(' BEWARE, G84 COMMAND WILL BE USED!!! '.center(39, "*"))
-            print(' ANGLE MUST BE IN DEGREE! '.center(39, "*"))
-            print(f' Rotation angle is {self.aerotech_angle % 360:.3f} deg. '.center(39, "*"))
+            print(" BEWARE, G84 COMMAND WILL BE USED!!! ".center(39, "*"))
+            print(" ANGLE MUST BE IN DEGREE! ".center(39, "*"))
+            print(f" Rotation angle is {self.aerotech_angle % 360:.3f} deg. ".center(39, "*"))
             print()
             self.aerotech_angle = self.aerotech_angle % 360
 
@@ -87,9 +87,9 @@ class PGMCompiler:
         :return: shuttering time
         :rtype: float
         """
-        if self.laser.lower() not in ['pharos', 'carbide', 'uwe']:
-            raise ValueError('Laser can be only PHAROS, CARBIDE or UWE. Given {self.laser.upper()}.')
-        if self.laser.lower() == 'pharos':
+        if self.laser.lower() not in ["pharos", "carbide", "uwe"]:
+            raise ValueError("Laser can be only PHAROS, CARBIDE or UWE. Given {self.laser.upper()}.")
+        if self.laser.lower() == "pharos":
             return 0.000
         else:
             return 0.005
@@ -109,7 +109,7 @@ class PGMCompiler:
 
         if opt:
             if any(x is None for x in self.samplesize):
-                raise ValueError(f'Wrong sample size dimensions. Given ({self.samplesize[0]}, {self.samplesize[1]}).')
+                raise ValueError(f"Wrong sample size dimensions. Given ({self.samplesize[0]}, {self.samplesize[1]}).")
             function_pickle = os.path.join(self.CWD, "fwarp.pkl")
             if os.path.exists(function_pickle):
                 fwarp = pickle.load(open(function_pickle, "rb"))
@@ -117,8 +117,10 @@ class PGMCompiler:
                 fwarp = self.antiwarp_generation(self.samplesize, num)
                 pickle.dump(fwarp, open(function_pickle, "wb"))
         else:
+
             def fwarp(x, y):
                 return 0
+
         return fwarp
 
     @staticmethod
@@ -138,8 +140,8 @@ class PGMCompiler:
         :rtype: scipy.interpolate.interp2d
         """
 
-        if num_tot < 4 ** 2:
-            raise ValueError('I need more values to compute the interpolation.')
+        if num_tot < 4**2:
+            raise ValueError("I need more values to compute the interpolation.")
 
         num_side = int(np.ceil(np.sqrt(num_tot)))
         xpos = np.linspace(margin, samplesize[0] - margin, num_side)
@@ -148,26 +150,26 @@ class PGMCompiler:
         ylist = []
         zlist = []
 
-        print('Focus height in µm (!!!) at:')
+        print("Focus height in µm (!!!) at:")
         for pos in list(product(xpos, ypos)):
             xlist.append(pos[0])
             ylist.append(pos[1])
-            zlist.append(float(input('X={:.1f} Y={:.1f}: \t'.format(pos[0], pos[1]))) / 1000)
-            if zlist[-1] == '':
-                raise ValueError('You have missed the last value.')
+            zlist.append(float(input("X={:.1f} Y={:.1f}: \t".format(pos[0], pos[1]))) / 1000)
+            if zlist[-1] == "":
+                raise ValueError("You have missed the last value.")
 
         # surface interpolation
-        func_antiwarp = interp2d(xlist, ylist, zlist, kind='cubic')
+        func_antiwarp = interp2d(xlist, ylist, zlist, kind="cubic")
 
         # plot the surface
         xprobe = np.linspace(-3, samplesize[0] + 3)
         yprobe = np.linspace(-3, samplesize[1] + 3)
         zprobe = func_antiwarp(xprobe, yprobe)
-        ax = plt.axes(projection='3d')
-        ax.contour3D(xprobe, yprobe, zprobe, 200, cmap='viridis')
-        ax.set_xlabel('X [mm]')
-        ax.set_ylabel('Y [mm]')
-        ax.set_zlabel('Z [mm]')
+        ax = plt.axes(projection="3d")
+        ax.contour3D(xprobe, yprobe, zprobe, 200, cmap="viridis")
+        ax.set_xlabel("X [mm]")
+        ax.set_ylabel("Y [mm]")
+        ax.set_zlabel("Z [mm]")
         plt.show()
 
         return func_antiwarp
@@ -202,7 +204,7 @@ class PGMCompiler:
 
         if self.aerotech_angle:
             self._exit_axis_rotation()
-            self._instructions.append('\n')
+            self._instructions.append("\n")
         if self.home:
             self.go_init()
         self.close()
@@ -215,17 +217,17 @@ class PGMCompiler:
 
         :return: None
         """
-        if self.laser.lower() not in ['pharos', 'carbide', 'uwe']:
-            raise ValueError(f'Fabrication line should be PHAROS, CARBIDE or UWE. Given {self.laser.upper()}.')
+        if self.laser.lower() not in ["pharos", "carbide", "uwe"]:
+            raise ValueError(f"Fabrication line should be PHAROS, CARBIDE or UWE. Given {self.laser.upper()}.")
 
-        if self.laser.lower() == 'pharos':
-            with open(os.path.join(self.CWD, 'utils', 'header_pharos.txt')) as fd:
+        if self.laser.lower() == "pharos":
+            with open(os.path.join(self.CWD, "utils", "header_pharos.txt")) as fd:
                 self._instructions.extend(fd.readlines())
-        elif self.laser.lower() == 'carbide':
-            with open(os.path.join(self.CWD, 'utils', 'header_carbide.txt')) as fd:
+        elif self.laser.lower() == "carbide":
+            with open(os.path.join(self.CWD, "utils", "header_carbide.txt")) as fd:
                 self._instructions.extend(fd.readlines())
         else:
-            with open(os.path.join(self.CWD, 'utils', 'header_uwe.txt')) as fd:
+            with open(os.path.join(self.CWD, "utils", "header_uwe.txt")) as fd:
                 self._instructions.extend(fd.readlines())
 
     def dvar(self, variables: List[str]):
@@ -236,17 +238,17 @@ class PGMCompiler:
         :type variables: List[str]
         :return: None
         """
-        args = ' '.join(["${}"] * len(variables)).format(*variables)
-        self._instructions.appendleft(f'DVAR {args}\n')
+        args = " ".join(["${}"] * len(variables)).format(*variables)
+        self._instructions.appendleft(f"DVAR {args}\n")
 
-    def mode(self, mode: str = 'ABS'):
-        if mode.upper() not in ['ABS', 'INC']:
-            raise ValueError(f'Mode should be either ABSOLUTE (ABS) or INCREMENTAL (INC). {mode} was given.')
-        if mode.upper() == 'ABS':
-            self._instructions.append('ABSOLUTE\n')
+    def mode(self, mode: str = "ABS"):
+        if mode.upper() not in ["ABS", "INC"]:
+            raise ValueError(f"Mode should be either ABSOLUTE (ABS) or INCREMENTAL (INC). {mode} was given.")
+        if mode.upper() == "ABS":
+            self._instructions.append("ABSOLUTE\n")
             self._mode_abs = True
         else:
-            self._instructions.append('INCREMENTAL\n')
+            self._instructions.append("INCREMENTAL\n")
             self._mode_abs = False
 
     def comment(self, comstring: str):
@@ -258,9 +260,9 @@ class PGMCompiler:
         :return: None
         """
         if comstring:
-            self._instructions.append(f'\n; {comstring}\n')
+            self._instructions.append(f"\n; {comstring}\n")
         else:
-            self._instructions.append('\n')
+            self._instructions.append("\n")
 
     def shutter(self, state: str):
         """
@@ -275,15 +277,15 @@ class PGMCompiler:
 
         :raise ValueError: Shutter state not valid.
         """
-        if state.upper() not in ['ON', 'OFF']:
-            raise ValueError(f'Shutter state should be ON or OFF. Given {state.upper()}.')
+        if state.upper() not in ["ON", "OFF"]:
+            raise ValueError(f"Shutter state should be ON or OFF. Given {state.upper()}.")
 
-        if state.upper() == 'ON' and self._shutter_on is False:
+        if state.upper() == "ON" and self._shutter_on is False:
             self._shutter_on = True
-            self._instructions.append('\nPSOCONTROL X ON\n')
-        elif state.upper() == 'OFF' and self._shutter_on is True:
+            self._instructions.append("\nPSOCONTROL X ON\n")
+        elif state.upper() == "OFF" and self._shutter_on is True:
             self._shutter_on = False
-            self._instructions.append('\nPSOCONTROL X OFF\n')
+            self._instructions.append("\nPSOCONTROL X OFF\n")
         else:
             pass
 
@@ -295,7 +297,7 @@ class PGMCompiler:
         :type pause: float
         :return: None
         """
-        self._instructions.append(f'DWELL {pause}\n\n')
+        self._instructions.append(f"DWELL {pause}\n\n")
         self._total_dwell_time += float(pause)
 
     def set_home(self, home_pos: List[float]):
@@ -314,10 +316,10 @@ class PGMCompiler:
         :raise ValueError: Final position is not valid.
         """
         if np.size(home_pos) != 3:
-            raise ValueError(f'Given final position is not valid. 3 values required, given {np.size(home_pos)}.')
+            raise ValueError(f"Given final position is not valid. 3 values required, given {np.size(home_pos)}.")
 
         args = self._format_args(*home_pos)
-        self._instructions.append(f'G92 {args}\n')
+        self._instructions.append(f"G92 {args}\n")
 
     def homing(self):
         """
@@ -325,7 +327,7 @@ class PGMCompiler:
 
         :return: None
         """
-        self.comment('HOMING')
+        self.comment("HOMING")
         self.move_to([0, 0, 0])
 
     def go_init(self):
@@ -351,13 +353,13 @@ class PGMCompiler:
         :return: None
         """
         if np.size(position) != 3:
-            raise ValueError(f'Given final position is not valid. 3 values required, given {np.size(position)}.')
+            raise ValueError(f"Given final position is not valid. 3 values required, given {np.size(position)}.")
 
         if self._shutter_on is True:
-            self.shutter('OFF')
+            self.shutter("OFF")
 
         args = self._format_args(*position, speedpos)
-        self._instructions.append(f'LINEAR {args}\n')
+        self._instructions.append(f"LINEAR {args}\n")
         self.dwell(self.long_pause)
 
     @contextmanager
@@ -380,15 +382,15 @@ class PGMCompiler:
         :return: None
         """
         if num is None:
-            raise ValueError('Number of iterations is None. Set the num_scan attribute in Waveguide obj.')
+            raise ValueError("Number of iterations is None. Set the num_scan attribute in Waveguide obj.")
         if num == 0:
-            raise ValueError('Number of iterations is 0. Set num_scan >= 1.')
-        self._instructions.append(f'FOR ${var} = 0 TO {num - 1}\n')
+            raise ValueError("Number of iterations is 0. Set num_scan >= 1.")
+        self._instructions.append(f"FOR ${var} = 0 TO {num - 1}\n")
         _temp_dt = self._total_dwell_time
         try:
             yield
         finally:
-            self._instructions.append(f'NEXT ${var}\n\n')
+            self._instructions.append(f"NEXT ${var}\n\n")
             _dt_forloop = self._total_dwell_time - _temp_dt
             # pauses should be multiplied by number of cycles as well
             self._total_dwell_time += num * _dt_forloop
@@ -403,17 +405,17 @@ class PGMCompiler:
         :return: None
         """
         if num is None:
-            raise ValueError('Number of iterations is None. Set the `scan` attribute in Waveguide obj.')
+            raise ValueError("Number of iterations is None. Set the `scan` attribute in Waveguide obj.")
         if num == 0:
             raise ValueError('Number of iterations is 0. Set "scan" >= 1.')
         if num != 1:
-            self._instructions.append(f'REPEAT {num}\n')
+            self._instructions.append(f"REPEAT {num}\n")
         _temp_dt = self._total_dwell_time
         try:
             yield
         finally:
             if num != 1:
-                self._instructions.append('ENDREPEAT\n\n')
+                self._instructions.append("ENDREPEAT\n\n")
             _dt_repeat = self._total_dwell_time - _temp_dt
             # pauses should be multiplied by number of cycles as well
             self._total_dwell_time += num * _dt_repeat
@@ -448,7 +450,7 @@ class PGMCompiler:
         :type task_id: int
         :return: None
         """
-        file = self._parse_filepath(filename, extension='pgm')
+        file = self._parse_filepath(filename, extension="pgm")
         self._instructions.append(f'PROGRAM {task_id} LOAD "{file}"\n')
         self._loaded_files.append(file.stem)
 
@@ -462,7 +464,7 @@ class PGMCompiler:
         :type task_id: int
         :return: None
         """
-        file = self._parse_filepath(filename, extension='pgm')
+        file = self._parse_filepath(filename, extension="pgm")
         self.programstop(task_id)
         self._instructions.append(f'REMOVEPROGRAM "{file}"\n')
         self._loaded_files.remove(file.stem)
@@ -477,13 +479,13 @@ class PGMCompiler:
         """
         file = self._parse_filepath(filename)
         if file.stem not in self._loaded_files:
-            raise FileNotFoundError(f'{file} not loaded. Cannot load it.')
+            raise FileNotFoundError(f"{file} not loaded. Cannot load it.")
         self.dwell(self.short_pause)
         self._instructions.append(f'FARCALL "{file}"\n')
 
     def programstop(self, task_id: int = 0):
-        self._instructions.append(f'PROGRAM {task_id} STOP\n')
-        self._instructions.append(f'WAIT (TASKSTATUS({task_id}, DATAITEM_TaskState) == TASKSTATE_Idle) -1\n')
+        self._instructions.append(f"PROGRAM {task_id} STOP\n")
+        self._instructions.append(f"WAIT (TASKSTATUS({task_id}, DATAITEM_TaskState) == TASKSTATE_Idle) -1\n")
 
     def buffercall(self, filename: str, task_id: int = 0):
         """
@@ -497,7 +499,7 @@ class PGMCompiler:
         """
         file = self._parse_filepath(filename)
         if file.stem not in self._loaded_files:
-            raise FileNotFoundError(f'{file} not loaded. Cannot load it.')
+            raise FileNotFoundError(f"{file} not loaded. Cannot load it.")
         self._instructions.append(f'PROGRAM {task_id} BUFFEREDRUN "{file}"\n')
 
     def chiamatutto(self, filenames: List[str], task_id: List[int] = 0):
@@ -507,7 +509,7 @@ class PGMCompiler:
             self.farcall(fn)
             self.remove_program(fn, t_id)
             self.dwell(self.long_pause)
-            self.instruction('\n')
+            self.instruction("\n")
 
     def write(self, points: np.ndarray):
         """
@@ -528,13 +530,13 @@ class PGMCompiler:
         args = [self._format_args(x, y, z, f) for (x, y, z, f) in zip(x_c, y_c, z_c, f_c)]
         for (arg, s) in zip_longest(args, s_c):
             if s == 0 and self._shutter_on is True:
-                self.shutter('OFF')
+                self.shutter("OFF")
                 self.dwell(self.long_pause)
             elif s == 1 and self._shutter_on is False:
-                self.shutter('ON')
+                self.shutter("ON")
                 self.dwell(self.long_pause)
             else:
-                self._instructions.append(f'LINEAR {arg}\n')
+                self._instructions.append(f"LINEAR {arg}\n")
         self.dwell(self.long_pause)
 
     def transform_points(self, points):
@@ -569,9 +571,13 @@ class PGMCompiler:
 
         # create the displacement matrix to map the transformed min/max coordinates to the original min/max coordinates)
         points_matrix = np.array([xc, yc, zc])
-        displacements = np.array([self.samplesize[0] - self.new_origin[0],
-                                  self.samplesize[1] - self.new_origin[1],
-                                  0])
+        displacements = np.array(
+            [
+                self.samplesize[0] - self.new_origin[0],
+                self.samplesize[1] - self.new_origin[1],
+                0,
+            ]
+        )
         S = np.multiply((1 - flip_toggle) / 2, displacements)
 
         # matrix multiplication and sum element-wise, add the displacement only to the flipped coordinates
@@ -596,10 +602,10 @@ class PGMCompiler:
         :type instr: str
         :return: None
         """
-        if instr.endswith('\n'):
+        if instr.endswith("\n"):
             self._instructions.append(instr)
         else:
-            self._instructions.append(instr + '\n')
+            self._instructions.append(instr + "\n")
 
     def close(self, filename: str = None, verbose: bool = False):
         """
@@ -618,7 +624,7 @@ class PGMCompiler:
 
         # filename overrides self.filename. If not present, self.filename must not be None.
         if filename is None and self.filename is None:
-            raise ValueError('No filename given.')
+            raise ValueError("No filename given.")
 
         if filename:
             pgm_filename = filename
@@ -626,8 +632,8 @@ class PGMCompiler:
             pgm_filename = self.filename
 
         # if not present in the filename, add the proper file extension
-        if not pgm_filename.endswith('.pgm'):
-            pgm_filename += '.pgm'
+        if not pgm_filename.endswith(".pgm"):
+            pgm_filename += ".pgm"
 
         if self.export_dir:
             if not os.path.exists(self.export_dir):
@@ -635,11 +641,11 @@ class PGMCompiler:
             pgm_filename = os.path.join(self.export_dir, pgm_filename)
 
         # write instruction to file
-        with open(pgm_filename, 'w') as f:
-            f.write(''.join(self._instructions))
+        with open(pgm_filename, "w") as f:
+            f.write("".join(self._instructions))
         self._instructions.clear()
         if verbose:
-            print('G-code compilation completed.')
+            print("G-code compilation completed.")
 
     def compensate(self, pts: np.ndarray) -> np.ndarray:
         """
@@ -655,9 +661,9 @@ class PGMCompiler:
         if pts_comp.size > 3:
             zwarp = [float(self.fwarp(x, y)) for x, y in zip(pts_comp[:, 0], pts_comp[:, 1])]
             zwarp = np.array(zwarp)
-            pts_comp[:, 2] = (pts_comp[:, 2] + zwarp / self.neff)
+            pts_comp[:, 2] = pts_comp[:, 2] + zwarp / self.neff
         else:
-            pts_comp[2] = (pts_comp[2] + self.fwarp(pts_comp[0], pts_comp[1]) / self.neff)
+            pts_comp[2] = pts_comp[2] + self.fwarp(pts_comp[0], pts_comp[1]) / self.neff
         return pts_comp
 
     def t_matrix(self, dim: int = 3) -> np.ndarray:
@@ -672,12 +678,14 @@ class PGMCompiler:
 
         :raise ValueError: Dimension not valid
         """
-        RM = np.array([[np.cos(self.rotation_angle), -np.sin(self.rotation_angle), 0],
-                       [np.sin(self.rotation_angle), np.cos(self.rotation_angle), 0],
-                       [0, 0, 1]])
-        SM = np.array([[1, 0, 0],
-                       [0, 1, 0],
-                       [0, 0, 1 / self.neff]])
+        RM = np.array(
+            [
+                [np.cos(self.rotation_angle), -np.sin(self.rotation_angle), 0],
+                [np.sin(self.rotation_angle), np.cos(self.rotation_angle), 0],
+                [0, 0, 1],
+            ]
+        )
+        SM = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1 / self.neff]])
         t_mat = SM @ RM
         if dim == 3:
             return t_mat.T
@@ -686,7 +694,7 @@ class PGMCompiler:
             ixgrid = np.ix_([0, 1], [0, 1])
             return t_mat[ixgrid].T
         else:
-            raise ValueError(f'Dimension not valid. dim must be either 2 or 3. Given {dim}.')
+            raise ValueError(f"Dimension not valid. dim must be either 2 or 3. Given {dim}.")
 
     # Private interface
     def _format_args(self, x: float = None, y: float = None, z: float = None, f: float = None) -> str:
@@ -710,16 +718,16 @@ class PGMCompiler:
         """
         args = []
         if x is not None:
-            args.append(f'X{x:.{self.output_digits}f}')
+            args.append(f"X{x:.{self.output_digits}f}")
         if y is not None:
-            args.append(f'Y{y:.{self.output_digits}f}')
+            args.append(f"Y{y:.{self.output_digits}f}")
         if z is not None:
-            args.append(f'Z{z:.{self.output_digits}f}')
+            args.append(f"Z{z:.{self.output_digits}f}")
         if f is not None:
             if f < 1e-6:
-                raise ValueError('Try to move with F = 0.0 mm/s. Check speed parameter.')
-            args.append(f'F{f:.{self.output_digits}f}')
-        args = ' '.join(args)
+                raise ValueError("Try to move with F = 0.0 mm/s. Check speed parameter.")
+            args.append(f"F{f:.{self.output_digits}f}")
+        args = " ".join(args)
         return args
 
     @staticmethod
@@ -740,7 +748,7 @@ class PGMCompiler:
         :rtype: pathlib.Path
         """
         if extension is not None and not filename.endswith(extension):
-            raise ValueError(f'Given filename has wrong extension. Given {filename}, required .{extension}.')
+            raise ValueError(f"Given filename has wrong extension. Given {filename}, required .{extension}.")
 
         if filepath is not None:
             file = Path(filepath) / filename
@@ -749,20 +757,20 @@ class PGMCompiler:
         return file
 
     def _enter_axis_rotation(self, angle: float = None):
-        self.comment('ACTIVATE AXIS ROTATION')
-        self._instructions.append(f'LINEAR X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{self.speed_pos:.6f}\n')
-        self._instructions.append('G84 X Y\n')
+        self.comment("ACTIVATE AXIS ROTATION")
+        self._instructions.append(f"LINEAR X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{self.speed_pos:.6f}\n")
+        self._instructions.append("G84 X Y\n")
 
         if angle is None:
             return
 
         angle = float(angle % 360)
-        self._instructions.append(f'G84 X Y F{angle}\n\n')
+        self._instructions.append(f"G84 X Y F{angle}\n\n")
 
     def _exit_axis_rotation(self):
-        self.comment('DEACTIVATE AXIS ROTATION')
-        self._instructions.append(f'LINEAR X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{self.speed_pos:.6f}\n')
-        self._instructions.append('G84 X Y\n')
+        self.comment("DEACTIVATE AXIS ROTATION")
+        self._instructions.append(f"LINEAR X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{self.speed_pos:.6f}\n")
+        self._instructions.append("G84 X Y\n")
 
 
 class PGMTrench(PGMCompiler):
@@ -771,7 +779,7 @@ class PGMTrench(PGMCompiler):
         self.trench_columns = listcast(trench_columns)
         self._param = param
 
-    def write(self, dirname: str = 'trench'):
+    def write(self, dirname: str = "trench"):
         """
         Helper function for the compilation of trench columns.
         For each trench in the column, the function first compile a PGM file for border (or wall) and for the floor
@@ -786,74 +794,84 @@ class PGMTrench(PGMCompiler):
 
         for col_idx, col in enumerate(self.trench_columns):
             # Prepare directories for export .pgm files
-            col_dir = os.path.join(os.getcwd(), self.export_dir, dirname, f'trenchCol{col_idx + 1:03}')
+            col_dir = os.path.join(os.getcwd(), self.export_dir, dirname, f"trenchCol{col_idx + 1:03}")
             os.makedirs(col_dir, exist_ok=True)
 
             # Export walls and floors .pgm scripts
             for i, trench in enumerate(col):
-                filename = os.path.join(col_dir, f'trench{i + 1:03}')
+                filename = os.path.join(col_dir, f"trench{i + 1:03}")
                 self._export_path(filename, trench, speed=col.speed)
 
             # Export FARCALL for each trench column
             col_param = dotdict(self._param.copy())
-            col_param.filename = os.path.join(os.getcwd(), self.export_dir, dirname, f'FARCALL{col_idx + 1:03}.pgm')
+            col_param.filename = os.path.join(os.getcwd(), self.export_dir, dirname, f"FARCALL{col_idx + 1:03}.pgm")
             with PGMCompiler(**col_param) as G:
-                G.dvar(['ZCURR'])
+                G.dvar(["ZCURR"])
 
                 for nbox in range(col.nboxz):
                     for t_index, trench in enumerate(col):
                         # load filenames (wall/floor)
-                        wall_filename = f'trench{t_index + 1:03}_wall.pgm'
-                        floor_filename = f'trench{t_index + 1:03}_floor.pgm'
-                        wall_path = os.path.join(col.base_folder, f'trenchCol{col_idx + 1:03}', wall_filename)
-                        floor_path = os.path.join(col.base_folder, f'trenchCol{col_idx + 1:03}', floor_filename)
+                        wall_filename = f"trench{t_index + 1:03}_wall.pgm"
+                        floor_filename = f"trench{t_index + 1:03}_floor.pgm"
+                        wall_path = os.path.join(col.base_folder, f"trenchCol{col_idx + 1:03}", wall_filename)
+                        floor_path = os.path.join(
+                            col.base_folder,
+                            f"trenchCol{col_idx + 1:03}",
+                            floor_filename,
+                        )
 
                         x0, y0 = trench.block.exterior.coords[0]
                         z0 = (nbox * col.h_box - col.z_off) / super().neff
-                        G.comment(f'+--- COLUMN #{col_idx + 1}, TRENCH #{t_index + 1} LEVEL {nbox + 1} ---+')
+                        G.comment(f"+--- COLUMN #{col_idx + 1}, TRENCH #{t_index + 1} LEVEL {nbox + 1} ---+")
 
                         # WALL
                         G.load_program(wall_path)
                         G.instruction(
-                                f'MSGDISPLAY 1, "COL {col_idx + 1:03}, TR {t_index + 1:03}, LV {nbox + 1:03}, W"\n')
-                        G.shutter('OFF')
+                            f'MSGDISPLAY 1, "COL {col_idx + 1:03}, TR {t_index + 1:03}, LV {nbox + 1:03}, W"\n'
+                        )
+                        G.shutter("OFF")
                         if col.u:
-                            G.instruction(f'LINEAR U{col.u[0]:.6f}')
-                        G.move_to([x0 - self.new_origin[0], y0 - self.new_origin[1], z0], speedpos=col.speed_closed)
+                            G.instruction(f"LINEAR U{col.u[0]:.6f}")
+                        G.move_to(
+                            [x0 - self.new_origin[0], y0 - self.new_origin[1], z0],
+                            speedpos=col.speed_closed,
+                        )
 
-                        G.instruction(f'$ZCURR = {z0:.6f}')
-                        G.shutter('ON')
+                        G.instruction(f"$ZCURR = {z0:.6f}")
+                        G.shutter("ON")
                         with G.repeat(col.n_repeat):
                             G.farcall(wall_filename)
-                            G.instruction(f'$ZCURR = $ZCURR + {col.deltaz / super().neff:.6f}')
-                            G.instruction('LINEAR Z$ZCURR')
+                            G.instruction(f"$ZCURR = $ZCURR + {col.deltaz / super().neff:.6f}")
+                            G.instruction("LINEAR Z$ZCURR")
                         G.remove_program(wall_filename)
 
                         # FLOOR
-                        G.shutter(state='OFF')
+                        G.shutter(state="OFF")
                         G.load_program(floor_path)
                         G.instruction(
-                                f'MSGDISPLAY 1, "COL {col_idx + 1:03}, TR {t_index + 1:03}, LV {nbox + 1:03}, F"\n')
+                            f'MSGDISPLAY 1, "COL {col_idx + 1:03}, TR {t_index + 1:03}, LV {nbox + 1:03}, F"\n'
+                        )
                         if col.u:
-                            G.instruction(f'LINEAR U{col.u[-1]:.6f}')
-                        G.shutter(state='ON')
+                            G.instruction(f"LINEAR U{col.u[-1]:.6f}")
+                        G.shutter(state="ON")
                         G.farcall(floor_filename)
-                        G.shutter('OFF')
+                        G.shutter("OFF")
                         if col.u:
-                            G.instruction(f'LINEAR U{col.u[0]:.6f}')
+                            G.instruction(f"LINEAR U{col.u[0]:.6f}")
                         G.remove_program(floor_filename)
-                G.instruction('MSGCLEAR -1\n')
+                G.instruction("MSGCLEAR -1\n")
             del G
 
         # MAIN FARCALL, calls all columns .pgm scripts
         if self.trench_columns:
             # MAIN FARCALL parameters
             main_param = dotdict(self._param.copy())
-            main_param.filename = os.path.join(dirname, 'MAIN.pgm')
+            main_param.filename = os.path.join(dirname, "MAIN.pgm")
             main_param.aerotech_angle = None
 
-            t_list = [os.path.join(col.base_folder, f'FARCALL{idx + 1:03}.pgm') for idx, col in
-                      enumerate(self.trench_columns)]
+            t_list = [
+                os.path.join(col.base_folder, f"FARCALL{idx + 1:03}.pgm") for idx, col in enumerate(self.trench_columns)
+            ]
             with PGMCompiler(**main_param) as G:
                 G.chiamatutto(t_list)
 
@@ -872,19 +890,19 @@ class PGMTrench(PGMCompiler):
         :return: None
         """
         if filename is None:
-            raise ValueError('No filename given.')
-        if filename.endswith('.pgm'):
-            filename = filename.split('.')[0]
+            raise ValueError("No filename given.")
+        if filename.endswith(".pgm"):
+            filename = filename.split(".")[0]
 
         # Wall script
         points = np.array(trench.block.exterior.coords.xy).T
-        self._write_array(filename + '_wall.pgm', points, speed)
+        self._write_array(filename + "_wall.pgm", points, speed)
         del points
 
         # Floor script
         points = []
         [points.extend(np.stack(path, axis=-1)) for path in trench.trench_paths()]
-        self._write_array(filename + '_floor.pgm', np.array(points), speed)
+        self._write_array(filename + "_floor.pgm", np.array(points), speed)
         del points
 
     def _write_array(self, pgm_filename: str, points: np.ndarray, f_val: float):
@@ -912,9 +930,9 @@ class PGMTrench(PGMCompiler):
             x_arr, y_arr, z_arr = np.matmul(points, self.t_matrix()).T
 
         instr = [self._format_args(x, y, z, f) for (x, y, z, f) in zip_longest(x_arr, y_arr, z_arr, listcast(f_val))]
-        gcode_instr = [f'LINEAR {line}\n' for line in instr]
-        with open(pgm_filename, 'w') as f:
-            f.write(''.join(gcode_instr))
+        gcode_instr = [f"LINEAR {line}\n" for line in instr]
+        with open(pgm_filename, "w") as f:
+            f.write("".join(gcode_instr))
 
 
 def _example():
@@ -923,34 +941,34 @@ def _example():
 
     # Data
     PARAMETERS_WG = dotdict(
-            scan=6,
-            speed=20,
-            radius=15,
-            pitch=0.080,
-            int_dist=0.007,
-            lsafe=3,
-            samplesize=(25, 3),
+        scan=6,
+        speed=20,
+        radius=15,
+        pitch=0.080,
+        int_dist=0.007,
+        lsafe=3,
+        samplesize=(25, 3),
     )
     increment = [PARAMETERS_WG.lsafe, 0, 0]
 
     PARAMETERS_GC = dotdict(
-            filename='testPGMcompiler.pgm',
-            laser='PHAROS',
-            samplesize=PARAMETERS_WG.samplesize,
-            rotation_angle=2.0,
-            flip_x=True,
+        filename="testPGMcompiler.pgm",
+        laser="PHAROS",
+        samplesize=PARAMETERS_WG.samplesize,
+        rotation_angle=2.0,
+        flip_x=True,
     )
 
     # Calculations
     coup = [Waveguide(**PARAMETERS_WG) for _ in range(2)]
     for i, wg in enumerate(coup):
-        wg.start([-2, -wg.pitch / 2 + i * wg.pitch, 0.035]) \
-            .linear(increment) \
-            .sin_mzi((-1) ** i * wg.dy_bend, arm_length=1.0) \
-            .sin_mzi((-1) ** i * wg.dy_bend, arm_length=1.0) \
-            .linear(increment) \
-            .sin_mzi((-1) ** i * wg.dy_bend, arm_length=1.0) \
-            .linear([wg.x_end, wg.lasty, wg.lastz], mode='ABS')
+        wg.start([-2, -wg.pitch / 2 + i * wg.pitch, 0.035]).linear(increment).sin_mzi(
+            (-1) ** i * wg.dy_bend, arm_length=1.0
+        ).sin_mzi((-1) ** i * wg.dy_bend, arm_length=1.0).linear(increment).sin_mzi(
+            (-1) ** i * wg.dy_bend, arm_length=1.0
+        ).linear(
+            [wg.x_end, wg.lasty, wg.lastz], mode="ABS"
+        )
         wg.end()
 
     c = Cell(PARAMETERS_GC)
@@ -960,13 +978,13 @@ def _example():
     # Compilation
     with PGMCompiler(**PARAMETERS_GC) as G:
         G.set_home([0, 0, 0])
-        with G.repeat(PARAMETERS_WG['scan']):
+        with G.repeat(PARAMETERS_WG["scan"]):
             for i, wg in enumerate(coup):
-                G.comment(f'Modo: {i}')
+                G.comment(f"Modo: {i}")
                 G.write(wg.points)
         G.move_to([None, 0, 0.1])
         G.set_home([0, 0, 0])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     _example()

@@ -42,15 +42,15 @@ class Waveguide(LaserPath):
     @property
     def dy_bend(self):
         if self.pitch is None:
-            raise ValueError('Waveguide pitch is set to None.')
+            raise ValueError("Waveguide pitch is set to None.")
         if self.int_dist is None:
-            raise ValueError('Interaction distance is set to None.')
+            raise ValueError("Interaction distance is set to None.")
         return 0.5 * (self.pitch - self.int_dist)
 
     @property
     def dx_bend(self) -> Optional[float]:
         if self.radius is None:
-            raise ValueError('Curvature radius is set to None.')
+            raise ValueError("Curvature radius is set to None.")
         return self.sbend_length(self.dy_bend, self.radius)
 
     @property
@@ -80,7 +80,7 @@ class Waveguide(LaserPath):
         :rtype: tuple
         """
         if radius <= 0:
-            raise ValueError(f'Radius should be a positive value. Given {radius:.3f}.')
+            raise ValueError(f"Radius should be a positive value. Given {radius:.3f}.")
         a = np.arccos(1 - (np.abs(dy / 2) / radius))
         dx = 2 * radius * np.sin(a)
         return a, dx
@@ -98,8 +98,13 @@ class Waveguide(LaserPath):
         """
         return float(self.get_sbend_parameter(dy, radius)[1])
 
-    def get_spline_parameter(self, disp_x: Optional[float] = None, disp_y: Optional[float] = None,
-                             disp_z: Optional[float] = None, radius: float = 20) -> tuple:
+    def get_spline_parameter(
+        self,
+        disp_x: Optional[float] = None,
+        disp_y: Optional[float] = None,
+        disp_z: Optional[float] = None,
+        radius: float = 20,
+    ) -> tuple:
         """
         Computes the displacements along x-, y- and z-direction and the total lenght of the curve.
         The dy and dz displacements are given by the user. The dx displacement can be known (and thus given as input)
@@ -123,22 +128,28 @@ class Waveguide(LaserPath):
         :rtype: Tuple[float, float, float, float]
         """
         if disp_y is None:
-            raise ValueError('y-displacement is None. Give a valid disp_y')
+            raise ValueError("y-displacement is None. Give a valid disp_y")
         if disp_z is None:
-            raise ValueError('z-displacement is None. Give a valid disp_z')
+            raise ValueError("z-displacement is None. Give a valid disp_z")
 
         if disp_x is None:
-            disp_yz = np.sqrt(disp_y ** 2 + disp_z ** 2)
+            disp_yz = np.sqrt(disp_y**2 + disp_z**2)
             ang, disp_x = self.get_sbend_parameter(disp_yz, radius)
             l_curve = 2 * ang * radius
         else:
             disp = np.array([disp_x, disp_y, disp_z])
-            l_curve = np.sqrt(np.sum(disp ** 2))
+            l_curve = np.sqrt(np.sum(disp**2))
         return disp_x, disp_y, disp_z, l_curve
 
     # Methods
-    def circ(self, initial_angle: float, final_angle: float, radius: Optional[float] = None, shutter: int = 1,
-             speed: Optional[float] = None) -> Self:
+    def circ(
+        self,
+        initial_angle: float,
+        final_angle: float,
+        radius: Optional[float] = None,
+        shutter: int = 1,
+        speed: Optional[float] = None,
+    ) -> Self:
         """
         Computes the points in the xy-plane that connects two angles (initial_angle and final_angle) with a circular
         arc of a given radius. The user can set the transition speed, the shutter state during the movement and the
@@ -180,8 +191,13 @@ class Waveguide(LaserPath):
         self.add_path(x_circ, y_circ, z_circ, f_circ, s_circ)
         return self
 
-    def arc_bend(self, dy: float, radius: Optional[float] = None, shutter: int = 1,
-                 speed: Optional[float] = None) -> Self:
+    def arc_bend(
+        self,
+        dy: float,
+        radius: Optional[float] = None,
+        shutter: int = 1,
+        speed: Optional[float] = None,
+    ) -> Self:
         """
         Concatenates two circular arc to make a circular S-bend.
         The user can specify the amplitude of the S-bend (height in the y direction) and the curvature radius.
@@ -207,15 +223,45 @@ class Waveguide(LaserPath):
         a, _ = self.get_sbend_parameter(dy, radius)
 
         if dy > 0:
-            self.circ(np.pi * (3 / 2), np.pi * (3 / 2) + a, radius=radius, speed=speed, shutter=shutter)
-            self.circ(np.pi * (1 / 2) + a, np.pi * (1 / 2), radius=radius, speed=speed, shutter=shutter)
+            self.circ(
+                np.pi * (3 / 2),
+                np.pi * (3 / 2) + a,
+                radius=radius,
+                speed=speed,
+                shutter=shutter,
+            )
+            self.circ(
+                np.pi * (1 / 2) + a,
+                np.pi * (1 / 2),
+                radius=radius,
+                speed=speed,
+                shutter=shutter,
+            )
         else:
-            self.circ(np.pi * (1 / 2), np.pi * (1 / 2) - a, radius=radius, speed=speed, shutter=shutter)
-            self.circ(np.pi * (3 / 2) - a, np.pi * (3 / 2), radius=radius, speed=speed, shutter=shutter)
+            self.circ(
+                np.pi * (1 / 2),
+                np.pi * (1 / 2) - a,
+                radius=radius,
+                speed=speed,
+                shutter=shutter,
+            )
+            self.circ(
+                np.pi * (3 / 2) - a,
+                np.pi * (3 / 2),
+                radius=radius,
+                speed=speed,
+                shutter=shutter,
+            )
         return self
 
-    def arc_acc(self, dy: float, radius: Optional[float] = None, int_length: Optional[float] = None, shutter: int = 1,
-                speed: Optional[float] = None) -> Self:
+    def arc_acc(
+        self,
+        dy: float,
+        radius: Optional[float] = None,
+        int_length: Optional[float] = None,
+        shutter: int = 1,
+        speed: Optional[float] = None,
+    ) -> Self:
         """
         Concatenates two circular S-bend to make a single mode of a circular directional coupler.
         The user can specify the amplitude of the coupler (height in the y direction) and the curvature radius.
@@ -245,8 +291,15 @@ class Waveguide(LaserPath):
         self.arc_bend(-dy, radius=radius, speed=speed, shutter=shutter)
         return self
 
-    def arc_mzi(self, dy: float, radius: Optional[float] = None, int_length: Optional[float] = None,
-                arm_length: Optional[float] = None, shutter: int = 1, speed: Optional[float] = None) -> Self:
+    def arc_mzi(
+        self,
+        dy: float,
+        radius: Optional[float] = None,
+        int_length: Optional[float] = None,
+        arm_length: Optional[float] = None,
+        shutter: int = 1,
+        speed: Optional[float] = None,
+    ) -> Self:
         """
         Concatenates two circular couplers to make a single mode of a circular MZI.
         The user can specify the amplitude of the coupler (height in the y direction) and the curvature radius.
@@ -278,8 +331,14 @@ class Waveguide(LaserPath):
         self.arc_acc(dy, radius=radius, int_length=int_length, speed=speed, shutter=shutter)
         return self
 
-    def sin_bridge(self, dy: float, dz: Optional[float] = None, radius: Optional[float] = None, shutter: int = 1,
-                   speed: Optional[float] = None) -> Self:
+    def sin_bridge(
+        self,
+        dy: float,
+        dz: Optional[float] = None,
+        radius: Optional[float] = None,
+        shutter: int = 1,
+        speed: Optional[float] = None,
+    ) -> Self:
         """
         Computes the points in the xy-plane of a Sin-bend curve and the points in the xz-plane of a
         Sin-bridge of height Dz. The distance between the initial and final point is the same of the equivalent
@@ -329,7 +388,13 @@ class Waveguide(LaserPath):
             new_z = self._z[-1] * np.ones(new_x.shape)
 
         # update coordinates
-        self.add_path(new_x, new_y, new_z, f * np.ones(new_x.shape), shutter * np.ones(new_x.shape))
+        self.add_path(
+            new_x,
+            new_y,
+            new_z,
+            f * np.ones(new_x.shape),
+            shutter * np.ones(new_x.shape),
+        )
         return self
 
     sin_bend = partialmethod(sin_bridge, dz=None)
@@ -344,11 +409,23 @@ class Waveguide(LaserPath):
         new_z = self._z[-1] * np.ones(new_x.shape)
 
         # update coordinates
-        self.add_path(new_x, new_y, new_z, f * np.ones(new_x.shape), shutter * np.ones(new_x.shape))
+        self.add_path(
+            new_x,
+            new_y,
+            new_z,
+            f * np.ones(new_x.shape),
+            shutter * np.ones(new_x.shape),
+        )
         return self
 
-    def sin_acc(self, dy: float, radius: Optional[float] = None, int_length: Optional[float] = 0.0, shutter: int = 1,
-                speed: Optional[float] = None) -> Self:
+    def sin_acc(
+        self,
+        dy: float,
+        radius: Optional[float] = None,
+        int_length: Optional[float] = 0.0,
+        shutter: int = 1,
+        speed: Optional[float] = None,
+    ) -> Self:
         """
         Concatenates two Sin-bend to make a single mode of a sinusoidal directional coupler.
         The user can specify the amplitude of the coupler (height in the y direction) and the effective curvature
@@ -379,8 +456,15 @@ class Waveguide(LaserPath):
         self.sin_bend(-dy, radius=radius, speed=speed, shutter=shutter)
         return self
 
-    def sin_mzi(self, dy: float, radius: Optional[float] = None, int_length: Optional[float] = None,
-                arm_length: Optional[float] = None, shutter: int = 1, speed: Optional[float] = None) -> Self:
+    def sin_mzi(
+        self,
+        dy: float,
+        radius: Optional[float] = None,
+        int_length: Optional[float] = None,
+        arm_length: Optional[float] = None,
+        shutter: int = 1,
+        speed: Optional[float] = None,
+    ) -> Self:
         """
         Concatenates two sinusoidal couplers to make a single mode of a sinusoidal MZI.
         The user can specify the amplitude of the coupler (height in the y direction) and the curvature radius.
@@ -412,9 +496,18 @@ class Waveguide(LaserPath):
         self.sin_acc(dy, radius=radius, int_length=int_length, shutter=shutter, speed=speed)
         return self
 
-    def spline(self, dy: float, dz: float, init_pos: Optional[npt.NDArray[np.float32]] = None,
-               radius: Optional[float] = None, disp_x: float = 0, shutter: int = 1, speed: Optional[float] = None,
-               bc_y: tuple = ((1, 0.0), (1, 0.0)), bc_z: tuple = ((1, 0.0), (1, 0.0))) -> Self:
+    def spline(
+        self,
+        dy: float,
+        dz: float,
+        init_pos: Optional[npt.NDArray[np.float32]] = None,
+        radius: Optional[float] = None,
+        disp_x: float = 0,
+        shutter: int = 1,
+        speed: Optional[float] = None,
+        bc_y: tuple = ((1, 0.0), (1, 0.0)),
+        bc_z: tuple = ((1, 0.0), (1, 0.0)),
+    ) -> Self:
         """
         Function wrapper. It computes the x,y,z coordinates of spline curve starting from init_pos with Dy and Dz
         displacements.
@@ -448,12 +541,25 @@ class Waveguide(LaserPath):
         f = self.speed if speed is None else speed
 
         # update coordinates or return
-        self.add_path(x_spl, y_spl, z_spl, f * np.ones(x_spl.shape), shutter * np.ones(x_spl.shape))
+        self.add_path(
+            x_spl,
+            y_spl,
+            z_spl,
+            f * np.ones(x_spl.shape),
+            shutter * np.ones(x_spl.shape),
+        )
         return self
 
-    def spline_bridge(self, dy: float, dz: float, init_pos: Optional[npt.NDArray[np.float32]] = None,
-                      radius: Optional[float] = None, disp_x: Optional[float] = None, shutter: int = 1,
-                      speed: Optional[float] = None) -> Self:
+    def spline_bridge(
+        self,
+        dy: float,
+        dz: float,
+        init_pos: Optional[npt.NDArray[np.float32]] = None,
+        radius: Optional[float] = None,
+        disp_x: Optional[float] = None,
+        shutter: int = 1,
+        speed: Optional[float] = None,
+    ) -> Self:
         """
         Computes a spline bridge as a sequence of two spline segments. dy is the total displacement along the
         y-direction of the bridge and dz is the height of the bridge along z.
@@ -498,13 +604,25 @@ class Waveguide(LaserPath):
             f = speed
 
         dx, *_, l_curve = self.get_spline_parameter(disp_x=disp_x, disp_y=dy, disp_z=0.0, radius=radius)
-        x1, y1, z1 = self._get_spline_points(dy / 2, dz, init_pos, radius, speed=speed,
-                                             bc_y=((1, 0.0), (1, dy / dx)),
-                                             bc_z=((1, 0.0), (1, 0.0)))
+        x1, y1, z1 = self._get_spline_points(
+            dy / 2,
+            dz,
+            init_pos,
+            radius,
+            speed=speed,
+            bc_y=((1, 0.0), (1, dy / dx)),
+            bc_z=((1, 0.0), (1, 0.0)),
+        )
         init_pos2 = np.array([x1[-1], y1[-1], z1[-1]])
-        x2, y2, z2 = self._get_spline_points(dy / 2, -dz, init_pos2, radius, speed=speed,
-                                             bc_y=((1, dy / dx), (1, 0.0)),
-                                             bc_z=((1, 0.0), (1, 0.0)))
+        x2, y2, z2 = self._get_spline_points(
+            dy / 2,
+            -dz,
+            init_pos2,
+            radius,
+            speed=speed,
+            bc_y=((1, dy / dx), (1, 0.0)),
+            bc_z=((1, 0.0), (1, 0.0)),
+        )
         x = np.append(x1[:-1], x2)
         y = np.append(y1[:-1], y2)
         z = np.append(z1[:-1], z2)
@@ -535,10 +653,12 @@ class Waveguide(LaserPath):
         d2y_dt2 = np.gradient(dy_dt)
         d2z_dt2 = np.gradient(dz_dt)
 
-        num = (dx_dt ** 2 + dy_dt ** 2 + dz_dt ** 2) ** 1.5
-        den = np.sqrt((d2z_dt2 * dy_dt - d2y_dt2 * dz_dt) ** 2 +
-                      (d2x_dt2 * dz_dt - d2z_dt2 * dx_dt) ** 2 +
-                      (d2y_dt2 * dx_dt - d2x_dt2 * dy_dt) ** 2)
+        num = (dx_dt**2 + dy_dt**2 + dz_dt**2) ** 1.5
+        den = np.sqrt(
+            (d2z_dt2 * dy_dt - d2y_dt2 * dz_dt) ** 2
+            + (d2x_dt2 * dz_dt - d2z_dt2 * dx_dt) ** 2
+            + (d2y_dt2 * dx_dt - d2x_dt2 * dy_dt) ** 2
+        )
         default_zero = np.ones(np.size(num)) * np.inf
 
         # only divide nonzeros else Inf
@@ -558,7 +678,7 @@ class Waveguide(LaserPath):
         dx_dt = np.gradient(x)
         dy_dt = np.gradient(y)
         dz_dt = np.gradient(z)
-        dt = np.sqrt(dx_dt ** 2 + dy_dt ** 2 + dz_dt ** 2)
+        dt = np.sqrt(dx_dt**2 + dy_dt**2 + dz_dt**2)
 
         default_zero = np.zeros(np.size(dt))
         # only divide nonzeros else Inf
@@ -566,9 +686,17 @@ class Waveguide(LaserPath):
         return np.array(cmd_rate, dtype=np.float32)
 
     # Private interface
-    def _get_spline_points(self, dy: float, dz: float, init_pos: npt.NDArray[np.float32], radius: float = 20,
-                           disp_x: Optional[float] = None, speed: Optional[float] = None,
-                           bc_y: tuple = ((1, 0.0), (1, 0.0)), bc_z: tuple = ((1, 0.0), (1, 0.0))) -> tuple:
+    def _get_spline_points(
+        self,
+        dy: float,
+        dz: float,
+        init_pos: npt.NDArray[np.float32],
+        radius: float = 20,
+        disp_x: Optional[float] = None,
+        speed: Optional[float] = None,
+        bc_y: tuple = ((1, 0.0), (1, 0.0)),
+        bc_z: tuple = ((1, 0.0), (1, 0.0)),
+    ) -> tuple:
         """
         Function for the generation of a 3D spline curve. Starting from init_point the function compute a 3D spline
         with a displacement dy in y-direction and dz in z-direction.
@@ -609,7 +737,11 @@ class Waveguide(LaserPath):
         cs_y = CubicSpline((0.0, xd), (0.0, yd), bc_type=bc_y)
         cs_z = CubicSpline((0.0, xd), (0.0, zd), bc_type=bc_z)
 
-        return xcoord + init_pos[0], cs_y(xcoord) + init_pos[1], cs_z(xcoord) + init_pos[2]
+        return (
+            xcoord + init_pos[0],
+            cs_y(xcoord) + init_pos[1],
+            cs_z(xcoord) + init_pos[2],
+        )
 
 
 def coupler(param: Union[dict, dotdict]):
@@ -617,17 +749,23 @@ def coupler(param: Union[dict, dotdict]):
 
     mode1 = Waveguide(**p)
     mode1.start()
-    mode1.linear([(mode1.samplesize[0] - mode1.dx_bend) / 2, mode1.lasty, mode1.lastz], mode='ABS')
+    mode1.linear(
+        [(mode1.samplesize[0] - mode1.dx_bend) / 2, mode1.lasty, mode1.lastz],
+        mode="ABS",
+    )
     mode1.sin_acc(mode1.dy_bend)
-    mode1.linear([mode1.x_end, mode1.lasty, mode1.lastz], mode='ABS')
+    mode1.linear([mode1.x_end, mode1.lasty, mode1.lastz], mode="ABS")
     mode1.end()
 
     p.y_init += p.pitch
     mode2 = Waveguide(**p)
     mode2.start()
-    mode2.linear([(mode2.samplesize[0] - mode2.dx_bend) / 2, mode2.lasty, mode2.lastz], mode='ABS')
+    mode2.linear(
+        [(mode2.samplesize[0] - mode2.dx_bend) / 2, mode2.lasty, mode2.lastz],
+        mode="ABS",
+    )
     mode2.sin_acc(-mode2.dy_bend)
-    mode2.linear([mode2.x_end, mode2.lasty, mode2.lastz], mode='ABS')
+    mode2.linear([mode2.x_end, mode2.lasty, mode2.lastz], mode="ABS")
     mode2.end()
     return [mode1, mode2]
 
@@ -638,12 +776,12 @@ def main():
 
     # Data
     PARAMETERS_WG = dotdict(
-            scan=6,
-            speed=20,
-            radius=15,
-            pitch=0.080,
-            int_dist=0.007,
-            lsafe=3,
+        scan=6,
+        speed=20,
+        radius=15,
+        pitch=0.080,
+        int_dist=0.007,
+        lsafe=3,
     )
 
     increment = [PARAMETERS_WG.lsafe, 0, 0]
@@ -654,13 +792,9 @@ def main():
         PARAMETERS_WG.y_init = -PARAMETERS_WG.pitch / 2 + index * PARAMETERS_WG.pitch
 
         wg = Waveguide(**PARAMETERS_WG)
-        wg.start() \
-            .linear(increment) \
-            .sin_mzi((-1) ** index * wg.dy_bend) \
-            .spline_bridge((-1) ** index * 0.08, (-1) ** index * 0.015) \
-            .sin_mzi((-1) ** (index + 1) * wg.dy_bend) \
-            .sin_mzi((-1) ** (index + 1) * wg.dy_bend) \
-            .linear(increment)
+        wg.start().linear(increment).sin_mzi((-1) ** index * wg.dy_bend).spline_bridge(
+            (-1) ** index * 0.08, (-1) ** index * 0.015
+        ).sin_mzi((-1) ** (index + 1) * wg.dy_bend).sin_mzi((-1) ** (index + 1) * wg.dy_bend).linear(increment)
         wg.end()
         mzi.append(wg)
 
@@ -669,12 +803,12 @@ def main():
     fig.clf()
     ax = Axes3D(fig, auto_add_to_figure=False)
     fig.add_axes(ax)
-    ax.set_xlabel('X [mm]')
-    ax.set_ylabel('Y [mm]')
-    ax.set_zlabel('Z [mm]')
+    ax.set_xlabel("X [mm]")
+    ax.set_ylabel("Y [mm]")
+    ax.set_zlabel("Z [mm]")
     for wg in mzi:
-        ax.plot(wg.x[:-1], wg.y[:-1], wg.z[:-1], '-k', linewidth=2.5)
-        ax.plot(wg.x[-2:], wg.y[-2:], wg.z[-2:], ':b', linewidth=1.0)
+        ax.plot(wg.x[:-1], wg.y[:-1], wg.z[:-1], "-k", linewidth=2.5)
+        ax.plot(wg.x[-2:], wg.y[-2:], wg.z[-2:], ":b", linewidth=1.0)
     ax.set_box_aspect(aspect=(3, 1, 0.5))
     # plt.show()
 
@@ -682,5 +816,5 @@ def main():
     print("Laser path length {:.3f} mm".format(wg.length))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -15,8 +15,11 @@ def grouped(iterable, n):
 pairwise = partial(grouped, n=2)
 
 
-def swap(array: List[npt.NDArray[np.float32]], swap_pos: List[Tuple[int, int]], zero_index: bool = False) -> List[
-    npt.NDArray[np.float32]]:
+def swap(
+    array: List[npt.NDArray[np.float32]],
+    swap_pos: List[Tuple[int, int]],
+    zero_index: bool = False,
+) -> List[npt.NDArray[np.float32]]:
     # in case of a single swap, swap_pos can be (pos1, pos2).
     # # Encapsulate the tuple in a list to have compatibility with general code
     # if not isinstance(swap_pos, list):
@@ -44,6 +47,7 @@ def listcast(x):
 
 class dotdict(Dict[Any, Any]):
     """dot.notation access to dictionary attributes"""
+
     __getattr__ = dict.get
     __setattr__ = dict.__setitem__
     __delattr__ = dict.__delitem__
@@ -61,7 +65,7 @@ def flatten(items, seqtypes: tuple = (list, tuple)):
     try:
         for i, x in enumerate(items):
             while isinstance(x, seqtypes):
-                items[i:i + 1] = x
+                items[i : i + 1] = x
                 x = items[i]
     except IndexError:
         pass
