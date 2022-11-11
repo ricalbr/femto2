@@ -10,9 +10,9 @@
 #     'LaserPath',
 #     'Waveguide',
 #     'coupler',
-#     '_Marker',
 #     'Marker',
-#     '_RasterImage',
+#     'Marker',
+#     'RasterImage',
 #     'RasterImage',
 #     'Trench',
 #     'TrenchColumn',
@@ -27,8 +27,8 @@
 #     TrenchParameters, GcodeParameters
 # from .LaserPath import LaserPath
 # from .Waveguide import Waveguide, Waveguide, coupler
-# from .Marker import _Marker, Marker
-# from .RasterImage import _RasterImage, RasterImage
+# from .Marker import Marker, Marker
+# from .RasterImage import RasterImage, RasterImage
 # from .Trench import Trench, TrenchColumn
 # from .PGMCompiler import PGMCompiler, PGMTrench
 # from .Cell import Cell, Device

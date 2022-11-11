@@ -1,111 +1,31 @@
 from dataclasses import dataclass
 from typing import List
 
-from dacite import from_dict
-
 try:
     from typing import Self
 except ImportError:
     from typing_extensions import Self
 import numpy as np
 
-from src.femto.Parameters import MarkerParameters
-from src.femto.LaserPath import LaserPath
-from src.femto.helpers import sign
+from femto.LaserPath import LaserPath
+from femto.helpers import sign
 
 
-@dataclass(kw_only=True)
-class _Marker(LaserPath, MarkerParameters):
+@dataclass
+class Marker(LaserPath):
     """
     Class representing an ablation marker.
     """
 
+    depth: float = 0.0
+    lx: float = 1.0
+    ly: float = 0.060
+
     def __post_init__(self):
         super().__post_init__()
 
-    def start(self, init_pos: List[float] = None, speedpos: float = None) -> Self:
-        """
-        Starts a laserpath in the initial position given as input.
-        The coordinates of the initial position are the first added to the matrix that describes the waveguide.
-
-        :param init_pos: Ordered list of coordinate that specifies the waveguide starting point [mm].
-            init_pos[0] -> X
-            init_pos[1] -> Y
-            init_pos[2] -> Z
-        :type init_pos: List[float]
-        :param speedpos: Translation speed [mm/s].
-        :type speedpos: float
-        :return: Self
-        :rtype: Waveguide
-        """
-
-        if init_pos is None:
-            init_pos = self.init_point
-        elif len(init_pos) == 2:
-            init_pos.append(self.depth)
-        elif len(init_pos) == 3:
-            init_pos[2] = self.depth
-        else:
-            raise ValueError('Given invalid position.')
-        if self._x.size != 0:
-            raise ValueError('Coordinate matrix is not empty. Cannot start a new waveguide in this point.')
-        if speedpos is None:
-            speedpos = self.speed_pos
-
-        x0, y0, z0 = init_pos
-        f0 = np.asarray(speedpos, dtype=np.float32)
-        s0 = np.asarray(0.0, dtype=np.float32)
-        s1 = np.asarray(1.0, dtype=np.float32)
-        self.add_path(x0, y0, z0, f0, s0)
-        self.add_path(x0, y0, z0, f0, s1)
-        return self
-
-    def end(self):
-        """
-        Ends a waveguide. The function automatically return to the initial point of the waveguide with a translation
-        speed specified by the user.
-
-        :return: Self
-        :rtype: Waveguide
-        """
-        x = np.array([self._x[-1]]).astype(np.float32)
-        y = np.array([self._y[-1]]).astype(np.float32)
-        z = np.array([self._z[-1]]).astype(np.float32)
-        f = np.array([self.speed_closed]).astype(np.float32)
-        s = np.array([0]).astype(np.float32)
-        self.add_path(x, y, z, f, s)
-
-    def linear(self, increment: list, mode: str = 'INC', shutter: int = 1, speed: float = None) -> Self:
-        """
-        Adds a linear increment to the last point of the current waveguide.
-
-        :param increment: Ordered list of coordinate that specifies the increment if mode is INC or new position if
-        mode is ABS.
-            increment[0] -> X-coord [mm]
-            increment[1] -> Y-coord [mm]
-            increment[2] -> Z-coord [mm]
-        :type increment: List[float, float, float]
-        :param mode: Select incremental or absolute mode. The default is 'INC'.
-        :type mode: str
-        :param shutter: State of the shutter [0: 'OFF', 1: 'ON']. The default is 1.
-        :type shutter: int
-        :param speed: Transition speed [mm/s]. The default is self.param.speed.
-        :type speed: float
-        :return: Self
-        :rtype: Waveguide
-
-        :raise ValueError: Mode is neither INC nor ABS.
-        """
-        if mode.upper() not in ['ABS', 'INC']:
-            raise ValueError(f'Mode should be either ABS or INC. {mode.upper()} was given.')
-        x_inc, y_inc, z_inc = increment
-        f = self.speed if speed is None else speed
-        if mode.upper() == 'ABS':
-            self.add_path(x_inc, y_inc, z_inc, np.asarray(f), np.asarray(shutter))
-        else:
-            self.add_path(self._x[-1] + x_inc, self._y[-1] + y_inc, self._z[-1] + z_inc, np.asarray(f),
-                          np.asarray(shutter))
-        return self
+        if self.z_init is None:
+            self.z_init = self.depth
 
     def cross(self, position: List[float], lx: float = 1, ly: float = 0.05):
         """
@@ -128,7 +48,7 @@ class _Marker(LaserPath, MarkerParameters):
 
         # start_pos = np.add(position, [-lx / 2, 0, 0])
         xi, yi, zi = position
-        self.start([xi - lx / 2, yi, zi], speedpos=5.0)
+        self.start([xi - lx / 2, yi, zi], speed_pos=5.0)
         self.linear([xi + lx / 2, yi, zi], mode='ABS')
         self.linear([xi + lx / 2, yi, zi], mode='ABS', shutter=0)
         self.linear([xi, yi - ly / 2, zi], mode='ABS', shutter=0)
@@ -185,7 +105,7 @@ class _Marker(LaserPath, MarkerParameters):
             num_passes = int(np.abs(init_pos[1] - final_pos[1]) / delta)
             delta = np.sign(final_pos[1] - init_pos[1]) * delta
 
-            self.start(init_pos, speedpos=speedpos)
+            self.start(init_pos, speed_pos=speedpos)
             for _ in range(num_passes):
                 self.linear([next(s) * width, 0, 0], mode='INC')
                 self.linear([0, delta, 0], mode='INC')
@@ -196,7 +116,7 @@ class _Marker(LaserPath, MarkerParameters):
             num_passes = int(np.abs(init_pos[0] - final_pos[0]) / delta)
             delta = np.sign(final_pos[0] - init_pos[0]) * delta
 
-            self.start(init_pos, speedpos=speedpos)
+            self.start(init_pos, speed_pos=speedpos)
             for _ in range(num_passes):
                 self.linear([0, next(s) * width, 0], mode='INC')
                 self.linear([delta, 0, 0], mode='INC')
@@ -210,7 +130,7 @@ class _Marker(LaserPath, MarkerParameters):
         if speedpos is None:
             speedpos = self.speed_closed
 
-        self.start(points.pop(0), speedpos=speedpos)
+        self.start(points.pop(0), speed_pos=speedpos)
         for p in points:
             if p[0] is None:
                 p[0] = self.lastx
@@ -233,12 +153,9 @@ class _Marker(LaserPath, MarkerParameters):
         self.end()
 
 
-def Marker(param):
-    return from_dict(data_class=_Marker, data=param)
-
-
-def _example():
-    from src.femto.helpers import dotdict
+def main():
+    from femto.helpers import dotdict
+    from femto.PGMCompiler import PGMCompiler
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
 
@@ -252,17 +169,16 @@ def _example():
 
     PARAMETERS_GC = dotdict(
             filename='testMarker.pgm',
-            lab='CAPABLE',
+            laser='PHAROS',
             samplesize=(25, 25),
             rotation_angle=0.0,
     )
 
-    c = Marker(PARAMETERS_MK)
+    c = Marker(**PARAMETERS_MK)
     c.cross([2.5, 1], 5, 2)
     print(c.points)
 
-    from src.femto import PGMCompiler
-    with PGMCompiler(PARAMETERS_GC) as gc:
+    with PGMCompiler(**PARAMETERS_GC) as gc:
         gc.write(c.points)
 
     # Plot
@@ -279,4 +195,4 @@ def _example():
 
 
 if __name__ == '__main__':
-    _example()
+    main()

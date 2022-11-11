@@ -1,32 +1,176 @@
 import os
+import pickle
 from collections import deque
 from contextlib import contextmanager
 from copy import deepcopy
-from itertools import zip_longest
+from dataclasses import dataclass
+from itertools import product, zip_longest
+from math import radians
 from operator import add
 from pathlib import Path
-from typing import List
+from typing import List, Tuple
 
+import matplotlib.pyplot as plt
 import numpy as np
+from scipy.interpolate import interp2d
 
-from src.femto.helpers import dotdict, listcast
-from src.femto.Parameters import GcodeParameters
-from src.femto.Trench import Trench, TrenchColumn
+from femto.helpers import dotdict, listcast
+from femto.Trench import Trench, TrenchColumn
 
 
-class PGMCompiler(GcodeParameters):
+@dataclass
+class PGMCompiler:
     """
     Class representing a PGM Compiler.
     """
 
-    def __init__(self, param: dict):
-        super().__init__(**param)
+    filename: str = None
+    export_dir: str = ''
+    samplesize: Tuple[float, float] = (None, None)
+    laser: str = 'PHAROS'
+    home: bool = False
+    new_origin: Tuple[float] = (0.0, 0.0)
+    warp_flag: bool = False
+    n_glass: float = 1.50
+    n_environment: float = 1.33
+    rotation_angle: float = 0.0
+    aerotech_angle: float = None
+    long_pause: float = 0.5
+    short_pause: float = 0.05
+    output_digits: int = 6
+    speed_pos: float = 5.0
+    flip_x: bool = False
+    flip_y: bool = False
 
-        self._instructions = deque()
-        self._total_dwell_time = 0.0
-        self._shutter_on = False
-        self._mode_abs = True
-        self._loaded_files = []
+    _instructions = deque()
+    _total_dwell_time: float = 0.0
+    _shutter_on: bool = False
+    _mode_abs: bool = True
+
+    def __post_init__(self):
+        if self.filename is None:
+            raise ValueError('Filename is None, set GcodeParameters.filename.')
+        self.CWD = os.path.dirname(os.path.abspath(__file__))
+        self._loaded_files: list = []
+
+        self.fwarp = self.antiwarp_management(self.warp_flag)
+
+        if self.rotation_angle != 0:
+            print(' BEWARE, ANGLE MUST BE IN DEGREE! '.center(39, "*"))
+            print(f' Rotation angle is {self.rotation_angle % 360:.3f} deg. '.center(39, "*"))
+        self.rotation_angle = radians(self.rotation_angle % 360)
+
+        if self.aerotech_angle:
+            print(' BEWARE, G84 COMMAND WILL BE USED!!! '.center(39, "*"))
+            print(' ANGLE MUST BE IN DEGREE! '.center(39, "*"))
+            print(f' Rotation angle is {self.aerotech_angle % 360:.3f} deg. '.center(39, "*"))
+            print()
+            self.aerotech_angle = self.aerotech_angle % 360
+
+    @property
+    def xsample(self) -> float:
+        return self.samplesize[0]
+
+    @property
+    def ysample(self) -> float:
+        return self.samplesize[1]
+
+    @property
+    def neff(self) -> float:
+        return self.n_glass / self.n_environment
+
+    @property
+    def tshutter(self) -> float:
+        """
+        Function that set the shuttering time given the fabrication laboratory.
+
+        :return: shuttering time
+        :rtype: float
+        """
+        if self.laser.lower() not in ['pharos', 'carbide', 'uwe']:
+            raise ValueError('Laser can be only PHAROS, CARBIDE or UWE. Given {self.laser.upper()}.')
+        if self.laser.lower() == 'pharos':
+            return 0.000
+        else:
+            return 0.005
+
+    def antiwarp_management(self, opt: bool, num: int = 16) -> interp2d:
+        """
+        It fetches an antiwarp function in the current working direcoty. If it doesn't exist, it lets you create a new
+        one. The number of sampling points can be specified.
+
+        :param opt: if True apply antiwarp.
+        :type opt: bool
+        :param num: number of sampling points
+        :type num: int
+        :return: warp function, `f(x, y)`
+        :rtype: scipy.interpolate.interp2d
+        """
+
+        if opt:
+            if any(x is None for x in self.samplesize):
+                raise ValueError(f'Wrong sample size dimensions. Given ({self.samplesize[0]}, {self.samplesize[1]}).')
+            function_pickle = os.path.join(self.CWD, "fwarp.pkl")
+            if os.path.exists(function_pickle):
+                fwarp = pickle.load(open(function_pickle, "rb"))
+            else:
+                fwarp = self.antiwarp_generation(self.samplesize, num)
+                pickle.dump(fwarp, open(function_pickle, "wb"))
+        else:
+            def fwarp(x, y):
+                return 0
+        return fwarp
+
+    @staticmethod
+    def antiwarp_generation(samplesize: Tuple[float, float], num_tot: int, *, margin: float = 2) -> interp2d:
+        """
+        Helper for the generation of antiwarp function.
+        The minimum number of data points required is (k+1)**2, with k=1 for linear, k=3 for cubic and k=5 for quintic
+        interpolation.
+
+        :param samplesize: glass substrate dimensions, (x-dim, y-dim)
+        :type samplesize: Tuple(float, float)
+        :param num_tot: number of sampling points
+        :type num_tot: int
+        :param margin: margin [mm] from the borders of the glass samples
+        :type margin: float
+        :return: warp function, `f(x, y)`
+        :rtype: scipy.interpolate.interp2d
+        """
+
+        if num_tot < 4 ** 2:
+            raise ValueError('I need more values to compute the interpolation.')
+
+        num_side = int(np.ceil(np.sqrt(num_tot)))
+        xpos = np.linspace(margin, samplesize[0] - margin, num_side)
+        ypos = np.linspace(margin, samplesize[1] - margin, num_side)
+        xlist = []
+        ylist = []
+        zlist = []
+
+        print('Focus height in µm (!!!) at:')
+        for pos in list(product(xpos, ypos)):
+            xlist.append(pos[0])
+            ylist.append(pos[1])
+            zlist.append(float(input('X={:.1f} Y={:.1f}: \t'.format(pos[0], pos[1]))) / 1000)
+            if zlist[-1] == '':
+                raise ValueError('You have missed the last value.')
+
+        # surface interpolation
+        func_antiwarp = interp2d(xlist, ylist, zlist, kind='cubic')
+
+        # plot the surface
+        xprobe = np.linspace(-3, samplesize[0] + 3)
+        yprobe = np.linspace(-3, samplesize[1] + 3)
+        zprobe = func_antiwarp(xprobe, yprobe)
+        ax = plt.axes(projection='3d')
+        ax.contour3D(xprobe, yprobe, zprobe, 200, cmap='viridis')
+        ax.set_xlabel('X [mm]')
+        ax.set_ylabel('Y [mm]')
+        ax.set_zlabel('Z [mm]')
+        plt.show()
+
+        return func_antiwarp
 
     @property
     def tdwell(self) -> float:
@@ -653,7 +797,7 @@ class PGMTrench(PGMCompiler):
             # Export FARCALL for each trench column
             col_param = dotdict(self._param.copy())
             col_param.filename = os.path.join(os.getcwd(), self.export_dir, dirname, f'FARCALL{col_idx + 1:03}.pgm')
-            with PGMCompiler(col_param) as G:
+            with PGMCompiler(**col_param) as G:
                 G.dvar(['ZCURR'])
 
                 for nbox in range(col.nboxz):
@@ -710,7 +854,7 @@ class PGMTrench(PGMCompiler):
 
             t_list = [os.path.join(col.base_folder, f'FARCALL{idx + 1:03}.pgm') for idx, col in
                       enumerate(self.trench_columns)]
-            with PGMCompiler(main_param) as G:
+            with PGMCompiler(**main_param) as G:
                 G.chiamatutto(t_list)
 
     def _export_path(self, filename: str, trench: Trench, speed: float = 4):
@@ -774,7 +918,8 @@ class PGMTrench(PGMCompiler):
 
 
 def _example():
-    from src.femto import Waveguide, Cell
+    from femto.Waveguide import Waveguide
+    from femto.Cell import Cell
 
     # Data
     PARAMETERS_WG = dotdict(
@@ -790,14 +935,14 @@ def _example():
 
     PARAMETERS_GC = dotdict(
             filename='testPGMcompiler.pgm',
-            lab='CAPABLE',
+            laser='PHAROS',
             samplesize=PARAMETERS_WG.samplesize,
             rotation_angle=2.0,
             flip_x=True,
     )
 
     # Calculations
-    coup = [Waveguide(PARAMETERS_WG) for _ in range(2)]
+    coup = [Waveguide(**PARAMETERS_WG) for _ in range(2)]
     for i, wg in enumerate(coup):
         wg.start([-2, -wg.pitch / 2 + i * wg.pitch, 0.035]) \
             .linear(increment) \
@@ -813,7 +958,7 @@ def _example():
     c.plot2d()
 
     # Compilation
-    with PGMCompiler(PARAMETERS_GC) as G:
+    with PGMCompiler(**PARAMETERS_GC) as G:
         G.set_home([0, 0, 0])
         with G.repeat(PARAMETERS_WG['scan']):
             for i, wg in enumerate(coup):

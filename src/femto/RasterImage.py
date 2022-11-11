@@ -1,26 +1,34 @@
 from dataclasses import dataclass
+from typing import Tuple
 
 import numpy as np
-from dacite import from_dict
 from PIL import Image
 
 from src.femto.helpers import dotdict
 from src.femto.LaserPath import LaserPath
-from src.femto.Parameters import RasterImageParameters
 from src.femto.utils.GCODE_plot_colored import GCODE_plot_colored
 
 
-@dataclass(kw_only=True)
-class _RasterImage(LaserPath, RasterImageParameters):
+@dataclass
+class RasterImage(LaserPath):
     """
     Class representing an X raster laser path in the Xy plane obtained from a balck and white image.
     """
+    px_to_mm: float = 0.01  # pixel to millimeter scale when converting image to laser path
+    img_size: Tuple[int, int] = (None, None)
 
     def __post_init__(self):
         super().__post_init__()
 
     def __repr__(self):
         return "{cname}@{id:x}".format(cname=self.__class__.__name__, id=id(self) & 0xFFFFFF)
+
+    @property
+    def path_size(self):
+        if not all(self.img_size):  # check if img_size is None
+            raise ValueError("No image size given, unable to compute laserpath dimension")
+        else:
+            return tuple(self.px_to_mm * elem for elem in self.img_size)
 
     # Methods
     def convert_image_to_path(self, img, display_flag=False):
@@ -85,10 +93,6 @@ class _RasterImage(LaserPath, RasterImageParameters):
         return GCODE_array
 
 
-def RasterImage(param):
-    return from_dict(data_class=_RasterImage, data=param)
-
-
 def _example():
     from PIL import ImageDraw, ImageFont
 
@@ -103,7 +107,7 @@ def _example():
             speed=1,
     )
 
-    r_img = RasterImage(R_IMG_PARAMETERS)
+    r_img = RasterImage(**R_IMG_PARAMETERS)
     GCODE_array = r_img.convert_image_to_path(img)
 
     fig_colored = GCODE_plot_colored(GCODE_array)

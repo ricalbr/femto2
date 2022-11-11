@@ -188,6 +188,111 @@ class LaserPath:
         times = dists / f[1:]
         return float(sum(times))
 
+    # Methods
+    def start(self, init_pos: Optional[List[float]] = None, speed_pos: Optional[float] = None) -> C:
+        """
+        Starts a waveguide in the initial position given as input.
+        The coordinates of the initial position are the first added to the matrix that describes the waveguide.
+
+        :param init_pos: Ordered list of coordinate that specifies the waveguide starting point [mm].
+            init_pos[0] -> X
+            init_pos[1] -> Y
+            init_pos[2] -> Z
+        :type init_pos: List[float]
+        :param speed_pos: Translation speed [mm/s].
+        :type speed_pos: float
+        :return: Self
+        :rtype: LaserPath
+        """
+        if self._x.size != 0:
+            raise ValueError('Coordinate matrix is not empty. Cannot start a new waveguide in this point.')
+
+        if init_pos is None:
+            xi, yi, zi = self.init_point
+        else:
+            if np.size(init_pos) != 3:
+                raise ValueError(f'Given initial position is not valid. 3 values required. {np.size(init_pos)} given.')
+            xi, yi, zi = init_pos
+
+        if speed_pos is None:
+            speed_pos = self.speed_pos
+
+        x0 = np.array([xi, xi])
+        y0 = np.array([yi, yi])
+        z0 = np.array([zi, zi])
+        f0 = np.array([speed_pos, speed_pos])
+        s0 = np.array([0.0, 1.0])
+
+        self.add_path(x0, y0, z0, f0, s0)
+        return self
+
+    def end(self) -> None:
+        """
+        Ends a waveguide. The function automatically return to the initial point of the waveguide with a translation
+        speed specified by the user.
+
+        :return: None
+        :rtype: None
+        """
+
+        if not self._x.size:
+            raise IndexError('Try to access an empty array. Use the start() method before the end() method.')
+
+        # append the transformed path and add the coordinates to return to the initial point
+        x = np.array([self._x[-1], self._x[0]])
+        y = np.array([self._y[-1], self._y[0]])
+        z = np.array([self._z[-1], self._z[0]])
+        f = np.array([self._f[-1], self.speed_closed])
+        s = np.array([0, 0])
+        self.add_path(x, y, z, f, s)
+
+    def linear(self, increment: list, mode: str = 'INC', shutter: int = 1, speed: Optional[float] = None) -> C:
+        """
+        Adds a linear increment to the last point of the current waveguide.
+
+        :param increment: Ordered list of coordinate that specifies the increment if mode is INC or new position if
+        mode is ABS.
+            increment[0] -> X-coord [mm]
+            increment[1] -> Y-coord [mm]
+            increment[2] -> Z-coord [mm]
+        :type increment: List[float, float, float]
+        :param mode: Select incremental or absolute mode. The default is 'INC'.
+        :type mode: str
+        :param shutter: State of the shutter [0: 'OFF', 1: 'ON']. The default is 1.
+        :type shutter: int
+        :param speed: Transition speed [mm/s]. The default is self.param.speed.
+        :type speed: float
+        :return: Self
+        :rtype: LaserPath
+
+        :raise ValueError: Mode is neither INC nor ABS.
+        """
+        if mode.lower() not in ['abs', 'inc']:
+            raise ValueError(f'Mode should be either ABS or INC. {mode.upper()} was given.')
+
+        if len(increment) != 3:
+            raise ValueError(f'Increment should be a list of three values. Increment has {len(increment)} entries.')
+
+        if not (speed or self.speed):
+            raise ValueError('Speed is None. Set Waveguide\'s "speed" attribute or give a speed as input.')
+
+        if mode.lower() == 'abs':
+            # If increment is None use the last value on the coordinate-array
+            x_inc = np.array([increment[0] or self._x[-1]])
+            y_inc = np.array([increment[1] or self._y[-1]])
+            z_inc = np.array([increment[2] or self._z[-1]])
+        else:
+            x, y, z = map(lambda k: k or 0, increment)
+            x_inc = np.array([self._x[-1] + x])
+            y_inc = np.array([self._y[-1] + y])
+            z_inc = np.array([self._z[-1] + z])
+
+        f_inc = np.array([speed or self.speed])
+        s_inc = np.array([shutter])
+
+        self.add_path(x_inc, y_inc, z_inc, f_inc, s_inc)
+        return self
+
     def subs_num(self, l_curve: float = 0, speed: Optional[float] = None) -> int:
         """
         Utility function that, given the length of a segment and the fabrication speed, computes the number of points
@@ -256,7 +361,7 @@ class LaserPath:
         return unique_filter([self._x, self._y, self._z, self._f, self._s])
 
 
-if __name__ == '__main__':
+def main():
     from femto.helpers import dotdict
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
@@ -292,3 +397,7 @@ if __name__ == '__main__':
 
     print("Expected writing time {:.3f} seconds".format(lpath.fabrication_time))
     print("Laser path length {:.6f} mm".format(lpath.length))
+
+
+if __name__ == '__main__':
+    main()

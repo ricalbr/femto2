@@ -1,13 +1,16 @@
+import os
 from copy import deepcopy
+from dataclasses import dataclass
+from math import ceil
 from typing import Generator, Iterator, List
 
 import numpy as np
 import shapely.geometry
+import shapely.geometry
 from descartes import PolygonPatch
-from shapely.geometry import LineString, Polygon, polygon
+from shapely.geometry import box, LineString, Polygon, polygon
 
 from src.femto.helpers import dotdict, flatten, listcast
-from src.femto.Parameters import TrenchParameters
 from src.femto.Waveguide import Waveguide
 
 
@@ -133,14 +136,67 @@ class Trench:
         return new_polygon if new_polygon.is_valid else None
 
 
-class TrenchColumn(TrenchParameters):
+@dataclass
+class TrenchColumn:
     """
     Class representing a column of trenches.
     """
 
-    def __init__(self, param: dict):
-        super().__init__(**param)
-        self._trench_list = []
+    x_center: float = None
+    y_min: float = None
+    y_max: float = None
+    bridge: float = 0.026
+    length: float = 1
+    nboxz: int = 4
+    z_off: float = 0.020
+    h_box: float = 0.075
+    base_folder: str = ''
+    deltaz: float = 0.0015
+    delta_floor: float = 0.001
+    beam_waist: float = 0.004
+    round_corner: float = 0.005
+    u: list = None
+    speed: float = 4
+    speed_closed: float = 5
+    speedpos: float = 0.1
+    CWD: str = None
+
+    def __post_init__(self):
+        # FARCALL directories
+        self.CWD = os.path.dirname(os.path.abspath(__file__))
+        self._trench_list: list = []
+
+    @property
+    def adj_bridge(self) -> float:
+        # adjust bridge size considering the size of the laser focus [mm]
+        return self.bridge / 2 + self.beam_waist + self.round_corner
+
+    @property
+    def n_repeat(self) -> int:
+        return int(ceil((self.h_box + self.z_off) / self.deltaz))
+
+    @property
+    def rect(self) -> shapely.geometry.box:
+        """
+        Getter for the rectangular box for the whole trench column. If the ``x_c``, ``y_min`` and ``y_max`` are set we
+        create a rectangular polygon that will be used to create the single trench blocks.
+
+        ::
+            +-------+  -> y_max
+            |       |
+            |       |
+            |       |
+            +-------+  -> y_min
+                x_c
+
+        :return: Rectangular box centered in ``x_c`` and y-borders at ``y_min`` and ``y_max``.
+        :rtype: shapely.geometry.box
+        """
+        if self.x_center is None or self.y_min is None or self.y_max is None:
+            return None
+        else:
+            return box(self.x_center - self.length / 2, self.y_min,
+                       self.x_center + self.length / 2, self.y_max)
 
     def __iter__(self) -> Iterator[Trench]:
         """
@@ -247,14 +303,14 @@ def _example():
     )
 
     # Calculations
-    coup = [Waveguide(PARAMETERS_WG) for _ in range(20)]
+    coup = [Waveguide(**PARAMETERS_WG) for _ in range(20)]
     for i, wg in enumerate(coup):
         wg.start([-2, i * wg.pitch, 0.035]).sin_acc((-1) ** i * wg.dy_bend)
         x_mid = wg.x[-1]
         wg.sin_acc((-1) ** i * wg.dy_bend).end()
 
     PARAMETERS_TC.x_center = x_mid
-    trench_col = TrenchColumn(PARAMETERS_TC)
+    trench_col = TrenchColumn(**PARAMETERS_TC)
     trench_col.get_trench(coup)
 
     fig, ax = plt.subplots()

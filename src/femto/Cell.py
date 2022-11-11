@@ -4,16 +4,15 @@ import time
 import numpy as np
 import plotly.graph_objects as go
 
-from src.femto.helpers import dotdict, listcast, nest_level
-from src.femto.Marker import _Marker
-from src.femto.PGMCompiler import PGMCompiler, PGMTrench
-from src.femto.Trench import Trench, TrenchColumn
-from src.femto.Waveguide import Waveguide
+from femto.helpers import dotdict, listcast, nest_level
+from femto.Marker import Marker
+from femto.PGMCompiler import PGMCompiler, PGMTrench
+from femto.Trench import Trench, TrenchColumn
+from femto.Waveguide import Waveguide
 
 
 class Device(PGMCompiler):
     def __init__(self, param):
-        super(Device, self).__init__(param)
         self._param = param
         self.waveguides = []
         self.markers = []
@@ -21,6 +20,7 @@ class Device(PGMCompiler):
         self.trenches = []
         self.cells = []
         self.fig = None
+        super(Device, self).__init__(**param)
 
     def append(self, obj):
         if isinstance(obj, Cell):
@@ -28,7 +28,7 @@ class Device(PGMCompiler):
             self.markers.extend(obj.markers)
             self.waveguides.extend(obj.waveguides)
             self.trenches.extend(obj.trenches)
-        elif isinstance(obj, _Marker):
+        elif isinstance(obj, Marker):
             self.markers.append(obj)
         elif isinstance(obj, Waveguide) or (isinstance(obj, list) and all(isinstance(x, Waveguide) for x in obj)):
             self.waveguides.append(obj)
@@ -318,7 +318,7 @@ class Cell(Device):
         self.filename = self.filename.split('.')[0]
         _wg_param.filename = self.filename.split('.')[0] + '_WG.pgm'
 
-        with PGMCompiler(_wg_param) as G:
+        with PGMCompiler(**_wg_param) as G:
             for bunch in self.waveguides:
                 with G.repeat(listcast(bunch)[0].scan):
                     for wg in listcast(bunch):
@@ -347,7 +347,7 @@ class Cell(Device):
         _mk_param = dotdict(self._param.copy())
         _mk_param.filename = self.filename.split('.')[0] + '_MK.pgm'
 
-        with PGMCompiler(_mk_param) as G:
+        with PGMCompiler(**_mk_param) as G:
             for idx, bunch in enumerate(self.markers):
                 with G.repeat(listcast(bunch)[0].scan):
                     for mk in listcast(bunch):
@@ -385,10 +385,10 @@ def _example():
 
     PARAMETERS_GC = dotdict(
             filename='testMarker.pgm',
-            lab='CAPABLE',
+            laser='PHAROS',
             new_origin=(0.5, 0.5),
             samplesize=(25, 1),
-            angle=0.0,
+            rotation_angle=0.0,
     )
 
     PARAMETERS_WG = dotdict(
