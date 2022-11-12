@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TypeVar
+from typing import List, Optional, TypeVar, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -41,7 +41,7 @@ class LaserPath:
             raise ValueError(f"Number of scan must be integer. Given {self.scan}.")
 
     @classmethod
-    def from_dict(cls: type[LP], param: dict | Dotdict) -> LP:
+    def from_dict(cls: LP, param: dict | Dotdict) -> LP:
         return cls(**param)
 
     @property

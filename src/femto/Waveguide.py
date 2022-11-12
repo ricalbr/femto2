@@ -65,7 +65,7 @@ class Waveguide(LaserPath):
         return 4 * self.dx_bend + 2 * self.int_length + self.arm_length
 
     @staticmethod
-    def get_sbend_parameter(dy: float | None, radius: float | None) -> Tuple[float, float]:
+    def get_sbend_parameter(dy: Optional[float], radius: Optional[float]) -> Tuple[float, float]:
         """
         Computes the final rotation_angle, and x-displacement for a circular S-bend given the y-displacement dy and
         curvature
