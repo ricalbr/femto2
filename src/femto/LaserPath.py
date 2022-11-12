@@ -1,20 +1,19 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List
 from typing import Optional
 from typing import Tuple
-from typing import Type
 from typing import TypeVar
 from typing import Union
 
 import numpy as np
 import numpy.typing as npt
 
+from femto.helpers import Dotdict
 from femto.helpers import unique_filter
 
 # Create a generic variable that can be 'LaserPath', or any subclass.
-C = TypeVar("C", bound="LaserPath")
+LP = TypeVar("LP", bound="LaserPath")
 
 
 @dataclass
@@ -46,33 +45,33 @@ class LaserPath:
             raise ValueError(f"Number of scan must be integer. Given {self.scan}.")
 
     @classmethod
-    def from_dict(cls: type[C], param: dict | dotdict) -> C:
+    def from_dict(cls: type[LP], param: dict | Dotdict) -> LP:
         return cls(**param)
 
     @property
-    def init_point(self) -> list:
+    def init_point(self: LP) -> list:
         z0 = self.z_init if self.z_init else 0.0
         return [self.x_init, self.y_init, z0]
 
     @property
-    def lvelo(self) -> float:
+    def lvelo(self: LP) -> float:
         # length needed to acquire the writing speed [mm]
         return 3 * (0.5 * self.speed ** 2 / self.acc_max)
 
     @property
-    def dl(self) -> float:
+    def dl(self: LP) -> float:
         # minimum separation between two points [mm]
         return self.speed / self.cmd_rate_max
 
     @property
-    def x_end(self) -> float | None:
+    def x_end(self: LP) -> float | None:
         # end of laser path (outside the sample)
         if self.samplesize[0] is None:
             return None
         return self.samplesize[0] + self.lsafe
 
     @property
-    def points(self) -> npt.NDArray[np.float32]:
+    def points(self: LP) -> npt.NDArray[np.float32]:
         """
         Getter for the coordinates' matrix as a numpy.ndarray matrix. The dataframe is parsed through a unique functions
         that removes all the subsequent identical points in the set.
@@ -83,7 +82,7 @@ class LaserPath:
         return np.array(self._unique_points()).T
 
     @property
-    def x(self) -> npt.NDArray[np.float32]:
+    def x(self: LP) -> npt.NDArray[np.float32]:
         """
         Getter for the x-coordinate vector as a numpy array. The subsequent identical points in the vector are removed.
 
@@ -96,14 +95,14 @@ class LaserPath:
         return np.array([])
 
     @property
-    def lastx(self) -> float | None:
+    def lastx(self: LP) -> float | None:
         arrx = self.x
         if arrx.size:
             return float(arrx[-1])
         return None
 
     @property
-    def y(self) -> npt.NDArray[np.float32]:
+    def y(self: LP) -> npt.NDArray[np.float32]:
         """
         Getter for the y-coordinate vector as a numpy array. The subsequent identical points in the vector are removed.
 
@@ -116,14 +115,14 @@ class LaserPath:
         return np.array([])
 
     @property
-    def lasty(self) -> float | None:
+    def lasty(self: LP) -> float | None:
         arry = self.y
         if arry.size:
             return float(arry[-1])
         return None
 
     @property
-    def z(self) -> npt.NDArray[np.float32]:
+    def z(self: LP) -> npt.NDArray[np.float32]:
         """
         Getter for the z-coordinate vector as a numpy array. The subsequent identical points in the vector are removed.
 
@@ -136,16 +135,16 @@ class LaserPath:
         return np.array([])
 
     @property
-    def lastz(self) -> float | None:
+    def lastz(self: LP) -> float | None:
         arrz = self.z
         if arrz.size:
             return float(arrz[-1])
         return None
 
     @property
-    def lastpt(self) -> npt.NDArray[np.float32]:
+    def lastpt(self: LP) -> npt.NDArray[np.float32]:
         """
-        Getter for the last point of the waveguide.
+        Getter for the last point of the laser path.
 
         :return: Final point [x, y, z]
         :rtype: numpy.ndarray
@@ -155,12 +154,12 @@ class LaserPath:
         return np.array([])
 
     @property
-    def path(self) -> list[npt.NDArray[np.float32]]:
+    def path(self: LP) -> list[npt.NDArray[np.float32]]:
         x, y, _ = self.path3d
         return [x, y]
 
     @property
-    def path3d(self) -> list:
+    def path3d(self: LP) -> list:
         if self._x.size:
             # filter 3D points without F
             x, y, z, s = unique_filter([self._x, self._y, self._z, self._s]).T
@@ -172,12 +171,12 @@ class LaserPath:
         return [np.array([]), np.array([]), np.array([])]
 
     @property
-    def length(self) -> float:
+    def length(self: LP) -> float:
         x, y, z = self.path3d
         return float(np.sum(np.sqrt(np.diff(x) ** 2 + np.diff(y) ** 2 + np.diff(z) ** 2)))
 
     @property
-    def fabrication_time(self) -> float:
+    def fabrication_time(self: LP) -> float:
         """
         Getter for the laserpath fabrication time.
 
@@ -194,12 +193,12 @@ class LaserPath:
         return float(sum(times))
 
     # Methods
-    def start(self, init_pos: list[float] | None = None, speed_pos: float | None = None) -> C:
+    def start(self: LP, init_pos: list[float] | None = None, speed_pos: float | None = None) -> LP:
         """
-        Starts a waveguide in the initial position given as input.
-        The coordinates of the initial position are the first added to the matrix that describes the waveguide.
+        Starts a laser path in the initial position given as input.
+        The coordinates of the initial position are the first added to the matrix that describes the laser path.
 
-        :param init_pos: Ordered list of coordinate that specifies the waveguide starting point [mm].
+        :param init_pos: Ordered list of coordinate that specifies the laser path starting point [mm].
             init_pos[0] -> X
             init_pos[1] -> Y
             init_pos[2] -> Z
@@ -210,7 +209,7 @@ class LaserPath:
         :rtype: LaserPath
         """
         if self._x.size != 0:
-            raise ValueError("Coordinate matrix is not empty. Cannot start a new waveguide in this point.")
+            raise ValueError("Coordinate matrix is not empty. Cannot start a new laser path in this point.")
 
         if init_pos is None:
             xi, yi, zi = self.init_point
@@ -231,9 +230,9 @@ class LaserPath:
         self.add_path(x0, y0, z0, f0, s0)
         return self
 
-    def end(self) -> None:
+    def end(self: LP) -> None:
         """
-        Ends a waveguide. The function automatically return to the initial point of the waveguide with a translation
+        Ends a laser path. The function automatically return to the initial point of the laser path with a translation
         speed specified by the user.
 
         :return: None
@@ -252,14 +251,14 @@ class LaserPath:
         self.add_path(x, y, z, f, s)
 
     def linear(
-        self,
+        self: LP,
         increment: list,
         mode: str = "INC",
         shutter: int = 1,
         speed: float | None = None,
-    ) -> C:
+    ) -> LP:
         """
-        Adds a linear increment to the last point of the current waveguide.
+        Adds a linear increment to the last point of the current laser path.
 
         :param increment: Ordered list of coordinate that specifies the increment if mode is INC or new position if
         mode is ABS.
@@ -284,8 +283,8 @@ class LaserPath:
         if len(increment) != 3:
             raise ValueError(f"Increment should be a list of three values. Increment has {len(increment)} entries.")
 
-        if not (speed or self.speed):
-            raise ValueError('Speed is None. Set Waveguide\'s "speed" attribute or give a speed as input.')
+        if (speed or self.speed) is None:
+            raise ValueError('Speed is None. Set LaserPath\'s "speed" attribute or give a speed as input.')
 
         if mode.lower() == "abs":
             # If increment is None use the last value on the coordinate-array
@@ -304,12 +303,12 @@ class LaserPath:
         self.add_path(x_inc, y_inc, z_inc, f_inc, s_inc)
         return self
 
-    def subs_num(self, l_curve: float = 0, speed: float | None = None) -> int:
+    def subs_num(self: LP, l_curve: float = 0, speed: float | None = None) -> int:
         """
         Utility function that, given the length of a segment and the fabrication speed, computes the number of points
-        required to work at the maximum command rate (attribute of Waveguide obj).
+        required to work at the maximum command rate (attribute of LaserPath obj).
 
-        :param l_curve: Length of the waveguide segment [mm]. The default is 0 mm.
+        :param l_curve: Length of the laser path segment [mm]. The default is 0 mm.
         :type l_curve: float
         :param speed: Fabrication speed [mm/s]. The default is 0 mm/s.
         :type speed: float
@@ -330,7 +329,7 @@ class LaserPath:
         return num
 
     def add_path(
-        self,
+        self: LP,
         x: npt.NDArray[np.float32],
         y: npt.NDArray[np.float32],
         z: npt.NDArray[np.float32],
@@ -358,7 +357,7 @@ class LaserPath:
         self._s = np.append(self._s, s.astype(np.float32))
 
     # Private interface
-    def _unique_points(self):
+    def _unique_points(self: LP) -> npt.NDArray[np.float32]:
         """
         Remove duplicate subsequent points. At least one coordinate have to change between two consecutive lines of the
         (X,Y,Z,F,S) matrix.
@@ -379,12 +378,12 @@ class LaserPath:
 
 
 def main():
-    from femto.helpers import dotdict
+    from femto.helpers import Dotdict
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
 
     # Data
-    PARAMETERS_LP = dotdict(
+    PARAMETERS_LP = Dotdict(
         scan=6,
         speed=20,
         lsafe=3,

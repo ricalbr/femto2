@@ -7,14 +7,14 @@ from femto.LaserPath import LaserPath
 @pytest.fixture
 def param() -> dict:
     p = {
-            'scan': 6,
-            'speed': 20.0,
-            'y_init': 1.5,
-            'z_init': 0.035,
-            'lsafe': 4.3,
-            'speed_closed': 75,
-            'speed_pos': 0.1,
-            'samplesize': (100, 15)
+        "scan": 6,
+        "speed": 20.0,
+        "y_init": 1.5,
+        "z_init": 0.035,
+        "lsafe": 4.3,
+        "speed_closed": 75,
+        "speed_pos": 0.1,
+        "samplesize": (100, 15),
     }
     return p
 
@@ -98,6 +98,11 @@ def test_dl(laser_path) -> None:
 
 def test_x_end(laser_path) -> None:
     assert pytest.approx(laser_path.x_end) == 104.3
+
+
+def test_x_end_none(laser_path) -> None:
+    laser_path.samplesize = (None, None)
+    assert laser_path.x_end is None
 
 
 def test_add_path(laser_path) -> None:

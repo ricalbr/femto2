@@ -1,14 +1,10 @@
 from dataclasses import dataclass
 from typing import List
 
-try:
-    from typing import Self
-except ImportError:
-    from typing_extensions import Self
 import numpy as np
 
-from femto.LaserPath import LaserPath
 from femto.helpers import sign
+from femto.LaserPath import LaserPath
 
 
 @dataclass
@@ -27,7 +23,7 @@ class Marker(LaserPath):
         if self.z_init is None:
             self.z_init = self.depth
 
-    def cross(self, position: List[float], lx: float = 1, ly: float = 0.05):
+    def cross(self, position: List[float], lx: float = 1, ly: float = 0.05) -> None:
         """
         Computes the points of a cross marker of given widht along x- and y-direction.
 
@@ -64,7 +60,7 @@ class Marker(LaserPath):
         lx_short: float = None,
         x_init: float = -2,
         speedpos: float = None,
-    ):
+    ) -> None:
         """
         Computes the points of a ruler marker. The y-coordinates of the ticks are specified by the user as well as
         the length of the ticks in the x-direction.
@@ -106,7 +102,7 @@ class Marker(LaserPath):
         delta: float = 0.001,
         orientation: str = "x",
         speedpos: float = None,
-    ):
+    ) -> None:
 
         if speedpos is None:
             speedpos = self.speed_pos
@@ -144,7 +140,7 @@ class Marker(LaserPath):
         points: List[List[float]] = None,
         shift: float = None,
         speedpos: float = None,
-    ):
+    ) -> None:
         if points is None:
             return
 
@@ -179,14 +175,14 @@ class Marker(LaserPath):
 
 
 def main():
-    from femto.helpers import dotdict
+    from femto.helpers import Dotdict
     from femto.PGMCompiler import PGMCompiler
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
 
-    PARAMETERS_MK = dotdict(scan=1, speed=1, speed_pos=5, speed_closed=5, depth=0.000)
+    PARAMETERS_MK = Dotdict(scan=1, speed=1, speed_pos=5, speed_closed=5, depth=0.000)
 
-    PARAMETERS_GC = dotdict(
+    PARAMETERS_GC = Dotdict(
         filename="testMarker.pgm",
         laser="PHAROS",
         samplesize=(25, 25),
