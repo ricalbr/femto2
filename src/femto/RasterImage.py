@@ -4,9 +4,9 @@ from typing import Tuple
 import numpy as np
 from PIL import Image
 
-from src.femto.helpers import dotdict
-from src.femto.LaserPath import LaserPath
-from src.femto.utils.GCODE_plot_colored import GCODE_plot_colored
+from femto.helpers import Dotdict
+from femto.LaserPath import LaserPath
+from femto.utils.GCODE_plot_colored import GCODE_plot_colored
 
 
 @dataclass
@@ -22,7 +22,7 @@ class RasterImage(LaserPath):
         super().__post_init__()
 
     def __repr__(self):
-        return "{cname}@{id:x}".format(cname=self.__class__.__name__, id=id(self) & 0xFFFFFF)
+        return f"{self.__class__.__name__}@{id(self) & 0xFFFFFF:x}"
 
     @property
     def path_size(self):
@@ -42,7 +42,7 @@ class RasterImage(LaserPath):
 
         self.img_size = img.size  # update of img_size property
 
-        print("Laser path dimension {:.3f} by {:.3f} mm^2".format(self.path_size[0], self.path_size[1]))
+        print(f"Laser path dimension {self.path_size[0]:.3f} by {self.path_size[1]:.3f} mm^2")
         print("----------")
 
         if img.mode != "1":
@@ -150,7 +150,7 @@ def _example():
     d.text((150, 100), "Hello World", font=font, fill=0)
 
     # img.show()
-    R_IMG_PARAMETERS = dotdict(
+    R_IMG_PARAMETERS = Dotdict(
         px_to_mm=0.04,
         speed=1,
     )
@@ -161,8 +161,8 @@ def _example():
     fig_colored = GCODE_plot_colored(GCODE_array)
     fig_colored.show()
 
-    print("Expected writing time {:.3f} seconds".format(r_img.fabrication_time))
-    print("Laser path length {:.3f} mm".format(r_img.length))
+    print(f"Expected writing time {r_img.fabrication_time:.3f} seconds")
+    print(f"Laser path length {r_img.length:.3f} mm")
 
 
 if __name__ == "__main__":

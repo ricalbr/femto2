@@ -2,16 +2,22 @@ import os
 from copy import deepcopy
 from dataclasses import dataclass
 from math import ceil
-from typing import Generator, Iterator, List
+from typing import Generator
+from typing import Iterator
+from typing import List
 
 import numpy as np
 import shapely.geometry
-import shapely.geometry
 from descartes import PolygonPatch
-from shapely.geometry import box, LineString, Polygon, polygon
+from shapely.geometry import box
+from shapely.geometry import LineString
+from shapely.geometry import Polygon
+from shapely.geometry import polygon
 
-from src.femto.helpers import dotdict, flatten, listcast
-from src.femto.Waveguide import Waveguide
+from femto.helpers import Dotdict
+from femto.helpers import flatten
+from femto.helpers import listcast
+from femto.Waveguide import Waveguide
 
 
 class Trench:
@@ -288,7 +294,7 @@ def _example():
     # Data
     x_mid = None
 
-    PARAMETERS_WG = dotdict(
+    PARAMETERS_WG = Dotdict(
         scan=6,
         speed=20,
         radius=15,
@@ -296,7 +302,7 @@ def _example():
         int_dist=0.007,
     )
 
-    PARAMETERS_TC = dotdict(
+    PARAMETERS_TC = Dotdict(
         length=1.0,
         nboxz=4,
         deltaz=0.0015,

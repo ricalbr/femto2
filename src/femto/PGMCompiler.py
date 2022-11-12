@@ -4,18 +4,22 @@ from collections import deque
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import dataclass
-from itertools import product, zip_longest
+from itertools import product
+from itertools import zip_longest
 from math import radians
 from operator import add
 from pathlib import Path
-from typing import List, Tuple
+from typing import List
+from typing import Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.interpolate import interp2d
 
-from femto.helpers import dotdict, listcast
-from femto.Trench import Trench, TrenchColumn
+from femto.helpers import Dotdict
+from femto.helpers import listcast
+from femto.Trench import Trench
+from femto.Trench import TrenchColumn
 
 
 @dataclass
@@ -140,7 +144,7 @@ class PGMCompiler:
         :rtype: scipy.interpolate.interp2d
         """
 
-        if num_tot < 4**2:
+        if num_tot < 4 ** 2:
             raise ValueError("I need more values to compute the interpolation.")
 
         num_side = int(np.ceil(np.sqrt(num_tot)))
@@ -154,7 +158,7 @@ class PGMCompiler:
         for pos in list(product(xpos, ypos)):
             xlist.append(pos[0])
             ylist.append(pos[1])
-            zlist.append(float(input("X={:.1f} Y={:.1f}: \t".format(pos[0], pos[1]))) / 1000)
+            zlist.append(float(input(f"X={pos[0]:.1f} Y={pos[1]:.1f}: \t")) / 1000)
             if zlist[-1] == "":
                 raise ValueError("You have missed the last value.")
 
@@ -803,7 +807,7 @@ class PGMTrench(PGMCompiler):
                 self._export_path(filename, trench, speed=col.speed)
 
             # Export FARCALL for each trench column
-            col_param = dotdict(self._param.copy())
+            col_param = Dotdict(self._param.copy())
             col_param.filename = os.path.join(os.getcwd(), self.export_dir, dirname, f"FARCALL{col_idx + 1:03}.pgm")
             with PGMCompiler(**col_param) as G:
                 G.dvar(["ZCURR"])
@@ -865,7 +869,7 @@ class PGMTrench(PGMCompiler):
         # MAIN FARCALL, calls all columns .pgm scripts
         if self.trench_columns:
             # MAIN FARCALL parameters
-            main_param = dotdict(self._param.copy())
+            main_param = Dotdict(self._param.copy())
             main_param.filename = os.path.join(dirname, "MAIN.pgm")
             main_param.aerotech_angle = None
 
@@ -940,7 +944,7 @@ def _example():
     from femto.Cell import Cell
 
     # Data
-    PARAMETERS_WG = dotdict(
+    PARAMETERS_WG = Dotdict(
         scan=6,
         speed=20,
         radius=15,
@@ -951,7 +955,7 @@ def _example():
     )
     increment = [PARAMETERS_WG.lsafe, 0, 0]
 
-    PARAMETERS_GC = dotdict(
+    PARAMETERS_GC = Dotdict(
         filename="testPGMcompiler.pgm",
         laser="PHAROS",
         samplesize=PARAMETERS_WG.samplesize,

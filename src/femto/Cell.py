@@ -4,10 +4,14 @@ import time
 import numpy as np
 import plotly.graph_objects as go
 
-from femto.helpers import dotdict, listcast, nest_level
+from femto.helpers import Dotdict
+from femto.helpers import listcast
+from femto.helpers import nest_level
 from femto.Marker import Marker
-from femto.PGMCompiler import PGMCompiler, PGMTrench
-from femto.Trench import Trench, TrenchColumn
+from femto.PGMCompiler import PGMCompiler
+from femto.PGMCompiler import PGMTrench
+from femto.Trench import Trench
+from femto.Trench import TrenchColumn
 from femto.Waveguide import Waveguide
 
 
@@ -20,7 +24,7 @@ class Device(PGMCompiler):
         self.trenches = []
         self.cells = []
         self.fig = None
-        super(Device, self).__init__(**param)
+        super().__init__(**param)
 
     def append(self, obj):
         if isinstance(obj, Cell):
@@ -406,7 +410,7 @@ class Device(PGMCompiler):
 
 class Cell(Device):
     def __init__(self, param):
-        super(Cell, self).__init__(param)
+        super().__init__(param)
 
     def pgm(
         self,
@@ -434,7 +438,7 @@ class Cell(Device):
             return
 
         _wg_fab_time = 0.0
-        _wg_param = dotdict(self._param.copy())
+        _wg_param = Dotdict(self._param.copy())
         self.filename = self.filename.split(".")[0]
         _wg_param.filename = self.filename.split(".")[0] + "_WG.pgm"
 
@@ -467,7 +471,7 @@ class Cell(Device):
 
         _mk_fab_time = 0.0
         self.filename = self.filename.split(".")[0]
-        _mk_param = dotdict(self._param.copy())
+        _mk_param = Dotdict(self._param.copy())
         _mk_param.filename = self.filename.split(".")[0] + "_MK.pgm"
 
         with PGMCompiler(**_mk_param) as G:
@@ -508,9 +512,9 @@ class Cell(Device):
 
 
 def _example():
-    from src.femto.helpers import dotdict
+    from src.femto.helpers import Dotdict
 
-    PARAMETERS_GC = dotdict(
+    PARAMETERS_GC = Dotdict(
         filename="testMarker.pgm",
         laser="PHAROS",
         new_origin=(0.5, 0.5),
@@ -518,7 +522,7 @@ def _example():
         rotation_angle=0.0,
     )
 
-    PARAMETERS_WG = dotdict(
+    PARAMETERS_WG = Dotdict(
         scan=6,
         speed=20,
         radius=15,

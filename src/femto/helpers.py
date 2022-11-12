@@ -1,6 +1,9 @@
 from functools import partial
 from itertools import cycle
-from typing import Any, Dict, List, Tuple
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Tuple
 
 import numpy as np
 import numpy.typing as npt
@@ -45,7 +48,7 @@ def listcast(x):
         return [x]
 
 
-class dotdict(Dict[Any, Any]):
+class Dotdict(Dict[Any, Any]):
     """dot.notation access to dictionary attributes"""
 
     __getattr__ = dict.get
