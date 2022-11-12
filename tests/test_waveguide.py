@@ -535,24 +535,12 @@ def test_circ_coordinates(param) -> None:
 
 
 def test_circ_negative_radius(param) -> None:
-    param["radius"] = -60
     a_i, a_f = 1.5 * np.pi, 0
 
     wg = Waveguide(**param)
-    wg.start([0, 0, 0]).circ(a_i, a_f)
-    assert pytest.approx(wg._x[-1]) == np.abs(wg.radius)
-    assert pytest.approx(wg._y[-1]) == np.abs(wg.radius)
-    assert wg._z[-1] == wg._z[0]
-    wg.end()
-
-    a_i, a_f = 1.5 * np.pi, 1.75 * np.pi
-
-    wg = Waveguide(**param)
-    wg.start([0, 0, 0]).circ(a_i, a_f)
-    assert pytest.approx(wg._x[-1]) == np.abs(wg.radius) / np.sqrt(2)
-    assert pytest.approx(wg._y[-1]) == np.abs(wg.radius) * (1 - 1 / np.sqrt(2))
-    assert wg._z[-1] == wg._z[0]
-    wg.end()
+    wg.radius = -60
+    with pytest.raises(ValueError):
+        wg.start([0, 0, 0]).circ(a_i, a_f).end()
 
 
 def test_arc_bend_dy(param):
@@ -808,10 +796,8 @@ def test_sin_bridge_radius(param):
 def test_sin_bridge_radius_negative(param):
     r = -10
     wg = Waveguide(**param)
-    wg.start([0, 0, 0]).sin_bridge(dy=wg.dy_bend, dz=wg.dz_bridge, radius=r)
-    x = wg.x
-    assert pytest.approx(x[-1] - x[0]) == wg.get_sbend_parameter(wg.dy_bend, np.abs(r))[1]
-    wg.end()
+    with pytest.raises(ValueError):
+        wg.start([0, 0, 0]).sin_bridge(dy=wg.dy_bend, dz=wg.dz_bridge, radius=r).end()
 
 
 def test_sin_bridge_radius_none(param):
