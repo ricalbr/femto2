@@ -1,14 +1,10 @@
 from dataclasses import dataclass
 from functools import partialmethod
-from typing import Optional
-from typing import Tuple
-from typing import TypeVar
-from typing import Union
+from typing import Optional, Tuple, TypeVar, Union
 
 import numpy as np
 import numpy.typing as npt
-from scipy.interpolate import CubicSpline
-from scipy.interpolate import InterpolatedUnivariateSpline
+from scipy.interpolate import CubicSpline, InterpolatedUnivariateSpline
 
 from femto.helpers import Dotdict
 from femto.LaserPath import LaserPath

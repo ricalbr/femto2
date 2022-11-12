@@ -175,10 +175,11 @@ class Marker(LaserPath):
 
 
 def main():
-    from femto.helpers import Dotdict
-    from femto.PGMCompiler import PGMCompiler
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
+
+    from femto.helpers import Dotdict
+    from femto.PGMCompiler import PGMCompiler
 
     PARAMETERS_MK = Dotdict(scan=1, speed=1, speed_pos=5, speed_closed=5, depth=0.000)
 

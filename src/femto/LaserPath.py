@@ -1,16 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
-from typing import Tuple
-from typing import TypeVar
-from typing import Union
+from typing import Optional, Tuple, TypeVar, Union
 
 import numpy as np
 import numpy.typing as npt
 
-from femto.helpers import Dotdict
-from femto.helpers import unique_filter
+from femto.helpers import Dotdict, unique_filter
 
 # Create a generic variable that can be 'LaserPath', or any subclass.
 LP = TypeVar("LP", bound="LaserPath")
@@ -378,9 +374,10 @@ class LaserPath:
 
 
 def main():
-    from femto.helpers import Dotdict
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
+
+    from femto.helpers import Dotdict
 
     # Data
     PARAMETERS_LP = Dotdict(

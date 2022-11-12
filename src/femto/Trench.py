@@ -2,21 +2,14 @@ import os
 from copy import deepcopy
 from dataclasses import dataclass
 from math import ceil
-from typing import Generator
-from typing import Iterator
-from typing import List
+from typing import Generator, Iterator, List
 
 import numpy as np
 import shapely.geometry
 from descartes import PolygonPatch
-from shapely.geometry import box
-from shapely.geometry import LineString
-from shapely.geometry import Polygon
-from shapely.geometry import polygon
+from shapely.geometry import LineString, Polygon, box, polygon
 
-from femto.helpers import Dotdict
-from femto.helpers import flatten
-from femto.helpers import listcast
+from femto.helpers import Dotdict, flatten, listcast
 from femto.Waveguide import Waveguide
 
 

@@ -4,14 +4,10 @@ import time
 import numpy as np
 import plotly.graph_objects as go
 
-from femto.helpers import Dotdict
-from femto.helpers import listcast
-from femto.helpers import nest_level
+from femto.helpers import Dotdict, listcast, nest_level
 from femto.Marker import Marker
-from femto.PGMCompiler import PGMCompiler
-from femto.PGMCompiler import PGMTrench
-from femto.Trench import Trench
-from femto.Trench import TrenchColumn
+from femto.PGMCompiler import PGMCompiler, PGMTrench
+from femto.Trench import Trench, TrenchColumn
 from femto.Waveguide import Waveguide
 
 

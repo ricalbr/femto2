@@ -4,22 +4,18 @@ from collections import deque
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import dataclass
-from itertools import product
-from itertools import zip_longest
+from itertools import product, zip_longest
 from math import radians
 from operator import add
 from pathlib import Path
-from typing import List
-from typing import Tuple
+from typing import List, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.interpolate import interp2d
 
-from femto.helpers import Dotdict
-from femto.helpers import listcast
-from femto.Trench import Trench
-from femto.Trench import TrenchColumn
+from femto.helpers import Dotdict, listcast
+from femto.Trench import Trench, TrenchColumn
 
 
 @dataclass
@@ -940,8 +936,8 @@ class PGMTrench(PGMCompiler):
 
 
 def _example():
-    from femto.Waveguide import Waveguide
     from femto.Cell import Cell
+    from femto.Waveguide import Waveguide
 
     # Data
     PARAMETERS_WG = Dotdict(
