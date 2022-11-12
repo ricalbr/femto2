@@ -109,8 +109,8 @@ class Waveguide(LaserPath):
     ) -> tuple:
         """
         Computes the displacements along x-, y- and z-direction and the total lenght of the curve.
-        The dy and dz displacements are given by the user. The dx displacement can be known (and thus given as input)
-        or unknown and it is computed using the get_sbend_parameter() method for the given radius.
+        The disp_y and disp_z displacements are given by the user. The dx displacement can be known (and thus given as
+        input) or unknown and it is computed using the get_sbend_parameter() method for the given radius.
 
         If disp_x, disp_y, disp_z are given they are returned unchanged and unsed to compute l_curve.
         On the other hand, if disp_x is None, it is computed using the get_sbend_parameters() method using the
@@ -194,7 +194,7 @@ class Waveguide(LaserPath):
 
     def arc_bend(
         self: WG,
-        dy: Optional[float],
+        dy: float,
         radius: Optional[float] = None,
         shutter: int = 1,
         speed: Optional[float] = None,
@@ -260,7 +260,7 @@ class Waveguide(LaserPath):
 
     def arc_acc(
         self: WG,
-        dy: Optional[float],
+        dy: float,
         radius: Optional[float] = None,
         int_length: Optional[float] = None,
         shutter: int = 1,
@@ -335,7 +335,7 @@ class Waveguide(LaserPath):
         """
         if (arm_length or self.arm_length) is None:
             raise ValueError(
-                'Arm length is None. Set Waveguide\'s "arm_length" attribute or give a valid ' "arm length as input."
+                'Arm length is None. Set Waveguide\'s "arm_length" attribute or give a valid ' "arm length as " "input."
             )
 
         if arm_length is None:
@@ -348,7 +348,7 @@ class Waveguide(LaserPath):
 
     def sin_bridge(
         self: WG,
-        dy: Optional[float],
+        dy: float,
         dz: Optional[float] = None,
         omega: Tuple[float, float] = (1, 2),
         radius: Optional[float] = None,
@@ -512,11 +512,11 @@ class Waveguide(LaserPath):
 
     def spline(
         self: WG,
-        dy: float,
-        dz: float,
+        disp_x: Optional[float] = None,
+        disp_y: Optional[float] = None,
+        disp_z: Optional[float] = None,
         init_pos: Optional[npt.NDArray[np.float32]] = None,
         radius: Optional[float] = None,
-        disp_x: float = 0,
         shutter: int = 1,
         speed: Optional[float] = None,
         bc_y: tuple = ((1, 0.0), (1, 0.0)),
@@ -528,10 +528,10 @@ class Waveguide(LaserPath):
         See :func:`~femto.Waveguide._get_spline_points`.
         The points are then appended to the Waveguide coordinate list.
 
-        :param dy: Amplitude of the spline along the y direction [mm].
-        :type dy: float
-        :param dz: Amplitude of the spline along the y direction [mm].
-        :type dz: float
+        :param disp_y: Amplitude of the spline along the y direction [mm].
+        :type disp_y: float
+        :param disp_z: Amplitude of the spline along the y direction [mm].
+        :type disp_z: float
         :param init_pos: Initial position of the spline. The default is last point of the waveguide (self.lastpt).
         :type init_pos: np.ndarray
         :param radius: Curvature radius of the spline [mm]. The default is self.radius.
@@ -549,6 +549,9 @@ class Waveguide(LaserPath):
         :return: Self
         :rtype: Waveguide
         """
+
+        # condizione più complicata, il raggio serve solo se disp_x non è data altrimenti può essere None, nessuno lo
+        # usa. testare questa funzionalità
         if (radius or self.radius) is None:
             raise ValueError('Radius is None. Set Waveguide\'s "radius" attribute or give a radius as input.')
         if (speed or self.speed) is None:
@@ -557,7 +560,9 @@ class Waveguide(LaserPath):
         r = np.abs(radius or self.radius)
         f = speed or self.speed
 
-        x_spl, y_spl, z_spl = self._get_spline_points(**locals())
+        x_spl, y_spl, z_spl = self._get_spline_points(
+            disp_x=disp_x, disp_y=disp_y, disp_z=disp_z, init_pos=init_pos, radius=r, speed=f, bc_y=bc_y, bc_z=bc_z
+        )
         f_spl = np.repeat(f, x_spl.size)
         s_spl = np.repeat(shutter, x_spl.size)
 
@@ -567,8 +572,8 @@ class Waveguide(LaserPath):
 
     def spline_bridge(
         self: WG,
-        dy: float,
-        dz: float,
+        disp_y: float,
+        disp_z: float,
         init_pos: Optional[npt.NDArray[np.float32]] = None,
         radius: Optional[float] = None,
         disp_x: Optional[float] = None,
@@ -576,13 +581,13 @@ class Waveguide(LaserPath):
         speed: Optional[float] = None,
     ) -> WG:
         """
-        Computes a spline bridge as a sequence of two spline segments. dy is the total displacement along the
-        y-direction of the bridge and dz is the height of the bridge along z.
-        First, the function computes the dx-displacement of the planar spline curve with a dy displacement. This
+        Computes a spline bridge as a sequence of two spline segments. disp_y is the total displacement along the
+        y-direction of the bridge and disp_z is the height of the bridge along z.
+        First, the function computes the dx-displacement of the planar spline curve with a disp_y displacement. This
         datum is used to compute the value of the first derivative along the y-coordinate for the costruction of the
         spline bridge such that:
 
-            df(x, y)/dx = dy/dx
+            df(x, y)/dx = disp_y/dx
 
         in the peak point of the bridge.
 
@@ -592,10 +597,10 @@ class Waveguide(LaserPath):
         with a spline of the 5-th order. In this way the final curve has second derivatives close to zero (~1e-4)
         while maintaining the first derivative to zero.
 
-        :param dy: Amplitude of the spline along the y direction [mm].
-        :type dy: float
-        :param dz: Amplitude of the spline along the y direction [mm].
-        :type dz: float
+        :param disp_y: Amplitude of the spline along the y direction [mm].
+        :type disp_y: float
+        :param disp_z: Amplitude of the spline along the y direction [mm].
+        :type disp_z: float
         :param init_pos: Initial position of the spline. The default is last point of the waveguide (self.lastpt).
         :type init_pos: np.ndarray
         :param radius: Curvature radius of the spline [mm]. The default is self.radius.
@@ -703,11 +708,11 @@ class Waveguide(LaserPath):
     # Private interface
     def _get_spline_points(
         self: WG,
-        dy: float,
-        dz: float,
-        init_pos: npt.NDArray[np.float32],
-        radius: float = 20,
         disp_x: Optional[float] = None,
+        disp_y: Optional[float] = None,
+        disp_z: Optional[float] = None,
+        init_pos: Optional[npt.NDArray[np.float32]] = None,
+        radius: float = 20,
         speed: Optional[float] = None,
         bc_y: tuple = ((1, 0.0), (1, 0.0)),
         bc_z: tuple = ((1, 0.0), (1, 0.0)),
@@ -725,10 +730,10 @@ class Waveguide(LaserPath):
             (derivative order, value of derivative)
         the derivative order can be either 0, 1, 2.
 
-        :param dy: Displacement along y-direction [mm].
-        :type dy: float
-        :param dz: Displacement along z-direction [mm].
-        :type dz: float
+        :param disp_y: Displacement along y-direction [mm].
+        :type disp_y: float
+        :param disp_z: Displacement along z-direction [mm].
+        :type disp_z: float
         :param init_pos: Initial position of the curve.
         :type init_pos: np.ndarray
         :param radius: Curvature radius of the spline [mm]. The default is 20 mm.
@@ -744,19 +749,43 @@ class Waveguide(LaserPath):
         :return: (x-coordinates, y-coordinates, z-coordinates) of the spline curve.
         :rtype: Tuple(np.ndarray, np.ndarray, np.ndarray)
         """
-        xd, yd, zd, l_curve = self.get_spline_parameter(disp_x=disp_x, disp_y=dy, disp_z=dz, radius=radius)
-        f = self.speed if speed is None else speed
+
+        # se _x è vuoto allora usa x_init
+        # se x_init è vuoto allora raise
+
+        if init_pos is None:
+            if self._x.size == 0:
+                if not any([self.x_init, self.y_init, self.z_init]):
+                    raise ValueError(
+                        'Initial position is None or non-valid. Set Waveguide\'s "x_init", "y_init" and "z_init"'
+                        'attributes or give a valid "init_pos" as input or the current Waveguide is empty, '
+                        "in that case use the start() method before attaching spline segments."
+                    )
+                else:
+                    init_pos = np.array([self.x_init, self.y_init, self.z_init])
+            else:
+                init_pos = np.array([self._x[-1], self._y[-1], self._z[-1]])
+
+        if (radius or self.radius) is None and disp_x is None:
+            raise ValueError(
+                'Radius is None. Set Waveguide\'s "radius" attribute or give a radius as input.'
+                "Alternatively, give a valid x-displacement as input."
+            )
+        if (speed or self.speed) is None:
+            raise ValueError('Speed is None. Set Waveguide\'s "speed" attribute or give a speed as input.')
+
+        r = np.abs(radius or self.radius)
+        f = speed or self.speed
+
+        dx, dy, dz, l_curve = self.get_spline_parameter(disp_x=disp_x, disp_y=disp_y, disp_z=disp_z, radius=r)
         num = self.subs_num(l_curve, f)
 
-        xcoord = np.linspace(0, xd, num)
-        cs_y = CubicSpline((0.0, xd), (0.0, yd), bc_type=bc_y)
-        cs_z = CubicSpline((0.0, xd), (0.0, zd), bc_type=bc_z)
+        t = np.linspace(0, dx, num)
+        x_cspline = init_pos[0] + t
+        y_cspline = init_pos[1] + CubicSpline((0.0, dx), (0.0, dy), bc_type=bc_y)(t)
+        z_cspline = init_pos[2] + CubicSpline((0.0, dx), (0.0, dz), bc_type=bc_z)(t)
 
-        return (
-            xcoord + init_pos[0],
-            cs_y(xcoord) + init_pos[1],
-            cs_z(xcoord) + init_pos[2],
-        )
+        return x_cspline, y_cspline, z_cspline
 
 
 def coupler(param: Union[dict, Dotdict]):
@@ -824,17 +853,15 @@ def main():
     fig.clf()
     ax = Axes3D(fig, auto_add_to_figure=False)
     fig.add_axes(ax)
-    ax.set_xlabel("X [mm]")
-    ax.set_ylabel("Y [mm]")
-    ax.set_zlabel("Z [mm]")
+    ax.set_xlabel("X [mm]"), ax.set_ylabel("Y [mm]"), ax.set_zlabel("Z [mm]")
     for wg in mzi:
         ax.plot(wg.x[:-1], wg.y[:-1], wg.z[:-1], "-k", linewidth=2.5)
         ax.plot(wg.x[-2:], wg.y[-2:], wg.z[-2:], ":b", linewidth=1.0)
     ax.set_box_aspect(aspect=(3, 1, 0.5))
     plt.show()
 
-    print(f"Expected writing time {wg.fabrication_time:.3f} seconds")
-    print(f"Laser path length {wg.length:.3f} mm")
+    print(f"Expected writing time {sum(wg.fabrication_time for wg in mzi):.3f} seconds")
+    print(f"Laser path length {mzi[0].length:.3f} mm")
 
 
 if __name__ == "__main__":

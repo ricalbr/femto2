@@ -1,18 +1,18 @@
-from src.femto import _Marker, _Waveguide, Cell, dotdict, PGMCompiler, PGMTrench, TrenchColumn
+from src.femto import Cell, PGMCompiler, PGMTrench, TrenchColumn, _Marker, _Waveguide, dotdict
 
 # GEOMETRICAL DATA
 # Circuit
 PARAMETERS_WG = dotdict(
-        scan=6,
-        speed=20,
-        depth=0.035,
-        radius=15,
-        pitch=0.080,
-        pitch_fa=0.127,
-        int_dist=0.007,
-        int_length=0.0,
-        arm_length=0.0,
-        lsafe=3
+    scan=6,
+    speed=20,
+    depth=0.035,
+    radius=15,
+    pitch=0.080,
+    pitch_fa=0.127,
+    int_dist=0.007,
+    int_length=0.0,
+    arm_length=0.0,
+    lsafe=3,
 )
 
 x0 = -2.0
@@ -22,40 +22,34 @@ increment = [PARAMETERS_WG.lsafe, 0.0, 0.0]
 
 # Markers
 PARAMETERS_MK = dotdict(
-        scan=1,
-        speed=4,
-        depth=0.001,
-        speed_pos=5,
+    scan=1,
+    speed=4,
+    depth=0.001,
+    speed_pos=5,
 )
 lx = 1
 ly = 0.05
 
 # Trench
 PARAMETERS_TC = dotdict(
-        length=1.0,
-        nboxz=4,
-        deltaz=0.0015,
-        h_box=0.075,
-        base_folder=r'C:\Users\Capable\Desktop\RiccardoA',
-        y_min=0.08,
-        y_max=0.08 + 6 * PARAMETERS_WG.pitch - 0.02
+    length=1.0,
+    nboxz=4,
+    deltaz=0.0015,
+    h_box=0.075,
+    base_folder=r"C:\Users\Capable\Desktop\RiccardoA",
+    y_min=0.08,
+    y_max=0.08 + 6 * PARAMETERS_WG.pitch - 0.02,
 )
 
 # G-CODE DATA
-PARAMETERS_GC = dotdict(
-        filename='MZI.pgm',
-        lab='CAPABLE',
-        samplesize=(25, 25),
-        rotation_angle=1.0
-)
+PARAMETERS_GC = dotdict(filename="MZI.pgm", lab="CAPABLE", samplesize=(25, 25), rotation_angle=1.0)
 
 # 20x20 circuit
 circ = Cell(PARAMETERS_GC)
 
 # Guida dritta
 wg = _Waveguide(PARAMETERS_WG)
-wg.start([x0, y0, z0]) \
-    .linear([PARAMETERS_GC.samplesize[0] + 4, 0.0, 0.0])
+wg.start([x0, y0, z0]).linear([PARAMETERS_GC.samplesize[0] + 4, 0.0, 0.0])
 wg.end()
 circ.append(wg)
 
@@ -63,11 +57,13 @@ circ.append(wg)
 delta_x = wg.sbend_length(wg.dy_bend, wg.radius)
 l_x = (PARAMETERS_GC.samplesize[0] + 4 - delta_x * 4) / 2
 for i in range(6):
-    wg = _Waveguide(PARAMETERS_WG) \
-        .start([x0, (1 + i) * wg.pitch, z0]) \
-        .linear([l_x, 0, 0]) \
-        .arc_mzi((-1) ** i * wg.dy_bend) \
+    wg = (
+        _Waveguide(PARAMETERS_WG)
+        .start([x0, (1 + i) * wg.pitch, z0])
         .linear([l_x, 0, 0])
+        .arc_mzi((-1) ** i * wg.dy_bend)
+        .linear([l_x, 0, 0])
+    )
     wg.end()
     circ.append(wg)
 
@@ -92,18 +88,18 @@ circ.plot2d()
 with PGMCompiler(PARAMETERS_GC) as gc:
     with gc.repeat(PARAMETERS_WG.scan):
         for i, wg in enumerate(circ.waveguides):
-            gc.comment(f' +--- Modo: {i + 1} ---+')
+            gc.comment(f" +--- Modo: {i + 1} ---+")
             gc.write(wg.points)
 
 # _Marker G-Code
-PARAMETERS_GC.filename = 'Markers.pgm'
+PARAMETERS_GC.filename = "Markers.pgm"
 with PGMCompiler(PARAMETERS_GC) as gc:
     for mk in circ.markers:
         gc.write(mk.points)
 
 # Trench G-Code
 
-PARAMETERS_GC.filename = 'test'
+PARAMETERS_GC.filename = "test"
 tc = PGMTrench(PARAMETERS_GC, circ.trench_cols)
 tc.write()
 # for col_index, col_trench in enumerate(circ.trench_cols):
