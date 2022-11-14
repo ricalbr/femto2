@@ -105,6 +105,140 @@ def test_x_end_none(laser_path) -> None:
     assert laser_path.x_end is None
 
 
+def test_start(param) -> None:
+    lp = LaserPath(**param)
+    lp.start()
+    np.testing.assert_almost_equal(lp._x, np.array([-2.0, -2.0]))
+    np.testing.assert_almost_equal(lp._y, np.array([1.5, 1.5]))
+    np.testing.assert_almost_equal(lp._z, np.array([0.035, 0.035]))
+    np.testing.assert_almost_equal(lp._f, np.array([0.1, 0.1]))
+    np.testing.assert_almost_equal(lp._s, np.array([0.0, 1.0]))
+
+
+def test_start_values(param) -> None:
+    init_p = [0.0, 1.0, -0.1]
+    speed_p = 1.25
+    lp = LaserPath(**param)
+
+    lp.start(init_pos=init_p, speed_pos=speed_p)
+    np.testing.assert_almost_equal(lp._x, np.array([0.0, 0.0]))
+    np.testing.assert_almost_equal(lp._y, np.array([1.0, 1.0]))
+    np.testing.assert_almost_equal(lp._z, np.array([-0.1, -0.1]))
+    np.testing.assert_almost_equal(lp._f, np.array([1.25, 1.25]))
+    np.testing.assert_almost_equal(lp._s, np.array([0.0, 1.0]))
+
+
+def test_start_value_error(param) -> None:
+    init_p = [0.0, 1.0, -0.1, 0.3]
+    lp = LaserPath(**param)
+    with pytest.raises(ValueError):
+        lp.start(init_p)
+
+    init_p = [0.0]
+    lp = LaserPath(**param)
+    with pytest.raises(ValueError):
+        lp.start(init_p)
+
+    init_p = []
+    lp = LaserPath(**param)
+    with pytest.raises(ValueError):
+        lp.start(init_p)
+
+
+def test_end(param) -> None:
+    lp = LaserPath(**param)
+    lp.start([0.0, 0.0, 0.0])
+    lp.end()
+
+    np.testing.assert_almost_equal(lp._x, np.array([0.0, 0.0, 0.0, 0.0]))
+    np.testing.assert_almost_equal(lp._y, np.array([0.0, 0.0, 0.0, 0.0]))
+    np.testing.assert_almost_equal(lp._z, np.array([0.0, 0.0, 0.0, 0.0]))
+    np.testing.assert_almost_equal(lp._f, np.array([0.1, 0.1, 0.1, 75.0]))
+    np.testing.assert_almost_equal(lp._s, np.array([0.0, 1.0, 0.0, 0.0]))
+
+
+def test_empty_end(param) -> None:
+    lp = LaserPath(**param)
+    with pytest.raises(IndexError):
+        lp.end()
+
+
+def test_linear_value_error(param) -> None:
+    lp = LaserPath(**param)
+    with pytest.raises(ValueError):
+        lp.start().linear([1, 1, 1], mode="rand").end()
+
+    lp = LaserPath(**param)
+    lp.speed = None
+    with pytest.raises(ValueError):
+        lp.start().linear([1, 1, 1], mode="ABS", speed=None).end()
+
+
+def test_linear_invalid_increment(param) -> None:
+    lp = LaserPath(**param)
+    with pytest.raises(ValueError):
+        lp.start().linear([1, 2]).end()
+
+    with pytest.raises(ValueError):
+        lp.start().linear([1, 2, 3, 4]).end()
+
+
+def test_linear_default_speed(param) -> None:
+    lp = LaserPath(**param)
+    lp.start().linear([1, 2, 3])
+    assert lp._f[-1] == param["speed"]
+
+
+def test_linear_abs(param) -> None:
+    lp = LaserPath(**param)
+    init_p = [1, 1, 1]
+    increm = [3, 4, 5]
+    lp.start(init_p).linear(increm, mode="abs").end()
+
+    np.testing.assert_almost_equal(lp._x, np.array([1.0, 1.0, 3.0, 3.0, 1.0]))
+    np.testing.assert_almost_equal(lp._y, np.array([1.0, 1.0, 4.0, 4.0, 1.0]))
+    np.testing.assert_almost_equal(lp._z, np.array([1.0, 1.0, 5.0, 5.0, 1.0]))
+    np.testing.assert_almost_equal(lp._f, np.array([0.1, 0.1, 20.0, 20.0, 75.0]))
+    np.testing.assert_almost_equal(lp._s, np.array([0.0, 1.0, 1.0, 0.0, 0.0]))
+
+
+def test_linear_inc(param) -> None:
+    lp = LaserPath(**param)
+    init_p = [1, 1, 1]
+    increm = [3, 4, 5]
+    lp.start(init_p).linear(increm, mode="inc").end()
+
+    np.testing.assert_almost_equal(lp._x, np.array([1.0, 1.0, 4.0, 4.0, 1.0]))
+    np.testing.assert_almost_equal(lp._y, np.array([1.0, 1.0, 5.0, 5.0, 1.0]))
+    np.testing.assert_almost_equal(lp._z, np.array([1.0, 1.0, 6.0, 6.0, 1.0]))
+    np.testing.assert_almost_equal(lp._f, np.array([0.1, 0.1, 20.0, 20.0, 75.0]))
+    np.testing.assert_almost_equal(lp._s, np.array([0.0, 1.0, 1.0, 0.0, 0.0]))
+
+
+def test_linear_none(param) -> None:
+    lp = LaserPath(**param)
+    init_p = [1, 1, 1]
+    increm = [4, None, None]
+    lp.start(init_p).linear(increm, mode="abs").end()
+
+    np.testing.assert_almost_equal(lp._x, np.array([1.0, 1.0, 4.0, 4.0, 1.0]))
+    np.testing.assert_almost_equal(lp._y, np.array([1.0, 1.0, 1.0, 1.0, 1.0]))
+    np.testing.assert_almost_equal(lp._z, np.array([1.0, 1.0, 1.0, 1.0, 1.0]))
+    np.testing.assert_almost_equal(lp._f, np.array([0.1, 0.1, 20.0, 20.0, 75.0]))
+    np.testing.assert_almost_equal(lp._s, np.array([0.0, 1.0, 1.0, 0.0, 0.0]))
+
+    lp = LaserPath(**param)
+    init_p = [1, 1, 1]
+    increm = [5, None, None]
+    lp.start(init_p).linear(increm, mode="inc").end()
+
+    np.testing.assert_almost_equal(lp._x, np.array([1.0, 1.0, 6.0, 6.0, 1.0]))
+    np.testing.assert_almost_equal(lp._y, np.array([1.0, 1.0, 1.0, 1.0, 1.0]))
+    np.testing.assert_almost_equal(lp._z, np.array([1.0, 1.0, 1.0, 1.0, 1.0]))
+    np.testing.assert_almost_equal(lp._f, np.array([0.1, 0.1, 20.0, 20.0, 75.0]))
+    np.testing.assert_almost_equal(lp._s, np.array([0.0, 1.0, 1.0, 0.0, 0.0]))
+
+
 def test_add_path(laser_path) -> None:
     np.testing.assert_almost_equal(laser_path._x, np.array([0, 1, 1, 1, 1, 1, 2, 2, 2]))
     np.testing.assert_almost_equal(laser_path._y, np.array([0, 0, 1, 1, 1, 2, 3, 3, 3]))

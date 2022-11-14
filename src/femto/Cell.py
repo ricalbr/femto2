@@ -508,7 +508,7 @@ class Cell(Device):
 
 
 def _example():
-    from src.femto.helpers import Dotdict
+    from femto.helpers import Dotdict
 
     PARAMETERS_GC = Dotdict(
         filename="testMarker.pgm",

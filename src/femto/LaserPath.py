@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Optional, TypeVar, Union
+from typing import List, TypeVar
 
 import numpy as np
 import numpy.typing as npt
@@ -351,6 +351,56 @@ class LaserPath:
         self._z = np.append(self._z, z.astype(np.float32))
         self._f = np.append(self._f, f.astype(np.float32))
         self._s = np.append(self._s, s.astype(np.float32))
+
+    def curvature_radius(self: LP) -> npt.NDArray[np.float32]:
+        """
+        Computes the 3D point-to-point curvature radius of the waveguide shape.
+
+        :return: Array of the curvature radii computed at each point of the curve.
+        :rtype: numpy.ndarray
+        """
+
+        (x, y, z) = self.path3d
+
+        dx_dt = np.gradient(x)
+        dy_dt = np.gradient(y)
+        dz_dt = np.gradient(z)
+
+        d2x_dt2 = np.gradient(dx_dt)
+        d2y_dt2 = np.gradient(dy_dt)
+        d2z_dt2 = np.gradient(dz_dt)
+
+        num = (dx_dt ** 2 + dy_dt ** 2 + dz_dt ** 2) ** 1.5
+        den = np.sqrt(
+            (d2z_dt2 * dy_dt - d2y_dt2 * dz_dt) ** 2
+            + ((d2x_dt2 * dz_dt - d2z_dt2 * dx_dt) ** 2)
+            + ((d2y_dt2 * dx_dt - d2x_dt2 * dy_dt) ** 2)
+        )
+        default_zero = np.ones(np.size(num)) * np.inf
+
+        # only divide nonzeros else Inf
+        curvature_radius = np.divide(num, den, out=default_zero, where=(den != 0))
+        return curvature_radius[2:-2]
+
+    def cmd_rate(self: LP) -> npt.NDArray[np.float32]:
+        """
+        Computes the point-to-point command rate of the waveguide shape.
+
+        :return: Average command rates computed at each point of the curve.
+        :rtype: numpy.ndarray
+        """
+        # exclude last point, it's there just to close the shutter
+        (x, y, z, f, _) = self._unique_points()[:-1, :].T
+
+        dx_dt = np.gradient(x)
+        dy_dt = np.gradient(y)
+        dz_dt = np.gradient(z)
+        dt = np.sqrt(dx_dt ** 2 + dy_dt ** 2 + dz_dt ** 2)
+
+        default_zero = np.zeros(np.size(dt))
+        # only divide nonzeros else Inf
+        cmd_rate = np.divide(f, dt, out=default_zero, where=(dt != 0))
+        return np.array(cmd_rate, dtype=np.float32)
 
     # Private interface
     def _unique_points(self: LP) -> npt.NDArray[np.float32]:
