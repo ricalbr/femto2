@@ -1110,3 +1110,32 @@ def test_get_spline_points_derivatives_custom(param):
     assert pytest.approx((y[-2] - y[-1]) / (x[-2] - x[-1]), abs=1e-2) == bcy[1][1]
     assert pytest.approx((z[1] - z[0]) / (x[1] - x[0]), abs=1e-2) == bcz[0][1]
     assert pytest.approx((z[-2] - z[-1]) / (x[-2] - x[-1]), abs=1e-2) == bcz[1][1]
+
+
+@pytest.mark.parametrize("r_input", [5, 10, 15, 20, 25, 30, 35, 40, 50, 60])
+def test_curvature_radius(param, r_input) -> None:
+    # mean curvature radius is within 5% of the original radius
+    r = r_input
+    x = 0.05
+    wg = Waveguide(**param)
+    wg.start().circ(0, 3 * np.pi / 2, radius=r)
+
+    assert np.mean(wg.curvature_radius) <= (1 + x) * r
+    assert np.mean(wg.curvature_radius) >= (1 - x) * r
+
+
+def test_curvature_radius_default(param) -> None:
+    # mean curvature radius is within 5% of the default radius
+    x = 0.05
+    wg = Waveguide(**param)
+    wg.start().circ(0, 3 * np.pi / 2)
+
+    assert np.mean(wg.curvature_radius) <= (1 + x) * wg.radius
+    assert np.mean(wg.curvature_radius) >= (1 - x) * wg.radius
+
+
+def test_cmd_rate(param) -> None:
+    wg = Waveguide(**param)
+    wg.start().linear([1, 2, 3], mode="abs").sin_mzi(wg.dy_bend).linear([4, 5, 6]).end()
+
+    assert np.mean(wg.cmd_rate) <= wg.cmd_rate_max
