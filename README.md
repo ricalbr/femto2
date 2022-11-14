@@ -2,17 +2,19 @@
 
 <!-- PROJECT LOGO -->
 <div>
-  <a href="https://github.com/github_username/repo_name">
+  <a href="https://github.com/ricalbr/femto">
     <h1> 
       <img src="https://mir-s3-cdn-cf.behance.net/project_modules/disp/511fdf30195555.560572b7c51e9.gif" 
         alt="femto logo" 
         width="32">
-      femto 
+      femto
     </h1>
   </a>
 </div>
 
-> Python library for design and fabrication of femtosecond laser written integrated photonic circuits.
+![Tests](https://github.com/ricalbr/femto/actions/workflows/tests.yml/badge.svg)
+
+Python library for design and fabrication of femtosecond laser written integrated photonic circuits.
 
 ## Table of Contents
 
