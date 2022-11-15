@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 
@@ -20,10 +20,7 @@ class Marker(LaserPath):
     def __post_init__(self):
         super().__post_init__()
 
-        if self.z_init is None:
-            self.z_init = self.depth
-
-    def cross(self, position: List[float], lx: float = 1, ly: float = 0.05) -> None:
+    def cross(self, position: List[float], lx: Optional[float] = None, ly: Optional[float] = None) -> None:
         """
         Computes the points of a cross marker of given widht along x- and y-direction.
 
@@ -31,35 +28,32 @@ class Marker(LaserPath):
             position[0] -> X
             position[1] -> Y
         :type position: List[float]
-        :param lx: Length of the cross marker along x [mm]. The default is 1 mm.
+        :param lx: Length of the cross marker along x [mm]. The default is self.lx.
         :type lx: float
-        :param ly: Length of the cross marker along y [mm]. The default is 0.05 mm.
+        :param ly: Length of the cross marker along y [mm]. The default is self.ly.
         :type ly: float
         :return: None
         """
         if len(position) == 2:
             position.append(self.depth)
-        elif len(position) != 3:
-            raise ValueError("Given invalid position.")
 
         # start_pos = np.add(position, [-lx / 2, 0, 0])
         xi, yi, zi = position
         self.start([xi - lx / 2, yi, zi], speed_pos=5.0)
-        self.linear([xi + lx / 2, yi, zi], mode="ABS")
-        self.linear([xi + lx / 2, yi, zi], mode="ABS", shutter=0)
-        self.linear([xi, yi - ly / 2, zi], mode="ABS", shutter=0)
-        self.linear([xi, yi - ly / 2, zi], mode="ABS")
-        self.linear([xi, yi + ly / 2, zi], mode="ABS")
+        self.linear([lx, None, None], mode="INC")
+        self.linear([None, None, None], mode="INC", shutter=0)
+        self.linear([-lx / 2, -ly / 2, None], mode="INC", shutter=0)
+        self.linear([None, None, None], mode="INC")
+        self.linear([None, ly, None], mode="INC")
         self.linear(position, mode="ABS", shutter=0)
         self.end()
 
     def ruler(
         self,
-        y_ticks: List,
+        y_ticks: List[float],
         lx: float,
         lx_short: float = None,
-        x_init: float = -2,
-        speedpos: float = None,
+        x_init: Optional[float] = None,
     ) -> None:
         """
         Computes the points of a ruler marker. The y-coordinates of the ticks are specified by the user as well as
@@ -71,15 +65,10 @@ class Marker(LaserPath):
         :type lx: float
         :param lx_short: Short tick length along x [mm]. The default is 0.75 mm.
         :type lx_short: float
-        :param x_init: Starting x-coordinate of the laser [mm]. The default is -2 mm.
+        :param x_init: Starting x-coordinate of the laser [mm]. The default is self.x_init.
         :type x_init: float
-        :param speedpos: Transition speed with the shutter closes [mm/s]. The default is self.speed.
-        :type speedpos: float
         :return: None
         """
-
-        if speedpos is None:
-            speedpos = self.speed_pos
 
         if lx_short is None:
             lx_short = 0.75 * lx
@@ -88,7 +77,7 @@ class Marker(LaserPath):
 
         self.start([x_init, y_ticks[0], self.depth])
         for y, tlen in zip(y_ticks, tick_len):
-            self.linear([x_init, y, self.depth], speed=speedpos, mode="ABS", shutter=0)
+            self.linear([x_init, y, self.depth], mode="ABS", shutter=0)
             self.linear([0, 0, 0], shutter=1)
             self.linear([tlen, 0, 0], speed=self.speed, shutter=1)
             self.linear([0, 0, 0], speed=self.speed, shutter=0)
@@ -101,11 +90,7 @@ class Marker(LaserPath):
         width: float = 1,
         delta: float = 0.001,
         orientation: str = "x",
-        speedpos: float = None,
     ) -> None:
-
-        if speedpos is None:
-            speedpos = self.speed_pos
 
         if orientation.lower() not in ["x", "y"]:
             raise ValueError(
@@ -117,7 +102,7 @@ class Marker(LaserPath):
             num_passes = int(np.abs(init_pos[1] - final_pos[1]) / delta)
             delta = np.sign(final_pos[1] - init_pos[1]) * delta
 
-            self.start(init_pos, speed_pos=speedpos)
+            self.start(init_pos)
             for _ in range(num_passes):
                 self.linear([next(s) * width, 0, 0], mode="INC")
                 self.linear([0, delta, 0], mode="INC")
@@ -128,7 +113,7 @@ class Marker(LaserPath):
             num_passes = int(np.abs(init_pos[0] - final_pos[0]) / delta)
             delta = np.sign(final_pos[0] - init_pos[0]) * delta
 
-            self.start(init_pos, speed_pos=speedpos)
+            self.start(init_pos)
             for _ in range(num_passes):
                 self.linear([0, next(s) * width, 0], mode="INC")
                 self.linear([delta, 0, 0], mode="INC")
@@ -176,37 +161,22 @@ class Marker(LaserPath):
 
 def main():
     import matplotlib.pyplot as plt
-    from mpl_toolkits.mplot3d import Axes3D
+    from femto.helpers import Dotdict, split_mask
 
-    from femto.helpers import Dotdict
-    from femto.PGMCompiler import PGMCompiler
-
-    PARAMETERS_MK = Dotdict(scan=1, speed=1, speed_pos=5, speed_closed=5, depth=0.000)
-
-    PARAMETERS_GC = Dotdict(
-        filename="testMarker.pgm",
-        laser="PHAROS",
-        samplesize=(25, 25),
-        rotation_angle=0.0,
-    )
+    PARAMETERS_MK = Dotdict(scan=1, speed=1, speed_pos=5, speed_closed=5, depth=0.000, lx=1, ly=1)
 
     c = Marker(**PARAMETERS_MK)
     c.cross([2.5, 1], 5, 2)
-    print(c.points)
-
-    with PGMCompiler(**PARAMETERS_GC) as gc:
-        gc.write(c.points)
+    # print(c.points)
 
     # Plot
-    fig = plt.figure()
-    fig.clf()
-    ax = Axes3D(fig, auto_add_to_figure=False)
-    fig.add_axes(ax)
-    ax.set_xlabel("X [mm]")
-    ax.set_ylabel("Y [mm]")
-    ax.set_zlabel("Z [mm]")
-    ax.plot(c.x, c.y, c.z, "-k", linewidth=2.5)
-    ax.set_box_aspect(aspect=(3, 1, 0.5))
+    fig, ax = plt.subplots()
+    ax.set_xlabel("X [mm]"), ax.set_ylabel("Y [mm]")
+    x, y, *_, s = c.points
+    for x_seg, y_seg in zip(split_mask(x, s.astype(bool)), split_mask(y, s.astype(bool))):
+        ax.plot(x_seg, y_seg, "-k", linewidth=2.5)
+    for x_seg, y_seg in zip(split_mask(x, ~s.astype(bool)), split_mask(y, ~s.astype(bool))):
+        ax.plot(x_seg, y_seg, ":b", linewidth=0.5)
     plt.show()
 
 
