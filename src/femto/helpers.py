@@ -1,6 +1,6 @@
 from functools import partial
 from itertools import cycle
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -91,3 +91,10 @@ def unique_filter(arrays: List[npt.NDArray[np.float32]]) -> npt.NDArray[np.float
 
     # filtered data
     return np.array(data[mask])
+
+
+def split_mask(arr: npt.NDArray[Any], mask: Union[List[bool], npt.NDArray[bool]]) -> List[npt.NDArray[Any]]:
+    indices = np.nonzero(mask[1:] != mask[:-1])[0] + 1
+    sp = np.split(arr, indices)
+    sp = sp[0::2] if mask[0] else sp[1::2]
+    return sp
