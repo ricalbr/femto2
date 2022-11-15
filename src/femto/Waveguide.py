@@ -105,7 +105,7 @@ class Waveguide(LaserPath):
         disp_x: Optional[float] = None,
         disp_y: Optional[float] = None,
         disp_z: Optional[float] = None,
-        radius: float = 20,
+        radius: Optional[float] = None,
     ) -> tuple:
         """
         Computes the displacements along x-, y- and z-direction and the total lenght of the curve.
@@ -130,14 +130,18 @@ class Waveguide(LaserPath):
         :rtype: Tuple[float, float, float, float]
         """
         if disp_y is None:
-            raise ValueError("y-displacement is None. Give a valid disp_y")
+            raise ValueError("y-displacement is None. Give a valid disp_y.")
         if disp_z is None:
-            raise ValueError("z-displacement is None. Give a valid disp_z")
+            raise ValueError("z-displacement is None. Give a valid disp_z.")
+        if radius is None and self.radius is None:
+            raise ValueError("radius is None. Give a valid radius value or set Waveguide's 'radius' attribute.")
+
+        r = radius if radius is not None else self.radius
 
         if disp_x is None:
             disp_yz = np.sqrt(disp_y ** 2 + disp_z ** 2)
-            ang, disp_x = self.get_sbend_parameter(disp_yz, radius)
-            l_curve = 2 * ang * radius
+            ang, disp_x = self.get_sbend_parameter(disp_yz, r)
+            l_curve = 2 * ang * r
         else:
             disp = np.array([disp_x, disp_y, disp_z])
             l_curve = np.sqrt(np.sum(disp ** 2))
@@ -605,7 +609,9 @@ class Waveguide(LaserPath):
 
         f = speed if speed is not None else self.speed
 
-        dx, *_, l_curve = self.get_spline_parameter(disp_x=disp_x, disp_y=disp_y, disp_z=0.0, radius=radius)
+        if disp_x is None:
+            disp_x, *_ = self.get_spline_parameter(disp_y=disp_y, disp_z=disp_z, radius=radius)
+
         # First half of the spline
         x1, y1, z1 = self._get_spline_points(
             disp_x=disp_x,
@@ -614,7 +620,7 @@ class Waveguide(LaserPath):
             init_pos=init_pos,
             radius=radius,
             speed=f,
-            bc_y=((1, 0.0), (1, disp_y / dx)),
+            bc_y=((1, 0.0), (1, disp_y / disp_x)),
             bc_z=((1, 0.0), (1, 0.0)),
         )
         # Second half of the spline
@@ -626,13 +632,13 @@ class Waveguide(LaserPath):
             init_pos=init_pos2,
             radius=radius,
             speed=f,
-            bc_y=((1, disp_y / dx), (1, 0.0)),
+            bc_y=((1, disp_y / disp_x), (1, 0.0)),
             bc_z=((1, 0.0), (1, 0.0)),
         )
         # Merge points
-        x = np.append(x1[:-1], x2)
-        y = np.append(y1[:-1], y2)
-        z = np.append(z1[:-1], z2)
+        x = np.append(x1[1:-1], x2)
+        y = np.append(y1[1:-1], y2)
+        z = np.append(z1[1:-1], z2)
 
         # Construct a 5th-order spline using CubicSpline points as control points for interpolation
         y_uspline = InterpolatedUnivariateSpline(x, y, k=5)(x)
@@ -650,7 +656,7 @@ class Waveguide(LaserPath):
         disp_y: Optional[float] = None,
         disp_z: Optional[float] = None,
         init_pos: Optional[npt.NDArray[np.float32]] = None,
-        radius: float = 20,
+        radius: Optional[float] = None,
         speed: Optional[float] = None,
         bc_y: tuple = ((1, 0.0), (1, 0.0)),
         bc_z: tuple = ((1, 0.0), (1, 0.0)),
@@ -771,9 +777,6 @@ def main():
         wg.linear(increment)
         wg.sin_mzi((-1) ** index * wg.dy_bend)
         wg.sin_bridge((-1) ** index * 0.08, (-1) ** index * 0.015)
-        wg.sin_mzi((-1) ** (index + 1) * wg.dy_bend)
-        wg.arc_mzi((-1) ** (index + 1) * wg.dy_bend)
-        wg.linear(increment)
         wg.arc_bend((-1) ** (index + 1) * wg.dy_bend)
         wg.linear(increment)
         wg.end()

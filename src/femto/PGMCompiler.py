@@ -540,7 +540,7 @@ class PGMCompiler:
         self.dwell(self.long_pause)
 
     def transform_points(self, points):
-        x, y, z, fc, sc = points.T
+        x, y, z, fc, sc = points
         x, y, z = self.flip_path(x, y, z)
         point_matrix = np.stack((x, y, z), axis=-1).astype(np.float32)
         point_matrix -= np.array([self.new_origin[0], self.new_origin[1], 0]).T

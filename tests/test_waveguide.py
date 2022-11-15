@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from femto.Waveguide import Waveguide
+from femto.Waveguide import coupler, Waveguide
 
 
 @pytest.fixture
@@ -1139,3 +1139,91 @@ def test_cmd_rate(param) -> None:
     wg.start().linear([1, 2, 3], mode="abs").sin_mzi(wg.dy_bend).linear([4, 5, 6]).end()
 
     assert np.mean(wg.cmd_rate) <= wg.cmd_rate_max
+
+
+def test_sin_bridge_error(param) -> None:
+    wg = Waveguide(**param)
+    with pytest.raises(ValueError):
+        wg.start().spline_bridge().end()
+
+    with pytest.raises(ValueError):
+        wg.start().spline_bridge(disp_y=0.05).end()
+
+    with pytest.raises(ValueError):
+        wg.start().spline_bridge(disp_z=0.006).end()
+
+
+def test_spline_bridge_speed(param) -> None:
+    dy, dz, f_custom = (0.06, 0.006, 99)
+
+    wg = Waveguide(**param)
+    wg.start().spline_bridge(disp_y=dy, disp_z=dz)
+    assert wg._f[-1] == wg.speed
+    wg.end()
+
+    wg = Waveguide(**param)
+    wg.start().spline_bridge(disp_y=dy, disp_z=dz, speed=f_custom)
+    assert wg._f[-1] == f_custom
+    wg.end()
+
+
+def test_spline_bridge_dx(param) -> None:
+    dx, dy, dz = (10, 0.06, 0.006)
+
+    wg = Waveguide(**param)
+    wg.start([0, 0, 0]).spline_bridge(disp_y=dy, disp_z=dz)
+    assert pytest.approx(wg.x[-1]) == 2 * wg.get_spline_parameter(disp_y=dy, disp_z=dz)[0]
+    wg.end()
+
+    wg = Waveguide(**param)
+    wg.start([0, 0, 0]).spline_bridge(disp_y=dy, disp_z=dz, disp_x=dx)
+    assert pytest.approx(wg.x[-1]) == 2 * dx
+    wg.end()
+
+
+def test_spline_bridge_dy_dz(param) -> None:
+    dx, dy, dz = (15, 0.789, 0.123)
+
+    wg = Waveguide(**param)
+    wg.start([0, 0, 0]).spline_bridge(disp_x=dx, disp_y=dy, disp_z=dz)
+    assert pytest.approx(wg.y[-1]) == dy
+    assert pytest.approx(wg.z[-1]) == wg.z[0]
+    assert pytest.approx(np.max(wg.z) - np.min(wg.z)) == dz
+    wg.end()
+
+
+def test_spline_bridge_derivatives(param) -> None:
+    dx, dy, dz = (19.45, 12.38, 3.56)
+    wg = Waveguide(**param)
+
+    wg.start([0, 0, 0.5]).spline_bridge(disp_x=dx, disp_y=dy, disp_z=dz)
+    x, y, z = wg.path3d
+    assert pytest.approx((y[1] - y[0]) / (x[1] - x[0]), abs=1e-2) == 0.0
+    assert pytest.approx((y[-2] - y[-1]) / (x[-2] - x[-1]), abs=1e-2) == 0.0
+    assert pytest.approx((z[1] - z[0]) / (x[1] - x[0]), abs=1e-2) == 0.0
+    assert pytest.approx((z[-2] - z[-1]) / (x[-2] - x[-1]), abs=1e-2) == 0.0
+
+
+def test_coupler_pitch(param) -> None:
+    mode1, mode2 = coupler(param)
+
+    assert mode2.y[-1] == pytest.approx(mode1.y[-1] + param["pitch"])
+
+
+@pytest.mark.parametrize("d_input", [0.000, 0.001, 0.002, 0.003, 0.005, 0.007, 0.009, 0.0011, 0.0015, 0.0025])
+def test_coupler_d_int(d_input) -> None:
+    p = {
+        "scan": 6,
+        "speed": 20.0,
+        "samplesize": (100, 15),
+        "depth": 0.035,
+        "radius": 25,
+        "pitch": 0.127,
+        "int_dist": d_input,
+        "int_length": 0.0,
+        "arm_length": 1.0,
+    }
+
+    mode1, mode2 = coupler(p)
+
+    assert pytest.approx(np.min(mode2.y) - np.max(mode1.y), abs=1e-6) == d_input
