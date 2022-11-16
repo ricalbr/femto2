@@ -30,22 +30,6 @@ def empty_wg(param) -> Waveguide:
     return Waveguide(**param)
 
 
-@pytest.fixture
-def waveguide(param) -> Waveguide:
-    # create LaserPath instance
-    wg = Waveguide(**param)
-
-    # init_p = [0.0, 0.0, 0.0]
-    # wg.start(init_p)
-    # wg.linear([1, 2, 3], mode='ABS')
-    # wg.arc_bend(wg.dy_bend)
-    # wg.linear([5, 0, 0], mode='INC')
-    # wg.spline_bridge(wg.pitch, wg.dz_bridge, )
-    # wg.linear([30, wg.lasty, wg.lastz], mode='ABS')
-    # wg.end()
-    return wg
-
-
 def test_default_values() -> None:
     wg = Waveguide()
     assert wg.scan == int(1)
@@ -96,7 +80,7 @@ def test_wg_values(param) -> None:
     assert wg.margin == float(1.0)
 
 
-def test_from_dict(param) -> None:
+def test_wg_from_dict(param) -> None:
     wg = Waveguide.from_dict(param)
     assert wg.scan == int(6)
     assert wg.speed == float(20.0)
