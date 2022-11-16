@@ -41,25 +41,44 @@ class Marker(LaserPath):
         :type ly: float
         :return: None
         """
+
         if len(position) == 2:
             position.append(self.depth)
 
+        if len(position) != 3:
+            raise ValueError(
+                "The cross position is not valid. The valid number of elements are 2 or 3. The given "
+                f"position has {len(position)} elements."
+            )
+
+        if lx is None and self.lx is None:
+            raise ValueError(
+                "The x-length of the cross is None. Set the Marker's 'lx' attribute or give a valid number as input."
+            )
+        lx = self.lx if lx is None else lx
+        if ly is None and self.ly is None:
+            raise ValueError(
+                "The y-length of the cross is None. Set the Marker's 'ly' attribute or give a valid number as input."
+            )
+        ly = self.ly if ly is None else ly
+
         # start_pos = np.add(position, [-lx / 2, 0, 0])
         xi, yi, zi = position
+        print(position)
         self.start([xi - lx / 2, yi, zi], speed_pos=5.0)
         self.linear([lx, None, None], mode="INC")
         self.linear([None, None, None], mode="INC", shutter=0)
         self.linear([-lx / 2, -ly / 2, None], mode="INC", shutter=0)
         self.linear([None, None, None], mode="INC")
         self.linear([None, ly, None], mode="INC")
+        self.linear([None, None, None], mode="INC")
         self.linear(position, mode="ABS", shutter=0)
-        self.end()
 
     def ruler(
         self: MK,
         y_ticks: List[float],
-        lx: float,
-        lx_short: float = None,
+        lx: Optional[float],
+        lx_short: Optional[float] = None,
         x_init: Optional[float] = None,
     ) -> None:
         """
@@ -170,11 +189,19 @@ def main():
     import matplotlib.pyplot as plt
     from femto.helpers import Dotdict, split_mask
 
-    PARAMETERS_MK = Dotdict(scan=1, speed=1, speed_pos=5, speed_closed=5, depth=0.000, lx=1, ly=1)
+    PARAMETERS_MK = Dotdict(
+        scan=1,
+        speed=2,
+        speed_pos=5,
+        speed_closed=5,
+        depth=0.000,
+        lx=1,
+        ly=1,
+    )
 
     c = Marker(**PARAMETERS_MK)
     c.cross([2.5, 1], 5, 2)
-    # print(c.points)
+    print(c.points)
 
     # Plot
     fig, ax = plt.subplots()
