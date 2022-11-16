@@ -139,12 +139,12 @@ class Waveguide(LaserPath):
         r = radius if radius is not None else self.radius
 
         if disp_x is None:
-            disp_yz = np.sqrt(disp_y ** 2 + disp_z ** 2)
+            disp_yz = np.sqrt(disp_y**2 + disp_z**2)
             ang, disp_x = self.get_sbend_parameter(disp_yz, r)
             l_curve = 2 * ang * r
         else:
             disp = np.array([disp_x, disp_y, disp_z])
-            l_curve = np.sqrt(np.sum(disp ** 2))
+            l_curve = np.sqrt(np.sum(disp**2))
         return disp_x, disp_y, disp_z, l_curve
 
     # Methods

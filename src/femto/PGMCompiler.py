@@ -140,7 +140,7 @@ class PGMCompiler:
         :rtype: scipy.interpolate.interp2d
         """
 
-        if num_tot < 4 ** 2:
+        if num_tot < 4**2:
             raise ValueError("I need more values to compute the interpolation.")
 
         num_side = int(np.ceil(np.sqrt(num_tot)))

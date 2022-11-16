@@ -52,7 +52,7 @@ class LaserPath:
     @property
     def lvelo(self: LP) -> float:
         # length needed to acquire the writing speed [mm]
-        return 3 * (0.5 * self.speed ** 2 / self.acc_max)
+        return 3 * (0.5 * self.speed**2 / self.acc_max)
 
     @property
     def dl(self: LP) -> float:
@@ -207,7 +207,7 @@ class LaserPath:
         d2y_dt2 = np.gradient(dy_dt)
         d2z_dt2 = np.gradient(dz_dt)
 
-        num = (dx_dt ** 2 + dy_dt ** 2 + dz_dt ** 2) ** 1.5
+        num = (dx_dt**2 + dy_dt**2 + dz_dt**2) ** 1.5
         den = np.sqrt(
             (d2z_dt2 * dy_dt - d2y_dt2 * dz_dt) ** 2
             + (d2x_dt2 * dz_dt - d2z_dt2 * dx_dt) ** 2
@@ -233,7 +233,7 @@ class LaserPath:
         dx_dt = np.gradient(x)
         dy_dt = np.gradient(y)
         dz_dt = np.gradient(z)
-        dt = np.sqrt(dx_dt ** 2 + dy_dt ** 2 + dz_dt ** 2)
+        dt = np.sqrt(dx_dt**2 + dy_dt**2 + dz_dt**2)
 
         default_zero = np.zeros(np.size(dt))
         # only divide nonzeros else Inf

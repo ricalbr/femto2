@@ -965,7 +965,7 @@ def test_spline_radius_default(param):
     wg = Waveguide(**param)
     wg.start([0, 0, 0]).spline(disp_x=None, disp_y=dy, disp_z=dz)
     x = wg.x
-    assert pytest.approx(x[-1]) == wg.get_sbend_parameter(np.sqrt(dy ** 2 + dz ** 2), wg.radius)[1]
+    assert pytest.approx(x[-1]) == wg.get_sbend_parameter(np.sqrt(dy**2 + dz**2), wg.radius)[1]
     wg.end()
 
 
@@ -976,7 +976,7 @@ def test_spline_radius_custom(param):
     wg = Waveguide(**param)
     wg.start([0, 0, 0]).spline(disp_x=None, disp_y=dy, disp_z=dz, radius=r)
     x = wg.x
-    assert pytest.approx(x[-1]) == wg.get_sbend_parameter(np.sqrt(dy ** 2 + dz ** 2), r)[1]
+    assert pytest.approx(x[-1]) == wg.get_sbend_parameter(np.sqrt(dy**2 + dz**2), r)[1]
     wg.end()
 
 
