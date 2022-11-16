@@ -1,7 +1,8 @@
 from dataclasses import dataclass
-from typing import List, Optional, TypeVar
+from typing import List, Optional, TypeVar, Union
 
 import numpy as np
+import numpy.typing as npt
 
 from femto.helpers import sign
 from femto.LaserPath import LaserPath
@@ -64,49 +65,67 @@ class Marker(LaserPath):
 
         # start_pos = np.add(position, [-lx / 2, 0, 0])
         xi, yi, zi = position
-        print(position)
-        self.start([xi - lx / 2, yi, zi], speed_pos=5.0)
+        self.start([xi - lx / 2, yi, zi])
         self.linear([lx, None, None], mode="INC")
         self.linear([None, None, None], mode="INC", shutter=0)
         self.linear([-lx / 2, -ly / 2, None], mode="INC", shutter=0)
         self.linear([None, None, None], mode="INC")
         self.linear([None, ly, None], mode="INC")
-        self.linear([None, None, None], mode="INC")
+        self.linear([None, None, None], mode="INC", shutter=0)
         self.linear(position, mode="ABS", shutter=0)
 
     def ruler(
         self: MK,
-        y_ticks: List[float],
-        lx: Optional[float],
-        lx_short: Optional[float] = None,
+        y_ticks: Union[List[float], npt.NDArray[np.float32]],
+        lx: Optional[float] = None,
+        lx2: Optional[float] = None,
         x_init: Optional[float] = None,
     ) -> None:
         """
-        Computes the points of a ruler marker. The y-coordinates of the ticks are specified by the user as well as
-        the length of the ticks in the x-direction.
+        Computes the points of a ruler marker starting from a given x-coordinate. The y-coordinates of the ticks are
+        specified by the user.
 
         :param y_ticks: y-coordinates of the ruler's ticks [mm]
         :type y_ticks: List[float]
-        :param lx: Long tick length along x [mm]. The default is 1 mm.
+        :param lx: Long x-tick coordinate [mm]. The default is self.lx.
         :type lx: float
-        :param lx_short: Short tick length along x [mm]. The default is 0.75 mm.
-        :type lx_short: float
+        :param lx2: Second x-tick coordinate [mm]. The default is 0.75 * self.lx
+        :type lx2: float
         :param x_init: Starting x-coordinate of the laser [mm]. The default is self.x_init.
         :type x_init: float
         :return: None
         """
+        if y_ticks is None or len(y_ticks) == 0:
+            return None
 
-        if lx_short is None:
-            lx_short = 0.75 * lx
-        tick_len = lx_short * np.ones_like(y_ticks)
-        tick_len[0] = lx
+        # Sort the y-ticks and takes unique points
+        y_ticks = np.unique(y_ticks)
 
-        self.start([x_init, y_ticks[0], self.depth])
-        for y, tlen in zip(y_ticks, tick_len):
-            self.linear([x_init, y, self.depth], mode="ABS", shutter=0)
-            self.linear([0, 0, 0], shutter=1)
-            self.linear([tlen, 0, 0], speed=self.speed, shutter=1)
-            self.linear([0, 0, 0], speed=self.speed, shutter=0)
+        # Ticks x-length
+        if lx is None and self.lx is None:
+            raise ValueError(
+                "The x-length of the ruler is None. Set the Marker's 'lx' attribute or give a valid number as input."
+            )
+        lx = self.lx if lx is None else lx
+        if lx2 is None:
+            lx2 = 0.75 * lx
+        x_ticks = np.repeat(lx2, len(y_ticks))
+        x_ticks[0] = lx
+
+        # Set x_init
+        if x_init is None and self.x_init is None:
+            raise ValueError(
+                "The x-init value of the ruler is None. Set the Marker's 'x_init' attribute or give a valid number "
+                "as input."
+            )
+        x_init = self.x_init if x_init is None else x_init
+
+        # Add straight segments
+        for xt, yt in zip(x_ticks, y_ticks):
+            self.linear([x_init, yt, self.depth], mode="ABS", shutter=0)
+            self.linear([None, None, None], mode="ABS")
+            self.linear([xt, yt, None], mode="ABS")
+            self.linear([None, None, None], mode="ABS", shutter=0)
         self.end()
 
     def meander(
@@ -199,9 +218,22 @@ def main():
         ly=1,
     )
 
+    PARAMETERS_GC = Dotdict(
+        filename="testPGMcompiler.pgm",
+        laser="PHAROS",
+        samplesize=(10, 10),
+        rotation_angle=0.0,
+    )
+
     c = Marker(**PARAMETERS_MK)
-    c.cross([2.5, 1], 5, 2)
+    # c.cross([2.5, 1], 5, 2)
+    c.ruler([1, 2, 3, 4], 5, 2, x_init=-2)
     print(c.points)
+
+    from femto.PGMCompiler import PGMCompiler
+
+    with PGMCompiler(**PARAMETERS_GC) as gc:
+        gc.write(c.points)
 
     # Plot
     fig, ax = plt.subplots()

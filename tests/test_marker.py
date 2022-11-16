@@ -176,22 +176,130 @@ def test_cross_points(param) -> None:
     mk.cross(i_pos)
 
     x, y, z, f, s = mk.points
+    np.testing.assert_almost_equal(x, np.array([-1.0, -1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
+    np.testing.assert_almost_equal(y, np.array([0.0, 0.0, 0.0, 0.0, -0.025, -0.025, 0.025, 0.025, 0.0]))
+    np.testing.assert_almost_equal(z, np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]))
+    np.testing.assert_almost_equal(f, np.array([0.5, 0.5, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0]))
+    np.testing.assert_almost_equal(s, np.array([0, 1, 1, 0, 0, 1, 1, 0, 0]))
+
+
+def test_ruler_yticks(param) -> None:
+    yt = []
+    mk = Marker(**param)
+
+    # empty list return None
+    assert mk.ruler(yt) is None
+    assert len(mk.y) == 0
+
+    # check the given values are present in the matrix of points
+    yt = np.array([0, 0.3, 0.6, 0.78, 0.99, 1, 45])
+    mk = Marker(**param)
+    mk.ruler(yt)
+    assert pytest.approx(mk.y[0:-2:4]) == yt
+
+    # check the list is ordered and unique
+    yt = np.array([3, 2, 6, 4, 8, 9, 1, 3])
+    mk = Marker(**param)
+    mk.ruler(yt)
+    assert pytest.approx(mk.y[0:-2:4]) == np.unique(yt)
+
+
+def test_ruler_lx(param) -> None:
+    # test default lx
+    mk = Marker(**param)
+    mk.ruler([1, 2, 3])
+    assert pytest.approx(np.max(mk.x)) == mk.lx
+
+    # test custom lx
+    l = 5
+    mk = Marker(**param)
+    mk.ruler([1, 2, 3], lx=l)
+    assert pytest.approx(np.max(mk.x)) == l
+
+    # test none lx
+    l = None
+    param["lx"] = None
+    mk = Marker(**param)
+    with pytest.raises(ValueError):
+        mk.ruler([1, 2, 3], lx=l)
+
+
+def test_ruler_lx_short(param) -> None:
+    # test default lx2
+    mk = Marker(**param)
+    mk.ruler([1, 2, 3])
+    assert pytest.approx(mk.x[6]) == 0.75 * mk.lx
+
+    # test custom lx2
+    l = 5
+    mk = Marker(**param)
+    mk.ruler([1, 2, 3], lx2=l)
+    assert pytest.approx(mk.x[6]) == l
+
+
+def test_ruler_x_init(param) -> None:
+    # test default x_init
+    mk = Marker(**param)
+    mk.ruler([1, 2, 3])
+    assert pytest.approx(mk.x[0]) == mk.x_init
+
+    # test custom x_init
+    x0 = 0.0
+    mk = Marker(**param)
+    mk.ruler([1, 2, 3], x_init=x0)
+    assert pytest.approx(mk.x[0]) == x0
+
+    x1 = 2.0
+    mk = Marker(**param)
+    mk.ruler([1, 2, 3], x_init=x1)
+    assert pytest.approx(mk.x[0]) == x1
+
+    # test None x_init
+    xi = None
+    param["x_init"] = None
+    mk = Marker(**param)
+    with pytest.raises(ValueError):
+        mk.ruler([1, 2, 3], x_init=xi)
+
+
+def test_ruler_points(param) -> None:
+    mk = Marker(**param)
+    mk.ruler([1, 2, 3, 4], 5, 2, x_init=-2)
+
+    x, y, z, f, s = mk.points
     np.testing.assert_almost_equal(
-        x,
+        x, np.array([-2.0, -2.0, 5.0, 5.0, -2.0, -2.0, 2.0, 2.0, -2.0, -2.0, 2.0, 2.0, -2.0, -2.0, 2.0, 2.0, -2.0])
+    )
+    np.testing.assert_almost_equal(
+        y, np.array([1.0, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 3.0, 3.0, 3.0, 3.0, 4.0, 4.0, 4.0, 4.0, 1.0])
+    )
+    np.testing.assert_almost_equal(
+        z,
         np.array(
             [
-                -1,
-                -1,
-                1,
-                1,
-                0,
-                0,
-                0,
-                0,
+                0.001,
+                0.001,
+                0.001,
+                0.001,
+                0.001,
+                0.001,
+                0.001,
+                0.001,
+                0.001,
+                0.001,
+                0.001,
+                0.001,
+                0.001,
+                0.001,
+                0.001,
+                0.001,
+                0.001,
             ]
         ),
     )
-    np.testing.assert_almost_equal(y, np.array([0, 0, 0, 0, -0.025, -0.025, 0.025, 0.025]))
-    np.testing.assert_almost_equal(z, np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]))
-    np.testing.assert_almost_equal(f, np.array([5, 5, 2, 2, 2, 2, 2, 2]))
-    np.testing.assert_almost_equal(s, np.array([0, 1, 1, 0, 0, 1, 1, 0]))
+    np.testing.assert_almost_equal(
+        f, np.array([2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 24.0])
+    )
+    np.testing.assert_almost_equal(
+        s, np.array([0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0])
+    )

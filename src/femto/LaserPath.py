@@ -331,21 +331,21 @@ class LaserPath:
         if len(increment) != 3:
             raise ValueError(f"Increment should be a list of three values. Increment has {len(increment)} entries.")
 
-        if (speed or self.speed) is None:
+        if speed is None and self.speed is None:
             raise ValueError('Speed is None. Set LaserPath\'s "speed" attribute or give a speed as input.')
 
         if mode.lower() == "abs":
             # If increment is None use the last value on the coordinate-array
-            x_inc = np.array([increment[0] or self._x[-1]])
-            y_inc = np.array([increment[1] or self._y[-1]])
-            z_inc = np.array([increment[2] or self._z[-1]])
+            x_inc = self._x[-1] if increment[0] is None else np.array([increment[0]])
+            y_inc = self._y[-1] if increment[1] is None else np.array([increment[1]])
+            z_inc = self._z[-1] if increment[2] is None else np.array([increment[2]])
         else:
             x, y, z = map(lambda k: k or 0, increment)
             x_inc = np.array([self._x[-1] + x])
             y_inc = np.array([self._y[-1] + y])
             z_inc = np.array([self._z[-1] + z])
 
-        f_inc = np.array([speed or self.speed])
+        f_inc = np.array([self.speed]) if speed is None else np.array([speed])
         s_inc = np.array([shutter])
 
         self.add_path(x_inc, y_inc, z_inc, f_inc, s_inc)
