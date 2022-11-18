@@ -1,13 +1,6 @@
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
-  - repo: https://github.com/psf/black
-    rev: 22.10.0
-    hooks:
-      - id: black
-        args: [ --safe ]
-        additional_dependencies: [ 'click==8.0.4' ]
-
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v3.2.0
     hooks:
@@ -18,8 +11,26 @@ repos:
       - id: debug-statements
         language_version: python3
 
+  - repo: https://github.com/pycqa/isort
+    rev: 5.10.1
+    hooks:
+      - id: isort
+        name: isort (python)
+
+  - repo: https://github.com/fsouza/autoflake8
+    rev: v0.4.0
+    hooks:
+    - id: autoflake8
+
   - repo: https://github.com/asottile/pyupgrade
     rev: v2.29.0
     hooks:
       - id: pyupgrade
-        args: [ --py36-plus ]
+        args: [ --py37-plus ]
+
+  - repo: https://github.com/psf/black
+    rev: 22.10.0
+    hooks:
+      - id: black
+        args: [ --safe ]
+        additional_dependencies: [ 'click==8.0.4' ]
