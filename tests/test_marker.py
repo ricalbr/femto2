@@ -211,17 +211,17 @@ def test_ruler_lx(param) -> None:
     assert pytest.approx(np.max(mk.x)) == mk.lx
 
     # test custom lx
-    l = 5
+    lxx = 5
     mk = Marker(**param)
-    mk.ruler([1, 2, 3], lx=l)
-    assert pytest.approx(np.max(mk.x)) == l
+    mk.ruler([1, 2, 3], lx=lxx)
+    assert pytest.approx(np.max(mk.x)) == lxx
 
     # test none lx
-    l = None
+    lxx = None
     param["lx"] = None
     mk = Marker(**param)
     with pytest.raises(ValueError):
-        mk.ruler([1, 2, 3], lx=l)
+        mk.ruler([1, 2, 3], lx=lxx)
 
 
 def test_ruler_lx_short(param) -> None:
@@ -231,10 +231,10 @@ def test_ruler_lx_short(param) -> None:
     assert pytest.approx(mk.x[6]) == 0.75 * mk.lx
 
     # test custom lx2
-    l = 5
+    lxx = 5
     mk = Marker(**param)
-    mk.ruler([1, 2, 3], lx2=l)
-    assert pytest.approx(mk.x[6]) == l
+    mk.ruler([1, 2, 3], lx2=lxx)
+    assert pytest.approx(mk.x[6]) == lxx
 
 
 def test_ruler_x_init(param) -> None:
@@ -273,33 +273,144 @@ def test_ruler_points(param) -> None:
     np.testing.assert_almost_equal(
         y, np.array([1.0, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 3.0, 3.0, 3.0, 3.0, 4.0, 4.0, 4.0, 4.0, 1.0])
     )
-    np.testing.assert_almost_equal(
-        z,
-        np.array(
-            [
-                0.001,
-                0.001,
-                0.001,
-                0.001,
-                0.001,
-                0.001,
-                0.001,
-                0.001,
-                0.001,
-                0.001,
-                0.001,
-                0.001,
-                0.001,
-                0.001,
-                0.001,
-                0.001,
-                0.001,
-            ]
-        ),
-    )
+    np.testing.assert_almost_equal(z, np.repeat(0.001, len(y)))
     np.testing.assert_almost_equal(
         f, np.array([2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 24.0])
     )
     np.testing.assert_almost_equal(
         s, np.array([0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0])
+    )
+
+
+@pytest.mark.parametrize("ori", ["d", "", "xy", "z"])
+def test_meander_error(param, ori) -> None:
+    mk = Marker(**param)
+    with pytest.raises(ValueError):
+        mk.meander([1, 2, 3], [4, 5, 6], width=0.01, orientation=ori)
+
+
+@pytest.mark.parametrize("i_pos", [[], [1], [1, 2, 3, 4], [1, 2, 3, 4, 5, 6]])
+def test_meander_init_pos_error(param, i_pos) -> None:
+    mk = Marker(**param)
+    f_pos = [1, 2, 3]
+    with pytest.raises(ValueError):
+        mk.meander(i_pos, f_pos, width=0.01)
+
+
+@pytest.mark.parametrize("f_pos", [[], [1], [1, 2, 3, 4], [1, 2, 3, 4, 5, 6]])
+def test_meander_final_pos_error(param, f_pos) -> None:
+    mk = Marker(**param)
+    i_pos = [1, 2, 3]
+    with pytest.raises(ValueError):
+        mk.meander(i_pos, f_pos, width=0.01)
+
+
+def test_meander_width(param) -> None:
+    i_pos = [0, 0, 0]
+    f_pos = [1, 2]
+    mk = Marker(**param)
+    mk.meander(i_pos, f_pos, orientation="x")
+    x = mk.x
+    assert pytest.approx(np.max(x)) == i_pos[0] + 1  # width = 1 by default
+    assert pytest.approx(np.min(x)) == i_pos[0]
+
+    i_pos = [0, 0, 0]
+    f_pos = [1, 2]
+    w = 5
+    mk = Marker(**param)
+    mk.meander(i_pos, f_pos, width=5, orientation="y")
+    y = mk.y
+    assert pytest.approx(np.max(y)) == i_pos[1] + w
+    assert pytest.approx(np.min(y)) == i_pos[1]
+
+
+def test_meader_points_x_or(param) -> None:
+    mk = Marker(**param)
+    mk.meander([0, 0, 0], [1, 2, 3], width=2, delta=0.5, orientation="x")
+
+    x, y, z, f, s = mk.points
+    np.testing.assert_almost_equal(x, np.array([0.0, 0.0, 2.0, 2.0, 0.0, 0.0, 2.0, 2.0, 0.0, 0.0, 2.0, 2.0, 0.0]))
+    np.testing.assert_almost_equal(y, np.array([0.0, 0.0, 0.0, 0.5, 0.5, 1.0, 1.0, 1.5, 1.5, 2.0, 2.0, 2.0, 0.0]))
+    np.testing.assert_almost_equal(z, np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
+    np.testing.assert_almost_equal(f, np.array([0.5, 0.5, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 24.0]))
+    np.testing.assert_almost_equal(s, np.array([0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0]))
+
+
+def test_meader_points_y_or(param) -> None:
+    mk = Marker(**param)
+    mk.meander([0, 0, 0], [-5, -1, -2], width=3, delta=1, orientation="y")
+
+    x, y, z, f, s = mk.points
+    np.testing.assert_almost_equal(
+        x, np.array([0.0, 0.0, 0.0, -1.0, -1.0, -2.0, -2.0, -3.0, -3.0, -4.0, -4.0, -5.0, -5.0, -5.0, 0.0])
+    )
+    np.testing.assert_almost_equal(
+        y, np.array([0.0, 0.0, 3.0, 3.0, 0.0, 0.0, 3.0, 3.0, 0.0, 0.0, 3.0, 3.0, 0.0, 0.0, 0.0])
+    )
+    np.testing.assert_almost_equal(
+        z, np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+    )
+    np.testing.assert_almost_equal(
+        f, np.array([0.5, 0.5, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 24.0])
+    )
+    np.testing.assert_almost_equal(
+        s, np.array([0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0])
+    )
+
+
+def test_ablation_empty(param) -> None:
+    mk = Marker(**param)
+    assert mk.ablation([]) is None
+
+
+def test_ablation_shift_default(param) -> None:
+    mk = Marker(**param)
+    mk.ablation([[0, 0, 0], [5, 0, 0]], shift=None)
+    x, y, *_ = mk.points
+
+    assert len(x) == 5
+    np.testing.assert_almost_equal(x, np.array([0.0, 0.0, 5.0, 5.0, 0.0]))
+    np.testing.assert_almost_equal(y, np.array([0.0, 0.0, 0.0, 0.0, 0.0]))
+    # test None values
+
+
+def test_ablation_shift_custom(param) -> None:
+    mk = Marker(**param)
+    mk.ablation([[0, 0, 0], [5, 0, 0]], shift=0.1)
+    x, y, *_ = mk.points
+
+    assert len(x) == 21
+    np.testing.assert_almost_equal(
+        x,
+        np.array(
+            [0.0, 0.0, 5.0, 5.0, 0.1, 0.1, 5.1, 5.1, -0.1, -0.1, 4.9, 4.9, 0.0, 0.0, 5.0, 5.0, 0.0, 0.0, 5.0, 5.0, 0.0]
+        ),
+    )
+    np.testing.assert_almost_equal(
+        y,
+        np.array(
+            [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                0.0,
+            ]
+        ),
     )

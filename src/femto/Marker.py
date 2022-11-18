@@ -1,3 +1,4 @@
+import math
 from dataclasses import dataclass
 from typing import List, Optional, TypeVar, Union
 
@@ -136,16 +137,28 @@ class Marker(LaserPath):
         delta: float = 0.001,
         orientation: str = "x",
     ) -> None:
-
+        if len(init_pos) not in [2, 3]:
+            raise ValueError(
+                "Initial position must be a list of 2 (x,y) or 3 (x,y,z) values."
+                f"init_pos has {len(init_pos)} elements. Give a valid 'init_pos' list."
+            )
+        xi, yi, *_ = init_pos
+        if len(final_pos) not in [2, 3]:
+            raise ValueError(
+                "Final position must be a list of 2 (x,y) or 3 (x,y,z) values."
+                f"final_pos has {len(final_pos)} elements. Give a valid 'final_pos' list."
+            )
+        xf, yf, *_ = final_pos
         if orientation.lower() not in ["x", "y"]:
             raise ValueError(
                 'Orientation must be either "x" (parallel lines along x) or "y" (parallel lines along y).'
                 f"Given {orientation}."
             )
+
         s = sign()
         if orientation.lower() == "x":
-            num_passes = int(np.abs(init_pos[1] - final_pos[1]) / delta)
-            delta = np.sign(final_pos[1] - init_pos[1]) * delta
+            num_passes = math.floor(np.abs(yf - yi) / delta)
+            delta = np.sign(yf - yi) * delta
 
             self.start(init_pos)
             for _ in range(num_passes):
@@ -155,8 +168,8 @@ class Marker(LaserPath):
             self.end()
 
         else:
-            num_passes = int(np.abs(init_pos[0] - final_pos[0]) / delta)
-            delta = np.sign(final_pos[0] - init_pos[0]) * delta
+            num_passes = math.floor(np.abs(xf - xi) / delta)
+            delta = np.sign(xf - xi) * delta
 
             self.start(init_pos)
             for _ in range(num_passes):
@@ -167,40 +180,32 @@ class Marker(LaserPath):
 
     def ablation(
         self: MK,
-        points: List[List[float]] = None,
-        shift: float = None,
-        speedpos: float = None,
+        points: List[List[float]],
+        shift: Optional[float] = None,
     ) -> None:
-        if points is None:
+
+        if not points:
             return
 
-        if speedpos is None:
-            speedpos = self.speed_closed
-
-        self.start(points.pop(0), speed_pos=speedpos)
-        for p in points:
-            if p[0] is None:
-                p[0] = self.lastx
-            if p[1] is None:
-                p[1] = self.lasty
-            if p[2] is None:
-                p[2] = self.lastz
-            self.linear(p, mode="ABS")
-
+        # shift the path's points by shift value
+        points = np.asarray(points)
         if shift is not None:
-            points = np.asarray(points)
-            shifted_points = [
+            path_list = [
+                np.add(points, [0, 0, 0]),
                 np.add(points, [shift, 0, 0]),
                 np.add(points, [-shift, 0, 0]),
                 np.add(points, [0, shift, 0]),
                 np.add(points, [0, -shift, 0]),
             ]
+        else:
+            path_list = [points]
 
-            for shift in shifted_points:
-                self.linear(shift[0], mode="ABS", shutter=0)
-                for p in shift:
-                    self.linear(p, mode="ABS")
-                self.linear(shift[-1], mode="ABS", shutter=0)
+        # Add linear segments
+        for path in path_list:
+            self.linear(path[0], mode="ABS", shutter=0)
+            for pts in path:
+                self.linear(pts, mode="ABS")
+            self.linear([None, None, None], mode="ABS", shutter=0)
         self.end()
 
 
@@ -208,26 +213,12 @@ def main():
     import matplotlib.pyplot as plt
     from femto.helpers import Dotdict, split_mask
 
-    PARAMETERS_MK = Dotdict(
-        scan=1,
-        speed=2,
-        speed_pos=5,
-        speed_closed=5,
-        depth=0.000,
-        lx=1,
-        ly=1,
-    )
-
-    PARAMETERS_GC = Dotdict(
-        filename="testPGMcompiler.pgm",
-        laser="PHAROS",
-        samplesize=(10, 10),
-        rotation_angle=0.0,
-    )
+    PARAMETERS_MK = Dotdict(scan=1, speed=2, speed_pos=5, speed_closed=5, depth=0.000, lx=1, ly=1)
+    PARAMETERS_GC = Dotdict(filename="testPGM.pgm", laser="PHAROS", samplesize=(10, 10))
 
     c = Marker(**PARAMETERS_MK)
     # c.cross([2.5, 1], 5, 2)
-    c.ruler([1, 2, 3, 4], 5, 2, x_init=-2)
+    c.ablation([[0, 0, 0], [5, 0, 0]], shift=0.1)
     print(c.points)
 
     from femto.PGMCompiler import PGMCompiler
