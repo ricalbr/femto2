@@ -211,6 +211,7 @@ class Marker(LaserPath):
 
 def main():
     import matplotlib.pyplot as plt
+
     from femto.helpers import Dotdict, split_mask
 
     PARAMETERS_MK = Dotdict(scan=1, speed=2, speed_pos=5, speed_closed=5, depth=0.000, lx=1, ly=1)

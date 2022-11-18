@@ -1,4 +1,12 @@
-from src.femto import Cell, PGMCompiler, PGMTrench, TrenchColumn, _Marker, _Waveguide, dotdict
+from src.femto import (
+    Cell,
+    PGMCompiler,
+    PGMTrench,
+    TrenchColumn,
+    _Marker,
+    _Waveguide,
+    dotdict,
+)
 
 # GEOMETRICAL DATA
 # Circuit

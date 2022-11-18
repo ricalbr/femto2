@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from femto.Waveguide import coupler, Waveguide
+from femto.Waveguide import Waveguide, coupler
 
 
 @pytest.fixture
