@@ -1,3 +1,4 @@
+import math
 import os
 import pickle
 from collections import deque
@@ -5,17 +6,20 @@ from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import dataclass
 from itertools import product, zip_longest
-from math import radians
 from operator import add
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Optional, Tuple, TypeVar, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.typing as npt
 from scipy.interpolate import interp2d
 
 from femto.helpers import Dotdict, listcast
 from femto.Trench import Trench, TrenchColumn
+
+# Create a generic variable that can be 'LaserPath', or any subclass.
+GC = TypeVar("GC", bound="PGMCompiler")
 
 
 @dataclass
@@ -24,7 +28,7 @@ class PGMCompiler:
     Class representing a PGM Compiler.
     """
 
-    filename: str = None
+    filename: str
     export_dir: str = ""
     samplesize: Tuple[float, float] = (None, None)
     laser: str = "PHAROS"
@@ -33,8 +37,8 @@ class PGMCompiler:
     warp_flag: bool = False
     n_glass: float = 1.50
     n_environment: float = 1.33
-    rotation_angle: float = 0.0
-    aerotech_angle: float = None
+    rotation_angle: Optional[float] = None
+    aerotech_angle: Optional[float] = None
     long_pause: float = 0.5
     short_pause: float = 0.05
     output_digits: int = 6
@@ -47,40 +51,75 @@ class PGMCompiler:
     _shutter_on: bool = False
     _mode_abs: bool = True
 
-    def __post_init__(self):
+    def __post_init__(self: GC) -> None:
         if self.filename is None:
-            raise ValueError("Filename is None, set GcodeParameters.filename.")
-        self.CWD = os.path.dirname(os.path.abspath(__file__))
+            raise ValueError("Filename is None, set 'filename' attribute")
+        self.CWD = Path.cwd()
         self._loaded_files: list = []
 
         self.fwarp = self.antiwarp_management(self.warp_flag)
 
-        if self.rotation_angle != 0:
-            print(" BEWARE, ANGLE MUST BE IN DEGREE! ".center(39, "*"))
-            print(f" Rotation angle is {self.rotation_angle % 360:.3f} deg. ".center(39, "*"))
-        self.rotation_angle = radians(self.rotation_angle % 360)
+        # Set rotation angle in radians for matrix rotations
+        if self.rotation_angle:
+            self.rotation_angle = math.radians(self.rotation_angle % 360)
+        else:
+            self.rotation_angle = float(0.0)
+
+        # Set AeroTech angle between 0 and 359 for G84 command
+        if self.aerotech_angle:
+            self.aerotech_angle = self.rotation_angle % 360
+        else:
+            self.aerotech_angle = float(0.0)
+
+    @classmethod
+    def from_dict(cls: GC, param: Union[dict, Dotdict]) -> GC:
+        return cls(**param)
+
+    def __enter__(self: GC) -> GC:
+        """
+        Context manager entry
+
+        :return: Self
+
+        Can be use like:
+        ::
+            with femto.PGMCompiler(filename, ind_rif) as gc:
+                <code block>
+        """
+        self.header()
+        self.dwell(1.0)
+        if self.aerotech_angle:
+            self._enter_axis_rotation(angle=self.aerotech_angle)
+        return self
+
+    def __exit__(self: GC, exc_type, exc_value, traceback) -> None:
+        """
+        Context manager exit
+
+        :return: None
+        """
 
         if self.aerotech_angle:
-            print(" BEWARE, G84 COMMAND WILL BE USED!!! ".center(39, "*"))
-            print(" ANGLE MUST BE IN DEGREE! ".center(39, "*"))
-            print(f" Rotation angle is {self.aerotech_angle % 360:.3f} deg. ".center(39, "*"))
-            print()
-            self.aerotech_angle = self.aerotech_angle % 360
+            self._exit_axis_rotation()
+            self._instructions.append("\n")
+        if self.home:
+            self.go_init()
+        self.close()
 
     @property
-    def xsample(self) -> float:
+    def xsample(self: GC) -> float:
         return self.samplesize[0]
 
     @property
-    def ysample(self) -> float:
+    def ysample(self: GC) -> float:
         return self.samplesize[1]
 
     @property
-    def neff(self) -> float:
+    def neff(self: GC) -> float:
         return self.n_glass / self.n_environment
 
     @property
-    def tshutter(self) -> float:
+    def tshutter(self: GC) -> float:
         """
         Function that set the shuttering time given the fabrication laboratory.
 
@@ -94,7 +133,11 @@ class PGMCompiler:
         else:
             return 0.005
 
-    def antiwarp_management(self, opt: bool, num: int = 16) -> interp2d:
+    @property
+    def tdwell(self: GC) -> float:
+        return self._total_dwell_time
+
+    def antiwarp_management(self: GC, opt: bool, num: int = 16) -> interp2d:
         """
         It fetches an antiwarp function in the current working direcoty. If it doesn't exist, it lets you create a new
         one. The number of sampling points can be specified.
@@ -174,43 +217,8 @@ class PGMCompiler:
 
         return func_antiwarp
 
-    @property
-    def tdwell(self) -> float:
-        return self._total_dwell_time
-
-    def __enter__(self):
-        """
-        Context manager entry
-
-        :return: Self
-
-        Can be use like:
-        ::
-            with femto.PGMCompiler(filename, ind_rif) as gc:
-                <code block>
-        """
-        self.header()
-        self.dwell(1.0)
-        if self.aerotech_angle:
-            self._enter_axis_rotation(angle=self.aerotech_angle)
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        """
-        Context manager exit
-
-        :return: None
-        """
-
-        if self.aerotech_angle:
-            self._exit_axis_rotation()
-            self._instructions.append("\n")
-        if self.home:
-            self.go_init()
-        self.close()
-
     # Methods
-    def header(self):
+    def header(self: GC) -> None:
         """
         The function print the header file of the G-Code file. The user can specify the fabrication line to work in
         ``CAPABLE``, ``CARBIDE`` or ``FIRE LINE1`` as parameter when the G-Code Compiler obj is instantiated.
@@ -230,7 +238,7 @@ class PGMCompiler:
             with open(os.path.join(self.CWD, "utils", "header_uwe.txt")) as fd:
                 self._instructions.extend(fd.readlines())
 
-    def dvar(self, variables: List[str]):
+    def dvar(self: GC, variables: List[str]) -> None:
         """
         Adds the declaration of variables in a G-Code file.
 
@@ -251,7 +259,7 @@ class PGMCompiler:
             self._instructions.append("INCREMENTAL\n")
             self._mode_abs = False
 
-    def comment(self, comstring: str):
+    def comment(self: GC, comstring: str) -> None:
         """
         Adds a comment to a G-Code file.
 
@@ -264,7 +272,7 @@ class PGMCompiler:
         else:
             self._instructions.append("\n")
 
-    def shutter(self, state: str):
+    def shutter(self: GC, state: str) -> None:
         """
         Adds the instruction to open (close) the shutter to a G-Code file only when necessary.
         The user specifies the state and the function compare it to the current state of the shutter (which is
@@ -289,7 +297,7 @@ class PGMCompiler:
         else:
             pass
 
-    def dwell(self, pause: float):
+    def dwell(self: GC, pause: float) -> None:
         """
         Adds pause instruction to a G-Code file.
 
@@ -300,7 +308,7 @@ class PGMCompiler:
         self._instructions.append(f"DWELL {pause}\n\n")
         self._total_dwell_time += float(pause)
 
-    def set_home(self, home_pos: List[float]):
+    def set_home(self: GC, home_pos: List[float]) -> None:
         """
         Defines a preset position or a software home position to the one specified in the input list.
         To exclude a variable set it to None.
@@ -321,7 +329,7 @@ class PGMCompiler:
         args = self._format_args(*home_pos)
         self._instructions.append(f"G92 {args}\n")
 
-    def homing(self):
+    def homing(self: GC) -> None:
         """
         Utility function to return to the origin (0,0,0) with shutter OFF.
 
@@ -330,7 +338,7 @@ class PGMCompiler:
         self.comment("HOMING")
         self.move_to([0, 0, 0])
 
-    def go_init(self):
+    def go_init(self: GC) -> None:
         """
         Utility function to return to the initial point of fabrication (-2,0,0) with shutter OFF.
 
@@ -338,7 +346,7 @@ class PGMCompiler:
         """
         self.move_to([-2, 0, 0])
 
-    def move_to(self, position: List[float], speedpos: float = 5):
+    def move_to(self: GC, position: List[float], speedpos: float = 5) -> None:
         """
         Utility function to move to a given position with the shutter OFF. The user can specify the target position
         and the positioning speed.
@@ -363,7 +371,7 @@ class PGMCompiler:
         self.dwell(self.long_pause)
 
     @contextmanager
-    def axis_rotation(self):
+    def axis_rotation(self: GC):
         self._enter_axis_rotation()
         try:
             yield
@@ -371,7 +379,7 @@ class PGMCompiler:
             self._exit_axis_rotation()
 
     @contextmanager
-    def for_loop(self, var: str, num: int):
+    def for_loop(self: GC, var: str, num: int) -> None:
         """
         Context manager that manages a FOR loop in a G-Code file.
 
@@ -396,7 +404,7 @@ class PGMCompiler:
             self._total_dwell_time += num * _dt_forloop
 
     @contextmanager
-    def repeat(self, num: int):
+    def repeat(self: GC, num: int) -> None:
         """
         Context manager that manages a REPEAT loop in a G-Code file.
 
@@ -420,7 +428,7 @@ class PGMCompiler:
             # pauses should be multiplied by number of cycles as well
             self._total_dwell_time += num * _dt_repeat
 
-    def tic(self):
+    def tic(self: GC) -> None:
         """
         Print the current time (hh:mm:ss) in message panel. The function is intended to be used before the execution
         of an operation or script to measure its time performances.
@@ -429,7 +437,7 @@ class PGMCompiler:
         """
         self._instructions.append('MSGDISPLAY 1, "INIZIO #TS"\n\n')
 
-    def toc(self):
+    def toc(self: GC) -> None:
         """
         Print the current time (hh:mm:ss) in message panel. The function is intended to be used after the execution
         of an operation or script to measure its time performances.
@@ -440,7 +448,7 @@ class PGMCompiler:
         self._instructions.append('MSGDISPLAY 1, "---------------------"\n')
         self._instructions.append('MSGDISPLAY 1, " "\n\n')
 
-    def load_program(self, filename: str, task_id: int = 0):
+    def load_program(self: GC, filename: str, task_id: int = 0) -> None:
         """
         Adds the instruction to LOAD a program in a G-Code file.
 
@@ -454,7 +462,7 @@ class PGMCompiler:
         self._instructions.append(f'PROGRAM {task_id} LOAD "{file}"\n')
         self._loaded_files.append(file.stem)
 
-    def remove_program(self, filename: str, task_id: int = 0):
+    def remove_program(self: GC, filename: str, task_id: int = 0) -> None:
         """
         Adds the instruction to REMOVE a program from memory buffer in a G-Code file.
 
@@ -469,7 +477,7 @@ class PGMCompiler:
         self._instructions.append(f'REMOVEPROGRAM "{file}"\n')
         self._loaded_files.remove(file.stem)
 
-    def farcall(self, filename: str):
+    def farcall(self: GC, filename: str) -> None:
         """
         Adds the FARCALL instruction in a G-Code file.
 
@@ -483,11 +491,11 @@ class PGMCompiler:
         self.dwell(self.short_pause)
         self._instructions.append(f'FARCALL "{file}"\n')
 
-    def programstop(self, task_id: int = 0):
+    def programstop(self: GC, task_id: int = 0):
         self._instructions.append(f"PROGRAM {task_id} STOP\n")
         self._instructions.append(f"WAIT (TASKSTATUS({task_id}, DATAITEM_TaskState) == TASKSTATE_Idle) -1\n")
 
-    def buffercall(self, filename: str, task_id: int = 0):
+    def buffercall(self: GC, filename: str, task_id: int = 0) -> None:
         """
         Adds the BUFFEREDRUN instruction in a G-Code file.
 
@@ -502,7 +510,7 @@ class PGMCompiler:
             raise FileNotFoundError(f"{file} not loaded. Cannot load it.")
         self._instructions.append(f'PROGRAM {task_id} BUFFEREDRUN "{file}"\n')
 
-    def chiamatutto(self, filenames: List[str], task_id: List[int] = 0):
+    def chiamatutto(self: GC, filenames: List[str], task_id: List[int] = 0) -> None:
         for (fpath, t_id) in zip_longest(listcast(filenames), listcast(task_id), fillvalue=0):
             _, fn = os.path.split(fpath)
             self.load_program(fpath, t_id)
@@ -511,7 +519,7 @@ class PGMCompiler:
             self.dwell(self.long_pause)
             self.instruction("\n")
 
-    def write(self, points: np.ndarray):
+    def write(self: GC, points: np.ndarray) -> None:
         """
         The function convert the quintuple (X,Y,Z,F,S) to G-Code instructions. The (X,Y,Z) coordinates are
         transformed using the transformation matrix that takes into account the rotation of a given rotation_angle
@@ -526,6 +534,14 @@ class PGMCompiler:
         :return: None
         """
 
+        # if self.rotation_angle != 0:
+        #     print(" BEWARE, ANGLE MUST BE IN DEGREE! ".center(39, "*"))
+        #     print(f" Rotation angle is {self.rotation_angle % 360:.3f} deg. ".center(39, "*"))
+        # if self.aerotech_angle:
+        #     print(" BEWARE, G84 COMMAND WILL BE USED!!! ".center(39, "*"))
+        #     print(" ANGLE MUST BE IN DEGREE! ".center(39, "*"))
+        #     print(f" Rotation angle is {self.aerotech_angle % 360:.3f} deg. ".center(39, "*"))
+        #     print()
         x_c, y_c, z_c, f_c, s_c = self.transform_points(points)
         args = [self._format_args(x, y, z, f) for (x, y, z, f) in zip(x_c, y_c, z_c, f_c)]
         for (arg, s) in zip_longest(args, s_c):
@@ -539,7 +555,15 @@ class PGMCompiler:
                 self._instructions.append(f"LINEAR {arg}\n")
         self.dwell(self.long_pause)
 
-    def transform_points(self, points):
+    def transform_points(
+        self: GC, points: npt.NDArray[np.float32]
+    ) -> Tuple[
+        npt.NDArray[np.float32],
+        npt.NDArray[np.float32],
+        npt.NDArray[np.float32],
+        npt.NDArray[np.float32],
+        npt.NDArray[np.float32],
+    ]:
         x, y, z, fc, sc = points
         x, y, z = self.flip_path(x, y, z)
         point_matrix = np.stack((x, y, z), axis=-1).astype(np.float32)
@@ -551,7 +575,12 @@ class PGMCompiler:
             x_c, y_c, z_c = np.matmul(point_matrix, self.t_matrix()).T
         return x_c, y_c, z_c, fc, sc
 
-    def flip_path(self, xc, yc, zc):
+    def flip_path(
+        self: GC,
+        xc: npt.NDArray[np.float32],
+        yc: npt.NDArray[np.float32],
+        zc: npt.NDArray[np.float32],
+    ) -> Tuple[npt.NDArray[np.float32], npt.NDArray[np.float32], npt.NDArray[np.float32]]:
         """
         Flip the laser path along the x-, y- and z-coordinates
         :return: None
@@ -594,7 +623,7 @@ class PGMCompiler:
             yc = flip_y
         return xc, yc, zc
 
-    def instruction(self, instr: str):
+    def instruction(self: GC, instr: str) -> None:
         """
         Adds a G-Code instruction passed as parameter to the PGM file.
 
@@ -607,7 +636,7 @@ class PGMCompiler:
         else:
             self._instructions.append(instr + "\n")
 
-    def close(self, filename: str = None, verbose: bool = False):
+    def close(self: GC, filename: str = None, verbose: bool = False) -> None:
         """
         Dumps all the instruction in self._instruction in a .pgm file.
         The filename is specified during the class instatiation. If no extension is present, the proper one is
@@ -647,7 +676,7 @@ class PGMCompiler:
         if verbose:
             print("G-code compilation completed.")
 
-    def compensate(self, pts: np.ndarray) -> np.ndarray:
+    def compensate(self: GC, pts: np.ndarray) -> npt.NDArray[np.float32]:
         """
         Returns the points compensated along z-direction for the refractive index, the offset and the glass warp.
 
@@ -666,7 +695,7 @@ class PGMCompiler:
             pts_comp[2] = pts_comp[2] + self.fwarp(pts_comp[0], pts_comp[1]) / self.neff
         return pts_comp
 
-    def t_matrix(self, dim: int = 3) -> np.ndarray:
+    def t_matrix(self: GC, dim: int = 3) -> npt.NDArray[np.float32]:
         """
         Given the rotation rotation_angle and the rifraction index, the function compute the transformation matrix as
         composition of rotatio matrix (RM) and a homothety matrix (SM).
@@ -697,7 +726,7 @@ class PGMCompiler:
             raise ValueError(f"Dimension not valid. dim must be either 2 or 3. Given {dim}.")
 
     # Private interface
-    def _format_args(self, x: float = None, y: float = None, z: float = None, f: float = None) -> str:
+    def _format_args(self: GC, x: float = None, y: float = None, z: float = None, f: float = None) -> str:
         """
         Utility function that creates a string prepending the coordinate name to the given value for all the given
         the coordinates ``[X,Y,Z]`` and feed rate ``F``.
@@ -756,7 +785,7 @@ class PGMCompiler:
             file = Path(filename)
         return file
 
-    def _enter_axis_rotation(self, angle: float = None):
+    def _enter_axis_rotation(self: GC, angle: float = None) -> None:
         self.comment("ACTIVATE AXIS ROTATION")
         self._instructions.append(f"LINEAR X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{self.speed_pos:.6f}\n")
         self._instructions.append("G84 X Y\n")
@@ -767,7 +796,7 @@ class PGMCompiler:
         angle = float(angle % 360)
         self._instructions.append(f"G84 X Y F{angle}\n\n")
 
-    def _exit_axis_rotation(self):
+    def _exit_axis_rotation(self: GC) -> None:
         self.comment("DEACTIVATE AXIS ROTATION")
         self._instructions.append(f"LINEAR X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{self.speed_pos:.6f}\n")
         self._instructions.append("G84 X Y\n")
