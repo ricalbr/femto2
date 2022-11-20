@@ -1,5 +1,5 @@
 from functools import partial
-from itertools import cycle
+from itertools import chain, cycle, islice, repeat
 from typing import Any, Dict, List, Tuple, Union
 
 import numpy as np
@@ -98,3 +98,11 @@ def split_mask(arr: npt.NDArray[Any], mask: Union[List[bool], npt.NDArray[bool]]
     sp = np.split(arr, indices)
     sp = sp[0::2] if mask[0] else sp[1::2]
     return sp
+
+
+def pad_infinite(iterable, padding=None):
+    return chain(iterable, repeat(padding))
+
+
+def pad(iterable, size, padding=None):
+    return islice(pad_infinite(iterable, padding), size)
