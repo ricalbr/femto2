@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, TypeVar
+from pathlib import Path
+from typing import TypeVar
 
+import dill
 import numpy as np
 import numpy.typing as npt
 
@@ -351,6 +353,21 @@ class LaserPath:
         self.add_path(x_inc, y_inc, z_inc, f_inc, s_inc)
         return self
 
+    def export(self: LP, filename: str) -> None:
+        """
+        Simple method to export objects using dill.
+        :param filename: filename or path to the pickle object
+        :type filename: str
+        """
+
+        filename = Path(filename)
+        if filename.suffix not in [".pickle", "pkl"]:
+            filename = Path(filename.stem + ".pkl")
+
+        with open(filename, "wb") as p:
+            dill.dump(self, p)
+            print(f"{self.__class__.__name__} exported to {filename}.")
+
     def subs_num(self: LP, l_curve: float = 0, speed: float | None = None) -> int:
         """
         Utility function that, given the length of a segment and the fabrication speed, computes the number of points
@@ -448,14 +465,15 @@ def main():
     lpath.add_path(path_x, path_y, path_z, path_f, path_s)
     print(lpath.points.T)
 
+    # Export Laserpath
+    lpath.export("LP.p")
+
     # Plot
     fig = plt.figure()
     fig.clf()
     ax = Axes3D(fig, auto_add_to_figure=False)
     fig.add_axes(ax)
-    ax.set_xlabel("X [mm]")
-    ax.set_ylabel("Y [mm]")
-    ax.set_zlabel("Z [mm]")
+    ax.set_xlabel("X [mm]"), ax.set_ylabel("Y [mm]"), ax.set_zlabel("Z [mm]")
     ax.plot(lpath.x, lpath.y, lpath.z, "-k", linewidth=2.5)
     ax.set_box_aspect(aspect=(3, 1, 0.5))
     plt.show()

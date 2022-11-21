@@ -1,3 +1,6 @@
+from pathlib import Path
+
+import dill
 import numpy as np
 import pytest
 
@@ -376,3 +379,13 @@ def test_subs_num_base_case(laser_path) -> None:
 
 def test_subs_num_empty_base_case(empty_path) -> None:
     assert empty_path.subs_num(0.010), 3
+
+
+def test_pickle(laser_path) -> None:
+    filename = Path("test.pkl")
+    laser_path.export(filename.name)
+    assert filename.is_file()
+
+    with open(filename, "rb") as f:
+        lp = dill.load(f)
+    assert type(lp) == type(laser_path)
