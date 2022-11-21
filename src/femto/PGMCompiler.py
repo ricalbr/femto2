@@ -53,7 +53,7 @@ class PGMCompiler:
     def __post_init__(self: GC) -> None:
         if self.filename is None:
             raise ValueError("Filename is None, set 'filename' attribute")
-        self.CWD = Path(__file__).parent
+        self.CWD = Path.cwd()
         self._instructions = deque()
         self._loaded_files: list = []
         self._dvars = []
@@ -160,7 +160,7 @@ class PGMCompiler:
             raise ValueError(f"Fabrication line should be PHAROS, CARBIDE or UWE. Given {self.laser}.")
 
         header_name = f"header_{self.laser.lower()}.txt"
-        with open(self.CWD / "utils" / header_name) as f:
+        with open(Path(__file__).parent / "utils" / header_name) as f:
             self._instructions.extend(f.readlines())
 
     def dvar(self: GC, variables: List[str]) -> None:
@@ -726,6 +726,7 @@ class PGMCompiler:
             if not all(self.samplesize):
                 raise ValueError(f"Wrong sample size dimensions. Given ({self.samplesize[0]}, {self.samplesize[1]}).")
             function_pickle = self.CWD / "fwarp.pkl"
+
             if function_pickle.is_file():
                 with open(function_pickle, "rb") as f:
                     fwarp = dill.load(f)

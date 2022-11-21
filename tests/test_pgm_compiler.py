@@ -125,8 +125,13 @@ def test_enter_exit_method_default(param) -> None:
         )
     assert G._instructions == deque([])
 
+    fold = Path(".") / param["export_dir"]
+    file = fold / param["filename"]
+    file.unlink()
+    fold.rmdir()
 
-def test_enter_exit_method(param) -> None:
+
+def test_enter_exit_method() -> None:
     p = dict(filename="testPGM.pgm", samplesize=(25, 25), home=True, aerotech_angle=2.0, flip_x=True)
     with PGMCompiler(**p) as G:
         assert G._instructions == deque(
@@ -154,6 +159,10 @@ def test_enter_exit_method(param) -> None:
             ]
         )
     assert G._instructions == deque([])
+
+    file = Path(".") / p["filename"]
+    assert file.is_file()
+    file.unlink()
 
 
 @pytest.mark.parametrize("xs, expected", [(None, None), (1, 1), (0.5, 0.5), (-5, 5)])
@@ -266,14 +275,15 @@ def test_antiwarp_load(param, x, y) -> None:
     def fun(h, k):
         return h**2 * k
 
-    file = Path(r".\src\femto") / "fwarp.pkl"
+    file = Path.cwd() / "fwarp.pkl"
     if not file.is_file():
         with open(file, "wb") as f:
             dill.dump(fun, f)
+    assert file.is_file()
 
     G_fun = G.antiwarp_management(opt=True)
     assert G_fun(x, y) == fun(x, y)
-    file.unlink()
+    file.unlink(missing_ok=True)
 
 
 def test_antiwarp_creation(monkeypatch, param) -> None:
@@ -301,12 +311,12 @@ def test_antiwarp_creation(monkeypatch, param) -> None:
     )
     monkeypatch.setattr("builtins.input", lambda _: next(z_in))
 
-    funpath = Path(r".\src\femto") / "fwarp.pkl"
+    funpath = Path.cwd() / "fwarp.pkl"
     G = PGMCompiler(**param)
     G_fun = G.antiwarp_management(opt=True)
     assert callable(G_fun)
     assert funpath.is_file()
-    funpath.unlink()
+    funpath.unlink(missing_ok=True)
 
 
 def test_antiwarp_creation_input_errors(monkeypatch, param) -> None:
@@ -314,7 +324,7 @@ def test_antiwarp_creation_input_errors(monkeypatch, param) -> None:
     z_in = iter(["0.01", "0.01", "0.01", ""])
     monkeypatch.setattr("builtins.input", lambda _: next(z_in))
 
-    funpath = Path(r".\src\femto") / "fwarp.pkl"
+    funpath = Path.cwd() / "fwarp.pkl"
     G = PGMCompiler(**param)
     with pytest.raises(ValueError):
         G.antiwarp_management(opt=True)
@@ -338,7 +348,7 @@ def test_antiwarp_creation_points_error(monkeypatch, param, num, expectation) ->
         z_in = iter([random.uniform(-1, 1) * 1e-3 for _ in range(int(np.ceil(np.sqrt(num))) ** 2)])
     monkeypatch.setattr("builtins.input", lambda _: next(z_in))
 
-    funpath = Path(r".\src\femto") / "fwarp.pkl"
+    funpath = Path.cwd() / "fwarp.pkl"
     G = PGMCompiler(**param)
     with expectation:
         assert G.antiwarp_management(opt=True, num=num) is not None
@@ -627,10 +637,7 @@ def test_enter_axis_rotation(param, angle_p, angle) -> None:
     G._enter_axis_rotation(angle)
 
     a = G.aerotech_angle if angle is None else float(angle % 360)
-    print(a)
-    print(G.aerotech_angle)
     if a == 0.0:
-        print(G._instructions)
         assert G._instructions[-3] == "\n; ACTIVATE AXIS ROTATION\n"
         assert G._instructions[-2] == f"LINEAR X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{G.speed_pos:.6f}\n"
         assert G._instructions[-1] == "G84 X Y\n"
@@ -977,7 +984,7 @@ def test_compensate(param, x, y, z) -> None:
     def fun(h, k):
         return (h**2 * k) * 1e-3
 
-    file = Path(r".\src\femto") / "fwarp.pkl"
+    file = Path.cwd() / "fwarp.pkl"
     if not file.is_file():
         with open(file, "wb") as f:
             dill.dump(fun, f)
@@ -1073,7 +1080,7 @@ def test_transform_points_(param, xflip, yflip, warpf, angle, xin, yin, zin, xo,
     def fun(h, k):
         return -1e-3
 
-    file = Path(r".\src\femto") / "fwarp.pkl"
+    file = Path.cwd() / "fwarp.pkl"
     if not file.is_file():
         with open(file, "wb") as f:
             dill.dump(fun, f)
