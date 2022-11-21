@@ -283,7 +283,7 @@ def test_antiwarp_load(param, x, y) -> None:
 
     G_fun = G.antiwarp_management(opt=True)
     assert G_fun(x, y) == fun(x, y)
-    file.unlink(missing_ok=True)
+    file.unlink()
 
 
 def test_antiwarp_creation(monkeypatch, param) -> None:
@@ -316,7 +316,7 @@ def test_antiwarp_creation(monkeypatch, param) -> None:
     G_fun = G.antiwarp_management(opt=True)
     assert callable(G_fun)
     assert funpath.is_file()
-    funpath.unlink(missing_ok=True)
+    funpath.unlink()
 
 
 def test_antiwarp_creation_input_errors(monkeypatch, param) -> None:
@@ -328,7 +328,8 @@ def test_antiwarp_creation_input_errors(monkeypatch, param) -> None:
     G = PGMCompiler(**param)
     with pytest.raises(ValueError):
         G.antiwarp_management(opt=True)
-    funpath.unlink(missing_ok=True)
+    if funpath.is_file():
+        funpath.unlink()
 
 
 @pytest.mark.parametrize(
@@ -352,7 +353,8 @@ def test_antiwarp_creation_points_error(monkeypatch, param, num, expectation) ->
     G = PGMCompiler(**param)
     with expectation:
         assert G.antiwarp_management(opt=True, num=num) is not None
-    funpath.unlink(missing_ok=True)
+    if funpath.is_file():
+        funpath.unlink()
 
 
 @pytest.mark.parametrize(
