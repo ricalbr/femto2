@@ -131,6 +131,14 @@ class PGMCompiler:
         return self.n_glass / self.n_environment
 
     @property
+    def pso_label(self) -> str:
+        if self.laser.lower() not in ["ant", "carbide", "pharos", "uwe"]:
+            raise ValueError(f"Laser can be only ANT, CARBIDE, PHAROS or UWE. Given {self.laser.upper()}.")
+        if self.laser.lower() == "ant":
+            return "Z"
+        return "X"
+
+    @property
     def tshutter(self: GC) -> float:
         """
         Function that set the shuttering time given the fabrication laboratory.
@@ -138,8 +146,8 @@ class PGMCompiler:
         :return: shuttering time
         :rtype: float
         """
-        if self.laser.lower() not in ["pharos", "carbide", "uwe"]:
-            raise ValueError(f"Laser can be only PHAROS, CARBIDE or UWE. Given {self.laser.upper()}.")
+        if self.laser.lower() not in ["ant", "carbide", "pharos", "uwe"]:
+            raise ValueError(f"Laser can be only ANT, CARBIDE, PHAROS or UWE. Given {self.laser.upper()}.")
         if self.laser.lower() == "uwe":
             return 0.005
         return 0.000
@@ -152,16 +160,17 @@ class PGMCompiler:
     def header(self: GC) -> None:
         """
         The function print the header file of the G-Code file. The user can specify the fabrication line to work in
-        ``CAPABLE``, ``CARBIDE`` or ``FIRE LINE1`` as parameter when the G-Code Compiler obj is instantiated.
+        ``ANT``, ``CARBIDE``, ``PHAROS`` or ``UWE`` as parameter when the G-Code Compiler obj is instantiated.
 
         :return: None
         """
-        if self.laser is None or self.laser.lower() not in ["pharos", "carbide", "uwe"]:
+        if self.laser is None or self.laser.lower() not in ["ant", "carbide", "pharos", "uwe"]:
             raise ValueError(f"Fabrication line should be PHAROS, CARBIDE or UWE. Given {self.laser}.")
 
         header_name = f"header_{self.laser.lower()}.txt"
         with open(Path(__file__).parent / "utils" / header_name) as f:
             self._instructions.extend(f.readlines())
+        self.instruction("\n")
 
     def dvar(self: GC, variables: List[str]) -> None:
         """
@@ -222,10 +231,10 @@ class PGMCompiler:
 
         if state.lower() == "on" and self._shutter_on is False:
             self._shutter_on = True
-            self._instructions.append("\nPSOCONTROL X ON\n")
+            self._instructions.append(f"\nPSOCONTROL {self.pso_label} ON\n")
         elif state.lower() == "off" and self._shutter_on is True:
             self._shutter_on = False
-            self._instructions.append("\nPSOCONTROL X OFF\n")
+            self._instructions.append(f"\nPSOCONTROL {self.pso_label} OFF\n")
         else:
             pass
 

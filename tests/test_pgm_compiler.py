@@ -103,8 +103,11 @@ def test_filename_error(param) -> None:
 
 def test_enter_exit_method_default(param) -> None:
     with PGMCompiler(**param) as G:
+        print(G._instructions)
         assert G._instructions == deque(
             [
+                "; SETUP PHAROS - CAPABLE LAB\n",
+                "\n",
                 "ENABLE X Y Z\n",
                 "METRIC\n",
                 "SECONDS\n",
@@ -132,18 +135,21 @@ def test_enter_exit_method_default(param) -> None:
 
 
 def test_enter_exit_method() -> None:
-    p = dict(filename="testPGM.pgm", samplesize=(25, 25), home=True, aerotech_angle=2.0, flip_x=True)
+    p = dict(filename="testPGM.pgm", laser="ant", samplesize=(25, 25), home=True, aerotech_angle=2.0, flip_x=True)
     with PGMCompiler(**p) as G:
+        print(G._instructions)
         assert G._instructions == deque(
             [
+                "; SETUP ANT - DIAMOND LAB\n",
+                "\n",
                 "ENABLE X Y Z\n",
                 "METRIC\n",
                 "SECONDS\n",
                 "G359\n",
                 "VELOCITY ON\n",
-                "PSOCONTROL X RESET\n",
-                "PSOOUTPUT X CONTROL 3 0\n",
-                "PSOCONTROL X OFF\n",
+                "PSOCONTROL Z RESET\n",
+                "PSOOUTPUT Z CONTROL 0 1\n",
+                "PSOCONTROL Z OFF\n",
                 "ABSOLUTE\n",
                 "G17\n",
                 "\n",
@@ -188,6 +194,34 @@ def test_neff(param, ng, ne, expected) -> None:
     param["n_environment"] = ne
     G = PGMCompiler(**param)
     assert G.neff == expected
+
+
+@pytest.mark.parametrize(
+    "laser, expected",
+    [("ant", "Z"), ("pharos", "X"), ("UWE", "X"), ("CaRbIdE", "X")],
+)
+def test_pso_label(param, laser, expected) -> None:
+    param["laser"] = laser
+    G = PGMCompiler(**param)
+    assert G.pso_label == expected
+
+
+@pytest.mark.parametrize(
+    "laser, expectation",
+    [
+        ("ant", does_not_raise()),
+        ("pharos", does_not_raise()),
+        ("UWE", does_not_raise()),
+        ("CARbide", does_not_raise()),
+        ("satsuma", pytest.raises(ValueError)),
+        ("PHAROS", does_not_raise()),
+    ],
+)
+def test_pso_label_raise(param, laser, expectation) -> None:
+    param["laser"] = laser
+    G = PGMCompiler(**param)
+    with expectation:
+        print(G.pso_label)
 
 
 @pytest.mark.parametrize(
@@ -375,21 +409,27 @@ def test_header_error(param, laser, expectation) -> None:
 
 
 def test_header(param) -> None:
-    param["laser"] = "pharos"
+
+    param["laser"] = "ant"
     G = PGMCompiler(**param)
     G.header()
-    assert G._instructions[6] == "PSOOUTPUT X CONTROL 3 0\n"
-    del G
+    assert G._instructions[8] == "PSOOUTPUT Z CONTROL 0 1\n"
 
     param["laser"] = "carbide"
     G = PGMCompiler(**param)
     G.header()
-    assert G._instructions[6] == "PSOOUTPUT X CONTROL 2 0\n"
+    assert G._instructions[8] == "PSOOUTPUT X CONTROL 2 0\n"
+
+    param["laser"] = "pharos"
+    G = PGMCompiler(**param)
+    G.header()
+    assert G._instructions[8] == "PSOOUTPUT X CONTROL 3 0\n"
+    del G
 
     param["laser"] = "uwe"
     G = PGMCompiler(**param)
     G.header()
-    assert G._instructions[3] == "WAIT MODE NOWAIT\n"
+    assert G._instructions[5] == "WAIT MODE NOWAIT\n"
 
 
 @pytest.mark.parametrize("v", [["V1"], ["V1", "V2", "V3"], [], "VAR", ["V1", "V2", ["V3", ["V4", "V5"]], "V6"]])
