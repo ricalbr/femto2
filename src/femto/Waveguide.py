@@ -765,14 +765,14 @@ def main():
         lsafe=3,
     )
 
-    increment = [PARAMETERS_WG.lsafe, 0, 0]
+    increment = [5, 0, 0]
 
     # Calculations
     mzi = []
     for index in range(2):
-        PARAMETERS_WG.y_init = -PARAMETERS_WG.pitch / 2 + index * PARAMETERS_WG.pitch
 
         wg = Waveguide(**PARAMETERS_WG)
+        wg.y_init = -wg.pitch / 2 + index * wg.pitch
         wg.start()
         wg.linear(increment)
         wg.sin_mzi((-1) ** index * wg.dy_bend)

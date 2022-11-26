@@ -43,7 +43,7 @@ class LaserPath:
             raise ValueError(f"Number of scan must be integer. Given {self.scan}.")
 
     @classmethod
-    def from_dict(cls: LP, param: dict | Dotdict) -> LP:
+    def from_dict(cls, param: dict | Dotdict) -> LP:
         return cls(**param)
 
     @property
@@ -360,13 +360,13 @@ class LaserPath:
         :type filename: str
         """
 
-        filename = Path(filename)
-        if filename.suffix not in [".pickle", "pkl"]:
-            filename = Path(filename.stem + ".pkl")
+        fn = Path(filename)
+        if fn.suffix not in [".pickle", "pkl"]:
+            fn = Path(fn.stem + ".pkl")
 
-        with open(filename, "wb") as p:
+        with open(fn, "wb") as p:
             dill.dump(self, p)
-            print(f"{self.__class__.__name__} exported to {filename}.")
+            print(f"{self.__class__.__name__} exported to {fn}.")
 
     def subs_num(self: LP, l_curve: float = 0, speed: float | None = None) -> int:
         """
