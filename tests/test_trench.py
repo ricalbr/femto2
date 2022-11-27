@@ -121,6 +121,24 @@ def test_eq_false() -> None:
     assert not tc1 == tc2
 
 
+def test_lt_gt_eq_raise(poly) -> None:
+    from femto.Waveguide import Waveguide
+
+    tc = Trench(poly)
+    wg = Waveguide()
+
+    with pytest.raises(TypeError):
+        tc == wg
+    with pytest.raises(TypeError):
+        tc > wg
+    with pytest.raises(TypeError):
+        tc >= wg
+    with pytest.raises(TypeError):
+        tc < wg
+    with pytest.raises(TypeError):
+        tc <= wg
+
+
 def test_border(poly) -> None:
     tc = Trench(poly)
     xb, yb = tc.border

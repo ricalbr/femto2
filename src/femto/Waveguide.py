@@ -13,7 +13,7 @@ from femto.LaserPath import LaserPath
 WG = TypeVar("WG", bound="Waveguide")
 
 
-@dataclass
+@dataclass(repr=False)
 class Waveguide(LaserPath):
     """
     Class representing an optical waveguide.
@@ -30,16 +30,13 @@ class Waveguide(LaserPath):
     dz_bridge: float = 0.007
     margin: float = 1.0
 
-    def __post_init__(self: WG):
+    def __post_init__(self):
         super().__post_init__()
         if self.z_init is None:
             self.z_init = self.depth
 
-    def __repr__(self: WG) -> str:
-        return f"{self.__class__.__name__}@{id(self) & 0xFFFFFF:x}"
-
     @property
-    def dy_bend(self: WG) -> Optional[float]:
+    def dy_bend(self) -> Optional[float]:
         if self.pitch is None:
             raise ValueError("Waveguide pitch is set to None.")
         if self.int_dist is None:
@@ -47,19 +44,19 @@ class Waveguide(LaserPath):
         return 0.5 * (self.pitch - self.int_dist)
 
     @property
-    def dx_bend(self: WG) -> float:
+    def dx_bend(self) -> float:
         if self.radius is None:
             raise ValueError("Curvature radius is set to None.")
         return self.sbend_length(self.dy_bend, self.radius)
 
     @property
-    def dx_acc(self: WG) -> Optional[float]:
+    def dx_acc(self) -> Optional[float]:
         if self.dx_bend is None or self.int_length is None:
             return None
         return 2 * self.dx_bend + self.int_length
 
     @property
-    def dx_mzi(self: WG) -> Optional[float]:
+    def dx_mzi(self) -> Optional[float]:
         if self.dx_bend is None or self.int_length is None or self.arm_length is None:
             return None
         return 4 * self.dx_bend + 2 * self.int_length + self.arm_length
@@ -87,7 +84,7 @@ class Waveguide(LaserPath):
         dx = 2 * radius * np.sin(a)
         return a, dx
 
-    def sbend_length(self: WG, dy: float, radius: float) -> float:
+    def sbend_length(self, dy: float, radius: float) -> float:
         """
         Computes the x-displacement for a circular S-bend given the y-displacement dy and curvature radius.
 
@@ -101,7 +98,7 @@ class Waveguide(LaserPath):
         return float(self.get_sbend_parameter(dy, radius)[1])
 
     def get_spline_parameter(
-        self: WG,
+        self,
         disp_x: Optional[float] = None,
         disp_y: Optional[float] = None,
         disp_z: Optional[float] = None,
@@ -149,7 +146,7 @@ class Waveguide(LaserPath):
 
     # Methods
     def circ(
-        self: WG,
+        self,
         initial_angle: float,
         final_angle: float,
         radius: Optional[float] = None,
@@ -199,7 +196,7 @@ class Waveguide(LaserPath):
         return self
 
     def arc_bend(
-        self: WG,
+        self,
         dy: float,
         radius: Optional[float] = None,
         shutter: int = 1,
@@ -261,7 +258,7 @@ class Waveguide(LaserPath):
         return self
 
     def arc_acc(
-        self: WG,
+        self,
         dy: float,
         radius: Optional[float] = None,
         int_length: Optional[float] = None,
@@ -302,7 +299,7 @@ class Waveguide(LaserPath):
         return self
 
     def arc_mzi(
-        self: WG,
+        self,
         dy: float,
         radius: Optional[float] = None,
         int_length: Optional[float] = None,
@@ -346,7 +343,7 @@ class Waveguide(LaserPath):
         return self
 
     def sin_bridge(
-        self: WG,
+        self,
         dy: float,
         dz: Optional[float] = None,
         omega: Tuple[float, float] = (1, 2),
@@ -421,7 +418,7 @@ class Waveguide(LaserPath):
     sin_comp = partialmethod(sin_bridge, dz=0.0, omega=(2.0, 2.0))
 
     def sin_acc(
-        self: WG,
+        self,
         dy: float,
         radius: Optional[float] = None,
         int_length: Optional[float] = 0.0,
@@ -464,7 +461,7 @@ class Waveguide(LaserPath):
         return self
 
     def sin_mzi(
-        self: WG,
+        self,
         dy: float,
         radius: Optional[float] = None,
         int_length: Optional[float] = None,
@@ -508,7 +505,7 @@ class Waveguide(LaserPath):
         return self
 
     def spline(
-        self: WG,
+        self,
         disp_x: Optional[float] = None,
         disp_y: Optional[float] = None,
         disp_z: Optional[float] = None,
@@ -562,7 +559,7 @@ class Waveguide(LaserPath):
         return self
 
     def spline_bridge(
-        self: WG,
+        self,
         disp_x: Optional[float] = None,
         disp_y: Optional[float] = None,
         disp_z: Optional[float] = None,
@@ -651,7 +648,7 @@ class Waveguide(LaserPath):
 
     # Private interface
     def _get_spline_points(
-        self: WG,
+        self,
         disp_x: Optional[float] = None,
         disp_y: Optional[float] = None,
         disp_z: Optional[float] = None,

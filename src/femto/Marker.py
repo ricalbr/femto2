@@ -11,7 +11,7 @@ from femto.LaserPath import LaserPath
 MK = TypeVar("MK", bound="Marker")
 
 
-@dataclass
+@dataclass(repr=False)
 class Marker(LaserPath):
     """
     Class representing an ablation marker.
@@ -21,15 +21,15 @@ class Marker(LaserPath):
     lx: float = 1.0
     ly: float = 0.060
 
-    def __post_init__(self: MK):
+    def __post_init__(self):
         super().__post_init__()
         if self.z_init is None:
             self.z_init = self.depth
 
-    def __repr__(self: MK) -> str:
+    def __repr__(self) -> str:
         return f"{self.__class__.__name__}@{id(self) & 0xFFFFFF:x}"
 
-    def cross(self: MK, position: List[float], lx: Optional[float] = None, ly: Optional[float] = None) -> None:
+    def cross(self, position: List[float], lx: Optional[float] = None, ly: Optional[float] = None) -> None:
         """
         Computes the points of a cross marker of given widht along x- and y-direction.
 
@@ -76,7 +76,7 @@ class Marker(LaserPath):
         self.linear(position, mode="ABS", shutter=0)
 
     def ruler(
-        self: MK,
+        self,
         y_ticks: Union[List[float], npt.NDArray[np.float32]],
         lx: Optional[float] = None,
         lx2: Optional[float] = None,
@@ -130,7 +130,7 @@ class Marker(LaserPath):
         self.end()
 
     def meander(
-        self: MK,
+        self,
         init_pos: List[float],
         final_pos: List[float],
         width: float = 1,
@@ -179,7 +179,7 @@ class Marker(LaserPath):
             self.end()
 
     def ablation(
-        self: MK,
+        self,
         points: List[List[float]],
         shift: Optional[float] = None,
     ) -> None:

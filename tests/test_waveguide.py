@@ -299,6 +299,8 @@ def test_get_spline_dispx(param) -> None:
 
 def test_repr(param) -> None:
     r = Waveguide(**param).__repr__()
+    print()
+    print(r)
     cname, _ = r.split("@")
     assert cname == "Waveguide"
 

@@ -9,7 +9,7 @@ from femto.LaserPath import LaserPath
 from femto.utils.GCODE_plot_colored import GCODE_plot_colored
 
 
-@dataclass
+@dataclass(repr=False)
 class RasterImage(LaserPath):
     """
     Class representing an X raster laser path in the Xy plane obtained from a balck and white image.

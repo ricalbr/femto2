@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TypeVar
 
 import dill
 import numpy as np
@@ -10,11 +9,10 @@ import numpy.typing as npt
 
 from femto.helpers import Dotdict, unique_filter
 
-# Create a generic variable that can be 'LaserPath', or any subclass.
-LP = TypeVar("LP", bound="LaserPath")
+# LP = TypeVar("LP", bound=LaserPath)
 
 
-@dataclass
+@dataclass(repr=False)
 class LaserPath:
     """
     Class of irradiated paths. It manages all the coordinates of the laser path and computes the fabrication writing
@@ -42,34 +40,37 @@ class LaserPath:
         if not isinstance(self.scan, int):
             raise ValueError(f"Number of scan must be integer. Given {self.scan}.")
 
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}@{id(self) & 0xFFFFFF:x}"
+
     @classmethod
-    def from_dict(cls, param: dict | Dotdict) -> LP:
+    def from_dict(cls: LaserPath, param: dict | Dotdict) -> LaserPath:
         return cls(**param)
 
     @property
-    def init_point(self: LP) -> list:
+    def init_point(self) -> list:
         z0 = self.z_init if self.z_init else 0.0
         return [self.x_init, self.y_init, z0]
 
     @property
-    def lvelo(self: LP) -> float:
+    def lvelo(self) -> float:
         # length needed to acquire the writing speed [mm]
         return 3 * (0.5 * self.speed**2 / self.acc_max)
 
     @property
-    def dl(self: LP) -> float:
+    def dl(self) -> float:
         # minimum separation between two points [mm]
         return self.speed / self.cmd_rate_max
 
     @property
-    def x_end(self: LP) -> float | None:
+    def x_end(self) -> float | None:
         # end of laser path (outside the sample)
         if self.samplesize[0] is None:
             return None
         return self.samplesize[0] + self.lsafe
 
     @property
-    def points(self: LP) -> npt.NDArray[np.float32]:
+    def points(self) -> npt.NDArray[np.float32]:
         """
         Getter for the coordinates' matrix as a numpy.ndarray matrix. The dataframe is parsed through a unique functions
         that removes all the subsequent identical points in the set.
@@ -80,7 +81,7 @@ class LaserPath:
         return np.array(self._unique_points()).T
 
     @property
-    def x(self: LP) -> npt.NDArray[np.float32]:
+    def x(self) -> npt.NDArray[np.float32]:
         """
         Getter for the x-coordinate vector as a numpy array. The subsequent identical points in the vector are removed.
 
@@ -93,14 +94,14 @@ class LaserPath:
         return np.array([])
 
     @property
-    def lastx(self: LP) -> float | None:
+    def lastx(self) -> float | None:
         arrx = self.x
         if arrx.size:
             return float(arrx[-1])
         return None
 
     @property
-    def y(self: LP) -> npt.NDArray[np.float32]:
+    def y(self) -> npt.NDArray[np.float32]:
         """
         Getter for the y-coordinate vector as a numpy array. The subsequent identical points in the vector are removed.
 
@@ -113,14 +114,14 @@ class LaserPath:
         return np.array([])
 
     @property
-    def lasty(self: LP) -> float | None:
+    def lasty(self) -> float | None:
         arry = self.y
         if arry.size:
             return float(arry[-1])
         return None
 
     @property
-    def z(self: LP) -> npt.NDArray[np.float32]:
+    def z(self) -> npt.NDArray[np.float32]:
         """
         Getter for the z-coordinate vector as a numpy array. The subsequent identical points in the vector are removed.
 
@@ -133,14 +134,14 @@ class LaserPath:
         return np.array([])
 
     @property
-    def lastz(self: LP) -> float | None:
+    def lastz(self) -> float | None:
         arrz = self.z
         if arrz.size:
             return float(arrz[-1])
         return None
 
     @property
-    def lastpt(self: LP) -> npt.NDArray[np.float32]:
+    def lastpt(self) -> npt.NDArray[np.float32]:
         """
         Getter for the last point of the laser path.
 
@@ -152,12 +153,12 @@ class LaserPath:
         return np.array([])
 
     @property
-    def path(self: LP) -> list[npt.NDArray[np.float32]]:
+    def path(self) -> list[npt.NDArray[np.float32]]:
         x, y, _ = self.path3d
         return [x, y]
 
     @property
-    def path3d(self: LP) -> list:
+    def path3d(self) -> list:
         if self._x.size:
             # filter 3D points without F
             x, y, z, s = unique_filter([self._x, self._y, self._z, self._s]).T
@@ -169,12 +170,12 @@ class LaserPath:
         return [np.array([]), np.array([]), np.array([])]
 
     @property
-    def length(self: LP) -> float:
+    def length(self) -> float:
         x, y, z = self.path3d
         return float(np.sum(np.sqrt(np.diff(x) ** 2 + np.diff(y) ** 2 + np.diff(z) ** 2)))
 
     @property
-    def fabrication_time(self: LP) -> float:
+    def fabrication_time(self) -> float:
         """
         Getter for the laserpath fabrication time.
 
@@ -191,7 +192,7 @@ class LaserPath:
         return float(sum(times))
 
     @property
-    def curvature_radius(self: LP) -> npt.NDArray[np.float32]:
+    def curvature_radius(self) -> npt.NDArray[np.float32]:
         """
         Computes the 3D point-to-point curvature radius of the waveguide shape.
 
@@ -222,7 +223,7 @@ class LaserPath:
         return curvature_radius[2:-2]
 
     @property
-    def cmd_rate(self: LP) -> npt.NDArray[np.float32]:
+    def cmd_rate(self) -> npt.NDArray[np.float32]:
         """
         Computes the point-to-point command rate of the waveguide shape.
 
@@ -243,7 +244,7 @@ class LaserPath:
         return np.array(cmd_rate, dtype=np.float32)
 
     # Methods
-    def start(self: LP, init_pos: list[float] | None = None, speed_pos: float | None = None) -> LP:
+    def start(self, init_pos: list[float] | None = None, speed_pos: float | None = None) -> LaserPath:
         """
         Starts a laser path in the initial position given as input.
         The coordinates of the initial position are the first added to the matrix that describes the laser path.
@@ -280,7 +281,7 @@ class LaserPath:
         self.add_path(x0, y0, z0, f0, s0)
         return self
 
-    def end(self: LP) -> None:
+    def end(self) -> None:
         """
         Ends a laser path. The function automatically return to the initial point of the laser path with a translation
         speed specified by the user.
@@ -301,12 +302,12 @@ class LaserPath:
         self.add_path(x, y, z, f, s)
 
     def linear(
-        self: LP,
+        self,
         increment: list,
         mode: str = "INC",
         shutter: int = 1,
         speed: float | None = None,
-    ) -> LP:
+    ) -> LaserPath:
         """
         Adds a linear increment to the last point of the current laser path.
 
@@ -353,7 +354,7 @@ class LaserPath:
         self.add_path(x_inc, y_inc, z_inc, f_inc, s_inc)
         return self
 
-    def export(self: LP, filename: str) -> None:
+    def export(self, filename: str) -> None:
         """
         Simple method to export objects using dill.
         :param filename: filename or path to the pickle object
@@ -368,7 +369,7 @@ class LaserPath:
             dill.dump(self, p)
             print(f"{self.__class__.__name__} exported to {fn}.")
 
-    def subs_num(self: LP, l_curve: float = 0, speed: float | None = None) -> int:
+    def subs_num(self, l_curve: float = 0, speed: float | None = None) -> int:
         """
         Utility function that, given the length of a segment and the fabrication speed, computes the number of points
         required to work at the maximum command rate (attribute of LaserPath obj).
@@ -394,7 +395,7 @@ class LaserPath:
         return num
 
     def add_path(
-        self: LP,
+        self,
         x: npt.NDArray[np.float32],
         y: npt.NDArray[np.float32],
         z: npt.NDArray[np.float32],
@@ -422,7 +423,7 @@ class LaserPath:
         self._s = np.append(self._s, s.astype(np.float32))
 
     # Private interface
-    def _unique_points(self: LP) -> npt.NDArray[np.float32]:
+    def _unique_points(self) -> npt.NDArray[np.float32]:
         """
         Remove duplicate subsequent points. At least one coordinate have to change between two consecutive lines of the
         (X,Y,Z,F,S) matrix.
