@@ -87,6 +87,14 @@ def test_from_dict(param) -> None:
     assert lp.samplesize == (100, 15)
 
 
+def test_repr(param) -> None:
+    r = LaserPath(**param).__repr__()
+    print()
+    print(r)
+    cname, _ = r.split("@")
+    assert cname == "LaserPath"
+
+
 def test_init_point(laser_path) -> None:
     assert laser_path.init_point == [-2.0, 1.5, 0.035]
 

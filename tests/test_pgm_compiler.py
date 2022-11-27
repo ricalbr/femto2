@@ -95,6 +95,14 @@ def test_mk_from_dict(param) -> None:
     assert G.flip_y is False
 
 
+def test_repr(param) -> None:
+    r = PGMCompiler(**param).__repr__()
+    print()
+    print(r)
+    cname, _ = r.split("@")
+    assert cname == "PGMCompiler"
+
+
 def test_filename_error(param) -> None:
     param["filename"] = None
     with pytest.raises(ValueError):

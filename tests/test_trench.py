@@ -65,6 +65,14 @@ def test_init_values(poly) -> None:
     assert tc.wall_length == 0.0
 
 
+def test_repr(poly) -> None:
+    r = Trench(poly).__repr__()
+    print()
+    print(r)
+    cname, _ = r.split("@")
+    assert cname == "Trench"
+
+
 def test_lt() -> None:
     x = np.array([1.0, 0.0, 0.0, 0.0, 1.0])
     y1 = np.array([0.0, 0.0, 0.0, 1.0, 1.0])
@@ -77,6 +85,7 @@ def test_lt() -> None:
     tc2 = Trench(p2)
 
     assert tc1 < tc2
+    assert tc1 <= tc2
 
 
 def test_gt() -> None:
@@ -91,6 +100,7 @@ def test_gt() -> None:
     tc2 = Trench(p2)
 
     assert tc1 > tc2
+    assert tc1 >= tc2
 
 
 def test_eq() -> None:
@@ -141,7 +151,8 @@ def test_lt_gt_eq_raise(poly) -> None:
 
 def test_border(poly) -> None:
     tc = Trench(poly)
-    xb, yb = tc.border
+    xb = tc.xborder
+    yb = tc.yborder
 
     np.testing.assert_array_equal(xb, np.array([1.0, 0.0, 0.0, 0.0, 1.0, 1.0]))
     np.testing.assert_array_equal(yb, np.array([0.0, 0.0, 0.0, 1.0, 1.0, 0.0]))
