@@ -146,6 +146,8 @@ class Trench:
         """
         if shape.is_valid or isinstance(shape, MultiPolygon):
             buff_polygon = shape.buffer(offset)
+            if isinstance(buff_polygon, MultiPolygon):
+                return listcast(buff_polygon.geoms)
             return listcast(buff_polygon)
         return [Polygon()]
 
@@ -339,7 +341,7 @@ class TrenchColumn:
 
 def main():
     # Data
-    PARAM_WG = Dotdict(speed=20, radius=25, pitch=0.080, int_dist=0.007)
+    PARAM_WG = Dotdict(speed=20, radius=25, pitch=0.080, int_dist=0.007, samplesize=(25, 3))
     PARAM_TC = Dotdict(length=1.0, base_folder="", y_min=-0.1, y_max=19 * PARAM_WG["pitch"] + 0.1)
 
     # Calculations
@@ -351,7 +353,7 @@ def main():
 
     # Trench
     T = TrenchColumn(**PARAM_TC)
-    T.dig_from_waveguide(flatten([coup, 44]))
+    T.dig_from_waveguide(flatten([coup]))
 
 
 if __name__ == "__main__":

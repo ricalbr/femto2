@@ -438,7 +438,7 @@ def test_dvar(param, v):
     G.dvar(v)
     v = listcast(flatten(v))
     var_str = " ".join(["${}"] * len(v)).format(*v)
-    assert G._instructions[0] == f"DVAR {var_str}\n"
+    assert G._instructions[0] == f"DVAR {var_str}\n\n"
     assert G._dvars == [v.lower() for v in v]
 
 

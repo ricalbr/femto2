@@ -202,8 +202,6 @@ def test_buffer_polygon(p, offset, p_expected) -> None:
     tc = Trench(block=Polygon())
     buff_polygon = tc.buffer_polygon(p, offset)
 
-    print(p.is_valid)
-
     for (p_calc, p_exp) in zip(buff_polygon, p_expected):
         assert almost_equals(p_calc, p_exp)
 
