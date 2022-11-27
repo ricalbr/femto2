@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Tuple, Union
 
 import numpy as np
 import numpy.typing as npt
+import shapely.geometry
 
 
 def grouped(iterable, n):
@@ -106,3 +107,7 @@ def pad_infinite(iterable, padding=None):
 
 def pad(iterable, size, padding=None):
     return islice(pad_infinite(iterable, padding), size)
+
+
+def almost_equals(polygon: shapely.geometry.Polygon, other: shapely.geometry.Polygon, tol: float = 1e-6):
+    return polygon.symmetric_difference(other).area < tol
