@@ -1172,6 +1172,7 @@ class TrenchWriter(Writer):
         gcode_instr = [f'LINEAR {line}\n' for line in instr]
         with open(filename, 'w') as file:
             file.write(''.join(gcode_instr))
+            print(f'Exported pgm file in {filename.resolve()}.')
 
     # Private interface
     def _export_trench_column(self, column: TrenchColumn, column_path: Path) -> None:
