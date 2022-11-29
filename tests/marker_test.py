@@ -1,20 +1,21 @@
+from __future__ import annotations
+
 import numpy as np
 import pytest
-
 from femto.Marker import Marker
 
 
 @pytest.fixture
 def param() -> dict:
     p = {
-        "scan": 1,
-        "speed": 2.0,
-        "y_init": 1.5,
-        "z_init": 0.050,
-        "speed_closed": 24,
-        "depth": 0.001,
-        "lx": 2.0,
-        "ly": 0.050,
+        'scan': 1,
+        'speed': 2.0,
+        'y_init': 1.5,
+        'z_init': 0.050,
+        'speed_closed': 24,
+        'depth': 0.001,
+        'lx': 2.0,
+        'ly': 0.050,
     }
     return p
 
@@ -79,22 +80,22 @@ def test_mk_from_dict(param) -> None:
 
 
 def test_z_init(param) -> None:
-    param["z_init"] = None
-    param["depth"] = -0.001
+    param['z_init'] = None
+    param['depth'] = -0.001
     mk = Marker(**param)
     assert mk.z_init == float(-0.001)
 
 
 def test_scan(param) -> None:
-    param["scan"] = 1.2
+    param['scan'] = 1.2
     with pytest.raises(ValueError):
         Marker(**param)
 
 
 def test_repr(param) -> None:
     r = Marker(**param).__repr__()
-    cname, _ = r.split("@")
-    assert cname == "Marker"
+    cname, _ = r.split('@')
+    assert cname == 'Marker'
 
 
 def test_cross_init_pos(param) -> None:
@@ -133,14 +134,14 @@ def test_cross_init_pos(param) -> None:
 
 
 def test_cross_l_error(param) -> None:
-    param["lx"] = None
-    param["ly"] = 3
+    param['lx'] = None
+    param['ly'] = 3
     mk = Marker(**param)
     with pytest.raises(ValueError):
         mk.cross([0, 0, 0])
 
-    param["lx"] = 2
-    param["ly"] = None
+    param['lx'] = 2
+    param['ly'] = None
     mk = Marker(**param)
     with pytest.raises(ValueError):
         mk.cross([0, 0, 0])
@@ -218,7 +219,7 @@ def test_ruler_lx(param) -> None:
 
     # test none lx
     lxx = None
-    param["lx"] = None
+    param['lx'] = None
     mk = Marker(**param)
     with pytest.raises(ValueError):
         mk.ruler([1, 2, 3], lx=lxx)
@@ -256,7 +257,7 @@ def test_ruler_x_init(param) -> None:
 
     # test None x_init
     xi = None
-    param["x_init"] = None
+    param['x_init'] = None
     mk = Marker(**param)
     with pytest.raises(ValueError):
         mk.ruler([1, 2, 3], x_init=xi)
@@ -282,14 +283,14 @@ def test_ruler_points(param) -> None:
     )
 
 
-@pytest.mark.parametrize("ori", ["d", "", "xy", "z"])
+@pytest.mark.parametrize('ori', ['d', '', 'xy', 'z'])
 def test_meander_error(param, ori) -> None:
     mk = Marker(**param)
     with pytest.raises(ValueError):
         mk.meander([1, 2, 3], [4, 5, 6], width=0.01, orientation=ori)
 
 
-@pytest.mark.parametrize("i_pos", [[], [1], [1, 2, 3, 4], [1, 2, 3, 4, 5, 6]])
+@pytest.mark.parametrize('i_pos', [[], [1], [1, 2, 3, 4], [1, 2, 3, 4, 5, 6]])
 def test_meander_init_pos_error(param, i_pos) -> None:
     mk = Marker(**param)
     f_pos = [1, 2, 3]
@@ -297,7 +298,7 @@ def test_meander_init_pos_error(param, i_pos) -> None:
         mk.meander(i_pos, f_pos, width=0.01)
 
 
-@pytest.mark.parametrize("f_pos", [[], [1], [1, 2, 3, 4], [1, 2, 3, 4, 5, 6]])
+@pytest.mark.parametrize('f_pos', [[], [1], [1, 2, 3, 4], [1, 2, 3, 4, 5, 6]])
 def test_meander_final_pos_error(param, f_pos) -> None:
     mk = Marker(**param)
     i_pos = [1, 2, 3]
@@ -309,7 +310,7 @@ def test_meander_width(param) -> None:
     i_pos = [0, 0, 0]
     f_pos = [1, 2]
     mk = Marker(**param)
-    mk.meander(i_pos, f_pos, orientation="x")
+    mk.meander(i_pos, f_pos, orientation='x')
     x = mk.x
     assert pytest.approx(np.max(x)) == i_pos[0] + 1  # width = 1 by default
     assert pytest.approx(np.min(x)) == i_pos[0]
@@ -318,7 +319,7 @@ def test_meander_width(param) -> None:
     f_pos = [1, 2]
     w = 5
     mk = Marker(**param)
-    mk.meander(i_pos, f_pos, width=5, orientation="y")
+    mk.meander(i_pos, f_pos, width=5, orientation='y')
     y = mk.y
     assert pytest.approx(np.max(y)) == i_pos[1] + w
     assert pytest.approx(np.min(y)) == i_pos[1]
@@ -326,7 +327,7 @@ def test_meander_width(param) -> None:
 
 def test_meader_points_x_or(param) -> None:
     mk = Marker(**param)
-    mk.meander([0, 0, 0], [1, 2, 3], width=2, delta=0.5, orientation="x")
+    mk.meander([0, 0, 0], [1, 2, 3], width=2, delta=0.5, orientation='x')
 
     x, y, z, f, s = mk.points
     np.testing.assert_almost_equal(x, np.array([0.0, 0.0, 2.0, 2.0, 0.0, 0.0, 2.0, 2.0, 0.0, 0.0, 2.0, 2.0, 0.0]))
@@ -338,7 +339,7 @@ def test_meader_points_x_or(param) -> None:
 
 def test_meader_points_y_or(param) -> None:
     mk = Marker(**param)
-    mk.meander([0, 0, 0], [-5, -1, -2], width=3, delta=1, orientation="y")
+    mk.meander([0, 0, 0], [-5, -1, -2], width=3, delta=1, orientation='y')
 
     x, y, z, f, s = mk.points
     np.testing.assert_almost_equal(

@@ -1,26 +1,28 @@
+from __future__ import annotations
+
 import numpy as np
 import pytest
-
-from femto.Waveguide import Waveguide, coupler
+from femto.Waveguide import coupler
+from femto.Waveguide import Waveguide
 
 
 @pytest.fixture
 def param() -> dict:
     p = {
-        "scan": 6,
-        "speed": 20.0,
-        "y_init": 1.5,
-        "z_init": 0.050,
-        "speed_closed": 75,
-        "samplesize": (100, 15),
-        "depth": 0.035,
-        "radius": 25,
-        "pitch": 0.127,
-        "int_dist": 0.005,
-        "int_length": 0.0,
-        "arm_length": 1.0,
-        "ltrench": 1.5,
-        "dz_bridge": 0.006,
+        'scan': 6,
+        'speed': 20.0,
+        'y_init': 1.5,
+        'z_init': 0.050,
+        'speed_closed': 75,
+        'samplesize': (100, 15),
+        'depth': 0.035,
+        'radius': 25,
+        'pitch': 0.127,
+        'int_dist': 0.005,
+        'int_length': 0.0,
+        'arm_length': 1.0,
+        'ltrench': 1.5,
+        'dz_bridge': 0.006,
     }
     return p
 
@@ -106,14 +108,14 @@ def test_wg_from_dict(param) -> None:
 
 
 def test_z_init(param) -> None:
-    param["z_init"] = None
-    param["depth"] = 0.05
+    param['z_init'] = None
+    param['depth'] = 0.05
     wg = Waveguide(**param)
     assert wg.z_init == float(0.05)
 
 
 def test_scan(param) -> None:
-    param["scan"] = 1.2
+    param['scan'] = 1.2
     with pytest.raises(ValueError):
         Waveguide(**param)
 
@@ -125,7 +127,7 @@ def test_dy_bend_pitch_error(param) -> None:
         # call a function using the @property
         print(wg.dy_bend)
 
-    param["pitch"] = None
+    param['pitch'] = None
     wg = Waveguide(**param)
     with pytest.raises(ValueError):
         print(wg.dy_bend)
@@ -137,7 +139,7 @@ def test_dy_bend_int_dist_error(param) -> None:
     with pytest.raises(ValueError):
         print(wg.dy_bend)
 
-    param["int_dist"] = None
+    param['int_dist'] = None
     wg = Waveguide(**param)
     with pytest.raises(ValueError):
         print(wg.dy_bend)
@@ -154,7 +156,7 @@ def test_dx_bend_radius_error(param) -> None:
     with pytest.raises(ValueError):
         print(wg.dx_bend)
 
-    param["radius"] = None
+    param['radius'] = None
     wg = Waveguide(**param)
     with pytest.raises(ValueError):
         print(wg.dx_bend)
@@ -166,7 +168,7 @@ def test_dx_bend(param) -> None:
 
 
 def test_dx_acc_none(param) -> None:
-    param["int_length"] = None
+    param['int_length'] = None
     wg = Waveguide(**param)
     assert wg.dx_acc is None
 
@@ -177,19 +179,19 @@ def test_dx_acc(param) -> None:
 
 
 def test_dx_acc_int_l(param) -> None:
-    param["int_length"] = 2
+    param['int_length'] = 2
     wg = Waveguide(**param)
     assert pytest.approx(wg.dx_acc) == 6.938129
 
 
 def test_dx_mzi_none_intl(param) -> None:
-    param["int_length"] = None
+    param['int_length'] = None
     wg = Waveguide(**param)
     assert wg.dx_mzi is None
 
 
 def test_dx_mzi_none_arml(param) -> None:
-    param["arm_length"] = None
+    param['arm_length'] = None
     wg = Waveguide(**param)
     assert wg.dx_mzi is None
 
@@ -200,13 +202,13 @@ def test_dx_mzi(param) -> None:
 
 
 def test_dx_mzi_int_l(param) -> None:
-    param["int_length"] = 2
+    param['int_length'] = 2
     wg = Waveguide(**param)
     assert pytest.approx(wg.dx_mzi) == 14.876258
 
 
 def test_dx_mzi_arml(param) -> None:
-    param["arm_length"] = 3
+    param['arm_length'] = 3
     wg = Waveguide(**param)
     assert pytest.approx(wg.dx_mzi) == 12.876258
 
@@ -301,14 +303,14 @@ def test_repr(param) -> None:
     r = Waveguide(**param).__repr__()
     print()
     print(r)
-    cname, _ = r.split("@")
-    assert cname == "Waveguide"
+    cname, _ = r.split('@')
+    assert cname == 'Waveguide'
 
 
 def test_circ_input_validation(param) -> None:
     a_i, a_f = 0, np.pi / 2
 
-    param["radius"] = None
+    param['radius'] = None
     wg = Waveguide(**param)
     with pytest.raises(ValueError):
         wg.start([0, 0, 0]).circ(a_i, a_f)
@@ -317,13 +319,13 @@ def test_circ_input_validation(param) -> None:
     with pytest.raises(ValueError):
         wg.start([0, 0, 0]).circ(a_i, a_f, radius=None)
 
-    param["radius"] = 20
+    param['radius'] = 20
     wg = Waveguide(**param)
     wg.radius = None
     with pytest.raises(ValueError):
         wg.start([0, 0, 0]).circ(a_i, a_f)
 
-    param["speed"] = None
+    param['speed'] = None
     wg = Waveguide(**param)
     with pytest.raises(ValueError):
         wg.start([0, 0, 0]).circ(a_i, a_f)
@@ -332,7 +334,7 @@ def test_circ_input_validation(param) -> None:
     with pytest.raises(ValueError):
         wg.start([0, 0, 0]).circ(a_i, a_f, speed=None)
 
-    param["speed"] = 15
+    param['speed'] = 15
     wg = Waveguide(**param)
     wg.speed = None
     with pytest.raises(ValueError):
@@ -1039,7 +1041,7 @@ def test_get_spline_points_init_pos_none(param):
     wg.x_init = None
     wg.y_init = None
     wg.z_init = None
-    wg.start([0, 0, 0]).linear(l_inc, mode="abs")
+    wg.start([0, 0, 0]).linear(l_inc, mode='abs')
     x, y, z = wg._get_spline_points(disp_x=dx, disp_y=dy, disp_z=dz)
     assert pytest.approx(x[0]) == l_inc[0]
     assert pytest.approx(y[0]) == l_inc[1]
@@ -1098,7 +1100,7 @@ def test_get_spline_points_derivatives_custom(param):
     assert pytest.approx((z[-2] - z[-1]) / (x[-2] - x[-1]), abs=1e-2) == bcz[1][1]
 
 
-@pytest.mark.parametrize("r_input", [5, 10, 15, 20, 25, 30, 35, 40, 50, 60])
+@pytest.mark.parametrize('r_input', [5, 10, 15, 20, 25, 30, 35, 40, 50, 60])
 def test_curvature_radius(param, r_input) -> None:
     # mean curvature radius is within 5% of the original radius
     r = r_input
@@ -1122,7 +1124,7 @@ def test_curvature_radius_default(param) -> None:
 
 def test_cmd_rate(param) -> None:
     wg = Waveguide(**param)
-    wg.start().linear([1, 2, 3], mode="abs").sin_mzi(wg.dy_bend).linear([4, 5, 6]).end()
+    wg.start().linear([1, 2, 3], mode='abs').sin_mzi(wg.dy_bend).linear([4, 5, 6]).end()
 
     assert np.mean(wg.cmd_rate) <= wg.cmd_rate_max
 
@@ -1193,21 +1195,21 @@ def test_spline_bridge_derivatives(param) -> None:
 def test_coupler_pitch(param) -> None:
     mode1, mode2 = coupler(param)
 
-    assert mode2.y[-1] == pytest.approx(mode1.y[-1] + param["pitch"])
+    assert mode2.y[-1] == pytest.approx(mode1.y[-1] + param['pitch'])
 
 
-@pytest.mark.parametrize("d_input", [0.000, 0.001, 0.002, 0.003, 0.005, 0.007, 0.009, 0.0011, 0.0015, 0.0025])
+@pytest.mark.parametrize('d_input', [0.000, 0.001, 0.002, 0.003, 0.005, 0.007, 0.009, 0.0011, 0.0015, 0.0025])
 def test_coupler_d_int(d_input) -> None:
     p = {
-        "scan": 6,
-        "speed": 20.0,
-        "samplesize": (100, 15),
-        "depth": 0.035,
-        "radius": 25,
-        "pitch": 0.127,
-        "int_dist": d_input,
-        "int_length": 0.0,
-        "arm_length": 1.0,
+        'scan': 6,
+        'speed': 20.0,
+        'samplesize': (100, 15),
+        'depth': 0.035,
+        'radius': 25,
+        'pitch': 0.127,
+        'int_dist': d_input,
+        'int_length': 0.0,
+        'arm_length': 1.0,
     }
 
     mode1, mode2 = coupler(p)

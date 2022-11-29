@@ -6,8 +6,9 @@ from pathlib import Path
 import dill
 import numpy as np
 import numpy.typing as npt
+from femto.helpers import Dotdict
+from femto.helpers import unique_filter
 
-from femto.helpers import Dotdict, unique_filter
 
 # LP = TypeVar("LP", bound=LaserPath)
 
@@ -38,10 +39,10 @@ class LaserPath:
 
     def __post_init__(self):
         if not isinstance(self.scan, int):
-            raise ValueError(f"Number of scan must be integer. Given {self.scan}.")
+            raise ValueError(f'Number of scan must be integer. Given {self.scan}.')
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}@{id(self) & 0xFFFFFF:x}"
+        return f'{self.__class__.__name__}@{id(self) & 0xFFFFFF:x}'
 
     @classmethod
     def from_dict(cls: LaserPath, param: dict | Dotdict) -> LaserPath:
@@ -260,13 +261,13 @@ class LaserPath:
         :rtype: LaserPath
         """
         if self._x.size != 0:
-            raise ValueError("Coordinate matrix is not empty. Cannot start a new laser path in this point.")
+            raise ValueError('Coordinate matrix is not empty. Cannot start a new laser path in this point.')
 
         if init_pos is None:
             xi, yi, zi = self.init_point
         else:
             if np.size(init_pos) != 3:
-                raise ValueError(f"Given initial position is not valid. 3 values required. {np.size(init_pos)} given.")
+                raise ValueError(f'Given initial position is not valid. 3 values required. {np.size(init_pos)} given.')
             xi, yi, zi = init_pos
 
         if speed_pos is None:
@@ -291,7 +292,7 @@ class LaserPath:
         """
 
         if not self._x.size:
-            raise IndexError("Try to access an empty array. Use the start() method before the end() method.")
+            raise IndexError('Try to access an empty array. Use the start() method before the end() method.')
 
         # append the transformed path and add the coordinates to return to the initial point
         x = np.array([self._x[-1], self._x[0]])
@@ -304,7 +305,7 @@ class LaserPath:
     def linear(
         self,
         increment: list,
-        mode: str = "INC",
+        mode: str = 'INC',
         shutter: int = 1,
         speed: float | None = None,
     ) -> LaserPath:
@@ -328,16 +329,16 @@ class LaserPath:
 
         :raise ValueError: Mode is neither INC nor ABS.
         """
-        if mode.lower() not in ["abs", "inc"]:
-            raise ValueError(f"Mode should be either ABS or INC. {mode.upper()} was given.")
+        if mode.lower() not in ['abs', 'inc']:
+            raise ValueError(f'Mode should be either ABS or INC. {mode.upper()} was given.')
 
         if len(increment) != 3:
-            raise ValueError(f"Increment should be a list of three values. Increment has {len(increment)} entries.")
+            raise ValueError(f'Increment should be a list of three values. Increment has {len(increment)} entries.')
 
         if speed is None and self.speed is None:
             raise ValueError('Speed is None. Set LaserPath\'s "speed" attribute or give a speed as input.')
 
-        if mode.lower() == "abs":
+        if mode.lower() == 'abs':
             # If increment is None use the last value on the coordinate-array
             x_inc = self._x[-1] if increment[0] is None else np.array([increment[0]])
             y_inc = self._y[-1] if increment[1] is None else np.array([increment[1]])
@@ -362,12 +363,12 @@ class LaserPath:
         """
 
         fn = Path(filename)
-        if fn.suffix not in [".pickle", "pkl"]:
-            fn = Path(fn.stem + ".pkl")
+        if fn.suffix not in ['.pickle', 'pkl']:
+            fn = Path(fn.stem + '.pkl')
 
-        with open(fn, "wb") as p:
+        with open(fn, 'wb') as p:
             dill.dump(self, p)
-            print(f"{self.__class__.__name__} exported to {fn}.")
+            print(f'{self.__class__.__name__} exported to {fn}.')
 
     def subs_num(self, l_curve: float = 0, speed: float | None = None) -> int:
         """
@@ -385,12 +386,12 @@ class LaserPath:
         """
         f = self.speed if speed is None else speed
         if f < 1e-6:
-            raise ValueError("Speed set to 0.0 mm/s. Check speed parameter.")
+            raise ValueError('Speed set to 0.0 mm/s. Check speed parameter.')
 
         dl = f / self.cmd_rate_max
         num = int(np.ceil(l_curve / dl))
         if num <= 1:
-            print("I had to add use an higher instruction rate.\n")
+            print('I had to add use an higher instruction rate.\n')
             return 3
         return num
 
@@ -467,21 +468,21 @@ def main():
     print(lpath.points.T)
 
     # Export Laserpath
-    lpath.export("LP.p")
+    lpath.export('LP.p')
 
     # Plot
     fig = plt.figure()
     fig.clf()
     ax = Axes3D(fig, auto_add_to_figure=False)
     fig.add_axes(ax)
-    ax.set_xlabel("X [mm]"), ax.set_ylabel("Y [mm]"), ax.set_zlabel("Z [mm]")
-    ax.plot(lpath.x, lpath.y, lpath.z, "-k", linewidth=2.5)
+    ax.set_xlabel('X [mm]'), ax.set_ylabel('Y [mm]'), ax.set_zlabel('Z [mm]')
+    ax.plot(lpath.x, lpath.y, lpath.z, '-k', linewidth=2.5)
     ax.set_box_aspect(aspect=(3, 1, 0.5))
     plt.show()
 
-    print(f"Expected writing time {lpath.fabrication_time:.3f} seconds")
-    print(f"Laser path length {lpath.length:.6f} mm")
+    print(f'Expected writing time {lpath.fabrication_time:.3f} seconds')
+    print(f'Laser path length {lpath.length:.6f} mm')
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

@@ -1,12 +1,12 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import Tuple
 
 import numpy as np
-from PIL import Image
-
 from femto.helpers import Dotdict
 from femto.LaserPath import LaserPath
 from femto.utils.GCODE_plot_colored import GCODE_plot_colored
+from PIL import Image
 
 
 @dataclass(repr=False)
@@ -16,41 +16,41 @@ class RasterImage(LaserPath):
     """
 
     px_to_mm: float = 0.01  # pixel to millimeter scale when converting image to laser path
-    img_size: Tuple[int, int] = (None, None)
+    img_size: tuple[int, int] = (None, None)
 
     def __post_init__(self):
         super().__post_init__()
 
     def __repr__(self):
-        return f"{self.__class__.__name__}@{id(self) & 0xFFFFFF:x}"
+        return f'{self.__class__.__name__}@{id(self) & 0xFFFFFF:x}'
 
     @property
     def path_size(self):
         if not all(self.img_size):  # check if img_size is None
-            raise ValueError("No image size given, unable to compute laserpath dimension")
+            raise ValueError('No image size given, unable to compute laserpath dimension')
         else:
             return tuple(self.px_to_mm * elem for elem in self.img_size)
 
     # Methods
     def convert_image_to_path(self, img, display_flag=False):
         # displaing image information
-        print("Image opened. Displaying information")
+        print('Image opened. Displaying information')
         print(img.format)
         print(img.size)
         print(img.mode)
-        print("----------")
+        print('----------')
 
         self.img_size = img.size  # update of img_size property
 
-        print(f"Laser path dimension {self.path_size[0]:.3f} by {self.path_size[1]:.3f} mm^2")
-        print("----------")
+        print(f'Laser path dimension {self.path_size[0]:.3f} by {self.path_size[1]:.3f} mm^2')
+        print('----------')
 
-        if img.mode != "1":
+        if img.mode != '1':
             print(
-                "The program takes as input black and white images. Conversion of input image to BW with arbitrary "
-                "threshold at half of scale"
+                'The program takes as input black and white images. Conversion of input image to BW with arbitrary '
+                'threshold at half of scale'
             )
-            img_BW = img.convert("1", dither=None)
+            img_BW = img.convert('1', dither=None)
             if display_flag:
                 img_BW.show()
 
@@ -144,10 +144,10 @@ class RasterImage(LaserPath):
 def _example():
     from PIL import ImageDraw, ImageFont
 
-    img = Image.new("L", (512, 256), color=255)
-    font = ImageFont.truetype("arial.ttf", 40)
+    img = Image.new('L', (512, 256), color=255)
+    font = ImageFont.truetype('arial.ttf', 40)
     d = ImageDraw.Draw(img)
-    d.text((150, 100), "Hello World", font=font, fill=0)
+    d.text((150, 100), 'Hello World', font=font, fill=0)
 
     # img.show()
     R_IMG_PARAMETERS = Dotdict(
@@ -161,9 +161,9 @@ def _example():
     fig_colored = GCODE_plot_colored(GCODE_array)
     fig_colored.show()
 
-    print(f"Expected writing time {r_img.fabrication_time:.3f} seconds")
-    print(f"Laser path length {r_img.length:.3f} mm")
+    print(f'Expected writing time {r_img.fabrication_time:.3f} seconds')
+    print(f'Laser path length {r_img.length:.3f} mm')
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     _example()

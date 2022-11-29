@@ -1,15 +1,24 @@
+from __future__ import annotations
+
 import math
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Generator, Iterator, List, Optional, Tuple
+from typing import Generator
+from typing import Iterator
+from typing import List
 
 import numpy as np
 import numpy.typing as npt
-from shapely import geometry
-from shapely.geometry import LineString, MultiPolygon, Polygon, box
-
-from femto.helpers import Dotdict, almost_equals, flatten, listcast
+from femto.helpers import almost_equals
+from femto.helpers import Dotdict
+from femto.helpers import flatten
+from femto.helpers import listcast
 from femto.Waveguide import Waveguide
+from shapely import geometry
+from shapely.geometry import box
+from shapely.geometry import LineString
+from shapely.geometry import MultiPolygon
+from shapely.geometry import Polygon
 
 
 class Trench:
@@ -25,35 +34,35 @@ class Trench:
         self.wall_length: float = 0.0
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}@{id(self) & 0xFFFFFF:x}"
+        return f'{self.__class__.__name__}@{id(self) & 0xFFFFFF:x}'
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Trench):
-            raise TypeError(f"Trying comparing Trench with {other.__class__.__name__}")
+            raise TypeError(f'Trying comparing Trench with {other.__class__.__name__}')
         return almost_equals(self.block, other.block)
 
     def __lt__(self, other: object) -> bool:
         if not isinstance(other, Trench):
-            raise TypeError(f"Trying comparing Trench with {other.__class__.__name__}")
+            raise TypeError(f'Trying comparing Trench with {other.__class__.__name__}')
         return self.yborder[0] < other.yborder[0]
 
     def __le__(self, other: object) -> bool:
         if not isinstance(other, Trench):
-            raise TypeError(f"Trying comparing Trench with {other.__class__.__name__}")
+            raise TypeError(f'Trying comparing Trench with {other.__class__.__name__}')
         return self.yborder[0] <= other.yborder[0]
 
     def __gt__(self, other: object) -> bool:
         if not isinstance(other, Trench):
-            raise TypeError(f"Trying comparing Trench with {other.__class__.__name__}")
+            raise TypeError(f'Trying comparing Trench with {other.__class__.__name__}')
         return self.yborder[0] > other.yborder[0]
 
     def __ge__(self, other: object) -> bool:
         if not isinstance(other, Trench):
-            raise TypeError(f"Trying comparing Trench with {other.__class__.__name__}")
+            raise TypeError(f'Trying comparing Trench with {other.__class__.__name__}')
         return self.yborder[0] >= other.yborder[0]
 
     @property
-    def border(self) -> Tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]:
+    def border(self) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]:
         xx, yy = self.block.exterior.coords.xy
         return np.asarray(xx, dtype=np.float32), np.asarray(yy, dtype=np.float32)
 
@@ -84,7 +93,7 @@ class Trench:
         return self.block.bounds[3]
 
     @property
-    def center(self) -> Tuple[float, float]:
+    def center(self) -> tuple[float, float]:
         """
         Baricenter of the trench block.
         Returns the (x, y) coordinates of the center ponit.
@@ -124,7 +133,7 @@ class Trench:
                 yield np.array(current_poly.exterior.coords).T
 
     @staticmethod
-    def buffer_polygon(shape: Polygon, offset: float) -> List[Polygon]:
+    def buffer_polygon(shape: Polygon, offset: float) -> list[Polygon]:
         """
         Compute a buffer operation of shapely ``Polygon`` obj.
 
@@ -166,19 +175,19 @@ class TrenchColumn:
     nboxz: int = 4
     z_off: float = 0.020
     h_box: float = 0.075
-    base_folder: str = ""
+    base_folder: str = ''
     deltaz: float = 0.0015
     delta_floor: float = 0.001
     beam_waist: float = 0.004
     round_corner: float = 0.005
-    u: Optional[List[float]] = None
+    u: list[float] | None = None
     speed: float = 4
     speed_closed: float = 5
     speed_pos: float = 0.5
 
     def __post_init__(self):
-        self.CWD = Path.cwd()
-        self.trench_list: list = []
+        self.CWD: Path = Path.cwd()
+        self.trench_list: list[Trench] = []
 
     def __iter__(self) -> Iterator[Trench]:
         """
@@ -188,6 +197,9 @@ class TrenchColumn:
         :rtype: Iterator
         """
         return iter(self.trench_list)
+
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}@{id(self) & 0xFFFFFF:x}'
 
     @property
     def adj_bridge(self) -> float:
@@ -228,8 +240,8 @@ class TrenchColumn:
 
     def dig_from_waveguide(
         self,
-        waveguides: List[Waveguide],
-        remove: Optional[List] = None,
+        waveguides: list[Waveguide],
+        remove: list | None = None,
     ) -> None:
         """
         Compute the trench blocks from the waveguide of the optical circuit.
@@ -251,7 +263,7 @@ class TrenchColumn:
 
         if not all(isinstance(wg, Waveguide) for wg in waveguides):
             raise ValueError(
-                f"All the input objects must be instances of Waveguide. Given " f"{[type(wg) for wg in waveguides]}"
+                f'All the input objects must be instances of Waveguide. Given ' f'{[type(wg) for wg in waveguides]}'
             )
 
         coords = []
@@ -262,8 +274,8 @@ class TrenchColumn:
 
     def dig_from_array(
         self,
-        waveguides: List[npt.NDArray[np.float32]],
-        remove: Optional[List] = None,
+        waveguides: list[npt.NDArray[np.float32]],
+        remove: list | None = None,
     ) -> None:
         """
         Compute the trench blocks from the waveguide of the optical circuit.
@@ -283,7 +295,7 @@ class TrenchColumn:
         :type remove: List[int]
         """
         if not all(isinstance(wg, np.ndarray) for wg in waveguides):
-            raise ValueError(f"All the input objects must be numpy arrays. Given {[type(wg) for wg in waveguides]}")
+            raise ValueError(f'All the input objects must be numpy arrays. Given {[type(wg) for wg in waveguides]}')
 
         coords = []
         for wg in waveguides:
@@ -293,8 +305,8 @@ class TrenchColumn:
 
     def _dig(
         self,
-        coords_list: List[List[Tuple[float, float]]],
-        remove: Optional[List] = None,
+        coords_list: list[list[tuple[float, float]]],
+        remove: list | None = None,
     ) -> None:
 
         if remove is None:
@@ -342,7 +354,7 @@ class TrenchColumn:
 def main():
     # Data
     PARAM_WG = Dotdict(speed=20, radius=25, pitch=0.080, int_dist=0.007, samplesize=(25, 3))
-    PARAM_TC = Dotdict(length=1.0, base_folder="", y_min=-0.1, y_max=19 * PARAM_WG["pitch"] + 0.1)
+    PARAM_TC = Dotdict(length=1.0, base_folder='', y_min=-0.1, y_max=19 * PARAM_WG['pitch'] + 0.1, u=[30.339, 32.825])
 
     # Calculations
     coup = [Waveguide(**PARAM_WG) for _ in range(20)]
@@ -356,5 +368,5 @@ def main():
     T.dig_from_waveguide(flatten([coup]))
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

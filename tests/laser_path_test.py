@@ -1,23 +1,24 @@
+from __future__ import annotations
+
 from pathlib import Path
 
 import dill
 import numpy as np
 import pytest
-
 from femto.LaserPath import LaserPath
 
 
 @pytest.fixture
 def param() -> dict:
     p = {
-        "scan": 6,
-        "speed": 20.0,
-        "y_init": 1.5,
-        "z_init": 0.035,
-        "lsafe": 4.3,
-        "speed_closed": 75,
-        "speed_pos": 0.1,
-        "samplesize": (100, 15),
+        'scan': 6,
+        'speed': 20.0,
+        'y_init': 1.5,
+        'z_init': 0.035,
+        'lsafe': 4.3,
+        'speed_closed': 75,
+        'speed_pos': 0.1,
+        'samplesize': (100, 15),
     }
     return p
 
@@ -91,8 +92,8 @@ def test_repr(param) -> None:
     r = LaserPath(**param).__repr__()
     print()
     print(r)
-    cname, _ = r.split("@")
-    assert cname == "LaserPath"
+    cname, _ = r.split('@')
+    assert cname == 'LaserPath'
 
 
 def test_init_point(laser_path) -> None:
@@ -177,12 +178,12 @@ def test_empty_end(param) -> None:
 def test_linear_value_error(param) -> None:
     lp = LaserPath(**param)
     with pytest.raises(ValueError):
-        lp.start().linear([1, 1, 1], mode="rand").end()
+        lp.start().linear([1, 1, 1], mode='rand').end()
 
     lp = LaserPath(**param)
     lp.speed = None
     with pytest.raises(ValueError):
-        lp.start().linear([1, 1, 1], mode="ABS", speed=None).end()
+        lp.start().linear([1, 1, 1], mode='ABS', speed=None).end()
 
 
 def test_linear_invalid_increment(param) -> None:
@@ -197,14 +198,14 @@ def test_linear_invalid_increment(param) -> None:
 def test_linear_default_speed(param) -> None:
     lp = LaserPath(**param)
     lp.start().linear([1, 2, 3])
-    assert lp._f[-1] == param["speed"]
+    assert lp._f[-1] == param['speed']
 
 
 def test_linear_abs(param) -> None:
     lp = LaserPath(**param)
     init_p = [1, 1, 1]
     increm = [3, 4, 5]
-    lp.start(init_p).linear(increm, mode="abs").end()
+    lp.start(init_p).linear(increm, mode='abs').end()
 
     np.testing.assert_almost_equal(lp._x, np.array([1.0, 1.0, 3.0, 3.0, 1.0]))
     np.testing.assert_almost_equal(lp._y, np.array([1.0, 1.0, 4.0, 4.0, 1.0]))
@@ -217,7 +218,7 @@ def test_linear_inc(param) -> None:
     lp = LaserPath(**param)
     init_p = [1, 1, 1]
     increm = [3, 4, 5]
-    lp.start(init_p).linear(increm, mode="inc").end()
+    lp.start(init_p).linear(increm, mode='inc').end()
 
     np.testing.assert_almost_equal(lp._x, np.array([1.0, 1.0, 4.0, 4.0, 1.0]))
     np.testing.assert_almost_equal(lp._y, np.array([1.0, 1.0, 5.0, 5.0, 1.0]))
@@ -230,7 +231,7 @@ def test_linear_none(param) -> None:
     lp = LaserPath(**param)
     init_p = [1, 1, 1]
     increm = [4, None, None]
-    lp.start(init_p).linear(increm, mode="abs").end()
+    lp.start(init_p).linear(increm, mode='abs').end()
 
     np.testing.assert_almost_equal(lp._x, np.array([1.0, 1.0, 4.0, 4.0, 1.0]))
     np.testing.assert_almost_equal(lp._y, np.array([1.0, 1.0, 1.0, 1.0, 1.0]))
@@ -241,7 +242,7 @@ def test_linear_none(param) -> None:
     lp = LaserPath(**param)
     init_p = [1, 1, 1]
     increm = [5, None, None]
-    lp.start(init_p).linear(increm, mode="inc").end()
+    lp.start(init_p).linear(increm, mode='inc').end()
 
     np.testing.assert_almost_equal(lp._x, np.array([1.0, 1.0, 6.0, 6.0, 1.0]))
     np.testing.assert_almost_equal(lp._y, np.array([1.0, 1.0, 1.0, 1.0, 1.0]))
@@ -390,10 +391,10 @@ def test_subs_num_empty_base_case(empty_path) -> None:
 
 
 def test_pickle(laser_path) -> None:
-    filename = Path("test.pkl")
+    filename = Path('test.pkl')
     laser_path.export(filename.name)
     assert filename.is_file()
 
-    with open(filename, "rb") as f:
+    with open(filename, 'rb') as f:
         lp = dill.load(f)
     assert type(lp) == type(laser_path)

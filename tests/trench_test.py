@@ -1,34 +1,39 @@
+from __future__ import annotations
+
 from copy import deepcopy
 from pathlib import Path
 
 import numpy as np
 import pytest
-from shapely.geometry import MultiPolygon, Point, Polygon, box
-
 from femto.helpers import almost_equals
-from femto.Trench import Trench, TrenchColumn
+from femto.Trench import Trench
+from femto.Trench import TrenchColumn
+from shapely.geometry import box
+from shapely.geometry import MultiPolygon
+from shapely.geometry import Point
+from shapely.geometry import Polygon
 
 
 @pytest.fixture
 def param() -> dict:
     p = {
-        "x_center": 6,
-        "y_min": 1,
-        "y_max": 2,
-        "bridge": 0.050,
-        "length": 3,
-        "nboxz": 4,
-        "z_off": 0.02,
-        "h_box": 0.080,
-        "base_folder": "",
-        "deltaz": 0.002,
-        "delta_floor": 0.0015,
-        "beam_waist": 0.002,
-        "round_corner": 0.010,
-        "u": [28, 29.47],
-        "speed": 5,
-        "speed_closed": 5,
-        "speed_pos": 0.5,
+        'x_center': 6,
+        'y_min': 1,
+        'y_max': 2,
+        'bridge': 0.050,
+        'length': 3,
+        'nboxz': 4,
+        'z_off': 0.02,
+        'h_box': 0.080,
+        'base_folder': '',
+        'deltaz': 0.002,
+        'delta_floor': 0.0015,
+        'beam_waist': 0.002,
+        'round_corner': 0.010,
+        'u': [28, 29.47],
+        'speed': 5,
+        'speed_closed': 5,
+        'speed_pos': 0.5,
     }
     return p
 
@@ -69,8 +74,8 @@ def test_repr(poly) -> None:
     r = Trench(poly).__repr__()
     print()
     print(r)
-    cname, _ = r.split("@")
-    assert cname == "Trench"
+    cname, _ = r.split('@')
+    assert cname == 'Trench'
 
 
 def test_lt() -> None:
@@ -161,7 +166,7 @@ def test_border(poly) -> None:
 
 
 @pytest.mark.parametrize(
-    "x, y, xmin, xmax, ymin, ymax",
+    'x, y, xmin, xmax, ymin, ymax',
     [
         ([-6, 29, 0, 26, 1], [24, 15, -10, 3, 20], -6, 29, -10, 24),
         ([14, 27, 28, 1, 16], [-7, 10, 1, -8, -10], 1, 28, -10, 10),
@@ -185,7 +190,7 @@ def test_centroid(poly) -> None:
 
 
 @pytest.mark.parametrize(
-    "p, offset, p_expected",
+    'p, offset, p_expected',
     [
         (Point(0, 0), 1, [Point(0, 0).buffer(1)]),
         (Point(0, 0), -1, [Point(0, 0).buffer(1).buffer(-2)]),
@@ -240,7 +245,7 @@ def test_trenchcol_default() -> None:
     assert tcol.nboxz == int(4)
     assert tcol.z_off == float(0.020)
     assert tcol.h_box == float(0.075)
-    assert tcol.base_folder == ""
+    assert tcol.base_folder == ''
     assert tcol.deltaz == float(0.0015)
     assert tcol.delta_floor == float(0.001)
     assert tcol.beam_waist == float(0.004)
@@ -265,7 +270,7 @@ def test_trenchcol_param(param) -> None:
     assert tcol.nboxz == int(4)
     assert tcol.z_off == float(0.020)
     assert tcol.h_box == float(0.080)
-    assert tcol.base_folder == ""
+    assert tcol.base_folder == ''
     assert tcol.deltaz == float(0.002)
     assert tcol.delta_floor == float(0.0015)
     assert tcol.beam_waist == float(0.002)
@@ -280,11 +285,11 @@ def test_trenchcol_param(param) -> None:
 
 
 def test_trenchcol_adj_bridge(tc, param) -> None:
-    assert tc.adj_bridge == param["bridge"] / 2 + param["beam_waist"] + param["round_corner"]
+    assert tc.adj_bridge == param['bridge'] / 2 + param['beam_waist'] + param['round_corner']
 
 
 def test_trenchcol_n_repeat(tc, param) -> None:
-    assert tc.n_repeat == int(np.ceil((param["h_box"] + param["z_off"]) / param["deltaz"]))
+    assert tc.n_repeat == int(np.ceil((param['h_box'] + param['z_off']) / param['deltaz']))
 
 
 def test_trenchcol_fabrication_time_empty(tc) -> None:
@@ -312,10 +317,10 @@ def test_trenchcol_rect(tc, param) -> None:
     assert almost_equals(
         bb,
         box(
-            param["x_center"] - param["length"] / 2,
-            param["y_min"],
-            param["x_center"] + param["length"] / 2,
-            param["y_max"],
+            param['x_center'] - param['length'] / 2,
+            param['y_min'],
+            param['x_center'] + param['length'] / 2,
+            param['y_max'],
         ),
     )
 
@@ -333,19 +338,19 @@ def test_trenchcol_fabtime(tc, param) -> None:
     tc.trench_list.extend([t1, t2, t3])
 
     assert pytest.approx(tc.fabrication_time) == sum(
-        param["nboxz"] * (tc.n_repeat * t.wall_length + t.floor_length) for t in tc.trench_list
+        param['nboxz'] * (tc.n_repeat * t.wall_length + t.floor_length) for t in tc.trench_list
     )
 
 
 def test_trenchcol_dig() -> None:
     p = {
-        "x_center": 0.0,
-        "y_min": 0.0,
-        "y_max": 9.0,
-        "length": 4.0,
-        "bridge": 1.0,
-        "beam_waist": 0.1,
-        "round_corner": 0.0,
+        'x_center': 0.0,
+        'y_min': 0.0,
+        'y_max': 9.0,
+        'length': 4.0,
+        'bridge': 1.0,
+        'beam_waist': 0.1,
+        'round_corner': 0.0,
     }
     tc = TrenchColumn(**p)
 
@@ -361,13 +366,13 @@ def test_trenchcol_dig() -> None:
 
 def test_trenchcol_dig_remove() -> None:
     p = {
-        "x_center": 0.0,
-        "y_min": 0.0,
-        "y_max": 9.0,
-        "length": 4.0,
-        "bridge": 1.0,
-        "beam_waist": 0.1,
-        "round_corner": 0.0,
+        'x_center': 0.0,
+        'y_min': 0.0,
+        'y_max': 9.0,
+        'length': 4.0,
+        'bridge': 1.0,
+        'beam_waist': 0.1,
+        'round_corner': 0.0,
     }
     tc = TrenchColumn(**p)
 
@@ -383,13 +388,13 @@ def test_trenchcol_dig_remove() -> None:
 
 def test_trenchcol_dig_remove_all() -> None:
     p = {
-        "x_center": 0.0,
-        "y_min": 0.0,
-        "y_max": 9.0,
-        "length": 4.0,
-        "bridge": 1.0,
-        "beam_waist": 0.1,
-        "round_corner": 0.0,
+        'x_center': 0.0,
+        'y_min': 0.0,
+        'y_max': 9.0,
+        'length': 4.0,
+        'bridge': 1.0,
+        'beam_waist': 0.1,
+        'round_corner': 0.0,
     }
     tc = TrenchColumn(**p)
 
@@ -406,11 +411,11 @@ def test_dig_from_waveguide(tc):
     wgs = []
     PARAM_WG = Dotdict(speed=20, radius=25, pitch=0.080, int_dist=0.007)
     wg = Waveguide(**PARAM_WG)
-    wg.start([0, 1.25, 0]).linear([9, 1.75, 0], mode="ABS").end()
+    wg.start([0, 1.25, 0]).linear([9, 1.75, 0], mode='ABS').end()
     wgs.append(wg)
 
     wg = Waveguide(**PARAM_WG)
-    wg.start([0, 1.25, 0]).linear([9, 1.75, 0], mode="ABS").end()
+    wg.start([0, 1.25, 0]).linear([9, 1.75, 0], mode='ABS').end()
     wgs.append(wg)
 
     assert tc.dig_from_waveguide(wgs) is None

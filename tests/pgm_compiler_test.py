@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import math
 import random
 from collections import deque
@@ -7,22 +9,22 @@ from pathlib import Path
 import dill
 import numpy as np
 import pytest
-
-from femto.helpers import flatten, listcast
+from femto.helpers import flatten
+from femto.helpers import listcast
 from femto.PGMCompiler import PGMCompiler
 
 
 @pytest.fixture
 def param() -> dict:
     p = {
-        "filename": "test.pgm",
-        "export_dir": "G-Code",
-        "samplesize": (25, 25),
-        "rotation_angle": 1.0,
-        "long_pause": 1.0,
-        "short_pause": 0.025,
-        "speed_pos": 10,
-        "flip_x": True,
+        'filename': 'test.pgm',
+        'export_dir': 'G-Code',
+        'samplesize': (25, 25),
+        'rotation_angle': 1.0,
+        'long_pause': 1.0,
+        'short_pause': 0.025,
+        'speed_pos': 10,
+        'flip_x': True,
     }
     return p
 
@@ -33,11 +35,11 @@ def empty_mk(param) -> PGMCompiler:
 
 
 def test_default_values() -> None:
-    G = PGMCompiler("prova")
-    assert G.filename == "prova"
-    assert G.export_dir == ""
+    G = PGMCompiler('prova')
+    assert G.filename == 'prova'
+    assert G.export_dir == ''
     assert G.samplesize == (None, None)
-    assert G.laser == "PHAROS"
+    assert G.laser == 'PHAROS'
     assert G.home is False
     assert G.new_origin == (0.0, 0.0)
     assert G.warp_flag is False
@@ -55,10 +57,10 @@ def test_default_values() -> None:
 
 def test_gcode_values(param) -> None:
     G = PGMCompiler(**param)
-    assert G.filename == "test.pgm"
-    assert G.export_dir == "G-Code"
+    assert G.filename == 'test.pgm'
+    assert G.export_dir == 'G-Code'
     assert G.samplesize == (25, 25)
-    assert G.laser == "PHAROS"
+    assert G.laser == 'PHAROS'
     assert G.home is False
     assert G.new_origin == (0.0, 0.0)
     assert G.warp_flag is False
@@ -76,10 +78,10 @@ def test_gcode_values(param) -> None:
 
 def test_mk_from_dict(param) -> None:
     G = PGMCompiler.from_dict(param)
-    assert G.filename == "test.pgm"
-    assert G.export_dir == "G-Code"
+    assert G.filename == 'test.pgm'
+    assert G.export_dir == 'G-Code'
     assert G.samplesize == (25, 25)
-    assert G.laser == "PHAROS"
+    assert G.laser == 'PHAROS'
     assert G.home is False
     assert G.new_origin == (0.0, 0.0)
     assert G.warp_flag is False
@@ -99,12 +101,12 @@ def test_repr(param) -> None:
     r = PGMCompiler(**param).__repr__()
     print()
     print(r)
-    cname, _ = r.split("@")
-    assert cname == "PGMCompiler"
+    cname, _ = r.split('@')
+    assert cname == 'PGMCompiler'
 
 
 def test_filename_error(param) -> None:
-    param["filename"] = None
+    param['filename'] = None
     with pytest.raises(ValueError):
         PGMCompiler(**param)
 
@@ -114,152 +116,152 @@ def test_enter_exit_method_default(param) -> None:
         print(G._instructions)
         assert G._instructions == deque(
             [
-                "; SETUP PHAROS - CAPABLE LAB\n",
-                "\n",
-                "ENABLE X Y Z\n",
-                "METRIC\n",
-                "SECONDS\n",
-                "G359\n",
-                "VELOCITY ON\n",
-                "PSOCONTROL X RESET\n",
-                "PSOOUTPUT X CONTROL 3 0\n",
-                "PSOCONTROL X OFF\n",
-                "ABSOLUTE\n",
-                "G17\n",
-                "\n",
-                "; NSCOPETRIG\n",
-                "; MSGCLEAR -1\n",
-                "\n",
-                "DWELL 1.0\n",
-                "\n",
+                '; SETUP PHAROS - CAPABLE LAB\n',
+                '\n',
+                'ENABLE X Y Z\n',
+                'METRIC\n',
+                'SECONDS\n',
+                'G359\n',
+                'VELOCITY ON\n',
+                'PSOCONTROL X RESET\n',
+                'PSOOUTPUT X CONTROL 3 0\n',
+                'PSOCONTROL X OFF\n',
+                'ABSOLUTE\n',
+                'G17\n',
+                '\n',
+                '; NSCOPETRIG\n',
+                '; MSGCLEAR -1\n',
+                '\n',
+                'DWELL 1.0\n',
+                '\n',
             ]
         )
     assert G._instructions == deque([])
 
-    fold = Path(".") / param["export_dir"]
-    file = fold / param["filename"]
+    fold = Path('.') / param['export_dir']
+    file = fold / param['filename']
     file.unlink()
     fold.rmdir()
 
 
 def test_enter_exit_method() -> None:
-    p = dict(filename="testPGM.pgm", laser="ant", samplesize=(25, 25), home=True, aerotech_angle=2.0, flip_x=True)
+    p = dict(filename='testPGM.pgm', laser='ant', samplesize=(25, 25), home=True, aerotech_angle=2.0, flip_x=True)
     with PGMCompiler(**p) as G:
         print(G._instructions)
         assert G._instructions == deque(
             [
-                "; SETUP ANT - DIAMOND LAB\n",
-                "\n",
-                "ENABLE X Y Z\n",
-                "METRIC\n",
-                "SECONDS\n",
-                "G359\n",
-                "VELOCITY ON\n",
-                "PSOCONTROL Z RESET\n",
-                "PSOOUTPUT Z CONTROL 0 1\n",
-                "PSOCONTROL Z OFF\n",
-                "ABSOLUTE\n",
-                "G17\n",
-                "\n",
-                "; NSCOPETRIG\n",
-                "; MSGCLEAR -1\n",
-                "\n",
-                "DWELL 1.0\n",
-                "\n",
-                "\n; ACTIVATE AXIS ROTATION\n",
-                "LINEAR X0.000000 Y0.000000 Z0.000000 F5.000000\n",
-                "G84 X Y\n",
-                "G84 X Y F2.0\n\n",
+                '; SETUP ANT - DIAMOND LAB\n',
+                '\n',
+                'ENABLE X Y Z\n',
+                'METRIC\n',
+                'SECONDS\n',
+                'G359\n',
+                'VELOCITY ON\n',
+                'PSOCONTROL Z RESET\n',
+                'PSOOUTPUT Z CONTROL 0 1\n',
+                'PSOCONTROL Z OFF\n',
+                'ABSOLUTE\n',
+                'G17\n',
+                '\n',
+                '; NSCOPETRIG\n',
+                '; MSGCLEAR -1\n',
+                '\n',
+                'DWELL 1.0\n',
+                '\n',
+                '\n; ACTIVATE AXIS ROTATION\n',
+                'LINEAR X0.000000 Y0.000000 Z0.000000 F5.000000\n',
+                'G84 X Y\n',
+                'G84 X Y F2.0\n\n',
             ]
         )
     assert G._instructions == deque([])
 
-    file = Path(".") / p["filename"]
+    file = Path('.') / p['filename']
     assert file.is_file()
     file.unlink()
 
 
-@pytest.mark.parametrize("xs, expected", [(None, None), (1, 1), (0.5, 0.5), (-5, 5)])
+@pytest.mark.parametrize('xs, expected', [(None, None), (1, 1), (0.5, 0.5), (-5, 5)])
 def test_xsample(param, xs, expected) -> None:
-    param["samplesize"] = (xs, xs)  # set ysample to the same value of xsample, just for testing purposes
+    param['samplesize'] = (xs, xs)  # set ysample to the same value of xsample, just for testing purposes
     G = PGMCompiler(**param)
     assert G.xsample == expected
 
 
-@pytest.mark.parametrize("ys, expected", [(None, None), (-1, 1), (3.2, 3.2), (-18, 18)])
+@pytest.mark.parametrize('ys, expected', [(None, None), (-1, 1), (3.2, 3.2), (-18, 18)])
 def test_ysample(param, ys, expected) -> None:
-    param["samplesize"] = (ys, ys)  # set xsample to the same value of ysample, just for testing purposes
+    param['samplesize'] = (ys, ys)  # set xsample to the same value of ysample, just for testing purposes
     G = PGMCompiler(**param)
     assert G.ysample == expected
 
 
 @pytest.mark.parametrize(
-    "ng, ne, expected",
+    'ng, ne, expected',
     [(None, 1.33, None), (1, None, None), (1, 0, None), (1, 0.0000001, None), (1.5, 1.5, 1), (1.5, 1.33, 1.5 / 1.33)],
 )
 def test_neff(param, ng, ne, expected) -> None:
-    param["n_glass"] = ng
-    param["n_environment"] = ne
+    param['n_glass'] = ng
+    param['n_environment'] = ne
     G = PGMCompiler(**param)
     assert G.neff == expected
 
 
 @pytest.mark.parametrize(
-    "laser, expected",
-    [("ant", "Z"), ("pharos", "X"), ("UWE", "X"), ("CaRbIdE", "X")],
+    'laser, expected',
+    [('ant', 'Z'), ('pharos', 'X'), ('UWE', 'X'), ('CaRbIdE', 'X')],
 )
 def test_pso_label(param, laser, expected) -> None:
-    param["laser"] = laser
+    param['laser'] = laser
     G = PGMCompiler(**param)
     assert G.pso_label == expected
 
 
 @pytest.mark.parametrize(
-    "laser, expectation",
+    'laser, expectation',
     [
-        ("ant", does_not_raise()),
-        ("pharos", does_not_raise()),
-        ("UWE", does_not_raise()),
-        ("CARbide", does_not_raise()),
-        ("satsuma", pytest.raises(ValueError)),
-        ("PHAROS", does_not_raise()),
+        ('ant', does_not_raise()),
+        ('pharos', does_not_raise()),
+        ('UWE', does_not_raise()),
+        ('CARbide', does_not_raise()),
+        ('satsuma', pytest.raises(ValueError)),
+        ('PHAROS', does_not_raise()),
     ],
 )
 def test_pso_label_raise(param, laser, expectation) -> None:
-    param["laser"] = laser
+    param['laser'] = laser
     G = PGMCompiler(**param)
     with expectation:
         print(G.pso_label)
 
 
 @pytest.mark.parametrize(
-    "laser, expected",
-    [("pharos", 0.00), ("PHAROS", 0.00), ("carbide", 0.00), ("CARBIDE", 0.00), ("uwe", 0.005), ("UWE", 0.005)],
+    'laser, expected',
+    [('pharos', 0.00), ('PHAROS', 0.00), ('carbide', 0.00), ('CARBIDE', 0.00), ('uwe', 0.005), ('UWE', 0.005)],
 )
 def test_tshutter(param, laser, expected) -> None:
-    param["laser"] = laser
+    param['laser'] = laser
     G = PGMCompiler(**param)
     assert pytest.approx(G.tshutter) == expected
 
 
 @pytest.mark.parametrize(
-    "laser, expectation",
+    'laser, expectation',
     [
-        ("pharos", does_not_raise()),
-        ("UWE", does_not_raise()),
-        ("", pytest.raises(ValueError)),
-        ("CAPABLE", pytest.raises(ValueError)),
+        ('pharos', does_not_raise()),
+        ('UWE', does_not_raise()),
+        ('', pytest.raises(ValueError)),
+        ('CAPABLE', pytest.raises(ValueError)),
     ],
 )
 def test_tshutter_error(param, laser, expectation) -> None:
-    param["laser"] = laser
+    param['laser'] = laser
     G = PGMCompiler(**param)
     with expectation:
         assert G.tshutter is not None
 
 
 @pytest.mark.parametrize(
-    "p, t, expected",
+    'p, t, expected',
     [(1, 0, 0), (0, 0, 0), (-1, 5, 5), (0.5, 100, 50), (0.0, 79, 0)],
 )
 def test_dwell_time(param, p, t, expected) -> None:
@@ -271,7 +273,7 @@ def test_dwell_time(param, p, t, expected) -> None:
 
 
 @pytest.mark.parametrize(
-    "x, y, expected",
+    'x, y, expected',
     [
         (0, 0, 0),
         (1, 1, 0),
@@ -295,7 +297,7 @@ def test_antiwarp_management(param, x, y, expected) -> None:
 
 
 @pytest.mark.parametrize(
-    "samplesize, expectation",
+    'samplesize, expectation',
     [
         ((30, None), pytest.raises(ValueError)),
         ((None, 45), pytest.raises(ValueError)),
@@ -303,23 +305,22 @@ def test_antiwarp_management(param, x, y, expected) -> None:
     ],
 )
 def test_antiwarp_error(param, samplesize, expectation) -> None:
-    param["samplesize"] = samplesize
+    param['samplesize'] = samplesize
     G = PGMCompiler(**param)
     with expectation:
         assert G.antiwarp_management(opt=True) is not None
 
 
-@pytest.mark.parametrize("x, y", [(4, 5), (2, 4), (5, 2), (5, 0), (5, 3), (7, 7), (7, 0), (10, 5), (6, 10), (0, 5)])
+@pytest.mark.parametrize('x, y', [(4, 5), (2, 4), (5, 2), (5, 0), (5, 3), (7, 7), (7, 0), (10, 5), (6, 10), (0, 5)])
 def test_antiwarp_load(param, x, y) -> None:
-
     G = PGMCompiler(**param)
 
     def fun(h, k):
         return h**2 * k
 
-    file = Path.cwd() / "fwarp.pkl"
+    file = Path.cwd() / 'fwarp.pkl'
     if not file.is_file():
-        with open(file, "wb") as f:
+        with open(file, 'wb') as f:
             dill.dump(fun, f)
     assert file.is_file()
 
@@ -333,27 +334,27 @@ def test_antiwarp_creation(monkeypatch, param) -> None:
 
     z_in = iter(
         [
-            "0.01",
-            "0.00",
-            "0.01",
-            "0.02",
-            "0.03",
-            "0.03",
-            "0.05",
-            "0.06",
-            "0.05",
-            "0.05",
-            "0.05",
-            "0.03",
-            "0.02",
-            "0.01",
-            "0.01",
-            "-0.01",
+            '0.01',
+            '0.00',
+            '0.01',
+            '0.02',
+            '0.03',
+            '0.03',
+            '0.05',
+            '0.06',
+            '0.05',
+            '0.05',
+            '0.05',
+            '0.03',
+            '0.02',
+            '0.01',
+            '0.01',
+            '-0.01',
         ]
     )
-    monkeypatch.setattr("builtins.input", lambda _: next(z_in))
+    monkeypatch.setattr('builtins.input', lambda _: next(z_in))
 
-    funpath = Path.cwd() / "fwarp.pkl"
+    funpath = Path.cwd() / 'fwarp.pkl'
     G = PGMCompiler(**param)
     G_fun = G.antiwarp_management(opt=True)
     assert callable(G_fun)
@@ -362,11 +363,10 @@ def test_antiwarp_creation(monkeypatch, param) -> None:
 
 
 def test_antiwarp_creation_input_errors(monkeypatch, param) -> None:
+    z_in = iter(['0.01', '0.01', '0.01', ''])
+    monkeypatch.setattr('builtins.input', lambda _: next(z_in))
 
-    z_in = iter(["0.01", "0.01", "0.01", ""])
-    monkeypatch.setattr("builtins.input", lambda _: next(z_in))
-
-    funpath = Path.cwd() / "fwarp.pkl"
+    funpath = Path.cwd() / 'fwarp.pkl'
     G = PGMCompiler(**param)
     with pytest.raises(ValueError):
         G.antiwarp_management(opt=True)
@@ -375,7 +375,7 @@ def test_antiwarp_creation_input_errors(monkeypatch, param) -> None:
 
 
 @pytest.mark.parametrize(
-    "num, expectation",
+    'num, expectation',
     [
         (None, pytest.raises(ValueError)),
         (0, pytest.raises(ValueError)),
@@ -389,9 +389,9 @@ def test_antiwarp_creation_points_error(monkeypatch, param, num, expectation) ->
     if num is not None:
         # change number of input values according to num
         z_in = iter([random.uniform(-1, 1) * 1e-3 for _ in range(int(np.ceil(np.sqrt(num))) ** 2)])
-    monkeypatch.setattr("builtins.input", lambda _: next(z_in))
+    monkeypatch.setattr('builtins.input', lambda _: next(z_in))
 
-    funpath = Path.cwd() / "fwarp.pkl"
+    funpath = Path.cwd() / 'fwarp.pkl'
     G = PGMCompiler(**param)
     with expectation:
         assert G.antiwarp_management(opt=True, num=num) is not None
@@ -400,63 +400,62 @@ def test_antiwarp_creation_points_error(monkeypatch, param, num, expectation) ->
 
 
 @pytest.mark.parametrize(
-    "laser, expectation",
+    'laser, expectation',
     [
         (None, pytest.raises(ValueError)),
-        ("PAHROS", pytest.raises(ValueError)),
-        ("Pharos", does_not_raise()),
-        ("uva", pytest.raises(ValueError)),
-        ("UWE", does_not_raise()),
+        ('PAHROS', pytest.raises(ValueError)),
+        ('Pharos', does_not_raise()),
+        ('uva', pytest.raises(ValueError)),
+        ('UWE', does_not_raise()),
     ],
 )
 def test_header_error(param, laser, expectation) -> None:
-    param["laser"] = laser
+    param['laser'] = laser
     G = PGMCompiler(**param)
     with expectation:
         assert G.header() is None
 
 
 def test_header(param) -> None:
-
-    param["laser"] = "ant"
+    param['laser'] = 'ant'
     G = PGMCompiler(**param)
     G.header()
-    assert G._instructions[8] == "PSOOUTPUT Z CONTROL 0 1\n"
+    assert G._instructions[8] == 'PSOOUTPUT Z CONTROL 0 1\n'
 
-    param["laser"] = "carbide"
+    param['laser'] = 'carbide'
     G = PGMCompiler(**param)
     G.header()
-    assert G._instructions[8] == "PSOOUTPUT X CONTROL 2 0\n"
+    assert G._instructions[8] == 'PSOOUTPUT X CONTROL 2 0\n'
 
-    param["laser"] = "pharos"
+    param['laser'] = 'pharos'
     G = PGMCompiler(**param)
     G.header()
-    assert G._instructions[8] == "PSOOUTPUT X CONTROL 3 0\n"
+    assert G._instructions[8] == 'PSOOUTPUT X CONTROL 3 0\n'
     del G
 
-    param["laser"] = "uwe"
+    param['laser'] = 'uwe'
     G = PGMCompiler(**param)
     G.header()
-    assert G._instructions[5] == "WAIT MODE NOWAIT\n"
+    assert G._instructions[5] == 'WAIT MODE NOWAIT\n'
 
 
-@pytest.mark.parametrize("v", [["V1"], ["V1", "V2", "V3"], [], "VAR", ["V1", "V2", ["V3", ["V4", "V5"]], "V6"]])
+@pytest.mark.parametrize('v', [['V1'], ['V1', 'V2', 'V3'], [], 'VAR', ['V1', 'V2', ['V3', ['V4', 'V5']], 'V6']])
 def test_dvar(param, v):
     G = PGMCompiler(**param)
     G.dvar(v)
     v = listcast(flatten(v))
-    var_str = " ".join(["${}"] * len(v)).format(*v)
-    assert G._instructions[0] == f"DVAR {var_str}\n\n"
+    var_str = ' '.join(['${}'] * len(v)).format(*v)
+    assert G._instructions[0] == f'DVAR {var_str}\n\n'
     assert G._dvars == [v.lower() for v in v]
 
 
 @pytest.mark.parametrize(
-    "mode, expectation",
+    'mode, expectation',
     [
         (None, pytest.raises(ValueError)),
-        ("ABS", does_not_raise()),
-        ("abl", pytest.raises(ValueError)),
-        ("Inc", does_not_raise()),
+        ('ABS', does_not_raise()),
+        ('abl', pytest.raises(ValueError)),
+        ('Inc', does_not_raise()),
     ],
 )
 def test_mode(param, mode, expectation) -> None:
@@ -467,42 +466,42 @@ def test_mode(param, mode, expectation) -> None:
 
 def test_mode_abs(param) -> None:
     G = PGMCompiler(**param)
-    G.mode(mode="abs")
-    assert G._instructions[-1] == "ABSOLUTE\n"
+    G.mode(mode='abs')
+    assert G._instructions[-1] == 'ABSOLUTE\n'
     assert G._mode_abs is True
 
 
 def test_mode_inc(param) -> None:
     G = PGMCompiler(**param)
-    G.mode(mode="inc")
-    assert G._instructions[-1] == "INCREMENTAL\n"
+    G.mode(mode='inc')
+    assert G._instructions[-1] == 'INCREMENTAL\n'
     assert G._mode_abs is False
 
 
 def test_comment(param) -> None:
     G = PGMCompiler(**param)
-    c_str = "this is a comment"
+    c_str = 'this is a comment'
     G.comment(c_str)
-    assert G._instructions[-1] == f"\n; {c_str}\n"
+    assert G._instructions[-1] == f'\n; {c_str}\n'
 
     G = PGMCompiler(**param)
-    c_str = ""
+    c_str = ''
     G.comment(c_str)
-    assert G._instructions[-1] == f"\n"
+    assert G._instructions[-1] == f'\n'
 
     G = PGMCompiler(**param)
     c_str = None
     G.comment(c_str)
-    assert G._instructions[-1] == f"\n"
+    assert G._instructions[-1] == f'\n'
 
 
 @pytest.mark.parametrize(
-    "s, expectation",
+    's, expectation',
     [
         (None, pytest.raises(ValueError)),
-        ("on", does_not_raise()),
-        ("OfF", does_not_raise()),
-        ("onn", pytest.raises(ValueError)),
+        ('on', does_not_raise()),
+        ('OfF', does_not_raise()),
+        ('onn', pytest.raises(ValueError)),
     ],
 )
 def test_shutter_inputs_error(param, s, expectation) -> None:
@@ -512,17 +511,17 @@ def test_shutter_inputs_error(param, s, expectation) -> None:
 
 
 @pytest.mark.parametrize(
-    "s, expected",
+    's, expected',
     [
-        (["on"], True),
-        (["off"], False),
-        (["off", "off"], False),
-        (["on", "off"], False),
-        (["off", "on"], True),
-        (["off", "on", "on"], True),
-        (["on", "on", "off"], False),
-        (["off", "on", "on", "on", "on"], True),
-        (["off", "on", "on", "on", "off"], False),
+        (['on'], True),
+        (['off'], False),
+        (['off', 'off'], False),
+        (['on', 'off'], False),
+        (['off', 'on'], True),
+        (['off', 'on', 'on'], True),
+        (['on', 'on', 'off'], False),
+        (['off', 'on', 'on', 'on', 'on'], True),
+        (['off', 'on', 'on', 'on', 'off'], False),
     ],
 )
 def test_shutter_inputs(param, s, expected) -> None:
@@ -532,7 +531,7 @@ def test_shutter_inputs(param, s, expected) -> None:
     assert G._shutter_on is expected
 
 
-@pytest.mark.parametrize("t", [[0.0], [None], [10.0], [0.25], [5.0, 0.23, 0.5], [-1.23, 1.23]])
+@pytest.mark.parametrize('t', [[0.0], [None], [10.0], [0.25], [5.0, 0.23, 0.5], [-1.23, 1.23]])
 def test_dwell_inputs(param, t) -> None:
     G = PGMCompiler(**param)
     for dt in t:
@@ -544,7 +543,7 @@ def test_dwell_inputs(param, t) -> None:
 
 
 @pytest.mark.parametrize(
-    "h_pos, expectation",
+    'h_pos, expectation',
     [
         ([None, None, None], pytest.raises(ValueError)),
         ([None, 1, 2], does_not_raise()),
@@ -563,7 +562,7 @@ def test_set_home_error(param, h_pos, expectation) -> None:
 
 
 @pytest.mark.parametrize(
-    "h_pos",
+    'h_pos',
     [
         [15.0, 34.18, 0.54],
         [-1.23, None, 0.8234],
@@ -575,18 +574,18 @@ def test_set_home_values(param, h_pos) -> None:
     G.set_home(h_pos)
 
     x, y, z = h_pos
-    args = ""
+    args = ''
     if x is not None:
-        args += f"X{x:.6f} "
+        args += f'X{x:.6f} '
     if y is not None:
-        args += f"Y{y:.6f} "
+        args += f'Y{y:.6f} '
     if z is not None:
-        args += f"Z{z:.6f}"
-    assert G._instructions[-1] == f"G92 {args}\n"
+        args += f'Z{z:.6f}'
+    assert G._instructions[-1] == f'G92 {args}\n'
 
 
 @pytest.mark.parametrize(
-    "speedp, pos, speed, expectation",
+    'speedp, pos, speed, expectation',
     [
         (12, [1, 2, 3], 14, does_not_raise()),
         (None, [1, 2, 3], None, pytest.raises(ValueError)),
@@ -600,7 +599,7 @@ def test_set_home_values(param, h_pos) -> None:
     ],
 )
 def test_move_to_errors(param, speedp, pos, speed, expectation) -> None:
-    param["speed_pos"] = speedp
+    param['speed_pos'] = speedp
     G = PGMCompiler(**param)
     with expectation:
         assert G.move_to(pos, speed) is None
@@ -608,14 +607,14 @@ def test_move_to_errors(param, speedp, pos, speed, expectation) -> None:
 
 def test_move_to_close_shutter(param) -> None:
     G = PGMCompiler(**param)
-    G.shutter("on")
+    G.shutter('on')
     assert G._shutter_on is True
     G.move_to([0, 0, 0])
     assert G._shutter_on is False
 
 
 @pytest.mark.parametrize(
-    "speedp, pos, speed",
+    'speedp, pos, speed',
     [
         (12, [1, 2, 3], 14),
         (13, [0, 0, 0], None),
@@ -626,92 +625,92 @@ def test_move_to_close_shutter(param) -> None:
     ],
 )
 def test_move_to_values(param, speedp, pos, speed) -> None:
-    param["speed_pos"] = speedp
+    param['speed_pos'] = speedp
     G = PGMCompiler(**param)
     G.move_to(pos, speed)
 
     speed_pos = speedp if speed is None else speed
     x, y, z = pos
-    args = ""
+    args = ''
     if x is not None:
-        args += f"X{x:.6f} "
+        args += f'X{x:.6f} '
     if y is not None:
-        args += f"Y{y:.6f} "
+        args += f'Y{y:.6f} '
     if z is not None:
-        args += f"Z{z:.6f} "
-    args += f"F{speed_pos:.6f}"
+        args += f'Z{z:.6f} '
+    args += f'F{speed_pos:.6f}'
 
-    assert G._instructions[-2] == f"DWELL {G.long_pause}\n"
+    assert G._instructions[-2] == f'DWELL {G.long_pause}\n'
     if all(coord is None for coord in pos):
-        assert G._instructions[-3] == f"{args}\n"
+        assert G._instructions[-3] == f'{args}\n'
     else:
-        assert G._instructions[-3] == f"LINEAR {args}\n"
+        assert G._instructions[-3] == f'LINEAR {args}\n'
     assert G._shutter_on is False
 
 
 def test_homing(param) -> None:
     G = PGMCompiler(**param)
     G.homing()
-    assert G._instructions[-4] == "\n; HOMING\n"
-    assert G._instructions[-3] == f"LINEAR X0.000000 Y0.000000 Z0.000000 F{G.speed_pos:.6f}\n"
+    assert G._instructions[-4] == '\n; HOMING\n'
+    assert G._instructions[-3] == f'LINEAR X0.000000 Y0.000000 Z0.000000 F{G.speed_pos:.6f}\n'
 
 
 def test_go_init(param) -> None:
     G = PGMCompiler(**param)
     G.go_init()
-    assert G._instructions[-3] == f"LINEAR X-2.000000 Y0.000000 Z0.000000 F{G.speed_pos:.6f}\n"
+    assert G._instructions[-3] == f'LINEAR X-2.000000 Y0.000000 Z0.000000 F{G.speed_pos:.6f}\n'
 
 
 def test_axis_rotation_contex_manager(param) -> None:
-    param["aerotech_angle"] = 2.0
+    param['aerotech_angle'] = 2.0
     G = PGMCompiler(**param)
     with G.axis_rotation():
-        assert G._instructions[-4] == "\n; ACTIVATE AXIS ROTATION\n"
-        assert G._instructions[-3] == f"LINEAR X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{G.speed_pos:.6f}\n"
-        assert G._instructions[-2] == "G84 X Y\n"
-        assert G._instructions[-1] == f"G84 X Y F{G.aerotech_angle}\n\n"
+        assert G._instructions[-4] == '\n; ACTIVATE AXIS ROTATION\n'
+        assert G._instructions[-3] == f'LINEAR X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{G.speed_pos:.6f}\n'
+        assert G._instructions[-2] == 'G84 X Y\n'
+        assert G._instructions[-1] == f'G84 X Y F{G.aerotech_angle}\n\n'
 
         # do operations in G-Code compiler
         G.move_to([1, 2, 3])
         G.homing()
 
-    assert G._instructions[-3] == "\n; DEACTIVATE AXIS ROTATION\n"
-    assert G._instructions[-2] == f"LINEAR X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{G.speed_pos:.6f}\n"
-    assert G._instructions[-1] == "G84 X Y\n"
+    assert G._instructions[-3] == '\n; DEACTIVATE AXIS ROTATION\n'
+    assert G._instructions[-2] == f'LINEAR X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{G.speed_pos:.6f}\n'
+    assert G._instructions[-1] == 'G84 X Y\n'
 
 
-@pytest.mark.parametrize("angle_p, angle", [(None, 13), (14, -3), (9, None), (-1, -1), (None, None)])
+@pytest.mark.parametrize('angle_p, angle', [(None, 13), (14, -3), (9, None), (-1, -1), (None, None)])
 def test_enter_axis_rotation(param, angle_p, angle) -> None:
-    param["aerotech_angle"] = angle_p
+    param['aerotech_angle'] = angle_p
     G = PGMCompiler(**param)
     G._enter_axis_rotation(angle)
 
     a = G.aerotech_angle if angle is None else float(angle % 360)
     if a == 0.0:
-        assert G._instructions[-3] == "\n; ACTIVATE AXIS ROTATION\n"
-        assert G._instructions[-2] == f"LINEAR X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{G.speed_pos:.6f}\n"
-        assert G._instructions[-1] == "G84 X Y\n"
+        assert G._instructions[-3] == '\n; ACTIVATE AXIS ROTATION\n'
+        assert G._instructions[-2] == f'LINEAR X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{G.speed_pos:.6f}\n'
+        assert G._instructions[-1] == 'G84 X Y\n'
     else:
-        assert G._instructions[-4] == "\n; ACTIVATE AXIS ROTATION\n"
-        assert G._instructions[-3] == f"LINEAR X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{G.speed_pos:.6f}\n"
-        assert G._instructions[-2] == "G84 X Y\n"
-        assert G._instructions[-1] == f"G84 X Y F{a}\n\n"
+        assert G._instructions[-4] == '\n; ACTIVATE AXIS ROTATION\n'
+        assert G._instructions[-3] == f'LINEAR X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{G.speed_pos:.6f}\n'
+        assert G._instructions[-2] == 'G84 X Y\n'
+        assert G._instructions[-1] == f'G84 X Y F{a}\n\n'
 
 
 @pytest.mark.parametrize(
-    "n, dvar, var, expectation",
+    'n, dvar, var, expectation',
     [
-        (None, ["PIPPO"], None, pytest.raises(ValueError)),
-        (13, ["PIPPO"], "PIPPO", does_not_raise()),
-        (0, ["PIPPO"], "PIPPO", pytest.raises(ValueError)),
-        (-5, ["PIPPO"], "PIPPO", pytest.raises(ValueError)),
-        (-3.2, ["PIPPO"], "PIPPO", pytest.raises(ValueError)),
-        (3.2, ["PIPPO"], "PIPPO", does_not_raise()),
-        (4, ["PIPPO"], None, pytest.raises(ValueError)),
-        (6, ["pippo"], "paperino", pytest.raises(ValueError)),
-        (13, ["paperino"], "PAPERINO", does_not_raise()),
-        (13, ["paperino", "pippo", "pluto"], "pluto", does_not_raise()),
-        (6, ["pippo", "pippi", "pupo"], "p", pytest.raises(ValueError)),
+        (None, ['PIPPO'], None, pytest.raises(ValueError)),
+        (13, ['PIPPO'], 'PIPPO', does_not_raise()),
+        (0, ['PIPPO'], 'PIPPO', pytest.raises(ValueError)),
+        (-5, ['PIPPO'], 'PIPPO', pytest.raises(ValueError)),
+        (-3.2, ['PIPPO'], 'PIPPO', pytest.raises(ValueError)),
+        (3.2, ['PIPPO'], 'PIPPO', does_not_raise()),
+        (4, ['PIPPO'], None, pytest.raises(ValueError)),
+        (6, ['pippo'], 'paperino', pytest.raises(ValueError)),
+        (13, ['paperino'], 'PAPERINO', does_not_raise()),
+        (13, ['paperino', 'pippo', 'pluto'], 'pluto', does_not_raise()),
+        (6, ['pippo', 'pippi', 'pupo'], 'p', pytest.raises(ValueError)),
     ],
 )
 def test_for_loop_errors(param, n, dvar, var, expectation) -> None:
@@ -721,21 +720,21 @@ def test_for_loop_errors(param, n, dvar, var, expectation) -> None:
         assert G.for_loop(var, n).__enter__() is None
 
 
-@pytest.mark.parametrize("n, v", [(1, "VAR"), (5, "VAR"), (100.2, "VAR"), (2, "VAR")])
+@pytest.mark.parametrize('n, v', [(1, 'VAR'), (5, 'VAR'), (100.2, 'VAR'), (2, 'VAR')])
 def test_for_loop(param, n, v) -> None:
     p = 1
     G = PGMCompiler(**param)
     G.dvar([v])
     with G.for_loop(v, n):
-        assert G._instructions[-1] == f"FOR ${v} = 0 TO {int(n) - 1}\n"
+        assert G._instructions[-1] == f'FOR ${v} = 0 TO {int(n) - 1}\n'
         # do G-Code operations
         G.dwell(p)
-    assert G._instructions[-1] == f"NEXT ${v}\n\n"
+    assert G._instructions[-1] == f'NEXT ${v}\n\n'
     assert G.dwell_time == int(n) * p
 
 
 @pytest.mark.parametrize(
-    "n, expectation",
+    'n, expectation',
     [
         (None, pytest.raises(ValueError)),
         (13, does_not_raise()),
@@ -751,15 +750,15 @@ def test_for_repeat_errors(param, n, expectation) -> None:
         assert G.repeat(n).__enter__() is None
 
 
-@pytest.mark.parametrize("n", [1, 3, 6, 7, 99])
+@pytest.mark.parametrize('n', [1, 3, 6, 7, 99])
 def test_repeat(param, n) -> None:
     p = 1
     G = PGMCompiler(**param)
     with G.repeat(n):
-        assert G._instructions[-1] == f"REPEAT {int(n)}\n"
+        assert G._instructions[-1] == f'REPEAT {int(n)}\n'
         # do G-Code operations
         G.dwell(p)
-    assert G._instructions[-1] == "ENDREPEAT\n\n"
+    assert G._instructions[-1] == 'ENDREPEAT\n\n'
     assert G.dwell_time == int(n) * p
 
 
@@ -779,22 +778,22 @@ def test_toc(param) -> None:
 
 def test_instruction(param) -> None:
     G = PGMCompiler(**param)
-    G.instruction("INSTRUCTION_1\n")
-    assert G._instructions[-1] == "INSTRUCTION_1\n"
-    G.instruction("INSTRUCTION_2")
-    assert G._instructions[-1] == "INSTRUCTION_2\n"
+    G.instruction('INSTRUCTION_1\n')
+    assert G._instructions[-1] == 'INSTRUCTION_1\n'
+    G.instruction('INSTRUCTION_2')
+    assert G._instructions[-1] == 'INSTRUCTION_2\n'
 
 
 @pytest.mark.parametrize(
-    "fn, fp, ext, res",
+    'fn, fp, ext, res',
     [
-        ("test", None, None, "test"),
-        ("test", "femto/test_dir", None, "femto/test_dir/test"),
-        ("test.pgm", None, "pgm", "test.pgm"),
-        ("test.pgm", None, ".pgm", "test.pgm"),
-        ("test.pgm", None, ".PGM", "test.pgm"),
-        ("test.pgm", None, ".PgM", "test.pgm"),
-        ("test.pgm", "femto/test_dir", ".pgm", "femto/test_dir/test.pgm"),
+        ('test', None, None, 'test'),
+        ('test', 'femto/test_dir', None, 'femto/test_dir/test'),
+        ('test.pgm', None, 'pgm', 'test.pgm'),
+        ('test.pgm', None, '.pgm', 'test.pgm'),
+        ('test.pgm', None, '.PGM', 'test.pgm'),
+        ('test.pgm', None, '.PgM', 'test.pgm'),
+        ('test.pgm', 'femto/test_dir', '.pgm', 'femto/test_dir/test.pgm'),
     ],
 )
 def test_get_filepath_values(param, fn, fp, ext, res) -> None:
@@ -809,18 +808,18 @@ def test_get_filepath_values(param, fn, fp, ext, res) -> None:
 def tests_get_filepath_none_fp(param) -> None:
     G = PGMCompiler(**param)
     with pytest.raises(ValueError):
-        G._get_filepath(None, "test/femto", ".pgm")
+        G._get_filepath(None, 'test/femto', '.pgm')
 
 
 @pytest.mark.parametrize(
-    "fn, fp, ext, expectation",
+    'fn, fp, ext, expectation',
     [
-        ("test", None, None, does_not_raise()),
-        ("test", "femto/test_dir", None, does_not_raise()),
-        ("test.pgm", None, "pgm", does_not_raise()),
-        ("test.mp3", None, ".pgm", pytest.raises(ValueError)),
-        ("test.pgm", None, ".wav", pytest.raises(ValueError)),
-        ("test.pgm", None, ".TXT", pytest.raises(ValueError)),
+        ('test', None, None, does_not_raise()),
+        ('test', 'femto/test_dir', None, does_not_raise()),
+        ('test.pgm', None, 'pgm', does_not_raise()),
+        ('test.mp3', None, '.pgm', pytest.raises(ValueError)),
+        ('test.pgm', None, '.wav', pytest.raises(ValueError)),
+        ('test.pgm', None, '.TXT', pytest.raises(ValueError)),
     ],
 )
 def test_get_filepath_extensions(param, fn, fp, ext, expectation) -> None:
@@ -829,7 +828,7 @@ def test_get_filepath_extensions(param, fn, fp, ext, expectation) -> None:
         assert G._get_filepath(fn, fp, ext) is not None
 
 
-@pytest.mark.parametrize("fn, i", [("test.pgm", 0), ("test.pgm", 1), ("test.pgm", None), ("mzi.pgm", 3)])
+@pytest.mark.parametrize('fn, i', [('test.pgm', 0), ('test.pgm', 1), ('test.pgm', None), ('mzi.pgm', 3)])
 def test_load_program(param, fn, i) -> None:
     G = PGMCompiler(**param)
     G.load_program(fn, i)
@@ -850,23 +849,23 @@ def test_load_program_raise(param) -> None:
 def test_programstop(param) -> None:
     G = PGMCompiler(**param)
     G.programstop()
-    assert G._instructions[-2] == "PROGRAM 0 STOP\n"
-    assert G._instructions[-1] == "WAIT (TASKSTATUS(0, DATAITEM_TaskState) == TASKSTATE_Idle) -1\n"
+    assert G._instructions[-2] == 'PROGRAM 0 STOP\n'
+    assert G._instructions[-1] == 'WAIT (TASKSTATUS(0, DATAITEM_TaskState) == TASKSTATE_Idle) -1\n'
 
     G = PGMCompiler(**param)
     G.programstop(task_id=3)
-    assert G._instructions[-2] == "PROGRAM 3 STOP\n"
-    assert G._instructions[-1] == "WAIT (TASKSTATUS(3, DATAITEM_TaskState) == TASKSTATE_Idle) -1\n"
+    assert G._instructions[-2] == 'PROGRAM 3 STOP\n'
+    assert G._instructions[-1] == 'WAIT (TASKSTATUS(3, DATAITEM_TaskState) == TASKSTATE_Idle) -1\n'
 
 
 @pytest.mark.parametrize(
-    "lp, rp, expectation",
+    'lp, rp, expectation',
     [
-        ("test.pgm", "test.pgm", does_not_raise()),
-        ("test.pgm", "femto/test.pgm", does_not_raise()),
-        ("test.pgm", "test", pytest.raises(ValueError)),
-        ("test.pgm", "tttest.pgm", pytest.raises(FileNotFoundError)),
-        ("test.pgm", None, pytest.raises(ValueError)),
+        ('test.pgm', 'test.pgm', does_not_raise()),
+        ('test.pgm', 'femto/test.pgm', does_not_raise()),
+        ('test.pgm', 'test', pytest.raises(ValueError)),
+        ('test.pgm', 'tttest.pgm', pytest.raises(FileNotFoundError)),
+        ('test.pgm', None, pytest.raises(ValueError)),
     ],
 )
 def test_remove_program_raise(param, lp, rp, expectation) -> None:
@@ -877,13 +876,13 @@ def test_remove_program_raise(param, lp, rp, expectation) -> None:
 
 
 @pytest.mark.parametrize(
-    "lp, cp, expectation",
+    'lp, cp, expectation',
     [
-        ("test.pgm", "test.pgm", does_not_raise()),
-        ("test.pgm", "femto/test.pgm", does_not_raise()),
-        ("test.pgm", "test", pytest.raises(ValueError)),
-        ("test.pgm", "tttest.pgm", pytest.raises(FileNotFoundError)),
-        ("test.pgm", None, pytest.raises(ValueError)),
+        ('test.pgm', 'test.pgm', does_not_raise()),
+        ('test.pgm', 'femto/test.pgm', does_not_raise()),
+        ('test.pgm', 'test', pytest.raises(ValueError)),
+        ('test.pgm', 'tttest.pgm', pytest.raises(FileNotFoundError)),
+        ('test.pgm', None, pytest.raises(ValueError)),
     ],
 )
 def test_farcall_raise(param, lp, cp, expectation) -> None:
@@ -894,7 +893,7 @@ def test_farcall_raise(param, lp, cp, expectation) -> None:
 
 
 def test_farcall_value(param) -> None:
-    fn = "test.pgm"
+    fn = 'test.pgm'
     G = PGMCompiler(**param)
     G.load_program(fn)
     G.farcall(fn)
@@ -902,13 +901,13 @@ def test_farcall_value(param) -> None:
 
 
 @pytest.mark.parametrize(
-    "lp, cp, expectation",
+    'lp, cp, expectation',
     [
-        ("test.pgm", "test.pgm", does_not_raise()),
-        ("test.pgm", "femto/test.pgm", does_not_raise()),
-        ("test.pgm", "test", pytest.raises(ValueError)),
-        ("test.pgm", "tttest.pgm", pytest.raises(FileNotFoundError)),
-        ("test.pgm", None, pytest.raises(ValueError)),
+        ('test.pgm', 'test.pgm', does_not_raise()),
+        ('test.pgm', 'femto/test.pgm', does_not_raise()),
+        ('test.pgm', 'test', pytest.raises(ValueError)),
+        ('test.pgm', 'tttest.pgm', pytest.raises(FileNotFoundError)),
+        ('test.pgm', None, pytest.raises(ValueError)),
     ],
 )
 def test_buffercall_raise(param, lp, cp, expectation) -> None:
@@ -919,7 +918,7 @@ def test_buffercall_raise(param, lp, cp, expectation) -> None:
 
 
 def test_buffercall_value(param) -> None:
-    fn = "test.pgm"
+    fn = 'test.pgm'
     G = PGMCompiler(**param)
     G.load_program(fn)
     G.buffercall(fn)
@@ -927,12 +926,12 @@ def test_buffercall_value(param) -> None:
 
 
 @pytest.mark.parametrize(
-    "fns, tid, id_exp, expectation",
+    'fns, tid, id_exp, expectation',
     [
-        (["f1.pgm", "f2.pgm", "f3.pgm"], [1, 2, 3], [1, 2, 3], does_not_raise()),
-        (["f1.pgm", "f2.pgm", "f3.pgm"], [1, 2, 3, 4, 5], [1, 2, 3], does_not_raise()),
-        (["f1.pgm", "f2.pgm", "f3.pgm"], [1], [1, 0, 0], does_not_raise()),
-        (["f1.pgm", "f2.pgm", "f3.pgm"], [], [0, 0, 0], does_not_raise()),
+        (['f1.pgm', 'f2.pgm', 'f3.pgm'], [1, 2, 3], [1, 2, 3], does_not_raise()),
+        (['f1.pgm', 'f2.pgm', 'f3.pgm'], [1, 2, 3, 4, 5], [1, 2, 3], does_not_raise()),
+        (['f1.pgm', 'f2.pgm', 'f3.pgm'], [1], [1, 0, 0], does_not_raise()),
+        (['f1.pgm', 'f2.pgm', 'f3.pgm'], [], [0, 0, 0], does_not_raise()),
         ([], [1, 2, 3], [], does_not_raise()),
     ],
 )
@@ -949,13 +948,13 @@ def test_call_list(param, fns, tid, id_exp, expectation) -> None:
         T.dwell(T.short_pause)
         T.remove_program(fpath.name, t_id)
         T.dwell(T.short_pause)
-        T.instruction("\n\n")
+        T.instruction('\n\n')
 
     assert G._instructions == T._instructions
 
 
 @pytest.mark.parametrize(
-    "x, y, fp_x, fp_y, exp_x, exp_y",
+    'x, y, fp_x, fp_y, exp_x, exp_y',
     [
         (
             np.array([-2, 5, 10, 14, 23, 35]),
@@ -992,8 +991,8 @@ def test_call_list(param, fns, tid, id_exp, expectation) -> None:
     ],
 )
 def test_flip_path(param, x, y, fp_x, fp_y, exp_x, exp_y) -> None:
-    param["flip_x"] = fp_x
-    param["flip_y"] = fp_y
+    param['flip_x'] = fp_x
+    param['flip_y'] = fp_y
     G = PGMCompiler(**param)
     xf, yf = G.flip(x, y)
     np.testing.assert_almost_equal(xf, exp_x)
@@ -1001,7 +1000,7 @@ def test_flip_path(param, x, y, fp_x, fp_y, exp_x, exp_y) -> None:
 
 
 @pytest.mark.parametrize(
-    "x, y, z",
+    'x, y, z',
     [
         (
             np.array([-2, 5, 10, 14, 23, 35]),
@@ -1034,13 +1033,13 @@ def test_compensate(param, x, y, z) -> None:
     def fun(h, k):
         return (h**2 * k) * 1e-3
 
-    file = Path.cwd() / "fwarp.pkl"
+    file = Path.cwd() / 'fwarp.pkl'
     if not file.is_file():
-        with open(file, "wb") as f:
+        with open(file, 'wb') as f:
             dill.dump(fun, f)
 
-    param["warp_flag"] = True
-    param["flip_x"] = False
+    param['warp_flag'] = True
+    param['flip_x'] = False
     G = PGMCompiler(**param)
 
     xc, yc, zc = G.compensate(x, y, z)
@@ -1054,51 +1053,28 @@ def test_compensate(param, x, y, z) -> None:
 
 
 @pytest.mark.parametrize(
-    "dim, expectation",
+    'angle, res',
     [
-        (2, does_not_raise()),
-        (3, does_not_raise()),
-        (0, pytest.raises(ValueError)),
-        (None, pytest.raises(ValueError)),
-        (5, pytest.raises(ValueError)),
-    ],
-)
-def test_t_matrix_raise(param, dim, expectation) -> None:
-    G = PGMCompiler(**param)
-    with expectation:
-        assert G.t_matrix(dim) is not None
-
-
-@pytest.mark.parametrize(
-    "angle, dim, res",
-    [
-        (np.pi / 2, 2, np.array([[0, -1], [1, 0]])),
-        (0, 2, np.array([[1, 0], [0, 1]])),
         (
             np.pi / 4,
-            3,
             np.array(
                 [[1 / np.sqrt(2), -1 / np.sqrt(2), 0], [1 / np.sqrt(2), 1 / np.sqrt(2), 0], [0, 0, 1.33 / 1.5]],
             ),
         ),
-        (0, 3, np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1.33 / 1.5]])),
-        (np.pi / 3, 3, np.array([[0.5, -0.5 * np.sqrt(3), 0], [0.5 * np.sqrt(3), 0.5, 0], [0, 0, 1.33 / 1.5]])),
+        (0, np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1.33 / 1.5]])),
+        (np.pi / 3, np.array([[0.5, -0.5 * np.sqrt(3), 0], [0.5 * np.sqrt(3), 0.5, 0], [0, 0, 1.33 / 1.5]])),
     ],
 )
-def test_t_matrix_matrix(param, angle, dim, res) -> None:
+def test_t_matrix_matrix(param, angle, res) -> None:
+    M = np.array([[np.cos(angle), -np.sin(angle), 0], [np.sin(angle), np.cos(angle), 0], [0, 0, 1.33 / 1.5]]).T
 
-    if dim == 2:
-        M = np.array([[np.cos(angle), -np.sin(angle)], [np.sin(angle), np.cos(angle)]]).T
-    else:
-        M = np.array([[np.cos(angle), -np.sin(angle), 0], [np.sin(angle), np.cos(angle), 0], [0, 0, 1.33 / 1.5]]).T
-
-    param["rotation_angle"] = math.degrees(angle)
+    param['rotation_angle'] = math.degrees(angle)
     G = PGMCompiler(**param)
-    np.testing.assert_almost_equal(G.t_matrix(dim), M)
+    np.testing.assert_almost_equal(G.t_matrix, M)
 
 
 @pytest.mark.parametrize(
-    "xflip, yflip, warpf, angle, xin, yin, zin, xo, yo, zo",
+    'xflip, yflip, warpf, angle, xin, yin, zin, xo, yo, zo',
     [
         (
             True,
@@ -1130,15 +1106,15 @@ def test_transform_points_(param, xflip, yflip, warpf, angle, xin, yin, zin, xo,
     def fun(h, k):
         return -1e-3
 
-    file = Path.cwd() / "fwarp.pkl"
+    file = Path.cwd() / 'fwarp.pkl'
     if not file.is_file():
-        with open(file, "wb") as f:
+        with open(file, 'wb') as f:
             dill.dump(fun, f)
 
-    param["flip_x"] = xflip
-    param["flip_y"] = yflip
-    param["warp_flag"] = warpf
-    param["rotation_angle"] = angle  # in degree
+    param['flip_x'] = xflip
+    param['flip_y'] = yflip
+    param['warp_flag'] = warpf
+    param['rotation_angle'] = angle  # in degree
     G = PGMCompiler(**param)
     x, y, z = G.transform_points(xin, yin, zin)
 
@@ -1150,15 +1126,15 @@ def test_transform_points_(param, xflip, yflip, warpf, angle, xin, yin, zin, xo,
 
 
 @pytest.mark.parametrize(
-    "x, y, z, f, expected",
+    'x, y, z, f, expected',
     [
-        (1, 2, 3, 4, "X1.000000 Y2.000000 Z3.000000 F4.000000"),
-        (None, 2, 3, 4, "Y2.000000 Z3.000000 F4.000000"),
-        (None, None, 3, 4, "Z3.000000 F4.000000"),
-        (None, None, None, 4, "F4.000000"),
-        (None, None, None, None, ""),
-        (5.8543, 2.0000001, -3.9456127, 4, "X5.854300 Y2.000000 Z-3.945613 F4.000000"),
-        (None, 2, 3, None, "Y2.000000 Z3.000000"),
+        (1, 2, 3, 4, 'X1.000000 Y2.000000 Z3.000000 F4.000000'),
+        (None, 2, 3, 4, 'Y2.000000 Z3.000000 F4.000000'),
+        (None, None, 3, 4, 'Z3.000000 F4.000000'),
+        (None, None, None, 4, 'F4.000000'),
+        (None, None, None, None, ''),
+        (5.8543, 2.0000001, -3.9456127, 4, 'X5.854300 Y2.000000 Z-3.945613 F4.000000'),
+        (None, 2, 3, None, 'Y2.000000 Z3.000000'),
     ],
 )
 def test_format_arguments(param, x, y, z, f, expected) -> None:
@@ -1168,7 +1144,7 @@ def test_format_arguments(param, x, y, z, f, expected) -> None:
 
 
 @pytest.mark.parametrize(
-    "x, y, z, f, expectation",
+    'x, y, z, f, expectation',
     [
         (1, 2, 3, 4, does_not_raise()),
         (None, 2, 3, 4, does_not_raise()),
@@ -1190,7 +1166,7 @@ def test_format_arguments_raise(param, x, y, z, f, expectation) -> None:
 
 
 @pytest.mark.parametrize(
-    "pts, expected",
+    'pts, expected',
     [
         (
             [
@@ -1234,21 +1210,21 @@ def test_format_arguments_raise(param, x, y, z, f, expectation) -> None:
             ],
             deque(
                 [
-                    "LINEAR X26.995190 Y0.511209 Z0.031033 F0.500000\n",
-                    "DWELL 0.025\n",
-                    "\nPSOCONTROL X ON\n",
-                    "DWELL 1.0\n",
-                    "\n",
-                    "LINEAR X17.944203 Y3.353680 Z0.031033 F20.000000\n",
-                    "LINEAR X20.996104 Y0.406494 Z2.691033 F20.000000\n",
-                    "LINEAR X23.995647 Y0.458852 Z5.351033 F20.000000\n",
-                    "DWELL 0.025\n",
-                    "\nPSOCONTROL X OFF\n",
-                    "DWELL 1.0\n",
-                    "\n",
-                    "LINEAR X26.995190 Y0.511209 Z0.031033 F5.000000\n",
-                    "DWELL 1.0\n",
-                    "\n",
+                    'LINEAR X26.995190 Y0.511209 Z0.031033 F0.500000\n',
+                    'DWELL 0.025\n',
+                    '\nPSOCONTROL X ON\n',
+                    'DWELL 1.0\n',
+                    '\n',
+                    'LINEAR X17.944203 Y3.353680 Z0.031033 F20.000000\n',
+                    'LINEAR X20.996104 Y0.406494 Z2.691033 F20.000000\n',
+                    'LINEAR X23.995647 Y0.458852 Z5.351033 F20.000000\n',
+                    'DWELL 0.025\n',
+                    '\nPSOCONTROL X OFF\n',
+                    'DWELL 1.0\n',
+                    '\n',
+                    'LINEAR X26.995190 Y0.511209 Z0.031033 F5.000000\n',
+                    'DWELL 1.0\n',
+                    '\n',
                 ]
             ),
         )
@@ -1262,8 +1238,8 @@ def test_write(param, pts, expected) -> None:
 
 
 def test_close_dir(param) -> None:
-    exp_dir = "./src/femto/test/"
-    param["export_dir"] = exp_dir
+    exp_dir = './src/femto/test/'
+    param['export_dir'] = exp_dir
 
     # add some istructions
     G = PGMCompiler(**param)
@@ -1283,7 +1259,7 @@ def test_close_dir(param) -> None:
     dire = Path(exp_dir)
     assert dire.is_dir()
     # assert the file exists
-    file = dire / param["filename"]
+    file = dire / param['filename']
     assert file.is_file()
 
     file.unlink()

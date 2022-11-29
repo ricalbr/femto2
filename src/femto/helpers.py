@@ -1,6 +1,12 @@
+from __future__ import annotations
+
 from functools import partial
-from itertools import chain, cycle, islice, repeat
-from typing import Any, Dict, List, Tuple, Union
+from itertools import chain
+from itertools import cycle
+from itertools import islice
+from itertools import repeat
+from typing import Any
+from typing import Dict
 
 import numpy as np
 import numpy.typing as npt
@@ -17,10 +23,10 @@ pairwise = partial(grouped, n=2)
 
 
 def swap(
-    array: List[npt.NDArray[np.float32]],
-    swap_pos: List[Tuple[int, int]],
+    array: list[npt.NDArray[np.float32]],
+    swap_pos: list[tuple[int, int]],
     zero_index: bool = False,
-) -> List[npt.NDArray[np.float32]]:
+) -> list[npt.NDArray[np.float32]]:
     # in case of a single swap, swap_pos can be (pos1, pos2).
     # # Encapsulate the tuple in a list to have compatibility with general code
     # if not isinstance(swap_pos, list):
@@ -77,7 +83,7 @@ def sign():
     return cycle([1, -1])
 
 
-def unique_filter(arrays: List[npt.NDArray[np.float32]]) -> npt.NDArray[np.float32]:
+def unique_filter(arrays: list[npt.NDArray[np.float32]]) -> npt.NDArray[np.float32]:
     # data matrix
     data = np.stack(arrays, axis=-1).astype(np.float32)
 
@@ -94,7 +100,7 @@ def unique_filter(arrays: List[npt.NDArray[np.float32]]) -> npt.NDArray[np.float
     return np.array(data[mask])
 
 
-def split_mask(arr: npt.NDArray[Any], mask: Union[List[bool], npt.NDArray[bool]]) -> List[npt.NDArray[Any]]:
+def split_mask(arr: npt.NDArray[Any], mask: list[bool] | npt.NDArray[bool]) -> list[npt.NDArray[Any]]:
     indices = np.nonzero(mask[1:] != mask[:-1])[0] + 1
     sp = np.split(arr, indices)
     sp = sp[0::2] if mask[0] else sp[1::2]
