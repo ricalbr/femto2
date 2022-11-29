@@ -13,7 +13,6 @@ from itertools import product
 from itertools import zip_longest
 from operator import add
 from pathlib import Path
-from typing import List
 from typing import TypeVar
 
 import dill
@@ -289,7 +288,7 @@ class PGMCompiler:
             raise ValueError(f'Given final position is not valid. 3 values required, given {np.size(home_pos)}.')
 
         if all(coord is None for coord in home_pos):
-            raise ValueError(f'Given home position is (None, None, None). Give a valid home position.')
+            raise ValueError('Given home position is (None, None, None). Give a valid home position.')
 
         args = self._format_args(*home_pos)
         self._instructions.append(f'G92 {args}\n')
@@ -312,7 +311,7 @@ class PGMCompiler:
             raise ValueError(f'Given final position is not valid. 3 values required, given {np.size(position)}.')
 
         if speed_pos is None and self.speed_pos is None:
-            raise ValueError(f"The positioning speed is None. Set the 'speed_pos' attribute or give a valid value.")
+            raise ValueError('The positioning speed is None. Set the "speed_pos" attribute or give a valid value.')
         speed_pos = self.speed_pos if speed_pos is None else speed_pos
 
         # close the shutter before the movements
@@ -1301,7 +1300,7 @@ class WaveguideWriter(Writer):
         if all(isinstance(wg, Waveguide) for wg in flatten(obj)):
             self.wg_list.extend(obj)
         else:
-            raise TypeError(f'All the objects must be of type Waveguide.')
+            raise TypeError('All the objects must be of type Waveguide.')
 
     def plot2d(self, fig: go.Figure | None = None, show_shutter_close: bool = True, style: bool = None) -> go.Figure:
         # If existing figure is given as input parameter append to the figure and return it

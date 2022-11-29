@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import dill
 import numpy as np
@@ -45,7 +46,7 @@ class LaserPath:
         return f'{self.__class__.__name__}@{id(self) & 0xFFFFFF:x}'
 
     @classmethod
-    def from_dict(cls: LaserPath, param: dict | Dotdict) -> LaserPath:
+    def from_dict(cls: Any, param: dict | Dotdict) -> Any:
         return cls(**param)
 
     @property

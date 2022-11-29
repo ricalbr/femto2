@@ -115,5 +115,5 @@ def pad(iterable, size, padding=None):
     return islice(pad_infinite(iterable, padding), size)
 
 
-def almost_equals(polygon: shapely.geometry.Polygon, other: shapely.geometry.Polygon, tol: float = 1e-6):
+def almost_equals(polygon: shapely.geometry.Polygon, other: shapely.geometry.Polygon, tol: float = 1e-6) -> bool:
     return polygon.symmetric_difference(other).area < tol

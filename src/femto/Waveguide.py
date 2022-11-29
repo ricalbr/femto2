@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from functools import partialmethod
-from typing import Tuple
-from typing import TypeVar
 
 import numpy as np
 import numpy.typing as npt
@@ -11,9 +9,6 @@ from femto.helpers import Dotdict
 from femto.LaserPath import LaserPath
 from scipy.interpolate import CubicSpline
 from scipy.interpolate import InterpolatedUnivariateSpline
-
-# Create a generic variable that can be 'Waveguide', or any subclass.
-WG = TypeVar('WG', bound='Waveguide')
 
 
 @dataclass(repr=False)
@@ -155,7 +150,7 @@ class Waveguide(LaserPath):
         radius: float | None = None,
         shutter: int = 1,
         speed: float | None = None,
-    ) -> WG:
+    ) -> Waveguide:
         """
         Computes the points in the xy-plane that connects two angles (initial_angle and final_angle) with a circular
         arc of a given radius. The user can set the transition speed, the shutter state during the movement and the
@@ -204,7 +199,7 @@ class Waveguide(LaserPath):
         radius: float | None = None,
         shutter: int = 1,
         speed: float | None = None,
-    ) -> WG:
+    ) -> Waveguide:
         """
         Concatenates two circular arc to make a circular S-bend.
         The user can specify the amplitude of the S-bend (height in the y direction) and the curvature radius.
@@ -267,7 +262,7 @@ class Waveguide(LaserPath):
         int_length: float | None = None,
         shutter: int = 1,
         speed: float | None = None,
-    ) -> WG:
+    ) -> Waveguide:
         """
         Concatenates two circular S-bend to make a single mode of a circular directional coupler.
         The user can specify the amplitude of the coupler (height in the y direction) and the curvature radius.
@@ -309,7 +304,7 @@ class Waveguide(LaserPath):
         arm_length: float | None = None,
         shutter: int = 1,
         speed: float | None = None,
-    ) -> WG:
+    ) -> Waveguide:
         """
         Concatenates two circular couplers to make a single mode of a circular MZI.
         The user can specify the amplitude of the coupler (height in the y direction) and the curvature radius.
@@ -353,7 +348,7 @@ class Waveguide(LaserPath):
         radius: float | None = None,
         shutter: int = 1,
         speed: float | None = None,
-    ) -> WG:
+    ) -> Waveguide:
         """
         Computes the points in the xy-plane of a Sin-bend curve and the points in the xz-plane of a
         Sin-bridge of height Dz. The distance between the initial and final point is the same of the equivalent
@@ -427,7 +422,7 @@ class Waveguide(LaserPath):
         int_length: float | None = 0.0,
         shutter: int = 1,
         speed: float | None = None,
-    ) -> WG:
+    ) -> Waveguide:
         """
         Concatenates two Sin-bend to make a single mode of a sinusoidal directional coupler.
         The user can specify the amplitude of the coupler (height in the y direction) and the effective curvature
@@ -471,7 +466,7 @@ class Waveguide(LaserPath):
         arm_length: float | None = None,
         shutter: int = 1,
         speed: float | None = None,
-    ) -> WG:
+    ) -> Waveguide:
         """
         Concatenates two sinusoidal couplers to make a single mode of a sinusoidal MZI.
         The user can specify the amplitude of the coupler (height in the y direction) and the curvature radius.
@@ -518,7 +513,7 @@ class Waveguide(LaserPath):
         speed: float | None = None,
         bc_y: tuple = ((1, 0.0), (1, 0.0)),
         bc_z: tuple = ((1, 0.0), (1, 0.0)),
-    ) -> WG:
+    ) -> Waveguide:
         """
         Function wrapper. It computes the x,y,z coordinates of spline curve starting from init_pos with Dy and Dz
         displacements.
@@ -570,7 +565,7 @@ class Waveguide(LaserPath):
         radius: float | None = None,
         shutter: int = 1,
         speed: float | None = None,
-    ) -> WG:
+    ) -> Waveguide:
         """
         Computes a spline bridge as a sequence of two spline segments. disp_y is the total displacement along the
         y-direction of the bridge and disp_z is the height of the bridge along z.

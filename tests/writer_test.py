@@ -203,8 +203,8 @@ def test_trench_writer_pgm(gc_param, list_tcol) -> None:
             (twr._export_path / f'trenchCol{i_col + 1:03}' / f'trench{i_tr + 1:03}_floor.pgm').unlink()
         (twr._export_path / f'trenchCol{i_col + 1:03}').rmdir()
         (twr._export_path / f'FARCALL{i_col + 1:03}.pgm').unlink()
-    assert (twr._export_path / f'MAIN.pgm').is_file()
-    (twr._export_path / f'MAIN.pgm').unlink()
+    assert (twr._export_path / 'MAIN.pgm').is_file()
+    (twr._export_path / 'MAIN.pgm').unlink()
     twr._export_path.rmdir()
 
 

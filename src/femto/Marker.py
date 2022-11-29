@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import List
 from typing import TypeVar
 
 import numpy as np

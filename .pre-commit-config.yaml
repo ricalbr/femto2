@@ -35,10 +35,10 @@ repos:
         args: [ --safe ]
         additional_dependencies: [ 'click==8.0.4' ]
 
-#  - repo: https://github.com/PyCQA/flake8
-#    rev: 5.0.4
-#    hooks:
-#      - id: flake8
+  - repo: https://github.com/PyCQA/flake8
+    rev: 5.0.4
+    hooks:
+      - id: flake8
 
 #-   repo: https://github.com/pre-commit/mirrors-mypy
 #    rev: v0.991

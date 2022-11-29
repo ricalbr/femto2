@@ -487,12 +487,12 @@ def test_comment(param) -> None:
     G = PGMCompiler(**param)
     c_str = ''
     G.comment(c_str)
-    assert G._instructions[-1] == f'\n'
+    assert G._instructions[-1] == '\n'
 
     G = PGMCompiler(**param)
     c_str = None
     G.comment(c_str)
-    assert G._instructions[-1] == f'\n'
+    assert G._instructions[-1] == '\n'
 
 
 @pytest.mark.parametrize(

@@ -5,7 +5,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Generator
 from typing import Iterator
-from typing import List
 
 import numpy as np
 import numpy.typing as npt
@@ -359,9 +358,11 @@ def main():
     # Calculations
     coup = [Waveguide(**PARAM_WG) for _ in range(20)]
     for i, wg in enumerate(coup):
-        wg.start([-2, i * wg.pitch, 0.035]).sin_acc((-1) ** i * wg.dy_bend)
+        wg.start([-2, i * wg.pitch, 0.035])
+        wg.sin_acc((-1) ** i * wg.dy_bend)
         PARAM_TC.x_center = wg.x[-1]
-        wg.sin_acc((-1) ** i * wg.dy_bend).end()
+        wg.sin_acc((-1) ** i * wg.dy_bend)
+        wg.end()
 
     # Trench
     T = TrenchColumn(**PARAM_TC)
