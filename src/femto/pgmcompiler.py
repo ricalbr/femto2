@@ -1059,8 +1059,8 @@ class Writer(PGMCompiler, ABC):
 class TrenchWriter(Writer):
     def __init__(self, tc_list: [TrenchColumn | list[TrenchColumn]], dirname: str = 'TRENCH', **param):
         super().__init__(**param)
-        self.tc_list: list[TrenchColumn] = flatten(listcast(tc_list))
-        self.trenches: list[Trench] = [tr for col in self.tc_list for tr in col]
+        self.obj_list: list[TrenchColumn] = flatten(listcast(tc_list))
+        self.trenches: list[Trench] = [tr for col in self.obj_list for tr in col]
         self.dirname: str = dirname
 
         self._param: dict | Dotdict = Dotdict(**param)
@@ -1069,7 +1069,7 @@ class TrenchWriter(Writer):
     def append(self, obj: TrenchColumn) -> None:
         if not isinstance(obj, TrenchColumn):
             raise TypeError(f'The object must be a TrenchColumn. {type(obj)} was given.')
-        self.tc_list.append(obj)
+        self.obj_list.append(obj)
         self.trenches.extend(obj.trench_list)
 
     def extend(self, obj: list[TrenchColumn]) -> None:
@@ -1108,11 +1108,11 @@ class TrenchWriter(Writer):
         :return: None
         """
 
-        if not self.tc_list:
+        if not self.obj_list:
             return None
 
         # Export each Trench for each TrenchColumn
-        for i_col, col in enumerate(self.tc_list):
+        for i_col, col in enumerate(self.obj_list):
             # Prepare PGM files export directory
             col_dir = self._export_path / f'trenchCol{i_col + 1:03}'
             col_dir.mkdir(parents=True, exist_ok=True)
@@ -1128,13 +1128,13 @@ class TrenchWriter(Writer):
         main_param.filename = self._export_path / 'MAIN.pgm'
         main_param.aerotech_angle = None
 
-        farcall_list = [str(Path(col.base_folder) / f'FARCALL{i + 1:03}.pgm') for i, col in enumerate(self.tc_list)]
+        farcall_list = [str(Path(col.base_folder) / f'FARCALL{i + 1:03}.pgm') for i, col in enumerate(self.obj_list)]
         with PGMCompiler(**main_param) as G:
             G.call_list(farcall_list)
 
         if verbose:
             _tc_fab_time = 0.0
-            for col in self.tc_list:
+            for col in self.obj_list:
                 _tc_fab_time += col.fabrication_time + 10
 
             print('G-code compilation completed.')
@@ -1281,7 +1281,7 @@ class TrenchWriter(Writer):
 class WaveguideWriter(Writer):
     def __init__(self, wg_list: list[Waveguide] | list[list[Waveguide]], **param):
         super().__init__(**param)
-        self.wg_list: list[Waveguide] | list[list[Waveguide]] = wg_list
+        self.obj_list: list[Waveguide] | list[list[Waveguide]] = wg_list
 
         self._param: dict | Dotdict = Dotdict(**param)
         self._export_path = self.CWD / (self.export_dir or '')
@@ -1289,7 +1289,7 @@ class WaveguideWriter(Writer):
     def append(self, obj: Waveguide) -> None:
         if not isinstance(obj, Waveguide):
             raise TypeError(f'The object must be a Waveguide. {type(obj)} was given.')
-        self.wg_list.append(obj)
+        self.obj_list.append(obj)
 
     def extend(self, obj: list[Waveguide] | list[list[Waveguide]]) -> None:
         if not isinstance(obj, list):
@@ -1299,7 +1299,7 @@ class WaveguideWriter(Writer):
                 f'The waveguide list has too many nested levels ({nest_level(obj)}). The maximum value is 2.'
             )
         if all(isinstance(wg, Waveguide) for wg in flatten(obj)):
-            self.wg_list.extend(obj)
+            self.obj_list.extend(obj)
         else:
             raise TypeError('All the objects must be of type Waveguide.')
 
@@ -1327,7 +1327,7 @@ class WaveguideWriter(Writer):
 
     def pgm(self, verbose: bool = True) -> None:
 
-        if not self.wg_list:
+        if not self.obj_list:
             return
 
         _wg_fab_time = 0.0
@@ -1335,7 +1335,7 @@ class WaveguideWriter(Writer):
         _wg_param.filename = Path(self.filename).stem + '_WG.pgm'
 
         with PGMCompiler(**_wg_param) as G:
-            for bunch in self.wg_list:
+            for bunch in self.obj_list:
                 with G.repeat(listcast(bunch)[0].scan):
                     for wg in listcast(bunch):
                         _wg_fab_time += wg.fabrication_time
@@ -1359,7 +1359,7 @@ class WaveguideWriter(Writer):
         wg_args = {**default_wgargs, **style}
         sc_args = {'dash': 'dot', 'color': '#0000ff', 'width': 0.5}
 
-        for wg in listcast(flatten(self.wg_list)):
+        for wg in listcast(flatten(self.obj_list)):
             x_wg, y_wg, z_wg, _, s = wg.points
             x, y, z = self.transform_points(x_wg, y_wg, z_wg)
             xo, yo, _ = self._shutter_mask(x, y, z, s)
@@ -1396,7 +1396,7 @@ class WaveguideWriter(Writer):
         wg_args = {**default_wgargs, **style}
         sc_args = {'dash': 'dot', 'color': '#0000ff', 'width': 0.5}
 
-        for wg in listcast(flatten(self.wg_list)):
+        for wg in listcast(flatten(self.obj_list)):
             x_wg, y_wg, z_wg, _, s = wg.points
             x, y, z = self.transform_points(x_wg, y_wg, z_wg)
             xo, yo, zo = self._shutter_mask(x, y, z, s)
@@ -1432,7 +1432,7 @@ class WaveguideWriter(Writer):
 class MarkerWriter(Writer):
     def __init__(self, mk_list: list[Marker], **param):
         super().__init__(**param)
-        self.mk_list: list[Marker] = flatten(mk_list)
+        self.obj_list: list[Marker] = flatten(mk_list)
 
         self._param: dict | Dotdict = Dotdict(**param)
         self._export_path = self.CWD / (self.export_dir or '')
@@ -1440,7 +1440,7 @@ class MarkerWriter(Writer):
     def append(self, obj: Marker) -> None:
         if not isinstance(obj, Marker):
             raise TypeError(f'The object must be a Marker. {type(obj)} was given.')
-        self.mk_list.append(obj)
+        self.obj_list.append(obj)
 
     def extend(self, obj: list[Marker]) -> None:
         if not isinstance(obj, list):
@@ -1472,7 +1472,7 @@ class MarkerWriter(Writer):
 
     def pgm(self, verbose: bool = True) -> None:
 
-        if not self.mk_list:
+        if not self.obj_list:
             return
 
         _mk_fab_time = 0.0
@@ -1480,7 +1480,7 @@ class MarkerWriter(Writer):
         _mk_param.filename = Path(self.filename).stem + '_MK.pgm'
 
         with PGMCompiler(**_mk_param) as G:
-            for idx, mk in enumerate(flatten(self.mk_list)):
+            for idx, mk in enumerate(flatten(self.obj_list)):
                 with G.repeat(mk.scan):
                     _mk_fab_time += mk.fabrication_time
                     G.comment(f'MARKER {idx + 1}')
@@ -1505,7 +1505,7 @@ class MarkerWriter(Writer):
         default_mkargs = {'dash': 'solid', 'color': '#000000', 'width': 2.0}
         mk_args = {**default_mkargs, **style}
 
-        for mk in listcast(flatten(self.mk_list)):
+        for mk in listcast(flatten(self.obj_list)):
             x_wg, y_wg, z_wg, _, s = mk.points
             x, y, z = self.transform_points(x_wg, y_wg, z_wg)
             xo, yo, _ = self._shutter_mask(x, y, z, s)
@@ -1527,7 +1527,7 @@ class MarkerWriter(Writer):
         default_mkargs = {'dash': 'solid', 'color': '#000000', 'width': 2.0}
         mk_args = {**default_mkargs, **style}
 
-        for mk in listcast(flatten(self.mk_list)):
+        for mk in listcast(flatten(self.obj_list)):
             x_wg, y_wg, z_wg, _, s = mk.points
             x, y, z = self.transform_points(x_wg, y_wg, z_wg)
             xo, yo, zo = self._shutter_mask(x, y, z, s)

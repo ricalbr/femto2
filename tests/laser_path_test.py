@@ -398,3 +398,4 @@ def test_pickle(laser_path) -> None:
     with open(filename, 'rb') as f:
         lp = dill.load(f)
     assert type(lp) == type(laser_path)
+    filename.unlink()

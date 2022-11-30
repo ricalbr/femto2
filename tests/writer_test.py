@@ -98,7 +98,7 @@ def test_trench_writer_init(gc_param, list_tcol) -> None:
         for tr in col:
             tcs.append(tr)
 
-    assert twr.tc_list == list_tcol
+    assert twr.obj_list == list_tcol
     assert twr.trenches == tcs
     assert twr.dirname == dirname
 
@@ -111,7 +111,7 @@ def test_trench_writer_init(gc_param, list_tcol) -> None:
     twr = TrenchWriter([], dirname=dirname, **gc_param)
     expp = Path.cwd() / dirname
 
-    assert twr.tc_list == []
+    assert twr.obj_list == []
     assert twr.trenches == []
     assert twr.dirname == dirname
 
@@ -123,7 +123,7 @@ def test_trench_writer_append(gc_param, list_tcol) -> None:
     twr = TrenchWriter([], **gc_param)
     for col in list_tcol:
         twr.append(col)
-    assert twr.tc_list == list_tcol
+    assert twr.obj_list == list_tcol
     assert twr.trenches == flatten([tr for col in listcast(list_tcol) for tr in col])
 
 
@@ -136,21 +136,21 @@ def test_trench_writer_append_raise(gc_param, list_tcol) -> None:
 def test_trench_writer_extend(gc_param, list_tcol) -> None:
     twr = TrenchWriter([], **gc_param)
     twr.extend(list_tcol)
-    assert twr.tc_list == list_tcol
+    assert twr.obj_list == list_tcol
     assert twr.trenches == flatten([tr for col in listcast(list_tcol) for tr in col])
     del twr
 
     twr = TrenchWriter([], **gc_param)
     new_list = [[[list_tcol]]]
     twr.extend(new_list)
-    assert twr.tc_list == list_tcol
+    assert twr.obj_list == list_tcol
     assert twr.trenches == flatten([tr for col in listcast(list_tcol) for tr in col])
     del twr
 
     twr = TrenchWriter([], **gc_param)
     new_list = [[[list_tcol, list_tcol], list_tcol], list_tcol]
     twr.extend(new_list)
-    assert twr.tc_list == flatten([list_tcol, list_tcol, list_tcol, list_tcol])
+    assert twr.obj_list == flatten([list_tcol, list_tcol, list_tcol, list_tcol])
     assert twr.trenches == flatten([tr for col in flatten([list_tcol, list_tcol, list_tcol, list_tcol]) for tr in col])
     del twr
 
@@ -218,7 +218,7 @@ def test_waveguide_writer_init(gc_param, list_wg) -> None:
     wwr = WaveguideWriter(list_wg, **gc_param)
     expp = Path.cwd()
 
-    assert wwr.wg_list == list_wg
+    assert wwr.obj_list == list_wg
 
     assert wwr._param == gc_param
     assert wwr._export_path == expp
@@ -229,7 +229,7 @@ def test_waveguide_writer_init(gc_param, list_wg) -> None:
     wwr = WaveguideWriter([], export_dir=dirname, **gc_param)
     expp = Path.cwd() / dirname
 
-    assert wwr.wg_list == []
+    assert wwr.obj_list == []
 
     assert wwr._param == dict(export_dir=dirname, **gc_param)
     assert wwr._export_path == expp
@@ -239,7 +239,7 @@ def test_waveguide_writer_append(gc_param, list_wg) -> None:
     wwr = WaveguideWriter([], **gc_param)
     for wg in list_wg:
         wwr.append(wg)
-    assert wwr.wg_list == list_wg
+    assert wwr.obj_list == list_wg
 
 
 def test_waveguide_writer_append_raise(gc_param, list_wg) -> None:
@@ -251,13 +251,13 @@ def test_waveguide_writer_append_raise(gc_param, list_wg) -> None:
 def test_waveguide_writer_extend(gc_param, list_wg) -> None:
     wwr = WaveguideWriter([], **gc_param)
     wwr.extend(list_wg)
-    assert wwr.wg_list == list_wg
+    assert wwr.obj_list == list_wg
     del wwr
 
     wwr = WaveguideWriter([], **gc_param)
     new_list = [list_wg, list_wg, list_wg[0]]
     wwr.extend(new_list)
-    assert wwr.wg_list == new_list
+    assert wwr.obj_list == new_list
 
 
 @pytest.mark.parametrize(
@@ -332,7 +332,7 @@ def test_marker_writer_init(gc_param, list_mk) -> None:
     mwr = MarkerWriter(list_mk, **gc_param)
     expp = Path.cwd()
 
-    assert mwr.mk_list == list_mk
+    assert mwr.obj_list == list_mk
 
     assert mwr._param == gc_param
     assert mwr._export_path == expp
@@ -342,7 +342,7 @@ def test_marker_writer_init(gc_param, list_mk) -> None:
     mwr = MarkerWriter([[list_mk]], **gc_param)
     expp = Path.cwd()
 
-    assert mwr.mk_list == list_mk
+    assert mwr.obj_list == list_mk
 
     assert mwr._param == gc_param
     assert mwr._export_path == expp
@@ -353,7 +353,7 @@ def test_marker_writer_init(gc_param, list_mk) -> None:
     mwr = MarkerWriter([], export_dir=dirname, **gc_param)
     expp = Path.cwd() / dirname
 
-    assert mwr.mk_list == []
+    assert mwr.obj_list == []
 
     assert mwr._param == dict(export_dir=dirname, **gc_param)
     assert mwr._export_path == expp
@@ -363,7 +363,7 @@ def test_marker_writer_append(gc_param, list_mk) -> None:
     mwr = MarkerWriter([], **gc_param)
     for mk in list_mk:
         mwr.append(mk)
-    assert mwr.mk_list == list_mk
+    assert mwr.obj_list == list_mk
 
 
 def test_marker_writer_append_raise(gc_param, list_mk) -> None:
@@ -375,13 +375,13 @@ def test_marker_writer_append_raise(gc_param, list_mk) -> None:
 def test_marker_writer_extend(gc_param, list_mk) -> None:
     mwr = MarkerWriter([], **gc_param)
     mwr.extend(list_mk)
-    assert mwr.mk_list == list_mk
+    assert mwr.obj_list == list_mk
     del mwr
 
     mwr = MarkerWriter([], **gc_param)
     new_list = [[list_mk, list_mk, list_mk[0]]]
     mwr.extend(new_list)
-    assert mwr.mk_list == flatten(new_list)
+    assert mwr.obj_list == flatten(new_list)
 
 
 @pytest.mark.parametrize(
