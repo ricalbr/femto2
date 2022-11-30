@@ -6,7 +6,7 @@ from functools import partialmethod
 import numpy as np
 import numpy.typing as npt
 from femto.helpers import Dotdict
-from femto.LaserPath import LaserPath
+from femto.laserpath import LaserPath
 from scipy.interpolate import CubicSpline
 from scipy.interpolate import InterpolatedUnivariateSpline
 

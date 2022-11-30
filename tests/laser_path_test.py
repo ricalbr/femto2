@@ -5,7 +5,7 @@ from pathlib import Path
 import dill
 import numpy as np
 import pytest
-from femto.LaserPath import LaserPath
+from femto.laserpath import LaserPath
 
 
 @pytest.fixture

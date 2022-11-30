@@ -8,13 +8,13 @@ import pytest
 from femto.helpers import Dotdict
 from femto.helpers import flatten
 from femto.helpers import listcast
-from femto.Marker import Marker
-from femto.PGMCompiler import MarkerWriter
-from femto.PGMCompiler import TrenchWriter
-from femto.PGMCompiler import WaveguideWriter
-from femto.PGMCompiler import Writer
-from femto.Trench import TrenchColumn
-from femto.Waveguide import Waveguide
+from femto.marker import Marker
+from femto.pgmcompiler import MarkerWriter
+from femto.pgmcompiler import TrenchWriter
+from femto.pgmcompiler import WaveguideWriter
+from femto.pgmcompiler import Writer
+from femto.trench import TrenchColumn
+from femto.waveguide import Waveguide
 
 
 @pytest.fixture

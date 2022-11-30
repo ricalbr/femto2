@@ -24,10 +24,10 @@ from femto.helpers import flatten
 from femto.helpers import listcast
 from femto.helpers import nest_level
 from femto.helpers import pad
-from femto.Marker import Marker
-from femto.Trench import Trench
-from femto.Trench import TrenchColumn
-from femto.Waveguide import Waveguide
+from femto.marker import Marker
+from femto.trench import Trench
+from femto.trench import TrenchColumn
+from femto.waveguide import Waveguide
 from plotly import graph_objs as go
 from scipy.interpolate import interp2d
 
@@ -1546,7 +1546,7 @@ class MarkerWriter(Writer):
 
 
 def main():
-    from femto.Waveguide import Waveguide
+    from femto.waveguide import Waveguide
 
     # Parameters
     PARAM_WG = Dotdict(scan=6, speed=20, radius=15, pitch=0.080, int_dist=0.007, lsafe=3, samplesize=(25, 3))

@@ -12,7 +12,7 @@ from femto.helpers import almost_equals
 from femto.helpers import Dotdict
 from femto.helpers import flatten
 from femto.helpers import listcast
-from femto.Waveguide import Waveguide
+from femto.waveguide import Waveguide
 from shapely import geometry
 from shapely.geometry import box
 from shapely.geometry import LineString

@@ -7,7 +7,7 @@ from typing import TypeVar
 import numpy as np
 import numpy.typing as npt
 from femto.helpers import sign
-from femto.LaserPath import LaserPath
+from femto.laserpath import LaserPath
 
 MK = TypeVar('MK', bound='Marker')
 
@@ -223,7 +223,7 @@ def main():
     c.ablation([[0, 0, 0], [5, 0, 0]], shift=0.1)
     print(c.points)
 
-    from femto.PGMCompiler import PGMCompiler
+    from femto.pgmcompiler import PGMCompiler
 
     with PGMCompiler(**PARAMETERS_GC) as gc:
         gc.write(c.points)

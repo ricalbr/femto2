@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
-from femto.Marker import Marker
+from femto.marker import Marker
 
 
 @pytest.fixture

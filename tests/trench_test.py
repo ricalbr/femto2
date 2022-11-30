@@ -6,8 +6,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 from femto.helpers import almost_equals
-from femto.Trench import Trench
-from femto.Trench import TrenchColumn
+from femto.trench import Trench
+from femto.trench import TrenchColumn
 from shapely.geometry import box
 from shapely.geometry import MultiPolygon
 from shapely.geometry import Point
@@ -137,7 +137,7 @@ def test_eq_false() -> None:
 
 
 def test_lt_gt_eq_raise(poly) -> None:
-    from femto.Waveguide import Waveguide
+    from femto.waveguide import Waveguide
 
     tc = Trench(poly)
     wg = Waveguide()
@@ -406,7 +406,7 @@ def test_trenchcol_dig_remove_all() -> None:
 
 def test_dig_from_waveguide(tc):
     from femto.helpers import Dotdict
-    from femto.Waveguide import Waveguide
+    from femto.waveguide import Waveguide
 
     wgs = []
     PARAM_WG = Dotdict(speed=20, radius=25, pitch=0.080, int_dist=0.007)
@@ -423,7 +423,7 @@ def test_dig_from_waveguide(tc):
 
 
 def test_dig_from_waveguide_empty(tc):
-    from femto.Waveguide import Waveguide
+    from femto.waveguide import Waveguide
 
     wg_list = [Waveguide() for _ in range(4)]
     assert tc.dig_from_waveguide(wg_list) is None
@@ -431,7 +431,7 @@ def test_dig_from_waveguide_empty(tc):
 
 
 def test_dig_from_waveguide_raise(tc):
-    from femto.Waveguide import Waveguide
+    from femto.waveguide import Waveguide
 
     wg_list = [Waveguide() for _ in range(4)]
     wg_list.append(np.array([1, 2, 3]))
@@ -465,7 +465,7 @@ def test_dig_from_array_empty(tc):
 
 
 def test_dig_from_array_raise(tc):
-    from femto.Waveguide import Waveguide
+    from femto.waveguide import Waveguide
 
     arr_list = [np.array([1, 2, 3, 4]) for _ in range(4)]
     arr_list.append(Waveguide())

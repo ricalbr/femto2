@@ -11,7 +11,7 @@ import numpy as np
 import pytest
 from femto.helpers import flatten
 from femto.helpers import listcast
-from femto.PGMCompiler import PGMCompiler
+from femto.pgmcompiler import PGMCompiler
 
 
 @pytest.fixture

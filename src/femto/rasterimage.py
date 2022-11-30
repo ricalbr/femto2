@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 import numpy as np
 from femto.helpers import Dotdict
-from femto.LaserPath import LaserPath
+from femto.laserpath import LaserPath
 from femto.utils.GCODE_plot_colored import GCODE_plot_colored
 from PIL import Image
 

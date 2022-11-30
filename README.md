@@ -3,9 +3,9 @@
 <!-- PROJECT LOGO -->
 <div>
   <a href="https://github.com/ricalbr/femto">
-    <h1> 
-      <img src="https://mir-s3-cdn-cf.behance.net/project_modules/disp/511fdf30195555.560572b7c51e9.gif" 
-        alt="femto logo" 
+    <h1>
+      <img src="https://mir-s3-cdn-cf.behance.net/project_modules/disp/511fdf30195555.560572b7c51e9.gif"
+        alt="femto logo"
         width="32">
       femto
     </h1>
@@ -72,7 +72,7 @@ First, import all the required packages
 
 ```python
 import matplotlib.pyplot as plt
-from src.femto import Cell, PGMCompiler, Waveguide
+from src.femto import cell, pgmcompiler, waveguide
 ```
 
 Define a `Cell` which represents a circuit

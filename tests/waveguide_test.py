@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
-from femto.Waveguide import coupler
-from femto.Waveguide import Waveguide
+from femto.waveguide import coupler
+from femto.waveguide import Waveguide
 
 
 @pytest.fixture
