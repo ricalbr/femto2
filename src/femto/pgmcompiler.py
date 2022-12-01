@@ -28,6 +28,7 @@ from femto.helpers import flatten
 from femto.helpers import listcast
 from femto.helpers import nest_level
 from femto.helpers import pad
+from femto.helpers import split_mask
 from femto.marker import Marker
 from femto.trench import Trench
 from femto.trench import TrenchColumn
@@ -1059,15 +1060,6 @@ class Writer(PGMCompiler, ABC):
         )
         return fig
 
-    @staticmethod
-    def _shutter_mask(
-        x: npt.NDArray[np.float32], y: npt.NDArray[np.float32], z: npt.NDArray[np.float32], s: npt.NDArray[np.float32]
-    ) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32], npt.NDArray[np.float32]]:
-        x = np.delete(x, np.where(np.invert(s.astype(bool))))
-        y = np.delete(y, np.where(np.invert(s.astype(bool))))
-        z = np.delete(z, np.where(np.invert(s.astype(bool))))
-        return x, y, z
-
 
 class TrenchWriter(Writer):
     def __init__(self, tc_list: TrenchColumn | list[TrenchColumn], dirname: str = 'TRENCH', **param) -> None:
@@ -1383,32 +1375,38 @@ class WaveguideWriter(Writer):
 
         for wg in listcast(flatten(self.obj_list)):
             x_wg, y_wg, z_wg, _, s = wg.points
-            x, y, z = self.transform_points(x_wg, y_wg, z_wg)
-            xo, yo, _ = self._shutter_mask(x, y, z, s)
-
-            # TODO: fix point parsing for open/closed shutter
-            fig.add_trace(
-                go.Scattergl(
-                    x=xo,
-                    y=yo,
-                    mode='lines',
-                    line=wg_args,
-                    showlegend=False,
-                    hovertemplate='(%{x:.4f}, %{y:.4f})<extra>WG</extra>',
-                )
-            )
-            if show_shutter_close:
-                xc, yc, _ = self._shutter_mask(x, y, z, ~s.astype(bool))
+            x, y, _ = self.transform_points(x_wg, y_wg, z_wg)
+            xo = split_mask(x, s.astype(bool))
+            yo = split_mask(y, s.astype(bool))
+            [
                 fig.add_trace(
                     go.Scattergl(
-                        x=xc,
-                        y=yc,
+                        x=list(xoo),
+                        y=list(yoo),
                         mode='lines',
-                        line=sc_args,
-                        hoverinfo='none',
+                        line=wg_args,
                         showlegend=False,
+                        hovertemplate='(%{x:.4f}, %{y:.4f})<extra>WG</extra>',
                     )
                 )
+                for xoo, yoo in zip(xo, yo)
+            ]
+            if show_shutter_close:
+                xc = split_mask(x, ~s.astype(bool))
+                yc = split_mask(y, ~s.astype(bool))
+                [
+                    fig.add_trace(
+                        go.Scattergl(
+                            x=x,
+                            y=y,
+                            mode='lines',
+                            line=sc_args,
+                            hoverinfo='none',
+                            showlegend=False,
+                        )
+                    )
+                    for x, y in zip(xc, yc)
+                ]
         return fig
 
     def _plot3d_wg(
@@ -1423,33 +1421,41 @@ class WaveguideWriter(Writer):
         for wg in listcast(flatten(self.obj_list)):
             x_wg, y_wg, z_wg, _, s = wg.points
             x, y, z = self.transform_points(x_wg, y_wg, z_wg)
-            xo, yo, zo = self._shutter_mask(x, y, z, s)
-
-            # TODO: fix point parsing for open/closed shutter
-            fig.add_trace(
-                go.Scatter3d(
-                    x=xo,
-                    y=yo,
-                    z=zo,
-                    mode='lines',
-                    line=wg_args,
-                    showlegend=False,
-                    hovertemplate='(%{x:.4f}, %{y:.4f}, %{z:.4f})<extra>WG</extra>',
-                )
-            )
-            if show_shutter_close:
-                xc, yc, zc = self._shutter_mask(x, y, z, ~s.astype(bool))
+            xo = split_mask(x, s.astype(bool))
+            yo = split_mask(y, s.astype(bool))
+            zo = split_mask(z, s.astype(bool))
+            [
                 fig.add_trace(
                     go.Scatter3d(
-                        x=xc,
-                        y=yc,
-                        z=zc,
+                        x=x,
+                        y=y,
+                        z=z,
                         mode='lines',
-                        line=sc_args,
-                        hoverinfo='none',
+                        line=wg_args,
                         showlegend=False,
+                        hovertemplate='(%{x:.4f}, %{y:.4f}, %{z:.4f})<extra>WG</extra>',
                     )
                 )
+                for x, y, z in zip(xo, yo, zo)
+            ]
+            if show_shutter_close:
+                xc = split_mask(x, ~s.astype(bool))
+                yc = split_mask(y, ~s.astype(bool))
+                zc = split_mask(z, ~s.astype(bool))
+                [
+                    fig.add_trace(
+                        go.Scatter3d(
+                            x=x,
+                            y=y,
+                            z=z,
+                            mode='lines',
+                            line=sc_args,
+                            hoverinfo='none',
+                            showlegend=False,
+                        )
+                    )
+                    for x, y, z in zip(xc, yc, zc)
+                ]
         return fig
 
 
@@ -1536,17 +1542,21 @@ class MarkerWriter(Writer):
         for mk in listcast(flatten(self.obj_list)):
             x_wg, y_wg, z_wg, _, s = mk.points
             x, y, z = self.transform_points(x_wg, y_wg, z_wg)
-            xo, yo, _ = self._shutter_mask(x, y, z, s)
-            fig.add_trace(
-                go.Scattergl(
-                    x=xo,
-                    y=yo,
-                    mode='lines',
-                    line=mk_args,
-                    showlegend=False,
-                    hovertemplate='(%{x:.4f}, %{y:.4f})<extra>MK</extra>',
+            xo = split_mask(x, s.astype(bool))
+            yo = split_mask(y, s.astype(bool))
+            [
+                fig.add_trace(
+                    go.Scattergl(
+                        x=x,
+                        y=y,
+                        mode='lines',
+                        line=mk_args,
+                        showlegend=False,
+                        hovertemplate='(%{x:.4f}, %{y:.4f})<extra>MK</extra>',
+                    )
                 )
-            )
+                for x, y in zip(xo, yo)
+            ]
         return fig
 
     def _plot3d_mk(self, fig: go.Figure, style: dict[str, Any] | None = None) -> go.Figure:
@@ -1558,18 +1568,23 @@ class MarkerWriter(Writer):
         for mk in listcast(flatten(self.obj_list)):
             x_wg, y_wg, z_wg, _, s = mk.points
             x, y, z = self.transform_points(x_wg, y_wg, z_wg)
-            xo, yo, zo = self._shutter_mask(x, y, z, s)
-            fig.add_trace(
-                go.Scatter3d(
-                    x=xo,
-                    y=yo,
-                    z=zo,
-                    mode='lines',
-                    line=mk_args,
-                    showlegend=False,
-                    hovertemplate='<extra>MK</extra>',
+            xo = split_mask(x, s.astype(bool))
+            yo = split_mask(y, s.astype(bool))
+            zo = split_mask(z, s.astype(bool))
+            [
+                fig.add_trace(
+                    go.Scatter3d(
+                        x=x,
+                        y=y,
+                        z=z,
+                        mode='lines',
+                        line=mk_args,
+                        showlegend=False,
+                        hovertemplate='<extra>MK</extra>',
+                    )
                 )
-            )
+                for x, y, z in zip(xo, yo, zo)
+            ]
         return fig
 
 
