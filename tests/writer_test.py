@@ -21,6 +21,8 @@ from femto.waveguide import Waveguide
 def gc_param() -> dict:
     p = dict(
         filename='testCell.pgm',
+        n_glass=1.5,
+        n_environment=1.33,
         laser='PHAROS',
         new_origin=(0.5, 0.5),
         samplesize=(25, 1),

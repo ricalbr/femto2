@@ -17,7 +17,7 @@ from femto.waveguide import Waveguide
 
 class Device:
     def __init__(self, **param) -> None:
-        self._param: dict = dict(**param)
+        self._param: dict[str, Any] = dict(**param)
         self.unparsed_objects: list[Any] = []
         self.fig: go.Figure | None = None
         self.writers = {
@@ -100,9 +100,9 @@ def main():
     from femto.waveguide import Waveguide
 
     # Parameters
-    PARAM_WG = dict(speed=20, radius=25, pitch=0.080, int_dist=0.007, samplesize=(25, 3))
-    PARAM_TC = dict(length=1.0, base_folder='', y_min=-0.1, y_max=4 * 0.080 + 0.1, u=[30.0, 32.0])
-    PARAM_GC = dict(filename='testCell.pgm', laser='PHAROS', new_origin=(0.5, 0.5), samplesize=(25, 1))
+    PARAM_WG: dict[str, Any] = dict(speed=20, radius=25, pitch=0.080, int_dist=0.007, samplesize=(25, 3))
+    PARAM_TC: dict[str, Any] = dict(length=1.0, base_folder='', y_min=-0.1, y_max=4 * 0.080 + 0.1, u=[30.0, 32.0])
+    PARAM_GC: dict[str, Any] = dict(filename='testCell.pgm', laser='PHAROS', new_origin=(0.5, 0.5), samplesize=(25, 1))
 
     dev = Device(**PARAM_GC)
 

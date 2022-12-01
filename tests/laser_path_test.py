@@ -55,7 +55,7 @@ def test_default_values() -> None:
     assert lp.speed_pos == float(0.5)
     assert lp.cmd_rate_max == int(1200)
     assert lp.acc_max == int(500)
-    assert lp.samplesize == (None, None)
+    assert lp.samplesize == (100, 50)
 
 
 def test_laserpath_values(laser_path) -> None:

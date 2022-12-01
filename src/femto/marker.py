@@ -22,7 +22,7 @@ class Marker(LaserPath):
     lx: float = 1.0
     ly: float = 0.060
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         super().__post_init__()
         if self.z_init is None:
             self.z_init = self.depth
@@ -189,23 +189,23 @@ class Marker(LaserPath):
             return
 
         # shift the path's points by shift value
-        points = np.asarray(points)
+        pts = np.asarray(points)
         if shift is not None:
             path_list = [
-                np.add(points, [0, 0, 0]),
-                np.add(points, [shift, 0, 0]),
-                np.add(points, [-shift, 0, 0]),
-                np.add(points, [0, shift, 0]),
-                np.add(points, [0, -shift, 0]),
+                np.add(pts, [0, 0, 0]),
+                np.add(pts, [shift, 0, 0]),
+                np.add(pts, [-shift, 0, 0]),
+                np.add(pts, [0, shift, 0]),
+                np.add(pts, [0, -shift, 0]),
             ]
         else:
-            path_list = [points]
+            path_list = [pts]
 
         # Add linear segments
         for path in path_list:
             self.linear(path[0], mode='ABS', shutter=0)
-            for pts in path:
-                self.linear(pts, mode='ABS')
+            for p in path:
+                self.linear(p, mode='ABS')
             self.linear([None, None, None], mode='ABS', shutter=0)
         self.end()
 

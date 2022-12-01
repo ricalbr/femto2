@@ -44,7 +44,7 @@ def test_default_values() -> None:
     assert wg.speed_pos == float(0.5)
     assert wg.cmd_rate_max == int(1200)
     assert wg.acc_max == int(500)
-    assert wg.samplesize == (None, None)
+    assert wg.samplesize == (100, 50)
     assert wg.depth == float(0.035)
     assert wg.radius == float(15)
     assert wg.pitch == float(0.080)
@@ -1129,28 +1129,28 @@ def test_cmd_rate(param) -> None:
     assert np.mean(wg.cmd_rate) <= wg.cmd_rate_max
 
 
-def test_sin_bridge_error(param) -> None:
+def test_spline_bridge_error(param) -> None:
     wg = Waveguide(**param)
     with pytest.raises(ValueError):
-        wg.start().spline_bridge().end()
+        wg.start().spline_bridge(disp_x=None, disp_y=None, disp_z=None).end()
 
     with pytest.raises(ValueError):
-        wg.start().spline_bridge(disp_y=0.05).end()
+        wg.start().spline_bridge(disp_x=None, disp_y=0.05, disp_z=None).end()
 
     with pytest.raises(ValueError):
-        wg.start().spline_bridge(disp_z=0.006).end()
+        wg.start().spline_bridge(disp_x=None, disp_y=None, disp_z=0.006).end()
 
 
 def test_spline_bridge_speed(param) -> None:
     dy, dz, f_custom = (0.06, 0.006, 99)
 
     wg = Waveguide(**param)
-    wg.start().spline_bridge(disp_y=dy, disp_z=dz)
+    wg.start().spline_bridge(disp_x=None, disp_y=dy, disp_z=dz)
     assert wg._f[-1] == wg.speed
     wg.end()
 
     wg = Waveguide(**param)
-    wg.start().spline_bridge(disp_y=dy, disp_z=dz, speed=f_custom)
+    wg.start().spline_bridge(disp_x=None, disp_y=dy, disp_z=dz, speed=f_custom)
     assert wg._f[-1] == f_custom
     wg.end()
 
@@ -1159,12 +1159,12 @@ def test_spline_bridge_dx(param) -> None:
     dx, dy, dz = (10, 0.06, 0.006)
 
     wg = Waveguide(**param)
-    wg.start([0, 0, 0]).spline_bridge(disp_y=dy, disp_z=dz)
+    wg.start([0, 0, 0]).spline_bridge(disp_x=None, disp_y=dy, disp_z=dz)
     assert pytest.approx(wg.x[-1]) == 2 * wg.get_spline_parameter(disp_y=dy, disp_z=dz)[0]
     wg.end()
 
     wg = Waveguide(**param)
-    wg.start([0, 0, 0]).spline_bridge(disp_y=dy, disp_z=dz, disp_x=dx)
+    wg.start([0, 0, 0]).spline_bridge(disp_x=dx, disp_y=dy, disp_z=dz)
     assert pytest.approx(wg.x[-1]) == 2 * dx
     wg.end()
 

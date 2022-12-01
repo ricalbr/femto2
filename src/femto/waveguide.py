@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from functools import partialmethod
+from typing import Any
 
 import numpy as np
 import numpy.typing as npt
@@ -28,13 +29,13 @@ class Waveguide(LaserPath):
     dz_bridge: float = 0.007
     margin: float = 1.0
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         super().__post_init__()
         if self.z_init is None:
             self.z_init = self.depth
 
     @property
-    def dy_bend(self) -> float | None:
+    def dy_bend(self) -> float:
         if self.pitch is None:
             raise ValueError('Waveguide pitch is set to None.')
         if self.int_dist is None:
@@ -101,7 +102,7 @@ class Waveguide(LaserPath):
         disp_y: float | None = None,
         disp_z: float | None = None,
         radius: float | None = None,
-    ) -> tuple:
+    ) -> tuple[float, float, float, float]:
         """
         Computes the displacements along x-, y- and z-direction and the total lenght of the curve.
         The disp_y and disp_z displacements are given by the user. The dx displacement can be known (and thus given as
@@ -504,15 +505,15 @@ class Waveguide(LaserPath):
 
     def spline(
         self,
-        disp_x: float | None = None,
-        disp_y: float | None = None,
-        disp_z: float | None = None,
+        disp_x: float,
+        disp_y: float,
+        disp_z: float,
         init_pos: npt.NDArray[np.float32] | None = None,
         radius: float | None = None,
         shutter: int = 1,
         speed: float | None = None,
-        bc_y: tuple = ((1, 0.0), (1, 0.0)),
-        bc_z: tuple = ((1, 0.0), (1, 0.0)),
+        bc_y: tuple[tuple[float, float], tuple[float, float]] = ((1, 0.0), (1, 0.0)),
+        bc_z: tuple[tuple[float, float], tuple[float, float]] = ((1, 0.0), (1, 0.0)),
     ) -> Waveguide:
         """
         Function wrapper. It computes the x,y,z coordinates of spline curve starting from init_pos with Dy and Dz
@@ -558,9 +559,9 @@ class Waveguide(LaserPath):
 
     def spline_bridge(
         self,
-        disp_x: float | None = None,
-        disp_y: float | None = None,
-        disp_z: float | None = None,
+        disp_x: float,
+        disp_y: float,
+        disp_z: float,
         init_pos: npt.NDArray[np.float32] | None = None,
         radius: float | None = None,
         shutter: int = 1,
@@ -653,9 +654,9 @@ class Waveguide(LaserPath):
         init_pos: npt.NDArray[np.float32] | None = None,
         radius: float | None = None,
         speed: float | None = None,
-        bc_y: tuple = ((1, 0.0), (1, 0.0)),
-        bc_z: tuple = ((1, 0.0), (1, 0.0)),
-    ) -> tuple:
+        bc_y: tuple[tuple[float, float], tuple[float, float]] = ((1, 0.0), (1, 0.0)),
+        bc_z: tuple[tuple[float, float], tuple[float, float]] = ((1, 0.0), (1, 0.0)),
+    ) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32], npt.NDArray[np.float32]]:
         """
         Function for the generation of a 3D spline curve. Starting from init_point the function compute a 3D spline
         with a displacement dy in y-direction and dz in z-direction.
@@ -724,7 +725,7 @@ class Waveguide(LaserPath):
         return x_cspline, y_cspline, z_cspline
 
 
-def coupler(param: dict | Dotdict):
+def coupler(param: dict[str, Any]) -> list[Waveguide]:
     mode1 = Waveguide(**param)
     lx = mode1.samplesize[0] / 2 - mode1.dx_bend
 
@@ -745,14 +746,14 @@ def coupler(param: dict | Dotdict):
     return [mode1, mode2]
 
 
-def main():
+def main() -> None:
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
 
     # Data
     PARAM_WG = Dotdict(scan=6, speed=20, radius=15, pitch=0.080, int_dist=0.007, lsafe=3, samplesize=(50, 3))
 
-    increment = [5, 0, 0]
+    increment = [5.0, 0, 0]
 
     # Calculations
     mzi = []

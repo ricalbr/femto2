@@ -13,13 +13,17 @@ from itertools import product
 from itertools import zip_longest
 from operator import add
 from pathlib import Path
+from types import TracebackType
+from typing import Any
+from typing import Callable
+from typing import Deque
+from typing import Generator
 from typing import TypeVar
 
 import dill
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
-from femto.helpers import Dotdict
 from femto.helpers import flatten
 from femto.helpers import listcast
 from femto.helpers import nest_level
@@ -42,16 +46,16 @@ class PGMCompiler:
     """
 
     filename: str
-    export_dir: str = ''
-    samplesize: tuple[float, float] = (None, None)
-    laser: str = 'PHAROS'
-    home: bool = False
-    new_origin: tuple[float] = (0.0, 0.0)
-    warp_flag: bool = False
     n_glass: float = 1.50
     n_environment: float = 1.33
-    rotation_angle: float | None = None
-    aerotech_angle: float | None = None
+    export_dir: str = ''
+    samplesize: tuple[float, float] = (100, 50)
+    laser: str = 'PHAROS'
+    home: bool = False
+    new_origin: tuple[float, float] = (0.0, 0.0)
+    warp_flag: bool = False
+    rotation_angle: float = 0.0
+    aerotech_angle: float = 0.0
     long_pause: float = 0.5
     short_pause: float = 0.05
     output_digits: int = 6
@@ -67,11 +71,13 @@ class PGMCompiler:
         if self.filename is None:
             raise ValueError("Filename is None, set 'filename' attribute")
         self.CWD = Path.cwd()
-        self._instructions = deque()
-        self._loaded_files: list = []
-        self._dvars = []
+        self._instructions: Deque[str] = deque()
+        self._loaded_files: list[str] = []
+        self._dvars: list[str] = []
 
-        self.fwarp = self.antiwarp_management(self.warp_flag)
+        self.fwarp: Callable[
+            [npt.NDArray[np.float32], npt.NDArray[np.float32]], npt.NDArray[np.float32]
+        ] = self.antiwarp_management(self.warp_flag)
 
         # Set rotation angle in radians for matrix rotations
         if self.rotation_angle:
@@ -86,13 +92,13 @@ class PGMCompiler:
             self.aerotech_angle = float(0.0)
 
     @classmethod
-    def from_dict(cls: GC, param: dict | Dotdict) -> GC:
+    def from_dict(cls: type[GC], param: dict[str, Any]) -> GC:
         return cls(**param)
 
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}@{id(self) & 0xFFFFFF:x}'
 
-    def __enter__(self) -> GC:
+    def __enter__(self) -> PGMCompiler:
         """
         Context manager entry
 
@@ -114,7 +120,12 @@ class PGMCompiler:
             self._enter_axis_rotation(angle=self.aerotech_angle)
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback) -> None:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
         """
         Context manager exit
 
@@ -129,21 +140,15 @@ class PGMCompiler:
         self.close()
 
     @property
-    def xsample(self) -> float | None:
-        if self.samplesize[0] is None:
-            return None
-        return np.fabs(self.samplesize[0])
+    def xsample(self) -> float:
+        return float(np.fabs(self.samplesize[0]))
 
     @property
-    def ysample(self) -> float | None:
-        if self.samplesize[1] is None:
-            return None
-        return np.fabs(self.samplesize[1])
+    def ysample(self) -> float:
+        return float(np.fabs(self.samplesize[1]))
 
     @property
-    def neff(self) -> float | None:
-        if self.n_glass is None or self.n_environment is None or math.isclose(self.n_environment, 0.0, abs_tol=1e-6):
-            return None
+    def neff(self) -> float:
         return self.n_glass / self.n_environment
 
     @property
@@ -152,7 +157,8 @@ class PGMCompiler:
             raise ValueError(f'Laser can be only ANT, CARBIDE, PHAROS or UWE. Given {self.laser.upper()}.')
         if self.laser.lower() == 'ant':
             return 'Z'
-        return 'X'
+        else:
+            return 'X'
 
     @property
     def tshutter(self) -> float:
@@ -166,7 +172,8 @@ class PGMCompiler:
             raise ValueError(f'Laser can be only ANT, CARBIDE, PHAROS or UWE. Given {self.laser.upper()}.')
         if self.laser.lower() == 'uwe':
             return 0.005
-        return 0.000
+        else:
+            return 0.000
 
     @property
     def dwell_time(self) -> float:
@@ -293,7 +300,7 @@ class PGMCompiler:
         args = self._format_args(*home_pos)
         self._instructions.append(f'G92 {args}\n')
 
-    def move_to(self, position: list[float], speed_pos: float | None = None) -> None:
+    def move_to(self, position: list[float | None], speed_pos: float | None = None) -> None:
         """
         Utility function to move to a given position with the shutter OFF. The user can specify the target position
         and the positioning speed.
@@ -307,8 +314,8 @@ class PGMCompiler:
         :type speed_pos: float
         :return: None
         """
-        if np.size(position) != 3:
-            raise ValueError(f'Given final position is not valid. 3 values required, given {np.size(position)}.')
+        if len(position) != 3:
+            raise ValueError(f'Given final position is not valid. 3 values required, given {len(position)}.')
 
         if speed_pos is None and self.speed_pos is None:
             raise ValueError('The positioning speed is None. Set the "speed_pos" attribute or give a valid value.')
@@ -318,7 +325,8 @@ class PGMCompiler:
         if self._shutter_on is True:
             self.shutter('OFF')
 
-        args = self._format_args(*position, speed_pos)
+        xp, yp, zp = position
+        args = self._format_args(xp, yp, zp, speed_pos)
         if all(coord is None for coord in position):
             self._instructions.append(f'{args}\n')
         else:
@@ -344,15 +352,15 @@ class PGMCompiler:
         self.move_to([-2, 0, 0])
 
     @contextmanager
-    def axis_rotation(self, angle: float | None = None) -> None:
+    def axis_rotation(self, angle: float | None = None) -> Generator[PGMCompiler, None, None]:
         self._enter_axis_rotation(angle=angle)
         try:
-            yield
+            yield self
         finally:
             self._exit_axis_rotation()
 
     @contextmanager
-    def for_loop(self, var: str, num: int) -> None:
+    def for_loop(self, var: str, num: int) -> Generator[PGMCompiler, None, None]:
         """
         Context manager that manages a FOR loop in a G-Code file.
 
@@ -375,7 +383,7 @@ class PGMCompiler:
         self._instructions.append(f'FOR ${var} = 0 TO {int(num) - 1}\n')
         _temp_dt = self._total_dwell_time
         try:
-            yield
+            yield self
         finally:
             self._instructions.append(f'NEXT ${var}\n\n')
 
@@ -383,7 +391,7 @@ class PGMCompiler:
             self._total_dwell_time += int(num - 1) * (self._total_dwell_time - _temp_dt)
 
     @contextmanager
-    def repeat(self, num: int) -> None:
+    def repeat(self, num: int) -> Generator[PGMCompiler, None, None]:
         """
         Context manager that manages a REPEAT loop in a G-Code file.
 
@@ -399,7 +407,7 @@ class PGMCompiler:
         self._instructions.append(f'REPEAT {int(num)}\n')
         _temp_dt = self._total_dwell_time
         try:
-            yield
+            yield self
         finally:
             self._instructions.append('ENDREPEAT\n\n')
 
@@ -456,7 +464,7 @@ class PGMCompiler:
         self._instructions.append(f'PROGRAM {int(task_id)} LOAD "{file}"\n')
         self._loaded_files.append(file.stem)
 
-    def programstop(self, task_id: int = 0):
+    def programstop(self, task_id: int = 0) -> None:
         self._instructions.append(f'PROGRAM {int(task_id)} STOP\n')
         self._instructions.append(f'WAIT (TASKSTATUS({int(task_id)}, DATAITEM_TaskState) == TASKSTATE_Idle) -1\n')
 
@@ -514,7 +522,7 @@ class PGMCompiler:
         self.instruction('\n')
         self._instructions.append(f'PROGRAM {task_id} BUFFEREDRUN "{file}"\n')
 
-    def call_list(self, filenames: list[str], task_id: list[int] = 0) -> None:
+    def call_list(self, filenames: list[str], task_id: list[int] | int = 0) -> None:
         # Remove None from task_id
         task_id = list(filter(None, listcast(task_id)))
 
@@ -525,11 +533,11 @@ class PGMCompiler:
             task_id = list(pad(task_id, len(filenames), 0))
 
         for fpath, t_id in zip(filenames, task_id):
-            fpath = Path(fpath)
-            self.load_program(str(fpath.resolve()), t_id)
-            self.farcall(fpath.name)
+            file = Path(fpath)
+            self.load_program(str(file.resolve()), t_id)
+            self.farcall(file.name)
             self.dwell(self.short_pause)
-            self.remove_program(fpath.name, t_id)
+            self.remove_program(file.name, t_id)
             self.dwell(self.short_pause)
             self.instruction('\n\n')
 
@@ -576,7 +584,7 @@ class PGMCompiler:
         self.dwell(self.long_pause)
         self.instruction('\n')
 
-    def close(self, filename: str = None, verbose: bool = False) -> None:
+    def close(self, filename: str | None = None, verbose: bool = False) -> None:
         """
         Dumps all the instruction in self._instruction in a .pgm file.
         The filename is specified during the class instatiation. If no extension is present, the proper one is
@@ -719,7 +727,8 @@ class PGMCompiler:
                 [0, 0, 1 / self.neff],
             ]
         )
-        return (SM @ RM).T
+        TM = np.matmul(SM, RM).T
+        return np.array(TM)
 
     def antiwarp_management(self, opt: bool, num: int = 16) -> interp2d:
         """
@@ -736,8 +745,8 @@ class PGMCompiler:
 
         if not opt:
 
-            def fwarp(_x, _y):
-                return 0
+            def fwarp(_x: float, _y: float) -> float:
+                return 0.0
 
         else:
             if not all(self.samplesize):
@@ -745,12 +754,12 @@ class PGMCompiler:
             function_pickle = self.CWD / 'fwarp.pkl'
 
             if function_pickle.is_file():
-                with open(function_pickle, 'rb') as f:
-                    fwarp = dill.load(f)
+                with open(function_pickle, 'rb') as f_read:
+                    fwarp = dill.load(f_read)
             else:
                 fwarp = self.antiwarp_generation(self.samplesize, num)
-                with open(function_pickle, 'wb') as f:
-                    dill.dump(fwarp, f)
+                with open(function_pickle, 'wb') as f_write:
+                    dill.dump(fwarp, f_write)
         return fwarp
 
     @staticmethod
@@ -803,7 +812,9 @@ class PGMCompiler:
         return func_antiwarp
 
     # Private interface
-    def _format_args(self, x: float = None, y: float = None, z: float = None, f: float = None) -> str:
+    def _format_args(
+        self, x: float | None = None, y: float | None = None, z: float | None = None, f: float | None = None
+    ) -> str:
         """
         Utility function that creates a string prepending the coordinate name to the given value for all the given
         the coordinates ``[X,Y,Z]`` and feed rate ``F``.
@@ -833,8 +844,8 @@ class PGMCompiler:
             if f < 10 ** (-self.output_digits):
                 raise ValueError('Try to move with F <= 0.0 mm/s. Check speed parameter.')
             args.append(f'F{f:.{self.output_digits}f}')
-        args = ' '.join(args)
-        return args
+        joined_args = ' '.join(args)
+        return joined_args
 
     @staticmethod
     def _get_filepath(filename: str, filepath: str | None = None, extension: str | None = None) -> Path:
@@ -888,11 +899,11 @@ class Writer(PGMCompiler, ABC):
     """
 
     @abstractmethod
-    def append(self, obj) -> None:
+    def append(self, obj: Any) -> None:
         pass
 
     @abstractmethod
-    def extend(self, obj) -> None:
+    def extend(self, obj: list[Any]) -> None:
         pass
 
     @abstractmethod
@@ -900,7 +911,7 @@ class Writer(PGMCompiler, ABC):
         self,
         fig: go.Figure | None = None,
         show_shutter_close: bool = True,
-        style: bool = None,
+        style: dict[str, Any] | None = None,
     ) -> go.Figure:
         pass
 
@@ -909,7 +920,7 @@ class Writer(PGMCompiler, ABC):
         self,
         fig: go.Figure | None = None,
         show_shutter_close: bool = True,
-        style: bool = None,
+        style: dict[str, Any] | None = None,
     ) -> go.Figure:
         pass
 
@@ -1049,21 +1060,23 @@ class Writer(PGMCompiler, ABC):
         return fig
 
     @staticmethod
-    def _shutter_mask(x, y, z, s):
+    def _shutter_mask(
+        x: npt.NDArray[np.float32], y: npt.NDArray[np.float32], z: npt.NDArray[np.float32], s: npt.NDArray[np.float32]
+    ) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32], npt.NDArray[np.float32]]:
         x = np.delete(x, np.where(np.invert(s.astype(bool))))
         y = np.delete(y, np.where(np.invert(s.astype(bool))))
         z = np.delete(z, np.where(np.invert(s.astype(bool))))
-        return [x, y, z]
+        return x, y, z
 
 
 class TrenchWriter(Writer):
-    def __init__(self, tc_list: [TrenchColumn | list[TrenchColumn]], dirname: str = 'TRENCH', **param):
+    def __init__(self, tc_list: TrenchColumn | list[TrenchColumn], dirname: str = 'TRENCH', **param) -> None:
         super().__init__(**param)
         self.obj_list: list[TrenchColumn] = flatten(listcast(tc_list))
         self.trenches: list[Trench] = [tr for col in self.obj_list for tr in col]
         self.dirname: str = dirname
 
-        self._param: dict | Dotdict = Dotdict(**param)
+        self._param: dict[str, Any] = dict(**param)
         self._export_path = self.CWD / (self.export_dir or '') / (self.dirname or '')
 
     def append(self, obj: TrenchColumn) -> None:
@@ -1078,7 +1091,9 @@ class TrenchWriter(Writer):
         for tr_col in flatten(obj):
             self.append(tr_col)
 
-    def plot2d(self, fig: go.Figure | None = None, show_shutter_close=True, style=None) -> go.Figure:
+    def plot2d(
+        self, fig: go.Figure | None = None, show_shutter_close: bool = True, style: dict[str, Any] | None = None
+    ) -> go.Figure:
 
         # If existing figure is given as input parameter append to the figure and return it
         if fig is not None:
@@ -1094,7 +1109,7 @@ class TrenchWriter(Writer):
         self,
         fig: go.Figure | None = None,
         show_shutter_close: bool = True,
-        style: bool = None,
+        style: dict[str, Any] | None = None,
     ) -> go.Figure:
         raise NotImplementedError()
 
@@ -1124,9 +1139,9 @@ class TrenchWriter(Writer):
             self._farcall_trench_column(column=col, index=i_col)
 
         # Create a MAIN farcall file, calls all columns .pgm scripts
-        main_param = Dotdict(self._param.copy())
-        main_param.filename = self._export_path / 'MAIN.pgm'
-        main_param.aerotech_angle = None
+        main_param = dict(self._param.copy())
+        main_param['filename'] = self._export_path / 'MAIN.pgm'
+        main_param['aerotech_angle'] = None
 
         farcall_list = [str(Path(col.base_folder) / f'FARCALL{i + 1:03}.pgm') for i, col in enumerate(self.obj_list)]
         with PGMCompiler(**main_param) as G:
@@ -1143,7 +1158,9 @@ class TrenchWriter(Writer):
                 time.strftime('%H:%M:%S', time.gmtime(_tc_fab_time)),
             )
 
-    def export_array2d(self, filename: Path, x: npt.NDArray[np.float32], y: npt.NDArray[np.float32], speed: float):
+    def export_array2d(
+        self, filename: Path, x: npt.NDArray[np.float32], y: npt.NDArray[np.float32], speed: float
+    ) -> None:
         """
         Helper function that produces a PGM file for a 3D matrix of points at a given traslation speed,
         without shuttering operations.
@@ -1172,7 +1189,6 @@ class TrenchWriter(Writer):
         gcode_instr = [f'LINEAR {line}\n' for line in instr]
         with open(filename, 'w') as file:
             file.write(''.join(gcode_instr))
-            print(f'Exported pgm file in {filename.resolve()}.')
 
     # Private interface
     def _export_trench_column(self, column: TrenchColumn, column_path: Path) -> None:
@@ -1204,8 +1220,8 @@ class TrenchWriter(Writer):
             del x_floor, y_floor
 
     def _farcall_trench_column(self, column: TrenchColumn, index: int) -> None:
-        column_param = Dotdict(self._param.copy())
-        column_param.filename = self._export_path / f'FARCALL{index + 1:03}.pgm'
+        column_param = dict(self._param.copy())
+        column_param['filename'] = self._export_path / f'FARCALL{index + 1:03}.pgm'
         with PGMCompiler(**column_param) as G:
             G.dvar(['ZCURR'])
 
@@ -1220,7 +1236,7 @@ class TrenchWriter(Writer):
                 x0, y0, z0 = self.transform_points(
                     trench.xborder[0],
                     trench.yborder[0],
-                    (nbox * column.h_box - column.z_off) / super().neff,
+                    np.array((nbox * column.h_box - column.z_off) / super().neff),
                 )
                 G.comment(f'+--- COLUMN #{index + 1}, TRENCH #{i_trc + 1} LEVEL {nbox + 1} ---+')
 
@@ -1254,7 +1270,7 @@ class TrenchWriter(Writer):
                 G.remove_program(floor_filename)
             G.instruction('MSGCLEAR -1\n')
 
-    def _plot2d_trench(self, fig: go.Figure, style: dict = None) -> go.Figure:
+    def _plot2d_trench(self, fig: go.Figure, style: dict[str, Any] | None = None) -> go.Figure:
         if style is None:
             style = dict()
         default_tcargs = {'fillcolor': '#7E7E7E', 'mode': 'none', 'hoverinfo': 'none'}
@@ -1279,11 +1295,11 @@ class TrenchWriter(Writer):
 
 
 class WaveguideWriter(Writer):
-    def __init__(self, wg_list: list[Waveguide] | list[list[Waveguide]], **param):
+    def __init__(self, wg_list: list[Waveguide | list[Waveguide]], **param) -> None:
         super().__init__(**param)
-        self.obj_list: list[Waveguide] | list[list[Waveguide]] = wg_list
+        self.obj_list: list[Waveguide | list[Waveguide]] = wg_list
 
-        self._param: dict | Dotdict = Dotdict(**param)
+        self._param: dict[str, Any] = dict(**param)
         self._export_path = self.CWD / (self.export_dir or '')
 
     def append(self, obj: Waveguide) -> None:
@@ -1303,7 +1319,9 @@ class WaveguideWriter(Writer):
         else:
             raise TypeError('All the objects must be of type Waveguide.')
 
-    def plot2d(self, fig: go.Figure | None = None, show_shutter_close: bool = True, style: bool = None) -> go.Figure:
+    def plot2d(
+        self, fig: go.Figure | None = None, show_shutter_close: bool = True, style: dict[str, Any] | None = None
+    ) -> go.Figure:
         # If existing figure is given as input parameter append to the figure and return it
         if fig is not None:
             return self._plot2d_wg(fig=fig, show_shutter_close=show_shutter_close, style=style)
@@ -1314,7 +1332,9 @@ class WaveguideWriter(Writer):
         fig = super().standard_2d_figure_update(fig)  # Add glass, origin and axis elements
         return fig
 
-    def plot3d(self, fig: go.Figure | None = None, show_shutter_close: bool = True, style: bool = None) -> go.Figure:
+    def plot3d(
+        self, fig: go.Figure | None = None, show_shutter_close: bool = True, style: dict[str, Any] | None = None
+    ) -> go.Figure:
         # If existing figure is given as input parameter append to the figure and return it
         if fig is not None:
             return self._plot3d_wg(fig=fig, show_shutter_close=show_shutter_close, style=style)
@@ -1331,8 +1351,8 @@ class WaveguideWriter(Writer):
             return
 
         _wg_fab_time = 0.0
-        _wg_param = Dotdict(self._param.copy())
-        _wg_param.filename = Path(self.filename).stem + '_WG.pgm'
+        _wg_param = dict(self._param.copy())
+        _wg_param['filename'] = Path(self.filename).stem + '_WG.pgm'
 
         with PGMCompiler(**_wg_param) as G:
             for bunch in self.obj_list:
@@ -1352,7 +1372,9 @@ class WaveguideWriter(Writer):
             )
         self._instructions.clear()
 
-    def _plot2d_wg(self, fig: go.Figure, show_shutter_close: bool = True, style: dict = None) -> go.Figure:
+    def _plot2d_wg(
+        self, fig: go.Figure, show_shutter_close: bool = True, style: dict[str, Any] | None = None
+    ) -> go.Figure:
         if style is None:
             style = dict()
         default_wgargs = {'dash': 'solid', 'color': '#0000ff', 'width': 1.5}
@@ -1389,7 +1411,9 @@ class WaveguideWriter(Writer):
                 )
         return fig
 
-    def _plot3d_wg(self, fig: go.Figure, show_shutter_close: bool = True, style: dict = None) -> go.Figure:
+    def _plot3d_wg(
+        self, fig: go.Figure, show_shutter_close: bool = True, style: dict[str, Any] | None = None
+    ) -> go.Figure:
         if style is None:
             style = dict()
         default_wgargs = {'dash': 'solid', 'color': '#0000ff', 'width': 1.5}
@@ -1430,11 +1454,11 @@ class WaveguideWriter(Writer):
 
 
 class MarkerWriter(Writer):
-    def __init__(self, mk_list: list[Marker], **param):
+    def __init__(self, mk_list: list[Marker], **param) -> None:
         super().__init__(**param)
         self.obj_list: list[Marker] = flatten(mk_list)
 
-        self._param: dict | Dotdict = Dotdict(**param)
+        self._param: dict[str, Any] = dict(**param)
         self._export_path = self.CWD / (self.export_dir or '')
 
     def append(self, obj: Marker) -> None:
@@ -1448,7 +1472,9 @@ class MarkerWriter(Writer):
         for mk in flatten(obj):
             self.append(mk)
 
-    def plot2d(self, fig: go.Figure | None = None, show_shutter_close=True, style=None) -> go.Figure:
+    def plot2d(
+        self, fig: go.Figure | None = None, show_shutter_close: bool = True, style: dict[str, Any] | None = None
+    ) -> go.Figure:
         # If existing figure is given as input parameter append to the figure and return it
         if fig is not None:
             return self._plot2d_mk(fig=fig, style=style)
@@ -1459,7 +1485,9 @@ class MarkerWriter(Writer):
         fig = super().standard_2d_figure_update(fig)  # Add glass, origin and axis elements
         return fig
 
-    def plot3d(self, fig: go.Figure | None = None, show_shutter_close=True, style=None) -> go.Figure:
+    def plot3d(
+        self, fig: go.Figure | None = None, show_shutter_close: bool = True, style: dict[str, Any] | None = None
+    ) -> go.Figure:
         # If existing figure is given as input parameter append to the figure and return it
         if fig is not None:
             return self._plot3d_mk(fig=fig, style=style)
@@ -1476,8 +1504,8 @@ class MarkerWriter(Writer):
             return
 
         _mk_fab_time = 0.0
-        _mk_param = Dotdict(self._param.copy())
-        _mk_param.filename = Path(self.filename).stem + '_MK.pgm'
+        _mk_param = dict(self._param.copy())
+        _mk_param['filename'] = Path(self.filename).stem + '_MK.pgm'
 
         with PGMCompiler(**_mk_param) as G:
             for idx, mk in enumerate(flatten(self.obj_list)):
@@ -1499,7 +1527,7 @@ class MarkerWriter(Writer):
         self._instructions.clear()
         self._total_dwell_time = 0.0
 
-    def _plot2d_mk(self, fig: go.Figure, style: dict = None) -> go.Figure:
+    def _plot2d_mk(self, fig: go.Figure, style: dict[str, Any] | None = None) -> go.Figure:
         if style is None:
             style = dict()
         default_mkargs = {'dash': 'solid', 'color': '#000000', 'width': 2.0}
@@ -1521,7 +1549,7 @@ class MarkerWriter(Writer):
             )
         return fig
 
-    def _plot3d_mk(self, fig: go.Figure, style: dict = None) -> go.Figure:
+    def _plot3d_mk(self, fig: go.Figure, style: dict[str, Any] | None = None) -> go.Figure:
         if style is None:
             style = dict()
         default_mkargs = {'dash': 'solid', 'color': '#000000', 'width': 2.0}
@@ -1545,12 +1573,13 @@ class MarkerWriter(Writer):
         return fig
 
 
-def main():
+def main() -> None:
     from femto.waveguide import Waveguide
+    from femto.helpers import Dotdict
 
     # Parameters
     PARAM_WG = Dotdict(scan=6, speed=20, radius=15, pitch=0.080, int_dist=0.007, lsafe=3, samplesize=(25, 3))
-    PARAM_GC = Dotdict(filename='testPGM.pgm', samplesize=PARAM_WG.samplesize, rotation_angle=2.0, flip_x=True)
+    PARAM_GC = Dotdict(filename='testPGM.pgm', samplesize=PARAM_WG['samplesize'], rotation_angle=2.0, flip_x=True)
 
     # Build paths
     chip = [Waveguide(**PARAM_WG) for _ in range(2)]

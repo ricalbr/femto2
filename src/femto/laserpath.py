@@ -3,15 +3,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+from typing import Sequence
+from typing import TypeVar
 
 import dill
 import numpy as np
 import numpy.typing as npt
-from femto.helpers import Dotdict
 from femto.helpers import unique_filter
 
-
-# LP = TypeVar("LP", bound=LaserPath)
+LP = TypeVar('LP', bound='LaserPath')
 
 
 @dataclass(repr=False)
@@ -31,12 +31,12 @@ class LaserPath:
     speed_pos: float = 0.5
     cmd_rate_max: float = 1200
     acc_max: float = 500
-    samplesize: tuple[float | None, float | None] = (None, None)
-    _x: npt.NDArray = np.array([])
-    _y: npt.NDArray = np.array([])
-    _z: npt.NDArray = np.array([])
-    _f: npt.NDArray = np.array([])
-    _s: npt.NDArray = np.array([])
+    samplesize: tuple[float, float] = (100, 50)
+    _x: npt.NDArray[np.float32] = np.array([])
+    _y: npt.NDArray[np.float32] = np.array([])
+    _z: npt.NDArray[np.float32] = np.array([])
+    _f: npt.NDArray[np.float32] = np.array([])
+    _s: npt.NDArray[np.float32] = np.array([])
 
     def __post_init__(self):
         if not isinstance(self.scan, int):
@@ -46,11 +46,11 @@ class LaserPath:
         return f'{self.__class__.__name__}@{id(self) & 0xFFFFFF:x}'
 
     @classmethod
-    def from_dict(cls: Any, param: dict | Dotdict) -> Any:
+    def from_dict(cls: type[LP], param: dict[str, Any]) -> LP:
         return cls(**param)
 
     @property
-    def init_point(self) -> list:
+    def init_point(self) -> list[float]:
         z0 = self.z_init if self.z_init else 0.0
         return [self.x_init, self.y_init, z0]
 
@@ -160,7 +160,7 @@ class LaserPath:
         return [x, y]
 
     @property
-    def path3d(self) -> list:
+    def path3d(self) -> list[npt.NDArray[np.float32]]:
         if self._x.size:
             # filter 3D points without F
             x, y, z, s = unique_filter([self._x, self._y, self._z, self._s]).T
@@ -305,7 +305,7 @@ class LaserPath:
 
     def linear(
         self,
-        increment: list,
+        increment: Sequence[float | None],
         mode: str = 'INC',
         shutter: int = 1,
         speed: float | None = None,

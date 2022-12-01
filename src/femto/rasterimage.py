@@ -16,7 +16,7 @@ class RasterImage(LaserPath):
     """
 
     px_to_mm: float = 0.01  # pixel to millimeter scale when converting image to laser path
-    img_size: tuple[int, int] = (None, None)
+    img_size: tuple[int, int] = (0, 0)
 
     def __post_init__(self):
         super().__post_init__()
@@ -66,30 +66,12 @@ class RasterImage(LaserPath):
             shutter_switch_array = pixel_line - pixel_line_shifted
 
             new_GCODE_line = np.array(
-                [
-                    -1 * self.px_to_mm,
-                    (ii - 1) * self.px_to_mm,
-                    0,
-                    self.speed_closed,
-                    0,
-                    0.5,
-                    0,
-                    0,
-                ]
-            )  #
+                [-1 * self.px_to_mm, (ii - 1) * self.px_to_mm, 0, self.speed_closed, 0, 0.5, 0, 0]
+            )
             # first move with closed shutter
             GCODE_array = np.vstack([GCODE_array, new_GCODE_line])
             new_GCODE_line = np.array(
-                [
-                    -1 * self.px_to_mm,
-                    ii * self.px_to_mm,
-                    0,
-                    self.speed_pos,
-                    0,
-                    0.5,
-                    0,
-                    0,
-                ]
+                [-1 * self.px_to_mm, ii * self.px_to_mm, 0, self.speed_pos, 0, 0.5, 0, 0]
             )  # first move with closed shutter
             GCODE_array = np.vstack([GCODE_array, new_GCODE_line])
 

@@ -7,14 +7,24 @@ from itertools import islice
 from itertools import repeat
 from typing import Any
 from typing import Dict
+from typing import Iterable
 
 import numpy as np
 import numpy.typing as npt
 import shapely.geometry
+from numpy import generic
 
 
-def grouped(iterable, n):
-    """s -> (s0,s1,s2,...sn-1), (sn,sn+1,sn+2,...s2n-1), (s2n,s2n+1,s2n+2,...s3n-1), ..."""
+def grouped(iterable: Iterable[Any], n: int) -> Iterable[Any]:
+    """
+    Gruoup an iterable in sub-groups of n elements.
+
+    s -> (s0,s1,s2,...sn-1), (sn,sn+1,sn+2,...s2n-1), (s2n,s2n+1,s2n+2,...s3n-1), ...
+
+    :param iterable: iterable to group
+    :param n: size of the sub-groups
+    :return:
+    """
     return zip(*[iter(iterable)] * n)
 
 
@@ -23,14 +33,19 @@ pairwise = partial(grouped, n=2)
 
 
 def swap(
-    array: list[npt.NDArray[np.float32]],
+    array: list[Any],
     swap_pos: list[tuple[int, int]],
     zero_index: bool = False,
-) -> list[npt.NDArray[np.float32]]:
+) -> list[Any]:
+    """
+    Swaps elements
+
+    :param array:
+    :param swap_pos:
+    :param zero_index:
+    :return:
+    """
     # in case of a single swap, swap_pos can be (pos1, pos2).
-    # # Encapsulate the tuple in a list to have compatibility with general code
-    # if not isinstance(swap_pos, list):
-    #     swap_pos = [swap_pos]
 
     for pos1, pos2 in swap_pos:
         if zero_index is False:
@@ -55,9 +70,33 @@ def listcast(x):
 class Dotdict(Dict[Any, Any]):
     """dot.notation access to dictionary attributes"""
 
-    __getattr__ = dict.get
-    __setattr__ = dict.__setitem__
-    __delattr__ = dict.__delitem__
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for arg in args:
+            if isinstance(arg, dict):
+                for k, v in arg.items():
+                    self[k] = v
+
+        if kwargs:
+            for k, v in kwargs.items():
+                self[k] = v
+
+    def __getattr__(self, attr):
+        return self.get(attr)
+
+    def __setattr__(self, key, value):
+        self.__setitem__(key, value)
+
+    def __setitem__(self, key, value):
+        super().__setitem__(key, value)
+        self.__dict__.update({key: value})
+
+    def __delattr__(self, item):
+        self.__delitem__(item)
+
+    def __delitem__(self, key):
+        super().__delitem__(key)
+        del self.__dict__[key]
 
 
 def nest_level(lst) -> int:
@@ -68,10 +107,10 @@ def nest_level(lst) -> int:
     return max(nest_level(item) for item in lst) + 1
 
 
-def flatten(items, seqtypes: tuple = (list, tuple)):
+def flatten(items):
     try:
         for i, x in enumerate(items):
-            while isinstance(x, seqtypes):
+            while isinstance(x, (list, tuple)) and not isinstance(x, (str, bytes)):
                 items[i : i + 1] = x
                 x = items[i]
     except IndexError:
@@ -100,14 +139,14 @@ def unique_filter(arrays: list[npt.NDArray[np.float32]]) -> npt.NDArray[np.float
     return np.array(data[mask])
 
 
-def split_mask(arr: npt.NDArray[Any], mask: list[bool] | npt.NDArray[bool]) -> list[npt.NDArray[Any]]:
+def split_mask(arr: npt.NDArray[Any], mask: list[bool] | npt.NDArray[generic]) -> list[npt.NDArray[Any]]:
     indices = np.nonzero(mask[1:] != mask[:-1])[0] + 1
     sp = np.split(arr, indices)
     sp = sp[0::2] if mask[0] else sp[1::2]
     return sp
 
 
-def pad_infinite(iterable, padding=None):
+def pad_infinite(iterable: Iterable[Any], padding: Any = None):
     return chain(iterable, repeat(padding))
 
 
@@ -115,5 +154,9 @@ def pad(iterable, size, padding=None):
     return islice(pad_infinite(iterable, padding), size)
 
 
-def almost_equals(polygon: shapely.geometry.Polygon, other: shapely.geometry.Polygon, tol: float = 1e-6) -> bool:
-    return polygon.symmetric_difference(other).area < tol
+def almost_equals(
+    polygon: shapely.geometry.polygon.Polygon,
+    other: shapely.geometry.polygon.Polygon,
+    tol: float = 1e-6,
+) -> bool:
+    return bool(polygon.symmetric_difference(other).area < tol)

@@ -1,11 +1,7 @@
-"""
-Created on Thu Oct 13 22:02:29 2022
-
-@author: fedes
-"""
 from __future__ import annotations
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 import plotly.express as px
 import plotly.io as pio
@@ -13,9 +9,9 @@ import plotly.io as pio
 pio.renderers.default = 'browser'
 
 
-def GCODE_plot_colored(GCODE_array: np.ndarray):
+def GCODE_plot_colored(GCODE_array: npt.NDArray[np.float32]):
     """
-    Function to plot, through plotly, a 3D GCODE, in two colors depending on the shutter parameters
+    Function to plot a 3D GCODE, in two colors depending on the shutter parameters
     """
     points_matrix_off = pd.DataFrame(GCODE_array[:, 0:3], columns=['X', 'Y', 'Z'])
     points_matrix_on = []

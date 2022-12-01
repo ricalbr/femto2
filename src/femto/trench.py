@@ -43,22 +43,22 @@ class Trench:
     def __lt__(self, other: object) -> bool:
         if not isinstance(other, Trench):
             raise TypeError(f'Trying comparing Trench with {other.__class__.__name__}')
-        return self.yborder[0] < other.yborder[0]
+        return bool(self.yborder[0] < other.yborder[0])
 
     def __le__(self, other: object) -> bool:
         if not isinstance(other, Trench):
             raise TypeError(f'Trying comparing Trench with {other.__class__.__name__}')
-        return self.yborder[0] <= other.yborder[0]
+        return bool(self.yborder[0] <= other.yborder[0])
 
     def __gt__(self, other: object) -> bool:
         if not isinstance(other, Trench):
             raise TypeError(f'Trying comparing Trench with {other.__class__.__name__}')
-        return self.yborder[0] > other.yborder[0]
+        return bool(self.yborder[0] > other.yborder[0])
 
     def __ge__(self, other: object) -> bool:
         if not isinstance(other, Trench):
             raise TypeError(f'Trying comparing Trench with {other.__class__.__name__}')
-        return self.yborder[0] >= other.yborder[0]
+        return bool(self.yborder[0] >= other.yborder[0])
 
     @property
     def border(self) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]:
@@ -77,19 +77,19 @@ class Trench:
 
     @property
     def xmin(self) -> float:
-        return self.block.bounds[0]
+        return float(self.block.bounds[0])
 
     @property
     def ymin(self) -> float:
-        return self.block.bounds[1]
+        return float(self.block.bounds[1])
 
     @property
     def xmax(self) -> float:
-        return self.block.bounds[2]
+        return float(self.block.bounds[2])
 
     @property
     def ymax(self) -> float:
-        return self.block.bounds[3]
+        return float(self.block.bounds[3])
 
     @property
     def center(self) -> tuple[float, float]:
@@ -155,8 +155,8 @@ class Trench:
         if shape.is_valid or isinstance(shape, MultiPolygon):
             buff_polygon = shape.buffer(offset)
             if isinstance(buff_polygon, MultiPolygon):
-                return listcast(buff_polygon.geoms)
-            return listcast(buff_polygon)
+                return [Polygon(subpol) for subpol in buff_polygon.geoms]
+            return [Polygon(buff_polygon)]
         return [Polygon()]
 
 
@@ -240,7 +240,7 @@ class TrenchColumn:
     def dig_from_waveguide(
         self,
         waveguides: list[Waveguide],
-        remove: list | None = None,
+        remove: list[int] | None = None,
     ) -> None:
         """
         Compute the trench blocks from the waveguide of the optical circuit.
@@ -274,7 +274,7 @@ class TrenchColumn:
     def dig_from_array(
         self,
         waveguides: list[npt.NDArray[np.float32]],
-        remove: list | None = None,
+        remove: list[int] | None = None,
     ) -> None:
         """
         Compute the trench blocks from the waveguide of the optical circuit.
@@ -305,7 +305,7 @@ class TrenchColumn:
     def _dig(
         self,
         coords_list: list[list[tuple[float, float]]],
-        remove: list | None = None,
+        remove: list[int] | None = None,
     ) -> None:
 
         if remove is None:
@@ -356,16 +356,17 @@ def main():
     PARAM_TC = Dotdict(length=1.0, base_folder='', y_min=-0.1, y_max=19 * PARAM_WG['pitch'] + 0.1, u=[30.339, 32.825])
 
     # Calculations
+    x_c = 0
     coup = [Waveguide(**PARAM_WG) for _ in range(20)]
     for i, wg in enumerate(coup):
         wg.start([-2, i * wg.pitch, 0.035])
         wg.sin_acc((-1) ** i * wg.dy_bend)
-        PARAM_TC.x_center = wg.x[-1]
+        x_c = wg.x[-1]
         wg.sin_acc((-1) ** i * wg.dy_bend)
         wg.end()
 
     # Trench
-    T = TrenchColumn(**PARAM_TC)
+    T = TrenchColumn(x_center=x_c, **PARAM_TC)
     T.dig_from_waveguide(flatten([coup]))
 
 

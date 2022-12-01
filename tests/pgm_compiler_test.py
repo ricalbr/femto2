@@ -18,6 +18,8 @@ from femto.pgmcompiler import PGMCompiler
 def param() -> dict:
     p = {
         'filename': 'test.pgm',
+        'n_glass': 1.50,
+        'n_environment': 1.33,
         'export_dir': 'G-Code',
         'samplesize': (25, 25),
         'rotation_angle': 1.0,
@@ -35,10 +37,10 @@ def empty_mk(param) -> PGMCompiler:
 
 
 def test_default_values() -> None:
-    G = PGMCompiler('prova')
+    G = PGMCompiler('prova', 1.50, 1.33)
     assert G.filename == 'prova'
     assert G.export_dir == ''
-    assert G.samplesize == (None, None)
+    assert G.samplesize == (100, 50)
     assert G.laser == 'PHAROS'
     assert G.home is False
     assert G.new_origin == (0.0, 0.0)
@@ -145,7 +147,16 @@ def test_enter_exit_method_default(param) -> None:
 
 
 def test_enter_exit_method() -> None:
-    p = dict(filename='testPGM.pgm', laser='ant', samplesize=(25, 25), home=True, aerotech_angle=2.0, flip_x=True)
+    p = dict(
+        filename='testPGM.pgm',
+        n_glass=1.5,
+        n_environment=1.33,
+        laser='ant',
+        samplesize=(25, 25),
+        home=True,
+        aerotech_angle=2.0,
+        flip_x=True,
+    )
     with PGMCompiler(**p) as G:
         print(G._instructions)
         assert G._instructions == deque(
@@ -181,14 +192,14 @@ def test_enter_exit_method() -> None:
     file.unlink()
 
 
-@pytest.mark.parametrize('xs, expected', [(None, None), (1, 1), (0.5, 0.5), (-5, 5)])
+@pytest.mark.parametrize('xs, expected', [(1, 1), (0.5, 0.5), (-5, 5)])
 def test_xsample(param, xs, expected) -> None:
     param['samplesize'] = (xs, xs)  # set ysample to the same value of xsample, just for testing purposes
     G = PGMCompiler(**param)
     assert G.xsample == expected
 
 
-@pytest.mark.parametrize('ys, expected', [(None, None), (-1, 1), (3.2, 3.2), (-18, 18)])
+@pytest.mark.parametrize('ys, expected', [(-1, 1), (3.2, 3.2), (-18, 18)])
 def test_ysample(param, ys, expected) -> None:
     param['samplesize'] = (ys, ys)  # set xsample to the same value of ysample, just for testing purposes
     G = PGMCompiler(**param)
@@ -197,7 +208,7 @@ def test_ysample(param, ys, expected) -> None:
 
 @pytest.mark.parametrize(
     'ng, ne, expected',
-    [(None, 1.33, None), (1, None, None), (1, 0, None), (1, 0.0000001, None), (1.5, 1.5, 1), (1.5, 1.33, 1.5 / 1.33)],
+    [(1.5, 1.5, 1), (1.5, 1.33, 1.5 / 1.33)],
 )
 def test_neff(param, ng, ne, expected) -> None:
     param['n_glass'] = ng
@@ -717,7 +728,7 @@ def test_for_loop_errors(param, n, dvar, var, expectation) -> None:
     G = PGMCompiler(**param)
     G.dvar(dvar)
     with expectation:
-        assert G.for_loop(var, n).__enter__() is None
+        assert G.for_loop(var, n).__enter__() is not None
 
 
 @pytest.mark.parametrize('n, v', [(1, 'VAR'), (5, 'VAR'), (100.2, 'VAR'), (2, 'VAR')])
@@ -744,10 +755,10 @@ def test_for_loop(param, n, v) -> None:
         (3.2, does_not_raise()),
     ],
 )
-def test_for_repeat_errors(param, n, expectation) -> None:
+def test_repeat_errors(param, n, expectation) -> None:
     G = PGMCompiler(**param)
     with expectation:
-        assert G.repeat(n).__enter__() is None
+        assert G.repeat(n).__enter__() is not None
 
 
 @pytest.mark.parametrize('n', [1, 3, 6, 7, 99])
