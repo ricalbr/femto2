@@ -1194,7 +1194,6 @@ def test_spline_bridge_derivatives(param) -> None:
 
 def test_coupler_pitch(param) -> None:
     mode1, mode2 = coupler(param)
-
     assert mode2.y[-1] == pytest.approx(mode1.y[-1] + param['pitch'])
 
 
@@ -1214,4 +1213,7 @@ def test_coupler_d_int(d_input) -> None:
 
     mode1, mode2 = coupler(p)
 
+    # test difference between min/max of mode2 and mode1 (respectively) is int_dist
     assert pytest.approx(np.min(mode2.y) - np.max(mode1.y), abs=1e-6) == d_input
+    # test the point of min distance is at the same x value
+    assert pytest.approx(mode2.x[np.where(mode2.y == np.min(mode2.y))]) == mode1.x[np.where(mode1.y == np.max(mode1.y))]

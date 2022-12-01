@@ -738,7 +738,7 @@ def coupler(param: dict[str, Any]) -> list[Waveguide]:
     mode2 = Waveguide(**param)
     mode2.y_init = mode1.y_init + mode2.pitch
     mode2.start()
-    mode1.linear([lx, None, None], mode='ABS')
+    mode2.linear([lx, None, None], mode='ABS')
     mode2.sin_acc(-mode2.dy_bend)
     mode2.linear([mode2.x_end, None, None], mode='ABS')
     mode2.end()
