@@ -9,7 +9,7 @@ from typing import Iterator
 import numpy as np
 import numpy.typing as npt
 from femto.helpers import almost_equal
-from femto.helpers import Dotdict
+from femto.helpers import dotdict
 from femto.helpers import flatten
 from femto.helpers import listcast
 from femto.waveguide import Waveguide
@@ -318,6 +318,7 @@ class TrenchColumn:
 
         # if coordinates are empty or coordinates do not intersect the trench column rectangle box
         if almost_equal(trench_block, self.rect, tol=1e-8):
+            print('No trench found intersecting waveguides with trench area.\n')
             return None
 
         for block in listcast(sorted(trench_block.geoms, key=Trench)):
@@ -352,8 +353,8 @@ class TrenchColumn:
 
 def main():
     # Data
-    PARAM_WG = Dotdict(speed=20, radius=25, pitch=0.080, int_dist=0.007, samplesize=(25, 3))
-    PARAM_TC = Dotdict(length=1.0, base_folder='', y_min=-0.1, y_max=19 * PARAM_WG['pitch'] + 0.1, u=[30.339, 32.825])
+    PARAM_WG = dotdict(speed=20, radius=25, pitch=0.080, int_dist=0.007, samplesize=(25, 3))
+    PARAM_TC = dotdict(length=1.0, base_folder='', y_min=-0.1, y_max=19 * PARAM_WG['pitch'] + 0.1, u=[30.339, 32.825])
 
     # Calculations
     x_c = 0

@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 from femto.helpers import almost_equal
-from femto.helpers import Dotdict
+from femto.helpers import dotdict
 from femto.helpers import flatten
 from femto.helpers import grouped
 from femto.helpers import listcast
@@ -229,7 +229,7 @@ def test_unique_filter(inp, exp):
 
 def test_dotdict():
     def_dict = dict(a=3, b='str', c=9.0)
-    dd = Dotdict(a=3, b='str', c=9.0)
+    dd = dotdict(a=3, b='str', c=9.0)
 
     def_dict['new_val'] = 99
     dd['new_val'] = 99
@@ -245,7 +245,7 @@ def test_dotdict():
     del dd
 
     vv = {'lst': [1, 2, 3]}
-    dd = Dotdict(vv)
+    dd = dotdict(vv)
 
     lst = dd.lst
     llst = [lst]

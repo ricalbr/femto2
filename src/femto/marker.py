@@ -213,10 +213,10 @@ class Marker(LaserPath):
 def main():
     import matplotlib.pyplot as plt
 
-    from femto.helpers import Dotdict, split_mask
+    from femto.helpers import dotdict, split_mask
 
-    PARAMETERS_MK = Dotdict(scan=1, speed=2, speed_pos=5, speed_closed=5, depth=0.000, lx=1, ly=1)
-    PARAMETERS_GC = Dotdict(filename='testPGM.pgm', laser='PHAROS', samplesize=(10, 10))
+    PARAMETERS_MK = dotdict(scan=1, speed=2, speed_pos=5, speed_closed=5, depth=0.000, lx=1, ly=1)
+    PARAMETERS_GC = dotdict(filename='testPGM.pgm', laser='PHAROS', samplesize=(10, 10))
 
     c = Marker(**PARAMETERS_MK)
     # c.cross([2.5, 1], 5, 2)

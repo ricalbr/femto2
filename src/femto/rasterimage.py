@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import numpy as np
-from femto.helpers import Dotdict
+from femto.helpers import dotdict
 from femto.laserpath import LaserPath
 from femto.utils.GCODE_plot_colored import GCODE_plot_colored
 from PIL import Image
@@ -132,7 +132,7 @@ def _example():
     d.text((150, 100), 'Hello World', font=font, fill=0)
 
     # img.show()
-    R_IMG_PARAMETERS = Dotdict(
+    R_IMG_PARAMETERS = dotdict(
         px_to_mm=0.04,
         speed=1,
     )

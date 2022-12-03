@@ -113,6 +113,12 @@ class PGMCompiler:
         self.header()
         self.dwell(1.0)
         self.instruction('\n')
+
+        if self.rotation_angle:
+            print(' BEWARE, ANGLE MUST BE IN DEGREE! '.center(38, '*'))
+            print(f' Rotation angle is {self.rotation_angle:.3f} deg. '.center(38, '*'))
+            print()
+
         if self.aerotech_angle:
             print(' BEWARE, G84 COMMAND WILL BE USED!!! '.center(39, '*'))
             print(' ANGLE MUST BE IN DEGREE! '.center(39, '*'))
@@ -556,12 +562,6 @@ class PGMCompiler:
         :type points: numpy.ndarray
         :return: None
         """
-
-        if self.rotation_angle:
-            print(' BEWARE, ANGLE MUST BE IN DEGREE! '.center(39, '*'))
-            print(f' Rotation angle is {self.rotation_angle:.3f} deg. '.center(39, '*'))
-            print()
-
         x, y, z, f_gc, s_gc = points
 
         # Transform points (rotations, z-compensation and flipping)
@@ -1134,6 +1134,7 @@ class TrenchWriter(Writer):
         main_param = dict(self._param.copy())
         main_param['filename'] = self._export_path / 'MAIN.pgm'
         main_param['aerotech_angle'] = None
+        main_param['rotation_angle'] = None
 
         farcall_list = [str(Path(col.base_folder) / f'FARCALL{i + 1:03}.pgm') for i, col in enumerate(self.obj_list)]
         with PGMCompiler(**main_param) as G:
@@ -1144,11 +1145,13 @@ class TrenchWriter(Writer):
             for col in self.obj_list:
                 _tc_fab_time += col.fabrication_time + 10
 
+            print('=' * 79)
             print('G-code compilation completed.')
             print(
                 'Estimated fabrication time of the isolation trenches: \t',
                 time.strftime('%H:%M:%S', time.gmtime(_tc_fab_time)),
             )
+            print('=' * 79, '\n')
 
     def export_array2d(
         self, filename: Path, x: npt.NDArray[np.float32], y: npt.NDArray[np.float32], speed: float
@@ -1357,11 +1360,13 @@ class WaveguideWriter(Writer):
         del G
 
         if verbose:
+            print('=' * 79)
             print('G-code compilation completed.')
             print(
-                'Estimated fabrication time of the optical device: \t',
+                'Estimated fabrication time of the waveguides: \t',
                 time.strftime('%H:%M:%S', time.gmtime(_wg_fab_time)),
             )
+            print('=' * 79, '\n')
         self._instructions.clear()
 
     def _plot2d_wg(
@@ -1525,11 +1530,13 @@ class MarkerWriter(Writer):
         del G
 
         if verbose:
+            print('=' * 79)
             print('G-code compilation completed.')
             print(
-                'Estimated fabrication time of the optical device: \t',
+                'Estimated fabrication time of the markers: \t',
                 time.strftime('%H:%M:%S', time.gmtime(_mk_fab_time)),
             )
+            print('=' * 79, '\n')
         self._instructions.clear()
         self._total_dwell_time = 0.0
 
@@ -1590,11 +1597,11 @@ class MarkerWriter(Writer):
 
 def main() -> None:
     from femto.waveguide import Waveguide
-    from femto.helpers import Dotdict
+    from femto.helpers import dotdict
 
     # Parameters
-    PARAM_WG = Dotdict(scan=6, speed=20, radius=15, pitch=0.080, int_dist=0.007, lsafe=3, samplesize=(25, 3))
-    PARAM_GC = Dotdict(filename='testPGM.pgm', samplesize=PARAM_WG['samplesize'], rotation_angle=2.0, flip_x=True)
+    PARAM_WG = dotdict(scan=6, speed=20, radius=15, pitch=0.080, int_dist=0.007, lsafe=3, samplesize=(25, 3))
+    PARAM_GC = dotdict(filename='testPGM.pgm', samplesize=PARAM_WG['samplesize'], rotation_angle=2.0, flip_x=True)
 
     # Build paths
     chip = [Waveguide(**PARAM_WG) for _ in range(2)]

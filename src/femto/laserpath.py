@@ -449,10 +449,10 @@ def main():
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
 
-    from femto.helpers import Dotdict
+    from femto.helpers import dotdict
 
     # Data
-    PARAMETERS_LP = Dotdict(
+    PARAMETERS_LP = dotdict(
         scan=6,
         speed=20,
         lsafe=3,

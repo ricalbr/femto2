@@ -71,7 +71,7 @@ def listcast(x: Any) -> list[Any]:
         return [x]
 
 
-class Dotdict(Dict[Any, Any]):
+class dotdict(Dict[Any, Any]):
     """dot.notation access to dictionary attributes"""
 
     def __init__(self, *args, **kwargs):

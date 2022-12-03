@@ -6,7 +6,7 @@ from typing import Any
 
 import numpy as np
 import numpy.typing as npt
-from femto.helpers import Dotdict
+from femto.helpers import dotdict
 from femto.laserpath import LaserPath
 from scipy.interpolate import CubicSpline
 from scipy.interpolate import InterpolatedUnivariateSpline
@@ -751,7 +751,7 @@ def main() -> None:
     from mpl_toolkits.mplot3d import Axes3D
 
     # Data
-    PARAM_WG = Dotdict(scan=6, speed=20, radius=15, pitch=0.080, int_dist=0.007, lsafe=3, samplesize=(50, 3))
+    PARAM_WG = dotdict(scan=6, speed=20, radius=15, pitch=0.080, int_dist=0.007, lsafe=3, samplesize=(50, 3))
 
     increment = [5.0, 0, 0]
 

@@ -78,7 +78,7 @@ class Device:
     def pgm(self, verbose: bool = True) -> None:
         for key, writer in self.writers.items():
             if verbose:
-                print(f'Exporting {key} objects...')
+                print(f'Exporting {key.__name__} objects...')
             writer.pgm(verbose=verbose)
         if verbose:
             print('Export .pgm files complete.\n')
