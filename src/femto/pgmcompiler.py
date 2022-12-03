@@ -341,9 +341,9 @@ class PGMCompiler:
         self.dwell(self.long_pause)
         self.instruction('\n')
 
-    def homing(self) -> None:
+    def go_origin(self) -> None:
         """
-        Utility function to return to the origin (0,0,0) with shutter OFF.
+        Utility function, return to the origin (0,0,0) with shutter OFF.
 
         :return: None
         """
@@ -1525,7 +1525,7 @@ class MarkerWriter(Writer):
                     G.comment(f'MARKER {idx + 1}')
                     G.write(mk.points)
                     G.comment('')
-            G.homing()
+            G.go_origin()
             _mk_fab_time += G._total_dwell_time
         del G
 

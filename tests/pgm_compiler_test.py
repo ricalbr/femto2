@@ -661,7 +661,7 @@ def test_move_to_values(param, speedp, pos, speed) -> None:
 
 def test_homing(param) -> None:
     G = PGMCompiler(**param)
-    G.homing()
+    G.go_origin()
     assert G._instructions[-4] == '\n; HOMING\n'
     assert G._instructions[-3] == f'LINEAR X0.000000 Y0.000000 Z0.000000 F{G.speed_pos:.6f}\n'
 
@@ -683,7 +683,7 @@ def test_axis_rotation_contex_manager(param) -> None:
 
         # do operations in G-Code compiler
         G.move_to([1, 2, 3])
-        G.homing()
+        G.go_origin()
 
     assert G._instructions[-3] == '\n; DEACTIVATE AXIS ROTATION\n'
     assert G._instructions[-2] == f'LINEAR X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{G.speed_pos:.6f}\n'
