@@ -83,7 +83,11 @@ class Device:
         if verbose:
             print('Export .pgm files complete.\n')
 
-    def save(self, filename='scheme.html') -> None:
+    def save(self, filename='scheme.html', opt: dict[str, Any] | None = None) -> None:
+        if opt is None:
+            opt = dict()
+        default_opt = {'width': 1980, 'height': 1080, 'scale': 2, 'engine': 'kaleido'}
+        opt = {**default_opt, **opt}
 
         if self.fig is None:
             return None
@@ -92,7 +96,7 @@ class Device:
         if fn.suffix.lower() in ['.html', '']:
             self.fig.write_html(str(fn.with_suffix('.html')))
         else:
-            self.fig.write_image(str(fn), width=1980, height=1080, scale=2, engine='kaleido')
+            self.fig.write_image(str(fn), **opt)
 
 
 def main():
