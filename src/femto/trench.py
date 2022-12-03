@@ -8,7 +8,7 @@ from typing import Iterator
 
 import numpy as np
 import numpy.typing as npt
-from femto.helpers import almost_equals
+from femto.helpers import almost_equal
 from femto.helpers import Dotdict
 from femto.helpers import flatten
 from femto.helpers import listcast
@@ -38,7 +38,7 @@ class Trench:
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Trench):
             raise TypeError(f'Trying comparing Trench with {other.__class__.__name__}')
-        return almost_equals(self.block, other.block)
+        return almost_equal(self.block, other.block)
 
     def __lt__(self, other: object) -> bool:
         if not isinstance(other, Trench):
@@ -317,7 +317,7 @@ class TrenchColumn:
             trench_block = trench_block.difference(dilated)
 
         # if coordinates are empty or coordinates do not intersect the trench column rectangle box
-        if almost_equals(trench_block, self.rect, tol=1e-8):
+        if almost_equal(trench_block, self.rect, tol=1e-8):
             return None
 
         for block in listcast(sorted(trench_block.geoms, key=Trench)):

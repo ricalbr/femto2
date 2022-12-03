@@ -1,10 +1,7 @@
 from __future__ import annotations
 
-from functools import partial
-from itertools import chain
-from itertools import cycle
-from itertools import islice
-from itertools import repeat
+import functools
+import itertools
 from typing import Any
 from typing import Dict
 from typing import Iterable
@@ -12,51 +9,58 @@ from typing import Iterable
 import numpy as np
 import numpy.typing as npt
 import shapely.geometry
-from numpy import generic
 
 
 def grouped(iterable: Iterable[Any], n: int) -> Iterable[Any]:
     """
     Gruoup an iterable in sub-groups of n elements.
+    The returned iterable have `len(iterable)//n` tuples containing n elements. If the number of elements of the input
+    iterable are not a multiple of n, the remaining elements will not be returned.
 
     s -> (s0,s1,s2,...sn-1), (sn,sn+1,sn+2,...s2n-1), (s2n,s2n+1,s2n+2,...s3n-1), ...
 
     :param iterable: iterable to group
     :param n: size of the sub-groups
-    :return:
+    :return: grouped iterable
     """
     return zip(*[iter(iterable)] * n)
 
 
 # s -> (s0,s1), (s2,s3), (s3, s4), ...
-pairwise = partial(grouped, n=2)
+pairwise = functools.partial(grouped, n=2)
 
 
 def swap(
     array: list[Any],
     swap_pos: list[tuple[int, int]],
-    zero_index: bool = False,
 ) -> list[Any]:
     """
     Swaps elements
 
     :param array:
     :param swap_pos:
-    :param zero_index:
     :return:
     """
     # in case of a single swap, swap_pos can be (pos1, pos2).
 
     for pos1, pos2 in swap_pos:
-        if zero_index is False:
-            pos1 -= 1
-            pos2 -= 1
         array[pos1], array[pos2] = array[pos2], array[pos1]
     return array
 
 
-def listcast(x):
-    # cast any obj to a list
+def listcast(x: Any) -> list[Any]:
+    """
+    Cast any input object to a list.
+    If `x` is a Python dictionary, the output will be the list of all the dict-keys.
+    E.g.
+    >>> d = {'a': 1, 'b': 2, 'c': 3}
+    >>> e = listcast(d)
+    >>> e
+    >>> ['a', 'b', 'c']
+
+    :param x: input object
+    :return: list
+    """
     if isinstance(x, list):
         return x
     elif isinstance(x, str):
@@ -99,7 +103,13 @@ class Dotdict(Dict[Any, Any]):
         del self.__dict__[key]
 
 
-def nest_level(lst) -> int:
+def nest_level(lst: list[Any]) -> int:
+    """
+    Compute the neseting level of a list.
+
+    :param lst: input object
+    :return: number of nested lists, a flatten list has nest_level of 1.
+    """
     if not isinstance(lst, list):
         return 0
     if not lst:
@@ -108,6 +118,12 @@ def nest_level(lst) -> int:
 
 
 def flatten(items):
+    """
+    Flatten list with arbitrary nested levels.
+
+    :param items: input list
+    :return: list with the same elements of the input list but a single nesting level.
+    """
     try:
         for i, x in enumerate(items):
             while isinstance(x, (list, tuple)) and not isinstance(x, (str, bytes)):
@@ -119,27 +135,84 @@ def flatten(items):
 
 
 def sign():
-    return cycle([1, -1])
+    """
+    Iterator cycling through +1 and -1.
+    Use it as follow:
+
+    s = sign()
+    next(s) # -> +1
+    next(s) # -> -1
+    next(s) # -> +1
+    next(s) # -> -1
+    ...
+
+    :return:
+    """
+    return itertools.cycle([1, -1])
 
 
 def unique_filter(arrays: list[npt.NDArray[np.float32]]) -> npt.NDArray[np.float32]:
-    # data matrix
-    data = np.stack(arrays, axis=-1).astype(np.float32)
+    """
+    Filter adjacent identical point from array. The function is different from other unique functions such as numpy's
+    `unique` function. Indeed, `unique` return (a sorted list of) the unique elements of the whole array.
+    For example:
 
-    # empty array list
-    if data.size == 0:
+    >>> x = np.array([1, 2, 3, 3, 3, 4, 3, 3])
+    >>> np.unique(x)
+    np.array([1, 2, 3, 4])
+    >>> unique_filter([x])
+    np.array([1, 2, 3, 4, 3])
+
+    `unique_filter` works also with multiple arrays. If the input list contains several elements, the arrays are
+    stacked together to form a [length_array, length_list] matrix. Each row of this matrix represents the coordinates of
+    a point in a space with `length_list` dimensions.
+    Finally, filtering operation is applied to the newly-constructed matrix to filter all the identical adjacent points.
+    For example:
+
+    >>> x = np.array([1, 2, 3, 3, 3, 4, 3, 3])
+    >>> y = np.array([0, 1, 0, 0, 1, 1, 0, 1])
+    >>> unique_filter([x, y])
+    np.array([1, 2, 3, 3, 4, 3, 3])
+
+    :param arrays: list of arrays
+    :return: matrix of arrays, each row has the filtered points on a given coordinate-axis.
+    """
+
+    # arrays list is empty
+    if not arrays:
         return np.array([])
 
+    # data matrix
+    if len(arrays) == 1:
+        data = arrays[0]
+    else:
+        data = np.stack(arrays, axis=-1).astype(np.float32)
+    data.reshape(-1, len(arrays))
+
     # mask
-    mask = np.diff(data, axis=0)
-    mask = np.sum(np.abs(mask), axis=1, dtype=bool)
+    try:
+        mask = np.sum(np.diff(data, axis=0), axis=1, dtype=bool)
+    except np.AxisError:  # handle 1D-data matrix case
+        mask = np.diff(data).astype(bool)
     mask = np.insert(mask, 0, True)
 
     # filtered data
-    return np.array(data[mask])
+    if data.size == 0:
+        return np.array([])
+    else:
+        return np.array(data[mask]).T
 
 
-def split_mask(arr: npt.NDArray[Any], mask: list[bool] | npt.NDArray[generic]) -> list[npt.NDArray[Any]]:
+def split_mask(arr: npt.NDArray[Any], mask: npt.NDArray[np.generic]) -> list[npt.NDArray[Any]]:
+    """
+    Split input arrays in sub-arrays using a boolean mask array. The function return the list of sub-arrays
+    correspoding to True values.
+
+    :param arr: Input array
+    :param mask: Boolean array used as mask to split the input array
+    :return: List of arrays associated to True (1) values of mask.
+    """
+    arr, mask = np.array(arr), np.array(mask)
     indices = np.nonzero(mask[1:] != mask[:-1])[0] + 1
     sp = np.split(arr, indices)
     sp = sp[0::2] if mask[0] else sp[1::2]
@@ -147,16 +220,25 @@ def split_mask(arr: npt.NDArray[Any], mask: list[bool] | npt.NDArray[generic]) -
 
 
 def pad_infinite(iterable: Iterable[Any], padding: Any = None):
-    return chain(iterable, repeat(padding))
+    return itertools.chain(iterable, itertools.repeat(padding))
 
 
 def pad(iterable, size, padding=None):
-    return islice(pad_infinite(iterable, padding), size)
+    return itertools.islice(pad_infinite(iterable, padding), size)
 
 
-def almost_equals(
+def almost_equal(
     polygon: shapely.geometry.polygon.Polygon,
     other: shapely.geometry.polygon.Polygon,
     tol: float = 1e-6,
 ) -> bool:
+    """
+    Compute equality between polygons using the shapely builtin function symmetric_difference to build a new polygon.
+    The more similar the two input polygons, the smaller the are of the new computed polygon.
+
+    :param polygon: shaperly Polygon object
+    :param other: second shapely Polygon object
+    :param tol: tolerance controlling the similarity
+    :return: boolean value True if the polygon are almost equal, False otherwise
+    """
     return bool(polygon.symmetric_difference(other).area < tol)

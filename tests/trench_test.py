@@ -5,7 +5,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-from femto.helpers import almost_equals
+from femto.helpers import almost_equal
 from femto.trench import Trench
 from femto.trench import TrenchColumn
 from shapely.geometry import box
@@ -219,7 +219,7 @@ def test_buffer_polygon(p, offset, p_expected) -> None:
     buff_polygon = tc.buffer_polygon(p, offset)
 
     for (p_calc, p_exp) in zip(buff_polygon, p_expected):
-        assert almost_equals(p_calc, p_exp)
+        assert almost_equal(p_calc, p_exp)
 
 
 def test_toolpath() -> None:
@@ -314,7 +314,7 @@ def test_trenchcol_iterator(tc) -> None:
 def test_trenchcol_rect(tc, param) -> None:
     bb = tc.rect
 
-    assert almost_equals(
+    assert almost_equal(
         bb,
         box(
             param['x_center'] - param['length'] / 2,
@@ -361,7 +361,7 @@ def test_trenchcol_dig() -> None:
 
     for (t, c) in zip(tc.trench_list, comp_box):
         assert tc.normalize(c).almost_equals(t.block)
-        assert almost_equals(tc.normalize(c), t.block)
+        assert almost_equal(tc.normalize(c), t.block)
 
 
 def test_trenchcol_dig_remove() -> None:
@@ -383,7 +383,7 @@ def test_trenchcol_dig_remove() -> None:
 
     for (t, c) in zip(tc.trench_list, comp_box):
         assert tc.normalize(c).almost_equals(t.block)
-        assert almost_equals(tc.normalize(c), t.block)
+        assert almost_equal(tc.normalize(c), t.block)
 
 
 def test_trenchcol_dig_remove_all() -> None:

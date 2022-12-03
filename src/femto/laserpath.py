@@ -80,7 +80,7 @@ class LaserPath:
         :return: [X, Y, Z, F, S] unique point matrix
         :rtype: numpy.ndarray
         """
-        return np.array(self._unique_points()).T
+        return np.array(self._unique_points())
 
     @property
     def x(self) -> npt.NDArray[np.float32]:
@@ -90,7 +90,7 @@ class LaserPath:
         :return: Array of the x-coordinates
         :rtype: numpy.ndarray
         """
-        coords = self._unique_points().T
+        coords = self._unique_points()
         if coords.ndim == 2:
             return np.array(coords[0])
         return np.array([])
@@ -110,7 +110,7 @@ class LaserPath:
         :return: Array of the y-coordinates
         :rtype: numpy.ndarray
         """
-        coords = self._unique_points().T
+        coords = self._unique_points()
         if coords.ndim == 2:
             return np.array(coords[1])
         return np.array([])
@@ -130,7 +130,7 @@ class LaserPath:
         :return: Array of the z-coordinates
         :rtype: numpy.ndarray
         """
-        coords = self._unique_points().T
+        coords = self._unique_points()
         if coords.ndim == 2:
             return np.array(coords[2])
         return np.array([])
@@ -163,7 +163,7 @@ class LaserPath:
     def path3d(self) -> list[npt.NDArray[np.float32]]:
         if self._x.size:
             # filter 3D points without F
-            x, y, z, s = unique_filter([self._x, self._y, self._z, self._s]).T
+            x, y, z, s = unique_filter([self._x, self._y, self._z, self._s])
             # mask and select just those with s = 1
             x = np.delete(x, np.where(np.invert(s.astype(bool))))
             y = np.delete(y, np.where(np.invert(s.astype(bool))))
@@ -233,7 +233,7 @@ class LaserPath:
         :rtype: numpy.ndarray
         """
         # exclude last point, it's there just to close the shutter
-        (x, y, z, f, _) = self._unique_points()[:-1, :].T
+        x, y, z, f, _ = self._unique_points()[:, :-1]
 
         dx_dt = np.gradient(x)
         dy_dt = np.gradient(y)
