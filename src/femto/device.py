@@ -8,11 +8,13 @@ from typing import Any
 import plotly.graph_objects as go
 from femto.helpers import flatten
 from femto.marker import Marker
-from femto.pgmcompiler import MarkerWriter
-from femto.pgmcompiler import TrenchWriter
-from femto.pgmcompiler import WaveguideWriter
 from femto.trench import TrenchColumn
+from femto.waveguide import NasuWaveguide
 from femto.waveguide import Waveguide
+from femto.writer import MarkerWriter
+from femto.writer import NasuWriter
+from femto.writer import TrenchWriter
+from femto.writer import WaveguideWriter
 
 
 class Device:
@@ -22,6 +24,7 @@ class Device:
         self.fig: go.Figure | None = None
         self.writers = {
             Waveguide: WaveguideWriter(wg_list=[], **param),
+            NasuWaveguide: NasuWriter(nw_list=[], **param),
             TrenchColumn: TrenchWriter(tc_list=[], **param),
             Marker: MarkerWriter(mk_list=[], **param),
         }

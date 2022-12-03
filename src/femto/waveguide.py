@@ -725,8 +725,36 @@ class Waveguide(LaserPath):
         return x_cspline, y_cspline, z_cspline
 
 
-def coupler(param: dict[str, Any]) -> list[Waveguide]:
-    mode1 = Waveguide(**param)
+@dataclass
+class NasuWaveguide(Waveguide):
+    """
+    Class representing a Nasu optical waveguide.
+    """
+
+    adj_scan_shift: tuple[float | None, float | None, float | None] = (0, 0.0004, 0)
+    adj_scan: int = 5
+
+    def __post_init__(self):
+        super().__post_init__()
+        if (self.adj_scan % 2) == 0 or not isinstance(self.adj_scan, int):
+            raise ValueError(
+                f'Number of adjacent scan must an odd number of type int. Given {self.scan}, '
+                f'type {type(self.scan).__name__}.'
+            )
+
+    @property
+    def adj_scan_order(self) -> list[int]:
+        adj_scan_list = [0]
+        for i in range(1, self.adj_scan // 2 + 1):
+            adj_scan_list.extend([i, -i])
+        return adj_scan_list
+
+
+def coupler(param: dict[str, Any], nasu: bool = False) -> list[Waveguide | NasuWaveguide]:
+
+    mode1 = NasuWaveguide(**param) if nasu else Waveguide(**param)
+    mode2 = NasuWaveguide(**param) if nasu else Waveguide(**param)
+
     lx = mode1.samplesize[0] / 2 - mode1.dx_bend
 
     mode1.start()
@@ -735,7 +763,6 @@ def coupler(param: dict[str, Any]) -> list[Waveguide]:
     mode1.linear([mode1.x_end, None, None], mode='ABS')
     mode1.end()
 
-    mode2 = Waveguide(**param)
     mode2.y_init = mode1.y_init + mode2.pitch
     mode2.start()
     mode2.linear([lx, None, None], mode='ABS')

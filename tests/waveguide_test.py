@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+from contextlib import nullcontext as does_not_raise
+
 import numpy as np
 import pytest
 from femto.waveguide import coupler
+from femto.waveguide import NasuWaveguide
 from femto.waveguide import Waveguide
 
 
@@ -1192,9 +1195,103 @@ def test_spline_bridge_derivatives(param) -> None:
     assert pytest.approx((z[-2] - z[-1]) / (x[-2] - x[-1]), abs=1e-2) == 0.0
 
 
+def test_nasu_default_values() -> None:
+    ng = NasuWaveguide()
+    assert ng.scan == int(1)
+    assert ng.speed == float(1.0)
+    assert ng.x_init == float(-2.0)
+    assert ng.y_init == float(0.0)
+    assert ng.z_init == float(0.035)
+    assert ng.lsafe == float(2.0)
+    assert ng.speed_closed == float(5.0)
+    assert ng.speed_pos == float(0.5)
+    assert ng.cmd_rate_max == int(1200)
+    assert ng.acc_max == int(500)
+    assert ng.samplesize == (100, 50)
+    assert ng.depth == float(0.035)
+    assert ng.radius == float(15)
+    assert ng.pitch == float(0.080)
+    assert ng.pitch_fa == float(0.127)
+    assert ng.int_dist is None
+    assert ng.int_length == float(0.0)
+    assert ng.arm_length == float(0.0)
+    assert ng.ltrench == float(1.0)
+    assert ng.dz_bridge == float(0.007)
+    assert ng.margin == float(1.0)
+    assert ng.adj_scan_shift == (0, 0.0004, 0)
+    assert ng.adj_scan == int(5)
+
+
+def test_nasu_values(param) -> None:
+    ng = NasuWaveguide(adj_scan_shift=(0.1, 0.2, 0.003), adj_scan=3, **param)
+    assert ng.scan == int(6)
+    assert ng.speed == float(20.0)
+    assert ng.x_init == float(-2.0)
+    assert ng.y_init == float(1.5)
+    assert ng.z_init == float(0.050)
+    assert ng.lsafe == float(2.0)
+    assert ng.speed_closed == float(75)
+    assert ng.speed_pos == float(0.5)
+    assert ng.cmd_rate_max == int(1200)
+    assert ng.acc_max == int(500)
+    assert ng.samplesize == (100, 15)
+    assert ng.depth == float(0.035)
+    assert ng.radius == float(25)
+    assert ng.pitch == float(0.127)
+    assert ng.pitch_fa == float(0.127)
+    assert ng.int_dist == float(0.005)
+    assert ng.int_length == float(0.0)
+    assert ng.arm_length == float(1.0)
+    assert ng.ltrench == float(1.5)
+    assert ng.dz_bridge == float(0.006)
+    assert ng.margin == float(1.0)
+    assert ng.adj_scan_shift == (0.1, 0.2, 0.003)
+    assert ng.adj_scan == int(3)
+
+
+@pytest.mark.parametrize(
+    'a_scan, exp',
+    [
+        (3, does_not_raise()),
+        (3.33, pytest.raises(ValueError)),
+        (0, pytest.raises(ValueError)),
+        (5, does_not_raise()),
+        (2, pytest.raises(ValueError)),
+    ],
+)
+def test_nasu_raise(a_scan, exp, param) -> None:
+    with exp:
+        NasuWaveguide(adj_scan=a_scan, **param)
+
+
+@pytest.mark.parametrize(
+    'a_scan, exp',
+    [
+        (3, [0, 1, -1]),
+        (5, [0, 1, -1, 2, -2]),
+        (17, [0, 1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6, -6, 7, -7, 8, -8]),
+        (1, [0]),
+    ],
+)
+def test_nasu_adjscans(param, a_scan, exp) -> None:
+    ng = NasuWaveguide(adj_scan=a_scan)
+    assert ng.adj_scan_order == exp
+
+
 def test_coupler_pitch(param) -> None:
     mode1, mode2 = coupler(param)
     assert mode2.y[-1] == pytest.approx(mode1.y[-1] + param['pitch'])
+
+
+def test_coupler_wg_type(param) -> None:
+    mode1, mode2 = coupler(param, nasu=False)
+    assert type(mode1) == type(mode2)
+    assert type(mode1) == Waveguide
+    del mode1, mode2
+
+    mode1, mode2 = coupler(param, nasu=True)
+    assert type(mode1) == type(mode2)
+    assert type(mode1) == NasuWaveguide
 
 
 @pytest.mark.parametrize('d_input', [0.000, 0.001, 0.002, 0.003, 0.005, 0.007, 0.009, 0.0011, 0.0015, 0.0025])

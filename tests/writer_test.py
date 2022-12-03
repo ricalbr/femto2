@@ -9,12 +9,14 @@ from femto.helpers import dotdict
 from femto.helpers import flatten
 from femto.helpers import listcast
 from femto.marker import Marker
-from femto.pgmcompiler import MarkerWriter
-from femto.pgmcompiler import TrenchWriter
-from femto.pgmcompiler import WaveguideWriter
-from femto.pgmcompiler import Writer
 from femto.trench import TrenchColumn
+from femto.waveguide import NasuWaveguide
 from femto.waveguide import Waveguide
+from femto.writer import MarkerWriter
+from femto.writer import NasuWriter
+from femto.writer import TrenchWriter
+from femto.writer import WaveguideWriter
+from femto.writer import Writer
 
 
 @pytest.fixture
@@ -35,6 +37,21 @@ def list_wg() -> list[Waveguide]:
     PARAM_WG = dotdict(speed=20, radius=25, pitch=0.080, int_dist=0.007, samplesize=(25, 3))
 
     coup = [Waveguide(**PARAM_WG) for _ in range(20)]
+    for i, wg in enumerate(coup):
+        wg.start([-2, i * wg.pitch, 0.035])
+        wg.linear([5, 0, 0])
+        wg.sin_acc((-1) ** i * wg.dy_bend)
+        wg.sin_acc((-1) ** i * wg.dy_bend)
+        wg.linear([5, 0, 0])
+        wg.end()
+    return coup
+
+
+@pytest.fixture
+def list_ng() -> list[NasuWaveguide]:
+    PARAM_WG = dotdict(speed=20, radius=25, pitch=0.080, int_dist=0.007, samplesize=(25, 3))
+
+    coup = [NasuWaveguide(**PARAM_WG) for _ in range(20)]
     for i, wg in enumerate(coup):
         wg.start([-2, i * wg.pitch, 0.035])
         wg.linear([5, 0, 0])
@@ -320,11 +337,128 @@ def test_waveguide_writer_pgm(gc_param, list_wg) -> None:
     (wwr._export_path / fp).unlink()
 
 
-def test_waveguide_writer_pgm_empty(gc_param, list_wg) -> None:
+def test_waveguide_writer_pgm_empty(gc_param) -> None:
     wwr = WaveguideWriter([], **gc_param)
     wwr.pgm()
 
     fp = Path(wwr.filename).stem + '_WG.pgm'
+
+    assert wwr._export_path.is_dir()
+    assert not (wwr._export_path / fp).is_file()
+
+
+def test_nasu_writer_init(gc_param, list_ng) -> None:
+    wwr = NasuWriter(list_ng, **gc_param)
+    expp = Path.cwd()
+
+    assert wwr.obj_list == list_ng
+
+    assert wwr._param == gc_param
+    assert wwr._export_path == expp
+
+    del wwr
+
+    dirname = 'test'
+    wwr = NasuWriter([], export_dir=dirname, **gc_param)
+    expp = Path.cwd() / dirname
+
+    assert wwr.obj_list == []
+
+    assert wwr._param == dict(export_dir=dirname, **gc_param)
+    assert wwr._export_path == expp
+
+
+def test_nasu_writer_append(gc_param, list_ng) -> None:
+    wwr = NasuWriter([], **gc_param)
+    for wg in list_ng:
+        wwr.append(wg)
+    assert wwr.obj_list == list_ng
+
+
+def test_nasu_writer_append_raise(gc_param, list_ng) -> None:
+    wwr = NasuWriter([], **gc_param)
+    with pytest.raises(TypeError):
+        wwr.append(list_ng)
+
+
+def test_nasu_writer_extend(gc_param, list_ng) -> None:
+    wwr = NasuWriter([], **gc_param)
+    wwr.extend(list_ng)
+    assert wwr.obj_list == list_ng
+    del wwr
+
+    wwr = NasuWriter([], **gc_param)
+    new_list = [list_ng, list_ng, list_ng[0]]
+    wwr.extend(new_list)
+    assert wwr.obj_list == new_list
+
+
+@pytest.mark.parametrize(
+    'l_nw, expectation',
+    [
+        (None, pytest.raises(TypeError)),
+        ([NasuWaveguide()], does_not_raise()),
+        ([NasuWaveguide(), [NasuWaveguide(), NasuWaveguide()]], does_not_raise()),
+        (
+            [
+                [[NasuWaveguide()]],
+                [[NasuWaveguide(), [NasuWaveguide(), [NasuWaveguide(), NasuWaveguide()]]], NasuWaveguide()],
+            ],
+            pytest.raises(ValueError),
+        ),
+        ([Waveguide(), [NasuWaveguide(), NasuWaveguide()]], pytest.raises(TypeError)),
+    ],
+)
+def test_nasu_writer_extend_raise(gc_param, l_nw, expectation) -> None:
+    wwr = NasuWriter([], **gc_param)
+    with expectation:
+        wwr.extend(l_nw)
+
+
+def test_nasu_writer_plot2d(gc_param, list_ng) -> None:
+    from plotly import graph_objs as go
+
+    fig = go.Figure()
+
+    wwr = NasuWriter(list_ng, **gc_param)
+    assert wwr.plot2d(fig=fig) is not None
+    del wwr
+
+    wwr = NasuWriter(list_ng, **gc_param)
+    assert wwr.plot2d() is not None
+    del wwr
+
+
+def test_nasu_writer_plot3d(gc_param, list_ng) -> None:
+    from plotly import graph_objs as go
+
+    fig = go.Figure()
+
+    wwr = NasuWriter(list_ng, **gc_param)
+    assert wwr.plot3d(fig=fig) is not None
+    del wwr
+
+    wwr = NasuWriter(list_ng, **gc_param)
+    assert wwr.plot3d() is not None
+    del wwr
+
+
+def test_nasu_writer_pgm(gc_param, list_ng) -> None:
+    wwr = NasuWriter(list_ng, **gc_param)
+    wwr.pgm()
+
+    fp = Path(wwr.filename).stem + '_NASU.pgm'
+
+    assert wwr._export_path.is_dir()
+    assert (wwr._export_path / fp).is_file()
+    (wwr._export_path / fp).unlink()
+
+
+def test_nasu_writer_pgm_empty(gc_param) -> None:
+    wwr = NasuWriter([], **gc_param)
+    wwr.pgm()
+
+    fp = Path(wwr.filename).stem + '_NASU.pgm'
 
     assert wwr._export_path.is_dir()
     assert not (wwr._export_path / fp).is_file()
