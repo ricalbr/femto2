@@ -261,11 +261,10 @@ class PGMCompiler:
 
         if state.lower() == 'on' and self._shutter_on is False:
             self._shutter_on = True
-            # TODO: add short pause before PSOCONTROL
-            self._instructions.append(f'\nPSOCONTROL {self.pso_label} ON\n')
+            self._instructions.append(f'PSOCONTROL {self.pso_label} ON\n')
         elif state.lower() == 'off' and self._shutter_on is True:
             self._shutter_on = False
-            self._instructions.append(f'\nPSOCONTROL {self.pso_label} OFF\n')
+            self._instructions.append(f'PSOCONTROL {self.pso_label} OFF\n')
         else:
             pass
 
@@ -571,11 +570,13 @@ class PGMCompiler:
         args = [self._format_args(x, y, z, f) for (x, y, z, f) in zip(x_gc, y_gc, z_gc, f_gc)]
         for (arg, s) in zip_longest(args, s_gc):
             if s == 0 and self._shutter_on is True:
+                self.instruction('\n')
                 self.dwell(self.short_pause)
                 self.shutter('OFF')
                 self.dwell(self.long_pause)
                 self.instruction('\n')
             elif s == 1 and self._shutter_on is False:
+                self.instruction('\n')
                 self.dwell(self.short_pause)
                 self.shutter('ON')
                 self.dwell(self.long_pause)
