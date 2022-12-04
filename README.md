@@ -89,7 +89,7 @@ The different structures can be organized into single cell-like objects, which a
 
 Here a brief example on how to use the library.
 
-First, import all the required packages
+First, import all the required modules
 
 ```python
 from femto.device import Device
@@ -97,10 +97,10 @@ from femto.pgmcompiler import PGMCompiler
 from femto.waveguide import Waveguide
 ```
 
-Define a `Cell` which represents a circuit
+Define a `Device` which represents a circuit
 
 ```python
-circuit = Cell()
+circuit = Device()
 ```
 
 Set waveguide parameters
@@ -109,9 +109,7 @@ Set waveguide parameters
 PARAM_WG = dict(scan=4,
                 speed=7.5,
                 depth=0.050,
-                radius=25,
-                )
-
+                radius=25)
 ```
 
 Create a list of waveguides as
@@ -143,8 +141,7 @@ Now that the waveguides are defined we set the fabrication parameters
 PARAM_GC = dict(filename='MZIs.pgm',
                 laser='PHAROS',
                 samplesize=(25, 10),
-                rotation_angle=0.0,
-                )
+                rotation_angle=0.0)
 ```
 
 Create a `Device` object that allows to store the waveguides and plot them
