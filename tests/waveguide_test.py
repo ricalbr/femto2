@@ -266,6 +266,16 @@ def test_get_spline_raise_dy(param) -> None:
         wg.get_spline_parameter(disp_x=disp_x, disp_z=disp_z, radius=radius)
 
 
+def test_get_spline_raise_radius(param) -> None:
+    disp_x = 0.5
+    disp_y = 1
+    disp_z = 0.6
+    radius = None
+    wg = Waveguide(radius=None)
+    with pytest.raises(ValueError):
+        wg.get_spline_parameter(disp_x=disp_x, disp_y=disp_y, disp_z=disp_z, radius=radius)
+
+
 def test_get_spline_raise_dz(param) -> None:
     disp_x = 0.5
     disp_y = 0.04

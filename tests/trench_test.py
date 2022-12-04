@@ -72,10 +72,14 @@ def test_init_values(poly) -> None:
 
 def test_repr(poly) -> None:
     r = Trench(poly).__repr__()
-    print()
-    print(r)
     cname, _ = r.split('@')
     assert cname == 'Trench'
+
+
+def test_repr_trenchcol(param) -> None:
+    r = TrenchColumn(**param).__repr__()
+    cname, _ = r.split('@')
+    assert cname == 'TrenchColumn'
 
 
 def test_lt() -> None:
@@ -211,6 +215,11 @@ def test_centroid(poly) -> None:
             Polygon([(0, 0), (0, 3), (3, 3), (3, 0), (2, 0), (2, 2), (1, 2), (1, 1), (2, 1), (2, 0), (0, 0)]),
             -1,
             [Polygon()],
+        ),
+        (
+            Point(-1, 0).buffer(1.5).union(Point(1, 0).buffer(1.5)),
+            -1.2,
+            Point(-1, 0).buffer(1.5).union(Point(1, 0).buffer(1.5)).buffer(-1.2).geoms,
         ),
     ],
 )

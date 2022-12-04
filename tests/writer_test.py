@@ -398,14 +398,9 @@ def test_nasu_writer_extend(gc_param, list_ng) -> None:
     [
         (None, pytest.raises(TypeError)),
         ([NasuWaveguide()], does_not_raise()),
+        (NasuWaveguide(), pytest.raises(TypeError)),
         ([NasuWaveguide(), [NasuWaveguide(), NasuWaveguide()]], does_not_raise()),
-        (
-            [
-                [[NasuWaveguide()]],
-                [[NasuWaveguide(), [NasuWaveguide(), [NasuWaveguide(), NasuWaveguide()]]], NasuWaveguide()],
-            ],
-            pytest.raises(ValueError),
-        ),
+        ([[[NasuWaveguide()]], [[NasuWaveguide(), [NasuWaveguide(), [NasuWaveguide()]]]]], does_not_raise()),
         ([Waveguide(), [NasuWaveguide(), NasuWaveguide()]], pytest.raises(TypeError)),
     ],
 )
