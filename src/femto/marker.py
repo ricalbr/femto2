@@ -2,14 +2,11 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import TypeVar
 
 import numpy as np
 import numpy.typing as npt
 from femto.helpers import sign
 from femto.laserpath import LaserPath
-
-MK = TypeVar('MK', bound='Marker')
 
 
 @dataclass(repr=False)

@@ -14,10 +14,6 @@ from femto.helpers import flatten
 from femto.helpers import listcast
 from femto.waveguide import Waveguide
 from shapely import geometry
-from shapely.geometry import box
-from shapely.geometry import LineString
-from shapely.geometry import MultiPolygon
-from shapely.geometry import Polygon
 
 
 class Trench:
@@ -25,9 +21,9 @@ class Trench:
     Class representing a single trench block.
     """
 
-    def __init__(self, block: Polygon, delta_floor: float = 0.001) -> None:
+    def __init__(self, block: geometry.Polygon, delta_floor: float = 0.001) -> None:
 
-        self.block: Polygon = block
+        self.block: geometry.Polygon = block
         self.delta_floor: float = delta_floor
         self.floor_length: float = 0.0
         self.wall_length: float = 0.0
@@ -132,7 +128,7 @@ class Trench:
                 yield np.array(current_poly.exterior.coords).T
 
     @staticmethod
-    def buffer_polygon(shape: Polygon, offset: float) -> list[Polygon]:
+    def buffer_polygon(shape: geometry.Polygon, offset: float) -> list[geometry.Polygon]:
         """
         Compute a buffer operation of shapely ``Polygon`` obj.
 
@@ -152,12 +148,12 @@ class Trench:
         .. [#] John R. Herring, Ed., “OpenGIS Implementation Specification for Geographic information - Simple feature
         access - Part 1: Common architecture,” Oct. 2006
         """
-        if shape.is_valid or isinstance(shape, MultiPolygon):
+        if shape.is_valid or isinstance(shape, geometry.MultiPolygon):
             buff_polygon = shape.buffer(offset)
-            if isinstance(buff_polygon, MultiPolygon):
-                return [Polygon(subpol) for subpol in buff_polygon.geoms]
-            return [Polygon(buff_polygon)]
-        return [Polygon()]
+            if isinstance(buff_polygon, geometry.MultiPolygon):
+                return [geometry.Polygon(subpol) for subpol in buff_polygon.geoms]
+            return [geometry.Polygon(buff_polygon)]
+        return [geometry.Polygon()]
 
 
 @dataclass
@@ -217,7 +213,7 @@ class TrenchColumn:
         return l_tot / self.speed
 
     @property
-    def rect(self) -> Polygon:
+    def rect(self) -> geometry.Polygon:
         """
         Getter for the rectangular box for the whole trench column. If the ``x_c``, ``y_min`` and ``y_max`` are set we
         create a rectangular polygon that will be used to create the single trench blocks.
@@ -234,8 +230,8 @@ class TrenchColumn:
         :rtype: shapely.geometry.box
         """
         if self.length is None:
-            return Polygon()
-        return box(self.x_center - self.length / 2, self.y_min, self.x_center + self.length / 2, self.y_max)
+            return geometry.Polygon()
+        return geometry.box(self.x_center - self.length / 2, self.y_min, self.x_center + self.length / 2, self.y_max)
 
     def dig_from_waveguide(
         self,
@@ -313,7 +309,7 @@ class TrenchColumn:
 
         trench_block = self.rect
         for coords in coords_list:
-            dilated = LineString(coords).buffer(self.adj_bridge, cap_style=1)
+            dilated = geometry.LineString(coords).buffer(self.adj_bridge, cap_style=1)
             trench_block = trench_block.difference(dilated)
 
         # if coordinates are empty or coordinates do not intersect the trench column rectangle box
@@ -329,7 +325,7 @@ class TrenchColumn:
             del self.trench_list[index]
 
     @staticmethod
-    def normalize(poly: Polygon) -> Polygon:
+    def normalize(poly: geometry.Polygon) -> geometry.Polygon:
         """
         Normalize polygon
 
@@ -348,7 +344,7 @@ class TrenchColumn:
         poly = geometry.polygon.orient(poly)
         normalized_exterior = normalize_ring(poly.exterior)
         normalized_interiors = list(map(normalize_ring, poly.interiors))
-        return Polygon(normalized_exterior, normalized_interiors)
+        return geometry.Polygon(normalized_exterior, normalized_interiors)
 
 
 def main():

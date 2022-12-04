@@ -8,7 +8,7 @@ from typing import Iterable
 
 import numpy as np
 import numpy.typing as npt
-import shapely.geometry
+from shapely import geometry
 
 
 def grouped(iterable: Iterable[Any], n: int) -> Iterable[Any]:
@@ -228,8 +228,8 @@ def pad(iterable, size, padding=None):
 
 
 def almost_equal(
-    polygon: shapely.geometry.polygon.Polygon,
-    other: shapely.geometry.polygon.Polygon,
+    polygon: geometry.polygon.Polygon,
+    other: geometry.polygon.Polygon,
     tol: float = 1e-6,
 ) -> bool:
     """
@@ -241,4 +241,5 @@ def almost_equal(
     :param tol: tolerance controlling the similarity
     :return: boolean value True if the polygon are almost equal, False otherwise
     """
+    print(polygon.symmetric_difference(other).area)
     return bool(polygon.symmetric_difference(other).area < tol)

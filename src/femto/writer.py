@@ -1,10 +1,8 @@
 from __future__ import annotations
 
+import abc
 import itertools
 import time
-from abc import ABC
-from abc import abstractmethod
-from itertools import zip_longest
 from pathlib import Path
 from typing import Any
 
@@ -23,20 +21,20 @@ from femto.waveguide import Waveguide
 from plotly import graph_objs as go
 
 
-class Writer(PGMCompiler, ABC):
+class Writer(PGMCompiler, abc.ABC):
     """
     Abstract class representing a G-Code Writer.
     """
 
-    @abstractmethod
+    @abc.abstractmethod
     def append(self, obj: Any) -> None:
         pass
 
-    @abstractmethod
+    @abc.abstractmethod
     def extend(self, obj: list[Any]) -> None:
         pass
 
-    @abstractmethod
+    @abc.abstractmethod
     def plot2d(
         self,
         fig: go.Figure | None = None,
@@ -45,7 +43,7 @@ class Writer(PGMCompiler, ABC):
     ) -> go.Figure:
         pass
 
-    @abstractmethod
+    @abc.abstractmethod
     def plot3d(
         self,
         fig: go.Figure | None = None,
@@ -54,7 +52,7 @@ class Writer(PGMCompiler, ABC):
     ) -> go.Figure:
         pass
 
-    @abstractmethod
+    @abc.abstractmethod
     def pgm(self, verbose: bool = True) -> None:
         pass
 
@@ -309,7 +307,10 @@ class TrenchWriter(Writer):
         z_arr = [None]
 
         # Export points
-        instr = [self._format_args(x, y, z, f) for (x, y, z, f) in zip_longest(x_arr, y_arr, z_arr, listcast(speed))]
+        instr = [
+            self._format_args(x, y, z, f)
+            for (x, y, z, f) in itertools.zip_longest(x_arr, y_arr, z_arr, listcast(speed))
+        ]
         gcode_instr = [f'LINEAR {line}\n' for line in instr]
         with open(filename, 'w') as file:
             file.write(''.join(gcode_instr))

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from collections import defaultdict
-from copy import copy
+import collections
+import copy
 from pathlib import Path
 from typing import Any
 
@@ -30,16 +30,16 @@ class Device:
         }
 
     def append(self, obj: Any) -> None:
-        self.parse_objects(unparsed_objects=copy(flatten([obj])))
+        self.parse_objects(unparsed_objects=copy.copy(flatten([obj])))
 
     def extend(self, obj: list[Any]) -> None:
         if not isinstance(obj, list):
             raise TypeError(f'The object must be a list. {type(obj)} was given.')
-        self.parse_objects(unparsed_objects=copy(obj))
+        self.parse_objects(unparsed_objects=copy.copy(obj))
 
     def parse_objects(self, unparsed_objects: Any | list[Any]) -> None:
         # split the unparsed_object list based on the type of each element
-        d = defaultdict(list)
+        d = collections.defaultdict(list)
         while unparsed_objects:
             obj = unparsed_objects.pop(0)
             if isinstance(obj, list):

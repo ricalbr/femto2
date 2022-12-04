@@ -1,15 +1,14 @@
 from __future__ import annotations
 
+import functools
 from dataclasses import dataclass
-from functools import partialmethod
 from typing import Any
 
 import numpy as np
 import numpy.typing as npt
 from femto.helpers import dotdict
 from femto.laserpath import LaserPath
-from scipy.interpolate import CubicSpline
-from scipy.interpolate import InterpolatedUnivariateSpline
+from scipy import interpolate
 
 
 @dataclass(repr=False)
@@ -413,8 +412,8 @@ class Waveguide(LaserPath):
         self.add_path(x_sin, y_sin, z_sin, f_sin, s_sin)
         return self
 
-    sin_bend = partialmethod(sin_bridge, dz=0.0)
-    sin_comp = partialmethod(sin_bridge, dz=0.0, omega=(2.0, 2.0))
+    sin_bend = functools.partialmethod(sin_bridge, dz=0.0)
+    sin_comp = functools.partialmethod(sin_bridge, dz=0.0, omega=(2.0, 2.0))
 
     def sin_acc(
         self,
@@ -637,8 +636,8 @@ class Waveguide(LaserPath):
         z = np.append(z1[1:-1], z2)
 
         # Construct a 5th-order spline using CubicSpline points as control points for interpolation
-        y_uspline = InterpolatedUnivariateSpline(x, y, k=5)(x)
-        z_uspline = InterpolatedUnivariateSpline(x, z, k=5)(x)
+        y_uspline = interpolate.InterpolatedUnivariateSpline(x, y, k=5)(x)
+        z_uspline = interpolate.InterpolatedUnivariateSpline(x, z, k=5)(x)
         f_uspline = np.repeat(f, x.size)
         s_uspline = np.repeat(shutter, x.size)
 
@@ -719,8 +718,8 @@ class Waveguide(LaserPath):
 
         t = np.linspace(0, dx, num)
         x_cspline = init_pos[0] + t
-        y_cspline = init_pos[1] + CubicSpline((0.0, dx), (0.0, dy), bc_type=bc_y)(t)
-        z_cspline = init_pos[2] + CubicSpline((0.0, dx), (0.0, dz), bc_type=bc_z)(t)
+        y_cspline = init_pos[1] + interpolate.CubicSpline((0.0, dx), (0.0, dy), bc_type=bc_y)(t)
+        z_cspline = init_pos[2] + interpolate.CubicSpline((0.0, dx), (0.0, dz), bc_type=bc_z)(t)
 
         return x_cspline, y_cspline, z_cspline
 

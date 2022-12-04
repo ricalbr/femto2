@@ -1,13 +1,12 @@
 from __future__ import annotations
 
+import collections
+import contextlib
+import copy
+import itertools
 import math
-from collections import deque
-from contextlib import contextmanager
-from copy import deepcopy
+import operator
 from dataclasses import dataclass
-from itertools import product
-from itertools import zip_longest
-from operator import add
 from pathlib import Path
 from types import TracebackType
 from typing import Any
@@ -23,7 +22,7 @@ import numpy.typing as npt
 from femto.helpers import flatten
 from femto.helpers import listcast
 from femto.helpers import pad
-from scipy.interpolate import interp2d
+from scipy import interpolate
 
 # Create a generic variable that can be 'PGMCompiler', or any subclass.
 GC = TypeVar('GC', bound='PGMCompiler')
@@ -61,7 +60,7 @@ class PGMCompiler:
         if self.filename is None:
             raise ValueError("Filename is None, set 'filename' attribute")
         self.CWD = Path.cwd()
-        self._instructions: Deque[str] = deque()
+        self._instructions: Deque[str] = collections.deque()
         self._loaded_files: list[str] = []
         self._dvars: list[str] = []
 
@@ -346,7 +345,7 @@ class PGMCompiler:
         """
         self.move_to([-2, 0, 0])
 
-    @contextmanager
+    @contextlib.contextmanager
     def axis_rotation(self, angle: float | None = None) -> Generator[PGMCompiler, None, None]:
         self._enter_axis_rotation(angle=angle)
         try:
@@ -354,7 +353,7 @@ class PGMCompiler:
         finally:
             self._exit_axis_rotation()
 
-    @contextmanager
+    @contextlib.contextmanager
     def for_loop(self, var: str, num: int) -> Generator[PGMCompiler, None, None]:
         """
         Context manager that manages a FOR loop in a G-Code file.
@@ -385,7 +384,7 @@ class PGMCompiler:
             # pauses should be multiplied by number of cycles as well
             self._total_dwell_time += int(num - 1) * (self._total_dwell_time - _temp_dt)
 
-    @contextmanager
+    @contextlib.contextmanager
     def repeat(self, num: int) -> Generator[PGMCompiler, None, None]:
         """
         Context manager that manages a REPEAT loop in a G-Code file.
@@ -557,7 +556,7 @@ class PGMCompiler:
 
         # Convert points if G-Code commands
         args = [self._format_args(x, y, z, f) for (x, y, z, f) in zip(x_gc, y_gc, z_gc, f_gc)]
-        for (arg, s) in zip_longest(args, s_gc):
+        for (arg, s) in itertools.zip_longest(args, s_gc):
             if s == 0 and self._shutter_on is True:
                 self.instruction('\n')
                 self.dwell(self.short_pause)
@@ -658,7 +657,7 @@ class PGMCompiler:
         S = np.multiply((1 - flip_toggle) / 2, displacements)
 
         # matrix multiplication and sum element-wise, add the displacement only to the flipped coordinates
-        flip_x, flip_y = map(add, flip_matrix @ points_matrix, S)
+        flip_x, flip_y = map(operator.add, flip_matrix @ points_matrix, S)
 
         # update coordinates
         xc = flip_x
@@ -685,9 +684,9 @@ class PGMCompiler:
         :rtype: tuple(np.ndarray, np.ndarray, np.ndarray)
         """
 
-        x_comp = deepcopy(np.array(x))
-        y_comp = deepcopy(np.array(y))
-        z_comp = deepcopy(np.array(z))
+        x_comp = copy.deepcopy(np.array(x))
+        y_comp = copy.deepcopy(np.array(y))
+        z_comp = copy.deepcopy(np.array(z))
 
         zwarp = np.array([float(self.fwarp(x, y)) for x, y in zip(x_comp, y_comp)])
         z_comp = z_comp + zwarp / self.neff
@@ -721,7 +720,7 @@ class PGMCompiler:
         TM = np.matmul(SM, RM).T
         return np.array(TM)
 
-    def antiwarp_management(self, opt: bool, num: int = 16) -> interp2d:
+    def antiwarp_management(self, opt: bool, num: int = 16) -> interpolate.interp2d:
         """
         It fetches an antiwarp function in the current working direcoty. If it doesn't exist, it lets you create a new
         one. The number of sampling points can be specified.
@@ -754,7 +753,7 @@ class PGMCompiler:
         return fwarp
 
     @staticmethod
-    def antiwarp_generation(samplesize: tuple[float, float], num: int, margin: float = 2) -> interp2d:
+    def antiwarp_generation(samplesize: tuple[float, float], num: int, margin: float = 2) -> interpolate.interp2d:
         """
         Helper for the generation of antiwarp function.
         The minimum number of data points required is (k+1)**2, with k=1 for linear, k=3 for cubic and k=5 for quintic
@@ -781,7 +780,7 @@ class PGMCompiler:
         zlist = []
 
         print('Insert focus height [in µm!] at:')
-        for (x, y) in product(xpos, ypos):
+        for (x, y) in itertools.product(xpos, ypos):
             z_temp = input(f'X={x:.3f} Y={y:.3f}: \t')
             if z_temp == '':
                 raise ValueError('You missed the last value.')
@@ -790,7 +789,7 @@ class PGMCompiler:
                 ylist.append(y)
                 zlist.append(float(z_temp) * 1e-3)
         # surface interpolation
-        func_antiwarp = interp2d(xlist, ylist, zlist, kind='cubic')
+        func_antiwarp = interpolate.interp2d(xlist, ylist, zlist, kind='cubic')
 
         # plot the surface
         xprobe = np.linspace(-3, samplesize[0] + 3)
