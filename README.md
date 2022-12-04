@@ -31,11 +31,22 @@
 
 
 ## Installation
-`femto` can be installed via pip using 
-
+The preferred way to install `femto` is using a conda virtual environment. From the conda/Anaconda prompt
 ```bash
-pip install femto
+conda update conda
+conda create --name femto python=3.8
+conda activate femto
 ```
+`femto` supports all the versions of Python from 3.7. 
+
+The package can be installed using `pip`
+```bash
+git clone git@github.com:ricalbr/femto.git
+cd femto
+pip install -e .
+```
+Alternatively, the repository can also be cloned directly from Gihub website.
+To install `pip` follow [this](https://pip.pypa.io/en/stable/installation/) guide.
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
