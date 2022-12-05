@@ -4,7 +4,8 @@ femto Documentation
 .. toctree::
    :caption: User Guide
 
-   install
+   guide/install
+   guide/tutorial
 
 .. toctree::
    :caption: femto modules
@@ -17,3 +18,13 @@ femto Documentation
    modules/pgmcompiler
    modules/writer
    modules/device
+
+
+.. only:: html
+
+   Indices and tables
+   ==================
+
+   * :ref:`genindex`
+   * :ref:`modindex`
+   * :ref:`search`
