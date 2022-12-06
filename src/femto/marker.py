@@ -207,7 +207,7 @@ class Marker(LaserPath):
         self.end()
 
 
-def main():
+def main() -> None:
     import matplotlib.pyplot as plt
 
     from femto.helpers import dotdict, split_mask

@@ -180,7 +180,7 @@ class TrenchColumn:
     speed_closed: float = 5
     speed_pos: float = 0.5
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.CWD: Path = Path.cwd()
         self.trench_list: list[Trench] = []
 
@@ -336,7 +336,7 @@ class TrenchColumn:
         Function taken from https://stackoverflow.com/a/63402916
         """
 
-        def normalize_ring(ring):
+        def normalize_ring(ring: geometry.polygon.LinearRing):
             coords = ring.coords[:-1]
             start_index = min(range(len(coords)), key=coords.__getitem__)
             return coords[start_index:] + coords[:start_index]
@@ -347,7 +347,7 @@ class TrenchColumn:
         return geometry.Polygon(normalized_exterior, normalized_interiors)
 
 
-def main():
+def main() -> None:
     # Data
     PARAM_WG = dotdict(speed=20, radius=25, pitch=0.080, int_dist=0.007, samplesize=(25, 3))
     PARAM_TC = dotdict(length=1.0, base_folder='', y_min=-0.1, y_max=19 * PARAM_WG['pitch'] + 0.1, u=[30.339, 32.825])

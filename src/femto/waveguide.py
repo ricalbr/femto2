@@ -733,7 +733,7 @@ class NasuWaveguide(Waveguide):
     adj_scan_shift: tuple[float | None, float | None, float | None] = (0, 0.0004, 0)
     adj_scan: int = 5
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         super().__post_init__()
         if (self.adj_scan % 2) == 0 or not isinstance(self.adj_scan, int):
             raise ValueError(

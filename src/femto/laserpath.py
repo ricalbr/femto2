@@ -38,7 +38,7 @@ class LaserPath:
     _f: npt.NDArray[np.float32] = np.array([])
     _s: npt.NDArray[np.float32] = np.array([])
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if not isinstance(self.scan, int):
             raise ValueError(f'Number of scan must be integer. Given {self.scan}.')
 
@@ -403,7 +403,7 @@ class LaserPath:
         z: npt.NDArray[np.float32],
         f: npt.NDArray[np.float32],
         s: npt.NDArray[np.float32],
-    ):
+    ) -> None:
         """
         Takes [x, y, z, f, s] numpy.ndarrays and adds it to the class coordinates.
 
@@ -445,18 +445,14 @@ class LaserPath:
         return unique_filter([self._x, self._y, self._z, self._f, self._s])
 
 
-def main():
+def main() -> None:
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
 
     from femto.helpers import dotdict
 
     # Data
-    PARAMETERS_LP = dotdict(
-        scan=6,
-        speed=20,
-        lsafe=3,
-    )
+    PARAMETERS_LP = dotdict(scan=6, speed=20, lsafe=3)
 
     lpath = LaserPath(**PARAMETERS_LP)
 

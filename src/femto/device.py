@@ -102,7 +102,7 @@ class Device:
             self.fig.write_image(str(fn), **opt)
 
 
-def main():
+def main() -> None:
     from femto.trench import TrenchColumn
     from femto.waveguide import Waveguide
 

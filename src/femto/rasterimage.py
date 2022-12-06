@@ -18,7 +18,7 @@ class RasterImage(LaserPath):
     px_to_mm: float = 0.01  # pixel to millimeter scale convertion
     img_size: tuple[int, int] = (0, 0)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         super().__post_init__()
         if self.z_init is None:
             self.z_init = 0.0
@@ -67,7 +67,7 @@ class RasterImage(LaserPath):
                 self.add_path(x_row, y_row, z_row, f_row, s_row)
 
 
-def main():
+def main() -> None:
     import matplotlib.pyplot as plt
 
     PARAM_RIMG = dotdict(px_to_mm=0.04, speed=1)

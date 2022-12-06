@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import functools
 import itertools
-from typing import Any
+from typing import Any, Iterator
 from typing import Dict
 from typing import Iterable
 
@@ -74,7 +74,7 @@ def listcast(x: Any) -> list[Any]:
 class dotdict(Dict[Any, Any]):
     """dot.notation access to dictionary attributes"""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         for arg in args:
             if isinstance(arg, dict):
@@ -134,7 +134,7 @@ def flatten(items):
     return items
 
 
-def sign():
+def sign() -> Iterator[int]:
     """
     Iterator cycling through +1 and -1.
     Use it as follow:
@@ -219,11 +219,11 @@ def split_mask(arr: npt.NDArray[Any], mask: npt.NDArray[np.generic]) -> list[npt
     return sp
 
 
-def pad_infinite(iterable: Iterable[Any], padding: Any = None):
+def pad_infinite(iterable: Iterable[Any], padding: Any = None) -> Iterator[Any]:
     return itertools.chain(iterable, itertools.repeat(padding))
 
 
-def pad(iterable, size, padding=None):
+def pad(iterable: Iterable[Any], size: int, padding: Any = None) -> Iterator[Any]:
     return itertools.islice(pad_infinite(iterable, padding), size)
 
 
