@@ -9,6 +9,7 @@ As a first step, check that you have a working Python with ``pip`` installed by 
 
     python -m pip --version
 ..
+
 If ``pip`` is not installed in the system, follow this `installation guide <https://pip.pypa.io/en/stable/installation/>`_.
 
 ****

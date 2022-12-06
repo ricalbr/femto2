@@ -10,15 +10,19 @@ now = datetime.datetime.now()
 sys.path.insert(0, os.path.abspath('../src'))
 
 extensions = [
-        'sphinx.ext.autodoc',
-        'sphinx.ext.doctest',
-        'sphinx.ext.coverage',
-        'sphinx.ext.imgmath',
-        'matplotlib.sphinxext.plot_directive',
-        'sphinx.ext.graphviz',
+    'sphinx.ext.autodoc',
+    'sphinx.ext.doctest',
+    'sphinx.ext.coverage',
+    'sphinx.ext.imgmath',
+    'matplotlib.sphinxext.plot_directive',
+    'sphinx.ext.graphviz',
 ]
 
 autodoc_mock_imports = ['bs4', 'requests']
+autodoc_typehints = 'none'
+autodoc_member_order = 'bysource'
+autodoc_preserve_defaults = True
+add_module_names = False
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -44,7 +48,9 @@ todo_include_todos = False
 # HTML
 html_theme = 'sphinx_rtd_theme'
 html_static_path = [sphinx_rtd_theme.get_html_theme_path()]
-html_sidebars = {'**': ['globaltoc.html', 'relations.html', 'sourcelink.html', 'searchbox.html'], }
+html_sidebars = {
+    '**': ['globaltoc.html', 'relations.html', 'sourcelink.html', 'searchbox.html'],
+}
 html_show_sourcelink = False
 htmlhelp_basename = 'femtodoc'
 suppress_warnings = ['ref.python']
