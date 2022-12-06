@@ -1,9 +1,7 @@
-# -*- coding: utf-8 -*-
 import sys
 import os
 import datetime
-
-import sphinx_rtd_theme
+import femto
 
 now = datetime.datetime.now()
 
@@ -40,8 +38,6 @@ project = u'femto'
 copyright = str(now.year) + u', Riccardo Albiero'
 author = u'Riccardo Albiero'
 
-import femto
-
 # version = femto.__version__
 # release = femto.__version__
 
@@ -52,7 +48,6 @@ todo_include_todos = False
 
 # HTML
 html_theme = 'sphinx_rtd_theme'
-html_static_path = [sphinx_rtd_theme.get_html_theme_path()]
 html_sidebars = {
     '**': ['globaltoc.html', 'relations.html', 'sourcelink.html', 'searchbox.html'],
 }

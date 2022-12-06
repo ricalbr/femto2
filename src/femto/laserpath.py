@@ -2,13 +2,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Tuple
 from typing import Sequence
 from typing import TypeVar
 
 import dill
 import numpy as np
 import numpy.typing as npt
+from numpy import ndarray
+
 from femto.helpers import unique_filter
 
 LP = TypeVar('LP', bound='LaserPath')
@@ -17,32 +19,32 @@ LP = TypeVar('LP', bound='LaserPath')
 @dataclass(repr=False)
 class LaserPath:
     """
-    Class that stores the coordinates of a laser path.
+    Class that computesa dnd stores the coordinates of a laser path.
 
     Attributes
     ----------
     scan: int
         number of overlapped scans
     speed: float
-        opened shutter translation speed ``[mm/s]``
+        opened shutter translation speed `[mm/s]`
     samplesize: tuple(float, float)
-        dimensions of the sample (x ``[mm]``, y ``[mm]``)
+        dimensions of the sample (x `[mm]`, y `[mm]`)
     x_init: float
-        initial x-coordinate for the laser path ``[mm]``
+        initial x-coordinate for the laser path `[mm]`
     y_init: float
-        initial y-coordinate for the laser path ``[mm]``
+        initial y-coordinate for the laser path `[mm]`
     z_init: float, optional
-        initial z-coordinate for the laser path ``[mm]``
+        initial z-coordinate for the laser path `[mm]`
     lsafe: float
-        safe margin length ``[mm]``
+        safe margin length `[mm]`
     speed_closed: float
-        closed shutter translation speed ``[mm/s]``
+        closed shutter translation speed `[mm/s]`
     speed_pos: tuple(float, float)
-        closed shutter positioning speed ``[mm/s]``
+        closed shutter positioning speed `[mm/s]`
     cmd_rate_max: float
-        maximum command rate ``[cmd/s]``
+        maximum command rate `[cmd/s]`
     acc_max: float
-        maximum acceleration/deceleration ``[m/s^2]``
+        maximum acceleration/deceleration `[m/s^2]`
 
     Methods
     -------
@@ -79,49 +81,114 @@ class LaserPath:
 
     @classmethod
     def from_dict(cls: type[LP], param: dict[str, Any]) -> LP:
+        """Create an instance of the class from a dictionary
+
+        It takes a class and a dictionary, and returns an instance of the class with the dictionary's keys as the
+        instance's attributes.
+
+        Parameters
+        ----------
+        param, dict()
+            Dictionary mapping values to class attributes.
+
+        Returns
+        -------
+        Instance of class
+        """
+
         return cls(**param)
 
     @property
     def init_point(self) -> list[float]:
-        z0 = self.z_init if self.z_init else 0.0
+        """Return initial point of the trajectory.
+
+        Returns
+        -------
+        list(float)
+            `[x0, y0, z0]` coordinates.
+        """
+
+        z0 = self.z_init if self.z_init is None else 0.0
         return [self.x_init, self.y_init, z0]
 
     @property
     def lvelo(self) -> float:
-        # length needed to acquire the writing speed [mm]
+        """Compute the length needed to reach the translation speed.
+
+        The length needed to reach the writing speed is computed as 3 times the length needed to accelerate from
+        0 to the translation speed.
+
+        Returns
+        -------
+        float
+            Length needed to accelerate to translation speed [mm].
+        """
+
         return 3 * (0.5 * self.speed**2 / self.acc_max)
 
     @property
     def dl(self) -> float:
-        # minimum separation between two points [mm]
+        """Compute the minimum separation between two points.
+
+        The minimum separation between two points is the speed divided by the maximum command rate.
+
+        Returns
+        -------
+        float
+            The minimum separation between two points [mm]
+        """
+
         return self.speed / self.cmd_rate_max
 
     @property
     def x_end(self) -> float | None:
-        # end of laser path (outside the sample)
+        """Compute the `x` coordinate of the laserpth outside the sample, if the sample size is not None.
+
+        Returns
+        -------
+        float, optional
+            The end of the laser path outside the sample.
+        """
+
         if self.samplesize[0] is None:
             return None
         return self.samplesize[0] + self.lsafe
 
     @property
     def points(self) -> npt.NDArray[np.float32]:
-        """
-        Getter for the coordinates' matrix as a numpy.ndarray matrix. The dataframe is parsed through a unique functions
-        that removes all the subsequent identical points in the set.
+        """Matrix of the unique points in the trajectory.
 
-        :return: [X, Y, Z, F, S] unique point matrix
-        :rtype: numpy.ndarray
+        The matrix of points is parsed through a unique functions that removes all the subsequent identical points in
+        the set.
+
+        See Also
+        --------
+        _unique_points : Filter trajectory points to remove subsequent identical points.
+
+        Returns
+        -------
+        numpy.ndarray
+            `[X, Y, Z, F, S]` points of the laser trajectory.
         """
+
         return np.array(self._unique_points())
 
     @property
     def x(self) -> npt.NDArray[np.float32]:
-        """
-        Getter for the x-coordinate vector as a numpy array. The subsequent identical points in the vector are removed.
+        """`x`-coordinate vector as a numpy array.
 
-        :return: Array of the x-coordinates
-        :rtype: numpy.ndarray
+        The subsequent identical points in the vector are removed.
+
+        See Also
+        --------
+        _unique_points : Filter trajectory points to remove subsequent identical points.
+
+        Returns
+        -------
+        numpy.ndarray
+            The `x`-coordinates of the points in the laser path
         """
+
         coords = self._unique_points()
         if coords.ndim == 2:
             return np.array(coords[0])
@@ -129,6 +196,14 @@ class LaserPath:
 
     @property
     def lastx(self) -> float | None:
+        """Last `x` value in the trajectory points matrix, if any.
+
+        Returns
+        -------
+        float, optional
+            The last value of the `x` array.
+        """
+
         arrx = self.x
         if arrx.size:
             return float(arrx[-1])
@@ -136,12 +211,20 @@ class LaserPath:
 
     @property
     def y(self) -> npt.NDArray[np.float32]:
-        """
-        Getter for the y-coordinate vector as a numpy array. The subsequent identical points in the vector are removed.
+        """`y`-coordinate vector as a numpy array.
 
-        :return: Array of the y-coordinates
-        :rtype: numpy.ndarray
+        The subsequent identical points in the vector are removed.
+
+        See Also
+        --------
+        _unique_points : Filter trajectory points to remove subsequent identical points.
+
+        Returns
+        -------
+        numpy.ndarray
+            The `y`-coordinates of the points in the laser path
         """
+
         coords = self._unique_points()
         if coords.ndim == 2:
             return np.array(coords[1])
@@ -149,6 +232,14 @@ class LaserPath:
 
     @property
     def lasty(self) -> float | None:
+        """Last `y` value in the trajectory points matrix, if any.
+
+        Returns
+        -------
+        float, optional
+            The last value of the `y` array.
+        """
+
         arry = self.y
         if arry.size:
             return float(arry[-1])
@@ -156,12 +247,20 @@ class LaserPath:
 
     @property
     def z(self) -> npt.NDArray[np.float32]:
-        """
-        Getter for the z-coordinate vector as a numpy array. The subsequent identical points in the vector are removed.
+        """`z`-coordinate vector as a numpy array.
 
-        :return: Array of the z-coordinates
-        :rtype: numpy.ndarray
+        The subsequent identical points in the vector are removed.
+
+        See Also
+        --------
+        _unique_points : Filter trajectory points to remove subsequent identical points.
+
+        Returns
+        -------
+        numpy.ndarray
+            The `z`-coordinates of the points in the laser path
         """
+
         coords = self._unique_points()
         if coords.ndim == 2:
             return np.array(coords[2])
@@ -169,6 +268,14 @@ class LaserPath:
 
     @property
     def lastz(self) -> float | None:
+        """Last `z` value in the trajectory points matrix, if any.
+
+        Returns
+        -------
+        float, optional
+            The last value of the `z` array.
+        """
+
         arrz = self.z
         if arrz.size:
             return float(arrz[-1])
@@ -176,23 +283,44 @@ class LaserPath:
 
     @property
     def lastpt(self) -> npt.NDArray[np.float32]:
-        """
-        Getter for the last point of the laser path.
+        """Last point of the laser path.
 
-        :return: Final point [x, y, z]
-        :rtype: numpy.ndarray
+        Returns
+        -------
+        numpy.ndarray
+            Final `[x, y, z]` pointof the laser path.
         """
+
         if self._x.size > 0:
             return np.array([self._x[-1], self._y[-1], self._z[-1]])
         return np.array([])
 
     @property
-    def path(self) -> list[npt.NDArray[np.float32]]:
+    def path(self) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]:
+        """List of `x`-coordinates and `y`-coordinates of the laser path written with open shutter.
+
+        Returns
+        -------
+        tuple(numpy.ndarray, numpy.ndarray)
+            `x`, `y` coordinates arrays.
+        """
+
         x, y, _ = self.path3d
-        return [x, y]
+        return x, y
 
     @property
-    def path3d(self) -> list[npt.NDArray[np.float32]]:
+    def path3d(self) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32], npt.NDArray[np.float32]]:
+        """List of `x`-, `y` and `z`-coordinates of the laser path written with open shutter.
+
+        It takes the `x`, `y` and `z`, and shutter values `s` values from the path trajectory and filters out the
+        points written at closed shutter (``s = 0``).
+
+        Returns
+        -------
+        tuple(numpy.ndarray, numpy.ndarray, numpy.ndarray)
+            `x`, `y` and `z` coordinates arrays.
+        """
+
         if self._x.size:
             # filter 3D points without F
             x, y, z, s = unique_filter([self._x, self._y, self._z, self._s])
@@ -200,16 +328,45 @@ class LaserPath:
             x = np.delete(x, np.where(np.invert(s.astype(bool))))
             y = np.delete(y, np.where(np.invert(s.astype(bool))))
             z = np.delete(z, np.where(np.invert(s.astype(bool))))
-            return [x, y, z]
-        return [np.array([]), np.array([]), np.array([])]
+            return x, y, z
+        return np.array([]), np.array([]), np.array([])
 
     @property
     def length(self) -> float:
+        """
+        It takes the difference between each point in the path and the next point in the path, squares the differences, adds
+        them together, and then takes the square root of the sum
+        :return: The length of the path.
+        """
         x, y, z = self.path3d
         return float(np.sum(np.sqrt(np.diff(x) ** 2 + np.diff(y) ** 2 + np.diff(z) ** 2)))
 
     @property
     def fabrication_time(self) -> float:
+        """
+        It takes the x, y, z, and f values of the laserpath and calculates the distance between each point and the next,
+        then divides that distance by the speed of the laser at that point to get the time it takes to travel that distance.
+
+
+        The function then sums all of these times to get the total fabrication time.
+
+        The function is written in Python, but it's not too hard to understand.
+
+        The first line is a comment that describes what the function does.
+
+        The second line is a comment that describes the input and output of the function.
+
+        The third line is the function definition.
+
+        The fourth line is a comment that describes the input of the function.
+
+        The fifth line is a comment that describes the output of the function.
+
+        The sixth line is a comment that describes the type of the output.
+
+        The seventh line is a comment that describes the
+        :return: The total fabrication time in seconds.
+        """
         """
         Getter for the laserpath fabrication time.
 
@@ -227,6 +384,10 @@ class LaserPath:
 
     @property
     def curvature_radius(self) -> npt.NDArray[np.float32]:
+        """
+        The curvature radius is the radius of the circle that best fits the curve at a given point
+        :return: The curvature radius of the waveguide shape.
+        """
         """
         Computes the 3D point-to-point curvature radius of the waveguide shape.
 
@@ -259,6 +420,10 @@ class LaserPath:
     @property
     def cmd_rate(self) -> npt.NDArray[np.float32]:
         """
+        > Compute the point-to-point command rate of the waveguide shape
+        :return: The command rate is being returned.
+        """
+        """
         Computes the point-to-point command rate of the waveguide shape.
 
         :return: Average command rates computed at each point of the curve.
@@ -279,6 +444,15 @@ class LaserPath:
 
     # Methods
     def start(self, init_pos: list[float] | None = None, speed_pos: float | None = None) -> LaserPath:
+        """
+        `start()` starts a laser path in the initial position given as input
+
+        :param init_pos: Ordered list of coordinate that specifies the laser path starting point [mm]
+        :type init_pos: list[float] | None
+        :param speed_pos: Translation speed [mm/s]
+        :type speed_pos: float | None
+        :return: The LaserPath object itself.
+        """
         """
         Starts a laser path in the initial position given as input.
         The coordinates of the initial position are the first added to the matrix that describes the laser path.
@@ -317,6 +491,10 @@ class LaserPath:
 
     def end(self) -> None:
         """
+        The function ends a laser path. The function automatically return to the initial point of the laser path with a
+        translation speed specified by the user
+        """
+        """
         Ends a laser path. The function automatically return to the initial point of the laser path with a translation
         speed specified by the user.
 
@@ -342,6 +520,20 @@ class LaserPath:
         shutter: int = 1,
         speed: float | None = None,
     ) -> LaserPath:
+        """
+        > Adds a linear increment to the last point of the current laser path
+
+        :param increment: Ordered list of coordinate that specifies the increment if mode is INC or new position if mode is
+        ABS
+        :type increment: Sequence[float | None]
+        :param mode: str = 'INC',, defaults to INC
+        :type mode: str (optional)
+        :param shutter: State of the shutter [0: 'OFF', 1: 'ON']. The default is 1, defaults to 1
+        :type shutter: int (optional)
+        :param speed: The speed of the laser in mm/s
+        :type speed: float | None
+        :return: The LaserPath object itself.
+        """
         """
         Adds a linear increment to the last point of the current laser path.
 
@@ -390,6 +582,12 @@ class LaserPath:
 
     def export(self, filename: str) -> None:
         """
+        > This function takes an object and exports it to a pickle file
+
+        :param filename: the name of the file to be saved
+        :type filename: str
+        """
+        """
         Simple method to export objects using dill.
         :param filename: filename or path to the pickle object
         :type filename: str
@@ -404,6 +602,16 @@ class LaserPath:
             print(f'{self.__class__.__name__} exported to {fn}.')
 
     def subs_num(self, l_curve: float = 0, speed: float | None = None) -> int:
+        """
+        Given a segment length and a fabrication speed, compute the number of points required to work at the maximum command
+        rate
+
+        :param l_curve: Length of the laser path segment [mm]. The default is 0 mm, defaults to 0
+        :type l_curve: float (optional)
+        :param speed: The speed at which the laser will move
+        :type speed: float | None
+        :return: The number of subdivisions.
+        """
         """
         Utility function that, given the length of a segment and the fabrication speed, computes the number of points
         required to work at the maximum command rate (attribute of LaserPath obj).
@@ -437,6 +645,22 @@ class LaserPath:
         s: npt.NDArray[np.float32],
     ):
         """
+        "Takes [x, y, z, f, s] numpy.ndarrays and adds it to the class coordinates."
+
+        The first line of the docstring is a high-level summary of the function. It's a single sentence that describes what
+        the function does
+
+        :param x: array of x-coordinates
+        :type x: npt.NDArray[np.float32]
+        :param y: npt.NDArray[np.float32]
+        :type y: npt.NDArray[np.float32]
+        :param z: array of z-coordinates
+        :type z: npt.NDArray[np.float32]
+        :param f: array of feed rates (speed) coordinates
+        :type f: npt.NDArray[np.float32]
+        :param s: shutter
+        :type s: npt.NDArray[np.float32]
+
         Takes [x, y, z, f, s] numpy.ndarrays and adds it to the class coordinates.
 
         :param x: array of x-coordinates.
@@ -458,6 +682,11 @@ class LaserPath:
 
     # Private interface
     def _unique_points(self) -> npt.NDArray[np.float32]:
+        """
+        > Remove duplicate subsequent points. At least one coordinate have to change between two consecutive lines of the
+        (X,Y,Z,F,S) matrix
+        :return: The return value is a numpy array of the x, y, z, f, and s values.
+        """
         """
         Remove duplicate subsequent points. At least one coordinate have to change between two consecutive lines of the
         (X,Y,Z,F,S) matrix.
