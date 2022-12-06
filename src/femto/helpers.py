@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import functools
 import itertools
-from typing import Any
+from typing import Any, Iterator
 from typing import Dict
 from typing import Iterable
 
@@ -119,7 +119,7 @@ def nest_level(lst: list[Any]) -> int:
 
 def flatten(items):
     """
-    Flatten list with arbitrary nested levels.
+    A recursive function that flattens a list.
 
     :param items: input list
     :return: list with the same elements of the input list but a single nesting level.
@@ -134,25 +134,33 @@ def flatten(items):
     return items
 
 
-def sign():
+def sign() -> Iterator[int]:
     """
-    Iterator cycling through +1 and -1.
-    Use it as follow:
+    A generator that cycles through +1 and -1.
 
-    s = sign()
-    next(s) # -> +1
-    next(s) # -> -1
-    next(s) # -> +1
-    next(s) # -> -1
+    Code example:
+
+    >>> s = sign()
+    >>> next(s)
+    1
+    >>> next(s)
+    -1
+    >>> next(s)
+    1
+    >>> next(s)
+    -1
     ...
 
-    :return:
+    :return: iterator cycling through +1 and -1
     """
     return itertools.cycle([1, -1])
 
 
+# Filtering adjacent identical points from a list of arrays.
 def unique_filter(arrays: list[npt.NDArray[np.float32]]) -> npt.NDArray[np.float32]:
     """
+    Filtering adjacent identical points from a list of arrays.
+
     Filter adjacent identical point from array. The function is different from other unique functions such as numpy's
     `unique` function. Indeed, `unique` return (a sorted list of) the unique elements of the whole array.
     For example:
@@ -205,8 +213,9 @@ def unique_filter(arrays: list[npt.NDArray[np.float32]]) -> npt.NDArray[np.float
 
 def split_mask(arr: npt.NDArray[Any], mask: npt.NDArray[np.generic]) -> list[npt.NDArray[Any]]:
     """
-    Split input arrays in sub-arrays using a boolean mask array. The function return the list of sub-arrays
-    correspoding to True values.
+    Splits an array into sub-arrays based on a mask.
+
+     The function return the list of sub-arrays correspoding to True values.
 
     :param arr: Input array
     :param mask: Boolean array used as mask to split the input array

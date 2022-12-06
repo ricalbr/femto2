@@ -1,7 +1,8 @@
 Marker
 ======
 
-.. automodule:: femto.marker
-   :members:
-   :inherited-members:
-   :noindex:
+..
+   .. automodule:: femto.marker
+      :members:
+      :inherited-members:
+      :noindex:

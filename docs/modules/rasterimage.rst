@@ -1,7 +1,8 @@
 RasterImage
 ===========
 
-.. automodule:: femto.rasterimage
-   :members:
-   :inherited-members:
-   :noindex:
+..
+   .. automodule:: femto.rasterimage
+      :members:
+      :inherited-members:
+      :noindex:

@@ -11,6 +11,7 @@ sys.path.insert(0, os.path.abspath('../src'))
 
 extensions = [
     'sphinx.ext.autodoc',
+    'numpydoc',
     'sphinx.ext.doctest',
     'sphinx.ext.coverage',
     'sphinx.ext.imgmath',
@@ -19,10 +20,14 @@ extensions = [
 ]
 
 autodoc_mock_imports = ['bs4', 'requests']
-autodoc_typehints = 'none'
-autodoc_member_order = 'bysource'
-autodoc_preserve_defaults = True
 add_module_names = False
+autodoc_default_options = {
+    'members': True,
+    'undoc-members': True,
+    'autodoc_member_order': 'bysource',
+    'autodoc_typehints': None,
+    'autodoc_preserve_defaults': True,
+}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

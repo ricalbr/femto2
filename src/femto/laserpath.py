@@ -17,12 +17,45 @@ LP = TypeVar('LP', bound='LaserPath')
 @dataclass(repr=False)
 class LaserPath:
     """
-    Class of irradiated paths. It manages all the coordinates of the laser path and computes the fabrication writing
-    time.
+    Class that stores the coordinates of a laser path.
+
+    Attributes
+    ----------
+    scan: int
+        number of overlapped scans
+    speed: float
+        opened shutter translation speed ``[mm/s]``
+    samplesize: tuple(float, float)
+        dimensions of the sample (x ``[mm]``, y ``[mm]``)
+    x_init: float
+        initial x-coordinate for the laser path ``[mm]``
+    y_init: float
+        initial y-coordinate for the laser path ``[mm]``
+    z_init: float, optional
+        initial z-coordinate for the laser path ``[mm]``
+    lsafe: float
+        safe margin length ``[mm]``
+    speed_closed: float
+        closed shutter translation speed ``[mm/s]``
+    speed_pos: tuple(float, float)
+        closed shutter positioning speed ``[mm/s]``
+    cmd_rate_max: float
+        maximum command rate ``[cmd/s]``
+    acc_max: float
+        maximum acceleration/deceleration ``[m/s^2]``
+
+    Methods
+    -------
+    colorspace(c='rgb')
+        Represent the photo in the given colorspace.
+    gamma(n=1.0)
+        Change the photo's gamma exposure.
+
     """
 
     scan: int = 1
     speed: float = 1.0
+    samplesize: tuple[float, float] = (100, 50)
     x_init: float = -2.0
     y_init: float = 0.0
     z_init: float | None = None
@@ -31,12 +64,11 @@ class LaserPath:
     speed_pos: float = 0.5
     cmd_rate_max: float = 1200
     acc_max: float = 500
-    samplesize: tuple[float, float] = (100, 50)
-    _x: npt.NDArray[np.float32] = np.array([])
-    _y: npt.NDArray[np.float32] = np.array([])
-    _z: npt.NDArray[np.float32] = np.array([])
-    _f: npt.NDArray[np.float32] = np.array([])
-    _s: npt.NDArray[np.float32] = np.array([])
+    _x: npt.NDArray[np.float32] = np.array([], dtype=np.float32)
+    _y: npt.NDArray[np.float32] = np.array([], dtype=np.float32)
+    _z: npt.NDArray[np.float32] = np.array([], dtype=np.float32)
+    _f: npt.NDArray[np.float32] = np.array([], dtype=np.float32)
+    _s: npt.NDArray[np.float32] = np.array([], dtype=np.float32)
 
     def __post_init__(self):
         if not isinstance(self.scan, int):

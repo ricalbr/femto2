@@ -1,7 +1,8 @@
 Waveguide
 =========
 
-.. automodule:: femto.waveguide
-   :members:
-   :inherited-members:
-   :noindex:
+..
+   .. automodule:: femto.waveguide
+      :members:
+      :inherited-members:
+      :noindex:

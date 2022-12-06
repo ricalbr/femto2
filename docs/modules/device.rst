@@ -1,7 +1,8 @@
 Device
 ======
 
-.. automodule:: femto.device
-   :members:
-   :inherited-members:
-   :noindex:
+..
+   .. automodule:: femto.device
+      :members:
+      :inherited-members:
+      :noindex:

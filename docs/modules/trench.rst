@@ -1,7 +1,8 @@
 Trench
 ======
 
-.. automodule:: femto.trench
-   :members:
-   :inherited-members:
-   :noindex:
+..
+   .. automodule:: femto.trench
+      :members:
+      :inherited-members:
+      :noindex:
