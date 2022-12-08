@@ -18,6 +18,7 @@
 <div align="center">
 
   ![Tests](https://github.com/ricalbr/femto/actions/workflows/tests.yml/badge.svg)
+  [![Documentation Status](https://readthedocs.org/projects/femto/badge/?version=latest)](https://femto.readthedocs.io/en/latest/?badge=latest)
   
 </div>
 
