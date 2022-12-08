@@ -97,7 +97,7 @@ def test_repr(param) -> None:
 
 
 def test_init_point(laser_path) -> None:
-    assert laser_path.init_point == [-2.0, 1.5, 0.035]
+    assert laser_path.init_point == (-2.0, 1.5, 0.035)
 
 
 def test_lvelo(laser_path) -> None:
@@ -363,31 +363,31 @@ def test_fabrication_time_empty(empty_path) -> None:
 
 def test_subs_num_exception(laser_path) -> None:
     with pytest.raises(ValueError):
-        laser_path.subs_num(10, 0)
+        laser_path.num_subdivisions(10, 0)
 
 
 def test_subs_num_custom_inputs(laser_path) -> None:
-    assert laser_path.subs_num(103.45, 34), 3652
+    assert laser_path.num_subdivisions(103.45, 34), 3652
 
 
 def test_subs_num_empty_custom_inputs(empty_path) -> None:
-    assert empty_path.subs_num(103.45, 34), 3652
+    assert empty_path.num_subdivisions(103.45, 34), 3652
 
 
 def test_subs_num(laser_path) -> None:
-    assert laser_path.subs_num(10), 600
+    assert laser_path.num_subdivisions(10), 600
 
 
 def test_subs_num_empty(empty_path) -> None:
-    assert empty_path.subs_num(10), 600
+    assert empty_path.num_subdivisions(10), 600
 
 
 def test_subs_num_base_case(laser_path) -> None:
-    assert laser_path.subs_num(0.010), 3
+    assert laser_path.num_subdivisions(0.010), 3
 
 
 def test_subs_num_empty_base_case(empty_path) -> None:
-    assert empty_path.subs_num(0.010), 3
+    assert empty_path.num_subdivisions(0.010), 3
 
 
 def test_pickle(laser_path) -> None:

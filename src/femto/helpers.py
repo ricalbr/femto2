@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import functools
 import itertools
-from typing import Any, Iterator
+from typing import Any
 from typing import Dict
 from typing import Iterable
+from typing import Iterator
 
 import numpy as np
 import numpy.typing as npt
@@ -158,7 +159,26 @@ def sign() -> Iterator[int]:
 
 # Filtering adjacent identical points from a list of arrays.
 def unique_filter(arrays: list[npt.NDArray[np.float32]]) -> npt.NDArray[np.float32]:
-    """
+    """Remove duplicate subsequent points.
+
+    It takes a list of numpy arrays and returns a numpy array of unique rows. At least one coordinate have to
+    change between two consecutive lines of the [X,Y,Z,F,S] matrix.
+
+    Duplicates can be selected by creating a boolean index mask as follows:
+        - make a row-wise diff (`numpy.diff <https://numpy.org/doc/stable/reference/generated/numpy.diff.html>`_)
+        - compute absolute value of all elements in order to work only with positive numbers
+        - make a column-wise sum (`numpy.diff <https://numpy.org/doc/stable/reference/generated/numpy.sum.html>`_)
+        - mask is converted to boolean values
+    In this way consecutive duplicates correspond to a 0 value in the latter array.
+    Converting this array to boolean (all non-zero values are True) the index mask can be retrieved.
+    The first element is set to True by default since it is lost by the diff operation.
+
+    Returns
+    -------
+    numpy.ndarray
+        Modified coordinate matrix (x, y, z, f, s) without duplicates.
+
+
     Filtering adjacent identical points from a list of arrays.
 
     Filter adjacent identical point from array. The function is different from other unique functions such as numpy's

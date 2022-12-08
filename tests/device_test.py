@@ -33,8 +33,8 @@ def list_wg() -> list[Waveguide]:
     for i, wg in enumerate(coup):
         wg.start([-2, i * wg.pitch, 0.035])
         wg.linear([5, 0, 0])
-        wg.sin_acc((-1) ** i * wg.dy_bend)
-        wg.sin_acc((-1) ** i * wg.dy_bend)
+        wg.sin_coupler((-1) ** i * wg.dy_bend)
+        wg.sin_coupler((-1) ** i * wg.dy_bend)
         wg.linear([5, 0, 0])
         wg.end()
     return coup

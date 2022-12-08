@@ -64,7 +64,7 @@ wg.start().linear([PARAM_WG.samplesize[0] + 4, 0.0, 0.0], mode='INC').end()
 wgs.append(wg)
 
 # MZIs
-delta_x = wg.sbend_length(wg.dy_bend, wg.radius)
+delta_x = wg.dx_bend
 l_x = (PARAM_WG.samplesize[0] + 4 - delta_x * 4) / 2
 for i in range(6):
     wg = Waveguide(**PARAM_WG)

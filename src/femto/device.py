@@ -118,9 +118,9 @@ def main():
     coup = [Waveguide(**PARAM_WG) for _ in range(5)]
     for i, wg in enumerate(coup):
         wg.start([-2, i * wg.pitch, 0.035])
-        wg.sin_acc((-1) ** i * wg.dy_bend)
+        wg.sin_coupler((-1) ** i * wg.dy_bend)
         x_center = wg.x[-1]
-        wg.sin_acc((-1) ** i * wg.dy_bend)
+        wg.sin_coupler((-1) ** i * wg.dy_bend)
         wg.end()
         dev.append(wg)
 

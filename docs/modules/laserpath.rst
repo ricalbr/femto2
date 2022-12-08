@@ -1,7 +1,8 @@
 LaserPath
 =========
 
-.. automodule:: femto.laserpath
-   :members:
-   :inherited-members:
+.. autodata:: femto.laserpath.LaserPath
+   :annotation:
+
+.. autoclass:: femto.laserpath.LaserPath
    :noindex:
