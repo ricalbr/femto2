@@ -1,0 +1,7 @@
+matplotlib
+numpy
+numpydoc
+scipy
+shapely
+sphinx
+sphinx-rtd-theme
