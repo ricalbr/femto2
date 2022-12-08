@@ -10,17 +10,20 @@ As a first step, check that you have a working Python with ``pip`` installed by 
     python -m pip --version
 ..
 
-If ``pip`` is not installed in the system, follow this `installation guide <https://pip.pypa.io/en/stable/installation/>`_.
+If ``pip`` is not installed in the system, follow this
+`installation guide <https://pip.pypa.io/en/stable/installation/>`_.
 
 ****
 
-The preferred way to install the package is using a virtual environment. In Python this can be done using several tool such as virtualenv_ or conda_.
+The preferred way to install the package is using a virtual environment. In Python this can be done using several tool
+such as virtualenv_ or conda_.
 
 
 .. _virtualenv:
 
 virtualenv
 ~~~~~~~~~~
+
 ``virtualenv`` has to be installed from ``pip``
 
 
@@ -28,6 +31,7 @@ virtualenv
 
 conda/miniconda/Anaconda
 ~~~~~~~~~~~~~~~~~~~~~~~~
+
 Open the conda/Anaconda prompt and type the following commands
 
 - Update the conda manager:

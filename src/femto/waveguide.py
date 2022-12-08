@@ -95,7 +95,7 @@ class Waveguide(LaserPath):
         Returns
         -------
         tuple(float, float)
-            rotation angle [rad], `x`-displacement [mm]
+            rotation angle [rad], `x`-displacement [mm].
         """
 
         if radius is None or radius <= 0:
@@ -117,11 +117,9 @@ class Waveguide(LaserPath):
         """Compute `x`, `y`, `z` displacement, and length of the curve.
 
         The `disp_x`, `disp_y` and `disp_z` displacements are given as input. If `disp_x` is unknown and it is
-        computed using
-        the `get_sbend_parameter()` method for the given radius.
+        computed using the `get_sbend_parameter()` method for the given radius.
         In this latter case, the `l_curve` is computed using the formula for the circular arc (radius * angle) which is
         then multiply by a factor of 2 in order to retrieve the S-bend shape.
-
 
         Parameters
         ----------
@@ -132,7 +130,7 @@ class Waveguide(LaserPath):
         disp_z: float
             Displacement along `z`-direction [mm].
         radius: float, optional
-            Curvature radius [mm]. The default value is `self.radius`
+            Curvature radius [mm]. The default value is `self.radius`.
 
         Returns
         -------
@@ -183,7 +181,6 @@ class Waveguide(LaserPath):
             State of the shutter during the transition (0: 'OFF', 1: 'ON'). The default value is 1.
         speed: float, optional
             Translation speed [mm/s]. The default value is `self.speed`.
-
 
         Returns
         -------
@@ -236,7 +233,7 @@ class Waveguide(LaserPath):
         dy: float
             Vertical displacement of the waveguide of the S-bend [mm].
         radius: float, optional
-            Curvature radius [mm]. The default value is `self.radius`
+            Curvature radius [mm]. The default value is `self.radius`.
         shutter: int
             State of the shutter during the transition (0: 'OFF', 1: 'ON'). The default value is 1.
         speed: float, optional
@@ -297,7 +294,7 @@ class Waveguide(LaserPath):
         dy: float
             Vertical displacement of the waveguide of the S-bend [mm].
         radius: float, optional
-            Curvature radius [mm]. The default value is `self.radius`
+            Curvature radius [mm]. The default value is `self.radius`.
         int_length: float, optional
             Length of the Directional Coupler's straight interaction region [mm]. The default is `self.int_length`.
         shutter: int
@@ -311,8 +308,8 @@ class Waveguide(LaserPath):
 
         See Also
         --------
-        femto.waveguide.circ : Add a circular curved path to the waveguide.
-        femto.waveguide.arc_bend : Concatenate two circular arc to make a circular S-bend.
+        circ : Add a circular curved path to the waveguide.
+        arc_bend : Concatenate two circular arc to make a circular S-bend.
         """
         if int_length is None and self.int_length is None:
             raise ValueError(
@@ -343,7 +340,7 @@ class Waveguide(LaserPath):
         dy: float
             Vertical displacement of the waveguide of the S-bend [mm].
         radius: float, optional
-            Curvature radius [mm]. The default value is `self.radius`
+            Curvature radius [mm]. The default value is `self.radius`.
         int_length: float, optional
             Length of the Directional Coupler's straight interaction region [mm]. The default is `self.int_length`.
         arm_length: float
@@ -359,10 +356,9 @@ class Waveguide(LaserPath):
 
         See Also
         --------
-        femto.waveguide.circ : Add a circular curved path to the waveguide.
-        femto.waveguide.arc_bend : Concatenate two circular arc to make a circular S-bend.
-        femto.waveguide.arc_coupler : Concatenates two circular S-bend to make a single mode of a circular
-        Directional Coupler.
+        circ : Add a circular curved path to the waveguide.
+        arc_bend : Concatenate two circular arc to make a circular S-bend.
+        arc_coupler : Concatenates two circular S-bend to make a single mode of a circular Directional Coupler.
         """
 
         if arm_length is None and self.arm_length is None:
@@ -408,7 +404,7 @@ class Waveguide(LaserPath):
             Frequency of the Sin-bend oscillations for `y` and `z` coordinates, respectively.
             The deafult values are `fy` = 1, `fz` = 1.
         radius: float, optional
-            Curvature radius [mm]. The default value is `self.radius`
+            Curvature radius [mm]. The default value is `self.radius`.
         shutter: int
             State of the shutter during the transition (0: 'OFF', 1: 'ON'). The default value is 1.
         speed: float, optional
@@ -426,7 +422,7 @@ class Waveguide(LaserPath):
 
         See Also
         --------
-        femto.waveguide.get_sbend_parameter : Compute the rotation angle, and `x`-displacement for a circular S-bend.
+        get_sbend_parameter : Compute the rotation angle, and `x`-displacement for a circular S-bend.
         """
 
         if radius is None and self.radius is None:
@@ -474,7 +470,7 @@ class Waveguide(LaserPath):
         dy: float
             Vertical displacement of the waveguide of the sinusoidal-bend [mm].
         radius: float, optional
-            Curvature radius [mm]. The default value is `self.radius`
+            Curvature radius [mm]. The default value is `self.radius`.
         int_length: float, optional
             Length of the Directional Coupler's straight interaction region [mm]. The default is `self.int_length`.
         shutter: int
@@ -488,8 +484,8 @@ class Waveguide(LaserPath):
 
         See Also
         --------
-        femto.waveguide.sin_bridge : Add a sinusoidal curved path to the waveguide.
-        femto.waveguide.sin_bend : Concatenate two circular arc to make a sinusoidal S-bend.
+        sin_bridge : Add a sinusoidal curved path to the waveguide.
+        sin_bend : Concatenate two circular arc to make a sinusoidal S-bend.
         """
 
         if int_length is None and self.int_length is None:
@@ -522,7 +518,7 @@ class Waveguide(LaserPath):
         dy: float
             Vertical displacement of the waveguide of the sinusoidal-bend [mm].
         radius: float, optional
-            Curvature radius [mm]. The default value is `self.radius`
+            Curvature radius [mm]. The default value is `self.radius`.
         int_length: float, optional
             Length of the Directional Coupler's straight interaction region [mm]. The default is `self.int_length`.
         arm_length: float
@@ -538,11 +534,11 @@ class Waveguide(LaserPath):
 
         See Also
         --------
-        femto.waveguide.sin_bridge : Add a sinusoidal curved path to the waveguide.
-        femto.waveguide.sin_bend : Concatenate two circular arc to make a sinusoidal S-bend.
-        femto.waveguide.sin_coupler : Concatenates two sinusoidal S-bend to make a single mode of a circular
-        Directional Coupler.
+        sin_bridge : Add a sinusoidal curved path to the waveguide.
+        sin_bend : Concatenate two circular arc to make a sinusoidal S-bend.
+        sin_coupler : Concatenates two sinusoidal S-bend to make a single mode of a circular Directional Coupler.
         """
+
         if arm_length is None and self.arm_length is None:
             raise ValueError(
                 'Arm length is None. Set Waveguide\'s "arm_length" attribute or give a valid "arm_length" as input.'
@@ -584,7 +580,7 @@ class Waveguide(LaserPath):
         init_pos: numpy.ndarray, optional
             `x`-displacement from initial position.
         radius: float, optional
-            Curvature radius [mm]. The default value is `self.radius`
+            Curvature radius [mm]. The default value is `self.radius`.
         shutter: int
             State of the shutter during the transition (0: 'OFF', 1: 'ON'). The default value is 1.
         speed: float, optional
@@ -666,7 +662,7 @@ class Waveguide(LaserPath):
         init_pos: numpy.ndarray, optional
             `x`-displacement from initial position.
         radius: float, optional
-            Curvature radius [mm]. The default value is `self.radius`
+            Curvature radius [mm]. The default value is `self.radius`.
         shutter: int
             State of the shutter during the transition (0: 'OFF', 1: 'ON'). The default value is 1.
         speed: float, optional
@@ -832,7 +828,7 @@ class NasuWaveguide(Waveguide):
 
     References
     ----------
-    .. [1] `Nasu Waveguides <https://opg.optica.org/ol/abstract.cfm?uri=ol-30-7-723>_` on Optics Letters.
+    .. [1] `Nasu Waveguides <https://opg.optica.org/ol/abstract.cfm?uri=ol-30-7-723>`_ on Optics Letters.
     """
 
     adj_scan_shift: tuple[float, float, float] = (0, 0.0004, 0)  #: (`x`, `y`, `z`)-shifts between adjacent passes
@@ -849,8 +845,13 @@ class NasuWaveguide(Waveguide):
 
         Given the number of adjacent scans it computes the list of adjacent scans as:
 
-        * [0, 1, -1, 2, -2, ...] if `self.adj_scan` is odd
-        * [0.5, -0.5, 1.5, -1.5, 2.5, -2.5, ...] if `self.adj_scan` is even
+        * if `self.adj_scan` is odd
+
+            ``[0, 1, -1, 2, -2, ...]``
+
+        * if `self.adj_scan` is even
+
+            ``[0.5, -0.5, 1.5, -1.5, 2.5, -2.5, ...]``
 
         Returns
         -------

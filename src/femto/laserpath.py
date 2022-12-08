@@ -45,7 +45,7 @@ class LaserPath:
 
     @classmethod
     def from_dict(cls: type[LP], param: dict[str, Any]) -> LP:
-        """Create an instance of the class from a dictionary
+        """Create an instance of the class from a dictionary.
 
         It takes a class and a dictionary, and returns an instance of the class with the dictionary's keys as the
         instance's attributes.
@@ -179,14 +179,14 @@ class LaserPath:
 
         The subsequent identical points in the vector are removed.
 
-        See Also
-        --------
-        femto.helpers.unique_filter : Filter trajectory points to remove subsequent identical points.
-
         Returns
         -------
         numpy.ndarray
             The `y`-coordinates of the points in the laser path
+
+        See Also
+        --------
+        unique_filter : Filter trajectory points to remove subsequent identical points.
         """
 
         coords = unique_filter([self._x, self._y, self._z, self._f, self._s])
@@ -215,14 +215,14 @@ class LaserPath:
 
         The subsequent identical points in the vector are removed.
 
-        See Also
-        --------
-        femto.helpers.unique_filter: Filter trajectory points to remove subsequent identical points.
-
         Returns
         -------
         numpy.ndarray
             The `z`-coordinates of the points in the laser path
+
+        See Also
+        --------
+        unique_filter: Filter trajectory points to remove subsequent identical points.
         """
 
         coords = unique_filter([self._x, self._y, self._z, self._f, self._s])
@@ -263,14 +263,14 @@ class LaserPath:
     def path(self) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]:
         """List of `x` and `y`-coordinates of the laser path written with open shutter.
 
-        See Also
-        --------
-        femto.laserpath.path3d: List of `x`, `y` and `z`-coordinates of the laser path written with open shutter.
-
         Returns
         -------
         tuple(numpy.ndarray, numpy.ndarray)
             `x`, `y` coordinates arrays.
+
+        See Also
+        --------
+        path3d: List of `x`, `y` and `z`-coordinates of the laser path written with open shutter.
         """
 
         x, y, _ = self.path3d
@@ -283,14 +283,14 @@ class LaserPath:
         It takes the `x`, `y` and `z`, and shutter values `s` values from the path trajectory and filters out the
         points written at closed shutter (``s = 0``).
 
-        See Also
-        --------
-        femto.laserpath.path: List of `x` and `y`-coordinates of the laser path written with open shutter.
-
         Returns
         -------
         tuple(numpy.ndarray, numpy.ndarray, numpy.ndarray)
             `x`, `y` and `z` coordinates arrays.
+
+        See Also
+        --------
+        path: List of `x` and `y`-coordinates of the laser path written with open shutter.
         """
 
         if self._x.size:
@@ -555,7 +555,6 @@ class LaserPath:
         speed: float, optional
             Translation speed [mm/s]. The default value is `self.speed`.
 
-
         Returns
         -------
         num: int
@@ -575,7 +574,7 @@ class LaserPath:
             return num
 
     def export(self, filename: str) -> None:
-        """Export the object as a pickle file
+        """Export the object as a pickle file.
 
         Parameters
         ----------
