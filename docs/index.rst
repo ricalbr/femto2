@@ -2,6 +2,7 @@ femto Documentation
 ===================
 
 .. toctree::
+   :maxdepth: 2
    :caption: User Guide
 
    guide/install
@@ -10,9 +11,9 @@ femto Documentation
 .. toctree::
    :maxdepth: 2
    :glob:
-   :caption: Code
+   :caption: Modules
 
-   api/femto.rst
+   api/*
 ..
 
 .. only:: html

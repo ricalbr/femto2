@@ -9,7 +9,7 @@ now = datetime.datetime.now()
 
 if os.path.exists('api'):
     shutil.rmtree('api')
-os.system('sphinx-apidoc -feo api ./../src/femto/  ./../src/femto/utils')
+os.system('sphinx-apidoc -feTo api ./../src/femto/  ./../src/femto/utils')
 
 sys.path.insert(0, os.path.abspath('../src/'))
 
@@ -28,7 +28,7 @@ extensions = [
 add_module_names = False
 autodoc_default_options = {
     'members': True,
-    'undoc-members': True,
+    'undoc-members': False,
     'member-order': 'bysource',
 }
 autodoc_typehints = 'description'
@@ -56,7 +56,7 @@ pygments_style = 'sphinx'
 todo_include_todos = False
 
 # HTML
-html_theme = 'sphinx_rtd_theme'
+html_theme = 'furo'
 html_sidebars = {
     '**': ['globaltoc.html', 'relations.html', 'sourcelink.html', 'searchbox.html'],
 }
