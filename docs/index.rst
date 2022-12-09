@@ -8,16 +8,11 @@ femto Documentation
    guide/tutorial
 
 .. toctree::
-   :caption: femto modules
+   :maxdepth: 2
+   :glob:
+   :caption: Code
 
-   modules/laserpath
-   modules/waveguide
-   modules/marker
-   modules/rasterimage
-   modules/trench
-   modules/pgmcompiler
-   modules/writer
-   modules/device
+   api/femto.rst
 ..
 
 .. only:: html

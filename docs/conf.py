@@ -2,11 +2,16 @@ from __future__ import annotations
 
 import datetime
 import os
+import shutil
 import sys
 
 now = datetime.datetime.now()
 
-sys.path.insert(0, os.path.abspath('../src/femto'))
+if os.path.exists('api'):
+    shutil.rmtree('api')
+os.system('sphinx-apidoc -feo api ./../src/femto/  ./../src/femto/utils')
+
+sys.path.insert(0, os.path.abspath('../src/'))
 
 extensions = [
     'sphinx.ext.autodoc',
