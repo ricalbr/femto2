@@ -6,9 +6,10 @@ from typing import Any
 
 import numpy as np
 import numpy.typing as npt
-from femto.helpers import dotdict
 from femto.laserpath import LaserPath
 from scipy import interpolate
+
+from .helpers import dotdict
 
 
 @dataclass(repr=False)
@@ -733,6 +734,7 @@ class Waveguide(LaserPath):
         bc_y: tuple[tuple[float, float], tuple[float, float]] = ((1, 0.0), (1, 0.0)),
         bc_z: tuple[tuple[float, float], tuple[float, float]] = ((1, 0.0), (1, 0.0)),
     ) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32], npt.NDArray[np.float32]]:
+        # TODO: fix docstring
         """
         It takes in a bunch of parameters and returns the x, y, and z coordinates of a spline segment
 

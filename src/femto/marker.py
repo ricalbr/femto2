@@ -29,6 +29,16 @@ class Marker(LaserPath):
 
     def cross(self, position: list[float], lx: float | None = None, ly: float | None = None) -> None:
         """
+        The function takes a position (x,y,z) and two lengths (lx,ly) and draws a cross at the position with the given
+        lengths
+
+        :param position: The position of the cross
+        :type position: list[float]
+        :param lx: The length of the cross in the x-direction
+        :type lx: float | None
+        :param ly: The length of the cross in the y-direction
+        :type ly: float | None
+
         Computes the points of a cross marker of given widht along x- and y-direction.
 
         :param position: 2D ordered coordinate list that specifies the cross position [mm].
@@ -81,17 +91,19 @@ class Marker(LaserPath):
         x_init: float | None = None,
     ) -> None:
         """
+        > This function draws a ruler on the sample
+
         Computes the points of a ruler marker starting from a given x-coordinate. The y-coordinates of the ticks are
         specified by the user.
 
-        :param y_ticks: y-coordinates of the ruler's ticks [mm]
-        :type y_ticks: List[float]
-        :param lx: Long x-tick coordinate [mm]. The default is self.lx.
-        :type lx: float
-        :param lx2: Second x-tick coordinate [mm]. The default is 0.75 * self.lx
-        :type lx2: float
-        :param x_init: Starting x-coordinate of the laser [mm]. The default is self.x_init.
-        :type x_init: float
+        :param y_ticks: list[float] | npt.NDArray[np.float32]
+        :type y_ticks: list[float] | npt.NDArray[np.float32]
+        :param lx: The length of the ruler's tick marks
+        :type lx: float | None
+        :param lx2: The length of the tick marks
+        :type lx2: float | None
+        :param x_init: The x-coordinate of the ruler's origin
+        :type x_init: float | None
         :return: None
         """
         if y_ticks is None or len(y_ticks) == 0:
@@ -135,18 +147,35 @@ class Marker(LaserPath):
         delta: float = 0.001,
         orientation: str = 'x',
     ) -> None:
+        """
+        > The function takes in the initial and final positions, the width of the meander, the distance between the
+        parallel lines, and the orientation of the meander (either parallel to the x or y axis)
+
+        :param init_pos: Initial position of the meander
+        :type init_pos: list[float]
+        :param final_pos: The final position of the meander
+        :type final_pos: list[float]
+        :param width: The width of the meander, defaults to 1
+        :type width: float (optional)
+        :param delta: The distance between the parallel lines
+        :type delta: float
+        :param orientation: 'x' or 'y', defaults to x
+        :type orientation: str (optional)
+        """
         if len(init_pos) not in [2, 3]:
             raise ValueError(
                 'Initial position must be a list of 2 (x,y) or 3 (x,y,z) values.'
                 f"init_pos has {len(init_pos)} elements. Give a valid 'init_pos' list."
             )
         xi, yi, *_ = init_pos
+
         if len(final_pos) not in [2, 3]:
             raise ValueError(
                 'Final position must be a list of 2 (x,y) or 3 (x,y,z) values.'
                 f"final_pos has {len(final_pos)} elements. Give a valid 'final_pos' list."
             )
         xf, yf, *_ = final_pos
+
         if orientation.lower() not in ['x', 'y']:
             raise ValueError(
                 'Orientation must be either "x" (parallel lines along x) or "y" (parallel lines along y).'
@@ -182,6 +211,15 @@ class Marker(LaserPath):
         shift: float | None = None,
     ) -> None:
 
+        """
+        It takes a list of points and adds a linear path to the gcode file for each point in the list
+
+        :param points: list[list[float]]
+        :type points: list[list[float]]
+        :param shift: The amount to shift the path by
+        :type shift: float | None
+        :return: A list of lists of floats.
+        """
         if not points:
             return
 

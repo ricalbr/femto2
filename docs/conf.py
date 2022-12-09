@@ -6,7 +6,7 @@ import sys
 
 now = datetime.datetime.now()
 
-sys.path.insert(0, os.path.abspath('../src'))
+sys.path.insert(0, os.path.abspath('../src/femto'))
 
 extensions = [
     'sphinx.ext.autodoc',

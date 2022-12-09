@@ -1,8 +1,8 @@
 Marker
 ======
 
-..
-   .. automodule:: femto.marker
-      :members:
-      :inherited-members:
-      :noindex:
+.. autodata:: marker.Marker
+   :annotation:
+
+.. autoclass:: marker.Marker
+   :noindex:
