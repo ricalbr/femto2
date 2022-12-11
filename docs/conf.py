@@ -24,10 +24,11 @@ extensions = [
     'sphinx.ext.graphviz',
 ]
 
-# autodoc_mock_imports = ['bs4', 'requests']
 add_module_names = False
 autodoc_default_options = {
     'members': True,
+    'show-inheritance': True,
+    'inherited-members': True,
     'undoc-members': False,
     'member-order': 'bysource',
 }
@@ -58,7 +59,13 @@ todo_include_todos = False
 # HTML
 html_theme = 'furo'
 html_sidebars = {
-    '**': ['globaltoc.html', 'relations.html', 'sourcelink.html', 'searchbox.html'],
+    '**': [
+        'sidebar/scroll-start.html',
+        'sidebar/brand.html',
+        'sidebar/search.html',
+        'sidebar/navigation.html',
+        'sidebar/scroll-end.html',
+    ]
 }
 html_show_sourcelink = False
 htmlhelp_basename = 'femtodoc'
