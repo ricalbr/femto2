@@ -7,13 +7,7 @@ femto Documentation
 
    guide/install
    guide/tutorial
-
-.. toctree::
-   :maxdepth: 2
-   :glob:
-   :caption: Modules
-
-   api/*
+   api/femto.rst
 ..
 
 .. only:: html
