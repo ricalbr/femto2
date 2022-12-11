@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+import dataclasses
 import math
-from dataclasses import dataclass
 
 import numpy as np
 import numpy.typing as npt
@@ -9,11 +9,9 @@ from femto.helpers import sign
 from femto.laserpath import LaserPath
 
 
-@dataclass(repr=False)
+@dataclasses.dataclass(repr=False)
 class Marker(LaserPath):
-    """
-    Class representing an ablation marker.
-    """
+    """Class that computes and stores the coordinates of a superficial abletion marker."""
 
     depth: float = 0.0
     lx: float = 1.0
@@ -28,28 +26,22 @@ class Marker(LaserPath):
         return f'{self.__class__.__name__}@{id(self) & 0xFFFFFF:x}'
 
     def cross(self, position: list[float], lx: float | None = None, ly: float | None = None) -> None:
-        """
-        The function takes a position (x,y,z) and two lengths (lx,ly) and draws a cross at the position with the given
-        lengths
+        """Cross marker.
 
-        :param position: The position of the cross
-        :type position: list[float]
-        :param lx: The length of the cross in the x-direction
-        :type lx: float | None
-        :param ly: The length of the cross in the y-direction
-        :type ly: float | None
+        The function takes the position (`x`, `y`, `z`) of the center of the marker and two lengths of the arms
+        (`lx`, `ly`) and draws a cross with the given lengths.
 
-        Computes the points of a cross marker of given widht along x- and y-direction.
+        position : list(float)
+            2D (`x`, `y`) or 3D (`x`, `y`, `z`) coordinates of the center of the cross [mm]. In case of 2D position the
+            `z` coordinate is set to `self.depth`.
+        lx : float, optional
+            Length of the cross arm along the `x` direction [mm]. The default value is ``self.lx``.
+        ly : float, optional
+            Length of the cross arm along the `y` direction [mm]. The default value is ``self.ly``.
 
-        :param position: 2D ordered coordinate list that specifies the cross position [mm].
-            position[0] -> X
-            position[1] -> Y
-        :type position: List[float]
-        :param lx: Length of the cross marker along x [mm]. The default is self.lx.
-        :type lx: float
-        :param ly: Length of the cross marker along y [mm]. The default is self.ly.
-        :type ly: float
-        :return: None
+        Returns
+        -------
+        None
         """
 
         if len(position) == 2:
@@ -90,22 +82,25 @@ class Marker(LaserPath):
         lx2: float | None = None,
         x_init: float | None = None,
     ) -> None:
-        """
-        > This function draws a ruler on the sample
+        """Ticks marker.
 
-        Computes the points of a ruler marker starting from a given x-coordinate. The y-coordinates of the ticks are
-        specified by the user.
+        Draws a serie of horizontal ablation lines parallel to the `x` axis. The `y`-coordinates of the ticks are
+        given as input.
 
-        :param y_ticks: list[float] | npt.NDArray[np.float32]
-        :type y_ticks: list[float] | npt.NDArray[np.float32]
-        :param lx: The length of the ruler's tick marks
-        :type lx: float | None
-        :param lx2: The length of the tick marks
-        :type lx2: float | None
-        :param x_init: The x-coordinate of the ruler's origin
-        :type x_init: float | None
-        :return: None
+        y_ticks : array-like, list[float], npt.NDArray[np.float32]
+            List of `y`-coordinate values for each tick in the marker.
+        lx : float, optional
+            Length of the longer tick marks [mm]. The default value is ``self.lx``.
+        lx2 : float, optional
+            Length of the tick marks [mm]. The default value is ``0.75 * self.lx``.
+        x_init : float
+            Starting position for the `x` coordinate [mm]. The default values is ``self.x_init``.
+
+        Returns
+        -------
+        None
         """
+
         if y_ticks is None or len(y_ticks) == 0:
             return None
 
@@ -114,20 +109,17 @@ class Marker(LaserPath):
 
         # Ticks x-length
         if lx is None and self.lx is None:
-            raise ValueError(
-                "The x-length of the ruler is None. Set the Marker's 'lx' attribute or give a valid number as " 'input.'
-            )
+            raise ValueError('The tick length is None. Set the "lx" attribute or give a valid number as input.')
         lx = self.lx if lx is None else lx
-        if lx2 is None:
-            lx2 = 0.75 * lx
+        lx2 = 0.75 * self.lx if lx2 is None else lx2
+
         x_ticks = np.repeat(lx2, len(y_ticks))
         x_ticks[0] = lx
 
         # Set x_init
         if x_init is None and self.x_init is None:
             raise ValueError(
-                "The x-init value of the ruler is None. Set the Marker's 'x_init' attribute or give a valid number "
-                'as input.'
+                'The x-init value of the ruler is None. Set the "x_init" attribute or give a valid number as input.'
             )
         x_init = self.x_init if x_init is None else x_init
 
@@ -147,21 +139,28 @@ class Marker(LaserPath):
         delta: float = 0.001,
         orientation: str = 'x',
     ) -> None:
-        """
-        > The function takes in the initial and final positions, the width of the meander, the distance between the
-        parallel lines, and the orientation of the meander (either parallel to the x or y axis)
+        """Parallel serpentine marker.
 
-        :param init_pos: Initial position of the meander
-        :type init_pos: list[float]
-        :param final_pos: The final position of the meander
-        :type final_pos: list[float]
-        :param width: The width of the meander, defaults to 1
-        :type width: float (optional)
-        :param delta: The distance between the parallel lines
-        :type delta: float
-        :param orientation: 'x' or 'y', defaults to x
-        :type orientation: str (optional)
+        The function takes in the initial and final positions, the width of the meander, the distance between the
+        parallel lines and connects the two points with a serpentine-like pattern.
+        The orientation of the meander (parallel to `x` or `y` axis) can be given as input.
+
+        init_pos : list(float)
+            Starting position of the meander [mm].
+        final_pos : list(float)
+            Ending position of the meander [mm].
+        width : float
+            Longitudinal width of the meander [mm]. The default value is 1 mm.
+        delta : float
+            The distance between the parallel lines of the meander [mm]. The default value is 0.001 mm.
+        orientation : str
+            Orientation of the meander, either parallel to the 'x'-axis or 'y'-axis. The default value is 'x'.
+
+        Returns
+        -------
+        None
         """
+
         if len(init_pos) not in [2, 3]:
             raise ValueError(
                 'Initial position must be a list of 2 (x,y) or 3 (x,y,z) values.'
@@ -172,14 +171,13 @@ class Marker(LaserPath):
         if len(final_pos) not in [2, 3]:
             raise ValueError(
                 'Final position must be a list of 2 (x,y) or 3 (x,y,z) values.'
-                f"final_pos has {len(final_pos)} elements. Give a valid 'final_pos' list."
+                f'final_pos has {len(final_pos)} elements. Give a valid "final_pos" list.'
             )
         xf, yf, *_ = final_pos
 
         if orientation.lower() not in ['x', 'y']:
             raise ValueError(
-                'Orientation must be either "x" (parallel lines along x) or "y" (parallel lines along y).'
-                f'Given {orientation}.'
+                f'Orientation must be either "x" (parallel to x axis) or "y" (parallel to y axis). Given {orientation}.'
             )
 
         s = sign()
@@ -210,22 +208,27 @@ class Marker(LaserPath):
         points: list[list[float]],
         shift: float | None = None,
     ) -> None:
+        """Ablation line.
 
-        """
-        It takes a list of points and adds a linear path to the gcode file for each point in the list
+        The function takes a list of points and connects them with linear segments. The first point is the starting
+        point of the ablation line.
+        The line can shifted by a value given as input. Given a shift of `ds` the line is rigidly shifted along `x`
+        and `y` of `ds` and `-ds`. In the default behaviour `ds` is set to ``None`` (no shift is applied).
 
-        :param points: list[list[float]]
-        :type points: list[list[float]]
-        :param shift: The amount to shift the path by
-        :type shift: float | None
-        :return: A list of lists of floats.
+        points: list[list[float]]
+            List of points representing the vertices of a polygonal chain line.
+        shift: float
+            Amount of shift between different lines. The default value is ``None``.
         """
+
         if not points:
             return
 
         # shift the path's points by shift value
         pts = np.asarray(points)
-        if shift is not None:
+        if shift is None:
+            path_list = [pts]
+        else:
             path_list = [
                 np.add(pts, [0, 0, 0]),
                 np.add(pts, [shift, 0, 0]),
@@ -233,8 +236,6 @@ class Marker(LaserPath):
                 np.add(pts, [0, shift, 0]),
                 np.add(pts, [0, -shift, 0]),
             ]
-        else:
-            path_list = [pts]
 
         # Add linear segments
         for path in path_list:
