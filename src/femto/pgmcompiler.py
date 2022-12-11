@@ -30,9 +30,6 @@ GC = TypeVar('GC', bound='PGMCompiler')
 
 @dataclasses.dataclass(repr=False)
 class PGMCompiler:
-    """
-    Class representing a PGM Compiler.
-    """
 
     filename: str
     n_glass: float = 1.50
@@ -136,18 +133,34 @@ class PGMCompiler:
 
     @property
     def xsample(self) -> float:
+        """
+        This function returns the absolute value of the first element of the samplesize array
+        :return: The absolute value of the first element of the samplesize array.
+        """
         return float(np.fabs(self.samplesize[0]))
 
     @property
     def ysample(self) -> float:
+        """
+        This function returns the absolute value of the y-axis sample size
+        :return: The absolute value of the y-component of the sample size.
+        """
         return float(np.fabs(self.samplesize[1]))
 
     @property
     def neff(self) -> float:
+        """
+        > The function `neff` returns the effective index of refraction of the waveguide
+        :return: The refractive index of the glass.
+        """
         return self.n_glass / self.n_environment
 
     @property
     def pso_label(self) -> str:
+        """
+        If the laser is ANT, return Z, otherwise return X
+        :return: The label of the PSO.
+        """
         if self.laser.lower() not in ['ant', 'carbide', 'pharos', 'uwe']:
             raise ValueError(f'Laser can be only ANT, CARBIDE, PHAROS or UWE. Given {self.laser.upper()}.')
         if self.laser.lower() == 'ant':
@@ -172,11 +185,17 @@ class PGMCompiler:
 
     @property
     def dwell_time(self) -> float:
+        """
+        This function returns the total dwell time of the user
+        :return: The total dwell time of the customer.
+        """
         return self._total_dwell_time
 
     # G-Code Methods
     def header(self) -> None:
         """
+        It reads the header file for the laser cutter and adds it to the instructions
+
         The function print the header file of the G-Code file. The user can specify the fabrication line to work in
         ``ANT``, ``CARBIDE``, ``PHAROS`` or ``UWE`` as parameter when the G-Code Compiler obj is instantiated.
 

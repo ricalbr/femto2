@@ -17,12 +17,9 @@ from shapely import geometry
 
 
 class Trench:
-    """
-    Class representing a single trench block.
-    """
+    """Class that represents a trench block and provides methods to compute the toolpath of the block."""
 
     def __init__(self, block: geometry.Polygon, delta_floor: float = 0.001) -> None:
-
         self.block: geometry.Polygon = block
         self.delta_floor: float = delta_floor
         self.floor_length: float = 0.0
@@ -58,38 +55,70 @@ class Trench:
 
     @property
     def border(self) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]:
+        """
+        It returns the border of the block as a tuple of two numpy arrays, one for the x coordinates and one for the y
+        coordinates
+        :return: The border of the block.
+        """
         xx, yy = self.block.exterior.coords.xy
         return np.asarray(xx, dtype=np.float32), np.asarray(yy, dtype=np.float32)
 
     @property
     def xborder(self) -> npt.NDArray[np.float32]:
+        """
+        `xborder` returns the x-coordinates of the border of the image
+        :return: The x-coordinate of the border.
+        """
         x, _ = self.border
         return x
 
     @property
     def yborder(self) -> npt.NDArray[np.float32]:
+        """
+        `yborder` returns the y-coordinates of the border of the image
+        :return: The x and y coordinates of the border of the image.
+        """
         _, y = self.border
         return y
 
     @property
     def xmin(self) -> float:
+        """
+        This function returns the minimum x value of the block
+        :return: The xmin value of the block.
+        """
         return float(self.block.bounds[0])
 
     @property
     def ymin(self) -> float:
+        """
+        Returns the y-coordinate of the bottom edge of the block
+        :return: The ymin of the block
+        """
         return float(self.block.bounds[1])
 
     @property
     def xmax(self) -> float:
+        """
+        > This function returns the maximum x value of the block
+        :return: The xmax value of the block.
+        """
         return float(self.block.bounds[2])
 
     @property
     def ymax(self) -> float:
+        """
+        > Returns the y-coordinate of the top edge of the block
+        :return: The ymax of the block
+        """
         return float(self.block.bounds[3])
 
     @property
     def center(self) -> tuple[float, float]:
         """
+        `center` returns the x and y coordinates of the centroid of the block
+        :return: The centroid of the block.
+
         Baricenter of the trench block.
         Returns the (x, y) coordinates of the center ponit.
 
@@ -100,6 +129,8 @@ class Trench:
 
     def toolpath(self) -> Generator[npt.NDArray[np.float32], None, None]:
         """
+        > The function takes a polygon, buffers it, and yields the exterior coordinates of the buffered polygon
+
         Generator of the inset paths of the trench block.
 
         First, the outer trench polygon obj is insert in the trench ``polygon_list``. While the list is not empty
@@ -117,6 +148,7 @@ class Trench:
         :return: (x, y) coordinates of the inset path.
         :rtype: Generator[numpy.ndarray]
         """
+
         self.wall_length = self.block.length
         polygon_list = [self.block]
 
@@ -130,6 +162,14 @@ class Trench:
     @staticmethod
     def buffer_polygon(shape: geometry.Polygon, offset: float) -> list[geometry.Polygon]:
         """
+        It takes a polygon and returns a list of polygons that are offset by a given distance
+
+        :param shape: the shape to buffer
+        :type shape: geometry.Polygon
+        :param offset: The distance to buffer the polygon by
+        :type offset: float
+        :return: A list of polygons.
+
         Compute a buffer operation of shapely ``Polygon`` obj.
 
         :param shape: ``Polygon`` of the trench block
@@ -198,15 +238,30 @@ class TrenchColumn:
 
     @property
     def adj_bridge(self) -> float:
+        """
+        > The function `adj_bridge` returns the adjusted bridge size considering the size of the laser focus and the
+        round corner
+        :return: The adjusted bridge size is being returned.
+        """
         # adjust bridge size considering the size of the laser focus [mm]
         return self.bridge / 2 + self.beam_waist + self.round_corner
 
     @property
     def n_repeat(self) -> int:
+        """
+        The function n_repeat() returns the number of times the laser must be fired to cover the entire height of the
+        box
+        :return: The number of times the pattern should be repeated in the z direction.
+        """
         return int(math.ceil((self.h_box + self.z_off) / self.deltaz))
 
     @property
     def fabrication_time(self) -> float:
+        """
+        The fabrication time is the sum of the lengths of all the walls and floors of all the trenches, divided by the
+        speed of the machine.
+        :return: The total fabrication time for the trench.
+        """
         l_tot = 0.0
         for trench in self.trench_list:
             l_tot += self.nboxz * (self.n_repeat * trench.wall_length + trench.floor_length)
@@ -215,6 +270,9 @@ class TrenchColumn:
     @property
     def rect(self) -> geometry.Polygon:
         """
+        It returns a polygon object.
+        :return: A Polygon object
+
         Getter for the rectangular box for the whole trench column. If the ``x_c``, ``y_min`` and ``y_max`` are set we
         create a rectangular polygon that will be used to create the single trench blocks.
 
@@ -229,6 +287,7 @@ class TrenchColumn:
         :return: Rectangular box centered in ``x_c`` and y-borders at ``y_min`` and ``y_max``.
         :rtype: shapely.geometry.box
         """
+
         if self.length is None:
             return geometry.Polygon()
         return geometry.box(self.x_center - self.length / 2, self.y_min, self.x_center + self.length / 2, self.y_max)
@@ -337,6 +396,13 @@ class TrenchColumn:
         """
 
         def normalize_ring(ring):
+            """
+            It takes a ring (a list of coordinates) and returns the same ring, but with the coordinates in a different
+            order
+
+            :param ring: a shapely.geometry.Polygon object
+            :return: the coordinates of the ring, starting with the minimum value of the coordinates.
+            """
             coords = ring.coords[:-1]
             start_index = min(range(len(coords)), key=coords.__getitem__)
             return coords[start_index:] + coords[:start_index]
