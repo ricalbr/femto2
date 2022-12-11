@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+import dataclasses
 
 import numpy as np
 from femto.helpers import dotdict
@@ -9,7 +9,7 @@ from femto.laserpath import LaserPath
 from PIL import Image
 
 
-@dataclass(repr=False)
+@dataclasses.dataclass(repr=False)
 class RasterImage(LaserPath):
     """
     Class representing an raster laser path in the xy-plane from a balck and white image.

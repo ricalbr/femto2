@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+import dataclasses
 import functools
-from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
@@ -12,7 +12,7 @@ from scipy import interpolate
 from .helpers import dotdict
 
 
-@dataclass(repr=False)
+@dataclasses.dataclass(repr=False)
 class Waveguide(LaserPath):
     """Class that computes and stores the coordinates of an optical waveguide."""
 
@@ -824,7 +824,7 @@ class Waveguide(LaserPath):
         return x_cspline, y_cspline, z_cspline
 
 
-@dataclass
+@dataclasses.dataclass
 class NasuWaveguide(Waveguide):
     """Class that computes and stores the coordinates of a Nasu optical waveguide [1]_.
 

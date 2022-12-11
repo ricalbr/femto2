@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import collections
 import copy
-from pathlib import Path
+import pathlib
 from typing import Any
 
 import plotly.graph_objects as go
@@ -95,7 +95,7 @@ class Device:
         if self.fig is None:
             return None
 
-        fn = Path(filename)
+        fn = pathlib.Path(filename)
         if fn.suffix.lower() in ['.html', '']:
             self.fig.write_html(str(fn.with_suffix('.html')))
         else:

@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import abc
 import itertools
+import pathlib
 import time
-from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -263,7 +263,9 @@ class TrenchWriter(Writer):
         main_param['aerotech_angle'] = None
         main_param['rotation_angle'] = None
 
-        farcall_list = [str(Path(col.base_folder) / f'FARCALL{i + 1:03}.pgm') for i, col in enumerate(self.obj_list)]
+        farcall_list = [
+            str(pathlib.Path(col.base_folder) / f'FARCALL{i + 1:03}.pgm') for i, col in enumerate(self.obj_list)
+        ]
         with PGMCompiler(**main_param) as G:
             G.call_list(farcall_list)
 
@@ -281,7 +283,7 @@ class TrenchWriter(Writer):
             print('=' * 79, '\n')
 
     def export_array2d(
-        self, filename: Path, x: npt.NDArray[np.float32], y: npt.NDArray[np.float32], speed: float
+        self, filename: pathlib.Path, x: npt.NDArray[np.float32], y: npt.NDArray[np.float32], speed: float
     ) -> None:
         """
         Helper function that produces a PGM file for a 3D matrix of points at a given traslation speed,
@@ -316,7 +318,7 @@ class TrenchWriter(Writer):
             file.write(''.join(gcode_instr))
 
     # Private interface
-    def _export_trench_column(self, column: TrenchColumn, column_path: Path) -> None:
+    def _export_trench_column(self, column: TrenchColumn, column_path: pathlib.Path) -> None:
 
         for i, trench in enumerate(column):
             # Wall script
@@ -354,8 +356,8 @@ class TrenchWriter(Writer):
                 # load filenames (wall/floor)
                 wall_filename = f'trench{i_trc + 1:03}_wall.pgm'
                 floor_filename = f'trench{i_trc + 1:03}_floor.pgm'
-                wall_path = Path(column.base_folder) / f'trenchCol{index + 1:03}' / wall_filename
-                floor_path = Path(column.base_folder) / f'trenchCol{index + 1:03}' / floor_filename
+                wall_path = pathlib.Path(column.base_folder) / f'trenchCol{index + 1:03}' / wall_filename
+                floor_path = pathlib.Path(column.base_folder) / f'trenchCol{index + 1:03}' / floor_filename
 
                 # INIT POINT
                 x0, y0, z0 = self.transform_points(
@@ -477,7 +479,7 @@ class WaveguideWriter(Writer):
 
         _wg_fab_time = 0.0
         _wg_param = dict(self._param.copy())
-        _wg_param['filename'] = Path(self.filename).stem + '_WG.pgm'
+        _wg_param['filename'] = pathlib.Path(self.filename).stem + '_WG.pgm'
 
         with PGMCompiler(**_wg_param) as G:
             for bunch in self.obj_list:
@@ -648,7 +650,7 @@ class NasuWriter(Writer):
 
         _nwg_fab_time = 0.0
         _nwg_param = dict(self._param.copy())
-        _nwg_param['filename'] = Path(self.filename).stem + '_NASU.pgm'
+        _nwg_param['filename'] = pathlib.Path(self.filename).stem + '_NASU.pgm'
 
         with PGMCompiler(**_nwg_param) as G:
             for nwg in self.obj_list:
@@ -824,7 +826,7 @@ class MarkerWriter(Writer):
 
         _mk_fab_time = 0.0
         _mk_param = dict(self._param.copy())
-        _mk_param['filename'] = Path(self.filename).stem + '_MK.pgm'
+        _mk_param['filename'] = pathlib.Path(self.filename).stem + '_MK.pgm'
 
         with PGMCompiler(**_mk_param) as G:
             for idx, mk in enumerate(flatten(self.obj_list)):

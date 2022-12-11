@@ -3,11 +3,11 @@ from __future__ import annotations
 import collections
 import contextlib
 import copy
+import dataclasses
 import itertools
 import math
 import operator
-from dataclasses import dataclass
-from pathlib import Path
+import pathlib
 from types import TracebackType
 from typing import Any
 from typing import Callable
@@ -28,7 +28,7 @@ from scipy import interpolate
 GC = TypeVar('GC', bound='PGMCompiler')
 
 
-@dataclass(repr=False)
+@dataclasses.dataclass(repr=False)
 class PGMCompiler:
     """
     Class representing a PGM Compiler.
@@ -59,7 +59,7 @@ class PGMCompiler:
     def __post_init__(self) -> None:
         if self.filename is None:
             raise ValueError("Filename is None, set 'filename' attribute")
-        self.CWD = Path.cwd()
+        self.CWD: pathlib.Path = pathlib.Path.cwd()
         self._instructions: Deque[str] = collections.deque()
         self._loaded_files: list[str] = []
         self._dvars: list[str] = []
@@ -186,7 +186,7 @@ class PGMCompiler:
             raise ValueError(f'Fabrication line should be PHAROS, CARBIDE or UWE. Given {self.laser}.')
 
         header_name = f'header_{self.laser.lower()}.txt'
-        with open(Path(__file__).parent / 'utils' / header_name) as f:
+        with open(pathlib.Path(__file__).parent / 'utils' / header_name) as f:
             self._instructions.extend(f.readlines())
         self.instruction('\n')
 
@@ -527,7 +527,7 @@ class PGMCompiler:
             task_id = list(pad(task_id, len(filenames), 0))
 
         for fpath, t_id in zip(filenames, task_id):
-            file = Path(fpath)
+            file = pathlib.Path(fpath)
             self.load_program(str(file.resolve()), t_id)
             self.farcall(file.name)
             self.dwell(self.short_pause)
@@ -588,12 +588,12 @@ class PGMCompiler:
         """
 
         # get filename and add the proper file extension
-        pgm_filename = Path(self.filename) if filename is None else Path(filename)
+        pgm_filename = pathlib.Path(self.filename) if filename is None else pathlib.Path(filename)
         pgm_filename = pgm_filename.with_suffix('.pgm')
 
         # create export directory (mimicking the POSIX mkdir -p command)
         if self.export_dir:
-            exp_dir = Path(self.export_dir)
+            exp_dir = pathlib.Path(self.export_dir)
             if not exp_dir.is_dir():
                 exp_dir.mkdir(parents=True, exist_ok=True)
             pgm_filename = exp_dir / pgm_filename
@@ -838,7 +838,7 @@ class PGMCompiler:
         return joined_args
 
     @staticmethod
-    def _get_filepath(filename: str, filepath: str | None = None, extension: str | None = None) -> Path:
+    def _get_filepath(filename: str, filepath: str | None = None, extension: str | None = None) -> pathlib.Path:
         """
         The function takes a filename and (optional) filepath, it merges the two and return a filepath.
         An extension parameter can be given as input. In that case the function also checks if the filename has
@@ -857,7 +857,7 @@ class PGMCompiler:
         if filename is None:
             raise ValueError('Given filename is None. Give a valid filename.')
 
-        path = Path(filename) if filepath is None else Path(filepath) / filename
+        path = pathlib.Path(filename) if filepath is None else pathlib.Path(filepath) / filename
         if extension is None:
             return path
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from pathlib import Path
+import dataclasses
+import pathlib
 from typing import Any
 from typing import Sequence
 from typing import TypeVar
@@ -14,7 +14,7 @@ from femto.helpers import unique_filter
 LP = TypeVar('LP', bound='LaserPath')
 
 
-@dataclass(repr=False)
+@dataclasses.dataclass(repr=False)
 class LaserPath:
     """Class that computes and stores the coordinates of a laser path."""
 
@@ -586,9 +586,9 @@ class LaserPath:
         None
         """
 
-        fn = Path(filename)
+        fn = pathlib.Path(filename)
         if fn.suffix not in ['.pickle', 'pkl']:
-            fn = Path(fn.stem + '.pkl')
+            fn = pathlib.Path(fn.stem + '.pkl')
 
         with open(fn, 'wb') as p:
             dill.dump(self, p)

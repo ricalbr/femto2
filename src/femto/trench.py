@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import dataclasses
 import math
-from dataclasses import dataclass
-from pathlib import Path
+import pathlib
 from typing import Generator
 from typing import Iterator
 
@@ -156,7 +156,7 @@ class Trench:
         return [geometry.Polygon()]
 
 
-@dataclass
+@dataclasses.dataclass
 class TrenchColumn:
     """
     Class representing a column of trenches.
@@ -181,7 +181,7 @@ class TrenchColumn:
     speed_pos: float = 0.5
 
     def __post_init__(self):
-        self.CWD: Path = Path.cwd()
+        self.CWD: pathlib.Path = pathlib.Path.cwd()
         self.trench_list: list[Trench] = []
 
     def __iter__(self) -> Iterator[Trench]:
