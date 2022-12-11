@@ -5,7 +5,7 @@ Installation guide
 
 As a first step, check that you have a working Python with ``pip`` installed by running the following command:
 
-.. code-block:: bash
+.. code-block:: powershell
 
     python -m pip --version
 ..
@@ -24,7 +24,36 @@ such as virtualenv_ or conda_.
 virtualenv
 ~~~~~~~~~~
 
-``virtualenv`` has to be installed from ``pip``
+``virtualenv`` has to be installed from ``pip``.
+
+
+.. code-block:: powershell
+
+    pip install virtualenv
+..
+
+Create a new virtual environment named ``femto_venv`` using
+
+.. code-block:: powershell
+
+    virtualenv femto_venv
+..
+
+Finally, activate the virtual environment
+
+.. code-block:: powershell
+
+    .\femto_venv\Scripts\activate
+..
+
+Check that Python is correctly activated using the command
+
+.. code-block:: powershell
+
+    Get-Command python | fl *
+..
+
+The ``python.exe`` executable should be inside the ``.\femto_venv\Scripts`` directory.
 
 
 .. _conda:
@@ -61,28 +90,9 @@ Open the conda/Anaconda prompt and type the following commands
 
 ****
 
-Once the virtual environment is set up
-
-- Clone the remote repository locally to your computer:
+Once the virtual environment is set up, simply install the packages (and its dependencies) with this command:
 
 .. code-block:: bash
 
-    git clone git@github.com:ricalbr/femto.git
-..
-
-    Alternatively, the repository can also be cloned directly from Gihub website.
-
-
-- Change the directory:
-
-.. code-block:: bash
-
-    cd femto
-..
-
-- Install the packages (and its dependencies) with this command:
-
-.. code-block:: bash
-
-    pip install -e .
+    pip install git+https://github.com/ricalbr/femto.git
 ..

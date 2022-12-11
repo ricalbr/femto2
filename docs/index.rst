@@ -1,10 +1,13 @@
 femto Documentation
 ===================
 
+User Guide
+----------
+
 .. toctree::
    :maxdepth: 2
-   :caption: User Guide
 
+   guide/about
    guide/install
    guide/tutorial
    api/femto.rst
@@ -13,7 +16,7 @@ femto Documentation
 .. only:: html
 
    Indices and tables
-   ==================
+   ------------------
 
    * :ref:`genindex`
    * :ref:`modindex`

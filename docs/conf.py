@@ -28,7 +28,7 @@ add_module_names = False
 autodoc_default_options = {
     'members': True,
     'show-inheritance': True,
-    'inherited-members': True,
+    'exclude-members': 'main',
     'undoc-members': False,
     'member-order': 'bysource',
 }
