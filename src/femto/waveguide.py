@@ -6,10 +6,9 @@ from typing import Any
 
 import numpy as np
 import numpy.typing as npt
+from femto.helpers import dotdict
 from femto.laserpath import LaserPath
 from scipy import interpolate
-
-from .helpers import dotdict
 
 
 @dataclasses.dataclass(repr=False)
@@ -826,11 +825,11 @@ class Waveguide(LaserPath):
 
 @dataclasses.dataclass
 class NasuWaveguide(Waveguide):
-    """Class that computes and stores the coordinates of a Nasu optical waveguide [1]_.
+    """Class that computes and stores the coordinates of a Nasu optical waveguide [#]_.
 
     References
     ----------
-    .. [1] `Nasu Waveguides <https://opg.optica.org/ol/abstract.cfm?uri=ol-30-7-723>`_ on Optics Letters.
+    .. [#] `Nasu Waveguides <https://opg.optica.org/ol/abstract.cfm?uri=ol-30-7-723>`_ on Optics Letters.
     """
 
     adj_scan_shift: tuple[float, float, float] = (0, 0.0004, 0)  #: (`x`, `y`, `z`)-shifts between adjacent passes

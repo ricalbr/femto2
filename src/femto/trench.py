@@ -20,10 +20,11 @@ class Trench:
     """Class that represents a trench block and provides methods to compute the toolpath of the block."""
 
     def __init__(self, block: geometry.Polygon, delta_floor: float = 0.001) -> None:
-        self.block: geometry.Polygon = block
-        self.delta_floor: float = delta_floor
-        self.floor_length: float = 0.0
-        self.wall_length: float = 0.0
+        self.block: geometry.Polygon = block  #: Polygon shape of the trench.
+        self.delta_floor: float = delta_floor  #: Offset distance between buffered polygons in the trench toolpath.
+        # TODO: create properties for floor_length and wall_length and rename these with underscores
+        self.floor_length: float = 0.0  #: Length of the floor path
+        self.wall_length: float = 0.0  #: Length of the wall path
 
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}@{id(self) & 0xFFFFFF:x}'
@@ -55,98 +56,121 @@ class Trench:
 
     @property
     def border(self) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]:
-        """
-        It returns the border of the block as a tuple of two numpy arrays, one for the x coordinates and one for the y
-        coordinates
-        :return: The border of the block.
+        """Border of the trench.
+
+        It returns the border of the block as a tuple of two numpy arrays, one for the x coordinates and one for
+        the y coordinates.
+
+        Returns
+        -------
+        tuple(numpy.ndarray, numpy.ndarray)
+            `x` and `y`-coordinates arrays of the trench border
         """
         xx, yy = self.block.exterior.coords.xy
         return np.asarray(xx, dtype=np.float32), np.asarray(yy, dtype=np.float32)
 
     @property
     def xborder(self) -> npt.NDArray[np.float32]:
-        """
-        `xborder` returns the x-coordinates of the border of the image
-        :return: The x-coordinate of the border.
+        """`x`-coordinates of the trench border.
+
+        Returns
+        -------
+        numpy.ndarray
+            `x`-coordinates arrays of the trench border.
         """
         x, _ = self.border
         return x
 
     @property
     def yborder(self) -> npt.NDArray[np.float32]:
-        """
-        `yborder` returns the y-coordinates of the border of the image
-        :return: The x and y coordinates of the border of the image.
+        """`y`-coordinates of the trench border.
+
+        Returns
+        -------
+        numpy.ndarray
+            `y`-coordinates arrays of the trench border
         """
         _, y = self.border
         return y
 
     @property
     def xmin(self) -> float:
-        """
-        This function returns the minimum x value of the block
-        :return: The xmin value of the block.
+        """Minimum `x` value of the trench boundary
+
+        Returns
+        -------
+        float
+            Minimum `x` value of the block border
         """
         return float(self.block.bounds[0])
 
     @property
     def ymin(self) -> float:
-        """
-        Returns the y-coordinate of the bottom edge of the block
-        :return: The ymin of the block
+        """Minimum `y` value of the trench boundary
+
+        Returns
+        -------
+        float
+            Minimum `y` value of the block border
         """
         return float(self.block.bounds[1])
 
     @property
     def xmax(self) -> float:
-        """
-        > This function returns the maximum x value of the block
-        :return: The xmax value of the block.
+        """Maximum `x` value of the trench boundary
+
+        Returns
+        -------
+        float
+            Maximum `x` value of the block border
         """
         return float(self.block.bounds[2])
 
     @property
     def ymax(self) -> float:
-        """
-        > Returns the y-coordinate of the top edge of the block
-        :return: The ymax of the block
+        """Maximum `y` value of the trench boundary
+
+        Returns
+        -------
+        float
+            Maximum `y` value of the block border
         """
         return float(self.block.bounds[3])
 
     @property
     def center(self) -> tuple[float, float]:
-        """
-        `center` returns the x and y coordinates of the centroid of the block
-        :return: The centroid of the block.
+        """Baricenter of the trench block.
 
-        Baricenter of the trench block.
-        Returns the (x, y) coordinates of the center ponit.
-
-        :return: (x, y) coordinates of the block's center point
-        :rtype: tuple(float, float)
+        Returns
+        -------
+        tuple(float, float)
+            `x` and `y` coordinates of the centroid of the block
         """
         return self.block.centroid.x, self.block.centroid.y
 
     def toolpath(self) -> Generator[npt.NDArray[np.float32], None, None]:
-        """
-        > The function takes a polygon, buffers it, and yields the exterior coordinates of the buffered polygon
+        """Toolpath generator
 
-        Generator of the inset paths of the trench block.
+        The function takes a polygon
 
-        First, the outer trench polygon obj is insert in the trench ``polygon_list``. While the list is not empty
-        we can extract the outer polygon from the list and compute the ``inset_polygon`` and insert it back to the list.
-        ``inset_polygon`` can be:
-        ``Polygon`` obj
-            The obj is appended to the ``inset_polygon`` list and the exterior (x, y) coordinates are yielded.
-        ``MultiPolygon`` obj
-            All the single ``Polygon`` objects composing the ``MultiPolygon`` are appended to the ``inset_polygon``
-            list as ``Polygon`` objects and the exterior (x, y) coordinates are yielded.
-        ``None``
-            In this case, we cannot extract a ``inset_polygon`` from the ``Polygon`` obj extracted from the
-            ``inset_polygon``. Nothing is appended to the ``polygon_list`` and its size is reduced.
 
-        :return: (x, y) coordinates of the inset path.
-        :rtype: Generator[numpy.ndarray]
+        First, the outer border is added to the ``polygon_list``. The functions pops polygon objects from this list,
+        buffers it, and yields the exterior coordinates of the buffered polygon.
+        Before yielding, the new polygon is added to the list as the buffered inset will be computed in the next
+        iteration. If the buffering operation returns polygons composed of different non-touching parts (`i.e`
+        ``Multipolygon``), each part is added to the list as a single ``Polygon`` object.
+        If no inset can be computed from the starting polygon, no object is added to the list. The generator
+        terminates when no more buffered polygons can be computed.
+
+        Yields
+        ------
+        numpy.ndarray
+            (`x`, `y`) coordinates of each of the buffered polygons
+
+        See Also
+        --------
+        geometry.Polygon : shapely polygon object.
+        geometry.Multipolygon : collections of shapely polygon objects.
         """
 
         self.wall_length = self.block.length
@@ -161,33 +185,43 @@ class Trench:
 
     @staticmethod
     def buffer_polygon(shape: geometry.Polygon, offset: float) -> list[geometry.Polygon]:
-        """
-        It takes a polygon and returns a list of polygons that are offset by a given distance
+        """Buffer a polygon.
 
-        :param shape: the shape to buffer
-        :type shape: geometry.Polygon
-        :param offset: The distance to buffer the polygon by
-        :type offset: float
-        :return: A list of polygons.
+        It takes a polygon and returns a list of polygons that are offset by a given distance.
 
-        Compute a buffer operation of shapely ``Polygon`` obj.
+        Parameters
+        ----------
+        shape : geometry.Polygon
+            Shape of the trench block to buffer.
+        offset : float
+            The offset to buffer the polygon by [mm].
 
-        :param shape: ``Polygon`` of the trench block
-        :type shape: shapely.geometry.Polygon
-        :param offset: offset of the buffered polygon
-        :type offset: float
-        :return: Buffered polygon
-        :rtype: List[shapely.geometry.Polygon]
+        Returns
+        -------
+        list(geometry.Polygon)
+            List of buffered polygons. If the buffered polygon is still a ``Polyon`` object the list contains just a
+            single polygon. If the buffered polygon is ``MultiPolygon``, the list contais all the single ``Polygon``
+            objects that compose the multipolygon. Finally, if the buffered polygon cannot be computed the list
+            contains just the empty polygon ``Polygon()``.
 
-        .. note::
+        Notes
+        -----
         The buffer operation returns a polygonal result. The new polygon is checked for validity using
         ``obj.is_valid`` in the sense of [#]_.
 
         For a reference, read the buffer operations `here
         <https://shapely.readthedocs.io/en/stable/manual.html#constructive-methods>`_
+
         .. [#] John R. Herring, Ed., “OpenGIS Implementation Specification for Geographic information - Simple feature
         access - Part 1: Common architecture,” Oct. 2006
+
+        See Also
+        --------
+        geometry.Polygon.buffer : buffer operations on ``Polygon`` objects.
+        geometry.Polygon : shapely polygon object.
+        geometry.Multipolygon : collections of shapely polygon objects.
         """
+
         if shape.is_valid or isinstance(shape, geometry.MultiPolygon):
             buff_polygon = shape.buffer(offset)
             if isinstance(buff_polygon, geometry.MultiPolygon):
@@ -198,9 +232,7 @@ class Trench:
 
 @dataclasses.dataclass
 class TrenchColumn:
-    """
-    Class representing a column of trenches.
-    """
+    """Class representing a column of isolation trenches."""
 
     x_center: float
     y_min: float
@@ -225,11 +257,12 @@ class TrenchColumn:
         self.trench_list: list[Trench] = []
 
     def __iter__(self) -> Iterator[Trench]:
-        """
-        Iterator that yields the single trench blocks of the column.
+        """Iterator that yields single trench blocks of the column.
 
-        :return: Iterator over the trench objects in trench column
-        :rtype: Iterator
+        Yields
+        ------
+        Trench
+            Single trench block of the TrenchColumn.
         """
         return iter(self.trench_list)
 

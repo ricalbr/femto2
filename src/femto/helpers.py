@@ -18,7 +18,7 @@ def grouped(iterable: Iterable[Any], n: int) -> Iterable[Any]:
     The returned iterable have `len(iterable)//n` tuples containing n elements. If the number of elements of the input
     iterable are not a multiple of n, the remaining elements will not be returned.
 
-    s -> (s0,s1,s2,...sn-1), (sn,sn+1,sn+2,...s2n-1), (s2n,s2n+1,s2n+2,...s3n-1), ...
+    ``s -> (s0,s1,s2,...sn-1), (sn,sn+1,sn+2,...s2n-1), (s2n,s2n+1,s2n+2,...s3n-1), ...``
 
     :param iterable: iterable to group
     :param n: size of the sub-groups
@@ -53,7 +53,9 @@ def listcast(x: Any) -> list[Any]:
     """
     Cast any input object to a list.
     If `x` is a Python dictionary, the output will be the list of all the dict-keys.
-    E.g.
+
+    Code example
+
     >>> d = {'a': 1, 'b': 2, 'c': 3}
     >>> e = listcast(d)
     >>> e
@@ -270,5 +272,4 @@ def almost_equal(
     :param tol: tolerance controlling the similarity
     :return: boolean value True if the polygon are almost equal, False otherwise
     """
-    print(polygon.symmetric_difference(other).area)
     return bool(polygon.symmetric_difference(other).area < tol)
