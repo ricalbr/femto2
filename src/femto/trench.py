@@ -203,7 +203,7 @@ class TrenchColumn:
 
     @property
     def n_repeat(self) -> int:
-        return int(math.ceil((self.h_box - self.z_off) / self.deltaz))
+        return int(abs(math.ceil((self.h_box - self.z_off) / self.deltaz)))
 
     @property
     def fabrication_time(self) -> float:

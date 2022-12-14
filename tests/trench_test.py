@@ -23,7 +23,7 @@ def param() -> dict:
         'bridge': 0.050,
         'length': 3,
         'nboxz': 4,
-        'z_off': 0.02,
+        'z_off': -0.02,
         'h_box': 0.080,
         'base_folder': '',
         'deltaz': 0.002,
@@ -252,7 +252,7 @@ def test_trenchcol_default() -> None:
     assert tcol.bridge == float(0.026)
     assert tcol.length == float(1)
     assert tcol.nboxz == int(4)
-    assert tcol.z_off == float(0.020)
+    assert tcol.z_off == float(-0.020)
     assert tcol.h_box == float(0.075)
     assert tcol.base_folder == ''
     assert tcol.deltaz == float(0.0015)
@@ -277,7 +277,7 @@ def test_trenchcol_param(param) -> None:
     assert tcol.bridge == float(0.050)
     assert tcol.length == float(3)
     assert tcol.nboxz == int(4)
-    assert tcol.z_off == float(0.020)
+    assert tcol.z_off == float(-0.020)
     assert tcol.h_box == float(0.080)
     assert tcol.base_folder == ''
     assert tcol.deltaz == float(0.002)
@@ -296,9 +296,19 @@ def test_trenchcol_param(param) -> None:
 def test_trenchcol_adj_bridge(tc, param) -> None:
     assert tc.adj_bridge == param['bridge'] / 2 + param['beam_waist'] + param['round_corner']
 
-
-def test_trenchcol_n_repeat(tc, param) -> None:
-    assert tc.n_repeat == int(np.ceil((param['h_box'] + param['z_off']) / param['deltaz']))
+@pytest.mark.parametrize(
+        "h_box, z_off, deltaz, exp",[
+        (0, 0.020, 0.001, 20),
+        (0.300, 0.0, 0.001, 300),
+        (0.100, 0.05, 0.002, 25),
+        (-0.150, 0.0, 0.015, 10),]
+)
+def test_trenchcol_n_repeat(h_box, z_off, deltaz, exp, param) -> None:
+    param['h_box'] = h_box
+    param['z_off']= z_off
+    param['deltaz'] = deltaz
+    tcol = TrenchColumn(**param)
+    assert tcol.n_repeat == exp
 
 
 def test_trenchcol_fabrication_time_empty(tc) -> None:
