@@ -168,7 +168,7 @@ class TrenchColumn:
     bridge: float = 0.026
     length: float = 1
     nboxz: int = 4
-    z_off: float = 0.020
+    z_off: float = -0.020
     h_box: float = 0.075
     base_folder: str = ''
     deltaz: float = 0.0015
@@ -203,7 +203,7 @@ class TrenchColumn:
 
     @property
     def n_repeat(self) -> int:
-        return int(math.ceil((self.h_box + self.z_off) / self.deltaz))
+        return int(math.ceil((self.h_box - self.z_off) / self.deltaz))
 
     @property
     def fabrication_time(self) -> float:
@@ -319,6 +319,7 @@ class TrenchColumn:
 
         for block in listcast(sorted(trench_block.geoms, key=Trench)):
             block = block.buffer(self.round_corner, resolution=256, cap_style=1)
+            block = block.simplify(tolerance=5e-7, preserve_topology=True)
             self.trench_list.append(Trench(self.normalize(block), self.delta_floor))
 
         for index in sorted(listcast(remove), reverse=True):
