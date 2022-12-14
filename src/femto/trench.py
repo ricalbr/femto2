@@ -289,7 +289,7 @@ class TrenchColumn:
         int
             The number of times the border path is repeated in the `z` direction.
         """
-        return int(math.ceil((self.h_box - self.z_off) / self.deltaz))
+        return int(abs(math.ceil((self.h_box - self.z_off) / self.deltaz)))
 
     @property
     def fabrication_time(self) -> float:
