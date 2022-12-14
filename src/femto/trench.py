@@ -23,8 +23,8 @@ class Trench:
         self.block: geometry.Polygon = block  #: Polygon shape of the trench.
         self.delta_floor: float = delta_floor  #: Offset distance between buffered polygons in the trench toolpath.
         # TODO: create properties for floor_length and wall_length and rename these with underscores
-        self.floor_length: float = 0.0  #: Length of the floor path
-        self.wall_length: float = 0.0  #: Length of the wall path
+        self.floor_length: float = 0.0  #: Length of the floor path.
+        self.wall_length: float = 0.0  #: Length of the wall path.
 
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}@{id(self) & 0xFFFFFF:x}'
@@ -64,7 +64,7 @@ class Trench:
         Returns
         -------
         tuple(numpy.ndarray, numpy.ndarray)
-            `x` and `y`-coordinates arrays of the trench border
+            `x` and `y`-coordinates arrays of the trench border.
         """
         xx, yy = self.block.exterior.coords.xy
         return np.asarray(xx, dtype=np.float32), np.asarray(yy, dtype=np.float32)
@@ -88,52 +88,52 @@ class Trench:
         Returns
         -------
         numpy.ndarray
-            `y`-coordinates arrays of the trench border
+            `y`-coordinates arrays of the trench border.
         """
         _, y = self.border
         return y
 
     @property
     def xmin(self) -> float:
-        """Minimum `x` value of the trench boundary
+        """Minimum `x` value of the trench boundary.
 
         Returns
         -------
         float
-            Minimum `x` value of the block border
+            Minimum `x` value of the block border.
         """
         return float(self.block.bounds[0])
 
     @property
     def ymin(self) -> float:
-        """Minimum `y` value of the trench boundary
+        """Minimum `y` value of the trench boundary.
 
         Returns
         -------
         float
-            Minimum `y` value of the block border
+            Minimum `y` value of the block border.
         """
         return float(self.block.bounds[1])
 
     @property
     def xmax(self) -> float:
-        """Maximum `x` value of the trench boundary
+        """Maximum `x` value of the trench boundary.
 
         Returns
         -------
         float
-            Maximum `x` value of the block border
+            Maximum `x` value of the block border.
         """
         return float(self.block.bounds[2])
 
     @property
     def ymax(self) -> float:
-        """Maximum `y` value of the trench boundary
+        """Maximum `y` value of the trench boundary.
 
         Returns
         -------
         float
-            Maximum `y` value of the block border
+            Maximum `y` value of the block border.
         """
         return float(self.block.bounds[3])
 
@@ -144,20 +144,20 @@ class Trench:
         Returns
         -------
         tuple(float, float)
-            `x` and `y` coordinates of the centroid of the block
+            `x` and `y` coordinates of the centroid of the block.
         """
         return self.block.centroid.x, self.block.centroid.y
 
     def toolpath(self) -> Generator[npt.NDArray[np.float32], None, None]:
-        """Toolpath generator
+        """Toolpath generator.
 
-        The function takes a polygon
+        The function takes a polygon.
 
 
         First, the outer border is added to the ``polygon_list``. The functions pops polygon objects from this list,
         buffers it, and yields the exterior coordinates of the buffered polygon.
         Before yielding, the new polygon is added to the list as the buffered inset will be computed in the next
-        iteration. If the buffering operation returns polygons composed of different non-touching parts (`i.e`
+        iteration. If the buffering operation returns polygons composed of different non-touching parts (`i.e.`
         ``Multipolygon``), each part is added to the list as a single ``Polygon`` object.
         If no inset can be computed from the starting polygon, no object is added to the list. The generator
         terminates when no more buffered polygons can be computed.
@@ -165,7 +165,7 @@ class Trench:
         Yields
         ------
         numpy.ndarray
-            (`x`, `y`) coordinates of each of the buffered polygons
+            (`x`, `y`) coordinates of each of the buffered polygons.
 
         See Also
         --------
@@ -212,8 +212,8 @@ class Trench:
         For a reference, read the buffer operations `here
         <https://shapely.readthedocs.io/en/stable/manual.html#constructive-methods>`_
 
-        .. [#] John R. Herring, Ed., “OpenGIS Implementation Specification for Geographic information - Simple feature
-        access - Part 1: Common architecture,” Oct. 2006
+        .. [#] John R. Herring, Ed., “OpenGIS Implementation Specification for Geographic information - Simple
+            feature access - Part 1: Common architecture,” Oct. 2006
 
         See Also
         --------
@@ -234,27 +234,27 @@ class Trench:
 class TrenchColumn:
     """Class representing a column of isolation trenches."""
 
-    x_center: float
-    y_min: float
-    y_max: float
-    bridge: float = 0.026
-    length: float = 1
-    nboxz: int = 4
-    z_off: float = -0.020
-    h_box: float = 0.075
-    base_folder: str = ''
-    deltaz: float = 0.0015
-    delta_floor: float = 0.001
-    beam_waist: float = 0.004
-    round_corner: float = 0.005
-    u: list[float] | None = None
-    speed: float = 4
-    speed_closed: float = 5
-    speed_pos: float = 0.5
+    x_center: float  #: Center of the trench blocks [mm].
+    y_min: float  #: Minimum `y` coordinates of the trench blocks [mm].
+    y_max: float  #: Maximum `y` coordinates of the trench blocks [mm].
+    bridge: float = 0.026  #: Separation length between nearby trench blocks [mm].
+    length: float = 1  #: Lenght of the trench along the `x` axis [mm].
+    h_box: float = 0.075  #: Height of the single trench box [mm].
+    nboxz: int = 4  #: Number of stacked box along the `z` axis.
+    z_off: float = 0.020  #: Starting offset in `z` with respect to the sample's surface [mm].
+    deltaz: float = 0.0015  #: Offset distance between countors paths of the trench wall [mm].
+    delta_floor: float = 0.001  #: Offset distance between buffered polygons in the trench toolpath [mm].
+    u: list[float] | None = None  #:
+    speed: float = 4  #: Translation speed [mm/s].
+    speed_closed: float = 5  #: Translation speed with closed shutter [mm/s].
+    speed_pos: float = 0.5  #: Positioning speed with closed shutter [mm/s].
+    base_folder: str = ''  #: Location where PGM files are stored in lab PC. If empty, load files with relative path.
+    beam_waist: float = 0.004  #: Diameter of the laser beam-waist [mm].
+    round_corner: float = 0.010  #: Radius of the blocks round corners [mm].
 
     def __post_init__(self):
-        self.CWD: pathlib.Path = pathlib.Path.cwd()
-        self.trench_list: list[Trench] = []
+        self.CWD: pathlib.Path = pathlib.Path.cwd()  #:
+        self.trench_list: list[Trench] = []  #:
 
     def __iter__(self) -> Iterator[Trench]:
         """Iterator that yields single trench blocks of the column.
@@ -271,49 +271,60 @@ class TrenchColumn:
 
     @property
     def adj_bridge(self) -> float:
+        """Bridge length adjusted for the laser beam waist.
+
+        Returns
+        -------
+        float
+            Adjustted bridge size considering the size of the laser focus [mm].
         """
-        > The function `adj_bridge` returns the adjusted bridge size considering the size of the laser focus and the
-        round corner
-        :return: The adjusted bridge size is being returned.
-        """
-        # adjust bridge size considering the size of the laser focus [mm]
         return self.bridge / 2 + self.beam_waist + self.round_corner
 
     @property
     def n_repeat(self) -> int:
+        """Number of laser passes required to cover the vertical height of the trench box.
+
+        Returns
+        -------
+        int
+            The number of times the border path is repeated in the `z` direction.
+        """
         return int(math.ceil((self.h_box - self.z_off) / self.deltaz))
 
     @property
     def fabrication_time(self) -> float:
-        """
+        """Total fabrication time.
+
         The fabrication time is the sum of the lengths of all the walls and floors of all the trenches, divided by the
-        speed of the machine.
-        :return: The total fabrication time for the trench.
+        translation speed.
+
+        Returns
+        -------
+        float
+            Total fabrication time [s].
         """
-        l_tot = 0.0
-        for trench in self.trench_list:
-            l_tot += self.nboxz * (self.n_repeat * trench.wall_length + trench.floor_length)
+        l_tot = sum([self.nboxz * (self.n_repeat * t.wall_length + t.floor_length) for t in self.trench_list])
         return l_tot / self.speed
 
     @property
     def rect(self) -> geometry.Polygon:
-        """
-        It returns a polygon object.
-        :return: A Polygon object
+        """Area of the trench column.
 
-        Getter for the rectangular box for the whole trench column. If the ``x_c``, ``y_min`` and ``y_max`` are set we
-        create a rectangular polygon that will be used to create the single trench blocks.
+        The rectangular box is centered in ``x_c`` along the `x` axis, while the `y`-borders are ``y_min`` and
+        ``y_max``. ::
 
-        ::
-            +-------+  -> y_max
-            |       |
-            |       |
-            |       |
-            +-------+  -> y_min
+            ┌─────┐  ► y_max
+            │     │
+            │     │
+            │     │
+            └─────┘  ► y_min
+               ▲
                x_c
 
-        :return: Rectangular box centered in ``x_c`` and y-borders at ``y_min`` and ``y_max``.
-        :rtype: shapely.geometry.box
+        Returns
+        -------
+        geometry.box
+            Rectangular box polygon.
         """
 
         if self.length is None:
@@ -325,27 +336,30 @@ class TrenchColumn:
         waveguides: list[Waveguide],
         remove: list[int] | None = None,
     ) -> None:
-        """
-        Compute the trench blocks from the waveguide of the optical circuit.
-        To get the trench blocks, the waveguides are used as mold matrix for the trench_list. The waveguides are
-        converted to ``LineString`` and buffered to be as large as the adjusted bridge width.
+        """Dig trenches from waveguide input.
 
-        Using polygon difference, the rectangle (minx, miny, maxx, maxy) = (x_c - l, y_min, x_c + l, y_max) is cut
-        obtaining a ``MultiPolygon`` with all the trench blocks.
+        The function uses a list of ``Waveguide`` objects as a mold to define the trench shapes. It populates
+        `self.trech_list` with ``Trench`` objects.
+        If some of the generated trenches are not needed they can be removed from the list is a ``remove`` list of
+        indeces is given as input. Trenches are numbered such that the one with lowest `y` coordinate has index 0,
+        the one with second-lowest `y` coordinate has index 1 and so on. If ``remove`` is empty or ``None`` all the
+        generated trenches are added to the `self.trench_list`.
 
-        All the blocks are treated individually. Each block is then buffered to obtain an outset polygon with rounded
-        corners a Trench obj is created with the new polygon box and the trench_list are appended to the
-        ``trench_list``.
+        Parameters
+        ----------
+        waveguides : list(Waveguide)
+            List of ``Waveguide`` objects that will be used as a mold to define trench shapes.
+        remove : list[int], optional
+            List of indides of trench to be removed from the ``TrenchColumn``.
 
-        :param waveguides: List of the waveguides composing the optical circuit.
-        :type waveguides: List[Waveguide]
-        :param remove: List of trench to remove.
-        :type remove: List[int]
+        Returns
+        -------
+        None
         """
 
         if not all(isinstance(wg, Waveguide) for wg in waveguides):
             raise ValueError(
-                f'All the input objects must be instances of Waveguide. Given ' f'{[type(wg) for wg in waveguides]}'
+                f'All the input objects must be of type Waveguide.\nGiven {[type(wg) for wg in waveguides]}'
             )
 
         coords = []
@@ -359,22 +373,25 @@ class TrenchColumn:
         waveguides: list[npt.NDArray[np.float32]],
         remove: list[int] | None = None,
     ) -> None:
-        """
-        Compute the trench blocks from the waveguide of the optical circuit.
-        To get the trench blocks, the waveguides are used as mold matrix for the trench_list. The waveguides are
-        converted to ``LineString`` and buffered to be as large as the adjusted bridge width.
+        """Dig trenches from array-like input.
 
-        Using polygon difference, the rectangle (minx, miny, maxx, maxy) = (x_c - l, y_min, x_c + l, y_max) is cut
-        obtaining a ``MultiPolygon`` with all the trench blocks.
+        The function uses a list of `array-like` objects as a mold to define the trench shapes. It populates
+        `self.trech_list` with ``Trench`` objects.
+        If some of the generated trenches are not needed they can be removed from the list is a ``remove`` list of
+        indeces is given as input. Trenches are numbered such that the one with lowest `y` coordinate has index 0,
+        the one with second-lowest `y` coordinate has index 1 and so on. If ``remove`` is empty or ``None`` all the
+        generated trenches are added to the `self.trench_list`.
 
-        All the blocks are treated individually. Each block is then buffered to obtain an outset polygon with rounded
-        corners a Trench obj is created with the new polygon box and the trench_list are appended to the
-        ``trench_list``.
+        Parameters
+        ----------
+        waveguides : list(numpy.ndarray)
+            List of ``numpy.ndarray`` objects that will be used as a mold to define trench shapes.
+        remove : list[int], optional
+            List of indides of trench to be removed from the ``TrenchColumn``.
 
-        :param waveguides: List of the waveguides composing the optical circuit.
-        :type waveguides: List[Waveguide]
-        :param remove: List of trench to remove.
-        :type remove: List[int]
+        Returns
+        -------
+        None
         """
         if not all(isinstance(wg, np.ndarray) for wg in waveguides):
             raise ValueError(f'All the input objects must be numpy arrays. Given {[type(wg) for wg in waveguides]}')
@@ -390,22 +407,46 @@ class TrenchColumn:
         coords_list: list[list[tuple[float, float]]],
         remove: list[int] | None = None,
     ) -> None:
+        """Compute the trench blocks from the waveguide of the optical circuit.
 
+        Trench blocks shapes are defined using a list of paths (``coords_list``) as mold matrix.
+        The waveguides are converted to ``LineString`` and buffered to be as large as the adjusted bridge width.
+
+        Using polygon difference operation, the rectangular area of the ``TrenchColumn`` is cut obtaining a
+        ``MultiPolygon`` made of all the trench blocks.
+
+        All the blocks are then treated individually. Each block is buffered to obtain an outset polygon with
+        rounded corners a ``Trench`` object is created with the new polygon box and appended to the ``trench_list``,
+        if their index is not present in the ``remove`` list.
+
+        Parameters
+        ----------
+        coords_list : list(list(tuple(float, float)))
+            List of ``numpy.ndarray`` objects that will be used as a mold to define trench shapes.
+        remove : list[int], optional
+            List of indides of trench to be removed from the ``TrenchColumn``.
+
+        Returns
+        -------
+        None
+        """
         if remove is None:
             remove = []
 
-        trench_block = self.rect
+        trench_blocks = self.rect
         for coords in coords_list:
             dilated = geometry.LineString(coords).buffer(self.adj_bridge, cap_style=1)
-            trench_block = trench_block.difference(dilated)
+            trench_blocks = trench_blocks.difference(dilated)
 
         # if coordinates are empty or coordinates do not intersect the trench column rectangle box
-        if almost_equal(trench_block, self.rect, tol=1e-8):
+        if almost_equal(trench_blocks, self.rect, tol=1e-8):
             print('No trench found intersecting waveguides with trench area.\n')
             return None
 
-        for block in listcast(sorted(trench_block.geoms, key=Trench)):
+        for block in listcast(sorted(trench_blocks.geoms, key=Trench)):
+            # buffer to round corners
             block = block.buffer(self.round_corner, resolution=256, cap_style=1)
+            # simplify the shape to avoid path too much dense of points
             block = block.simplify(tolerance=5e-7, preserve_topology=True)
             self.trench_list.append(Trench(self.normalize(block), self.delta_floor))
 
@@ -414,16 +455,45 @@ class TrenchColumn:
 
     @staticmethod
     def normalize(poly: geometry.Polygon) -> geometry.Polygon:
-        """
-        Normalize polygon
+        """Normalize polygon.
 
         The function standardize the input polygon. It set a given orientation and set a definite starting point for
         the inner and outer rings of the polygon.
-        Finally, it returns a new Polygon object constructed with the new ordered sequence of points.
 
-        Function taken from https://stackoverflow.com/a/63402916
+        Parameters
+        ----------
+        poly: geometry.Polygon
+            Input ``Polygon`` object.
+
+        Returns
+        -------
+        geometry.Polygon
+            New ``Polygon`` object constructed with the new ordered sequence of points.
+
+        See Also
+        --------
+        `This <https://stackoverflow.com/a/63402916>`_ stackoverflow answer.
         """
+
         def normalize_ring(ring: geometry.polygon.LinearRing):
+            """Normalize ring
+            It takes the exterior ring (a list of coordinates) of a ``Polygon`` object and returns the same ring,
+            but with the sorted coordinates.
+
+
+            Parameters
+            ----------
+            ring : geometry.LinearRing
+                List of coordinates of a ``Polygon`` object.
+
+            Returns
+            -------
+                The coordinates of the ring, sorted from the minimum value to the maximum.
+
+            See Also
+            --------
+            shapely.geometry.LinearRing : ordered sequence of (x, y[, z]) point tuples.
+            """
             coords = ring.coords[:-1]
             start_index = min(range(len(coords)), key=coords.__getitem__)
             return coords[start_index:] + coords[:start_index]
