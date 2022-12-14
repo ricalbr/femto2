@@ -241,7 +241,7 @@ class TrenchColumn:
     length: float = 1  #: Lenght of the trench along the `x` axis [mm].
     h_box: float = 0.075  #: Height of the single trench box [mm].
     nboxz: int = 4  #: Number of stacked box along the `z` axis.
-    z_off: float = 0.020  #: Starting offset in `z` with respect to the sample's surface [mm].
+    z_off: float = -0.020  #: Starting offset in `z` with respect to the sample's surface [mm].
     deltaz: float = 0.0015  #: Offset distance between countors paths of the trench wall [mm].
     delta_floor: float = 0.001  #: Offset distance between buffered polygons in the trench toolpath [mm].
     u: list[float] | None = None  #:

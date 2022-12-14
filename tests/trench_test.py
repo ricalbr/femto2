@@ -258,7 +258,7 @@ def test_trenchcol_default() -> None:
     assert tcol.deltaz == float(0.0015)
     assert tcol.delta_floor == float(0.001)
     assert tcol.beam_waist == float(0.004)
-    assert tcol.round_corner == float(0.005)
+    assert tcol.round_corner == float(0.010)
     assert tcol.u is None
     assert tcol.speed == float(4)
     assert tcol.speed_closed == float(5)
