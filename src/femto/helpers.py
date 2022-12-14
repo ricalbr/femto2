@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import functools
 import itertools
-from typing import Any, Iterator
+from typing import Any
 from typing import Dict
 from typing import Iterable
 from typing import Iterator

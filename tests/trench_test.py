@@ -296,16 +296,19 @@ def test_trenchcol_param(param) -> None:
 def test_trenchcol_adj_bridge(tc, param) -> None:
     assert tc.adj_bridge == param['bridge'] / 2 + param['beam_waist'] + param['round_corner']
 
+
 @pytest.mark.parametrize(
-        "h_box, z_off, deltaz, exp",[
+    "h_box, z_off, deltaz, exp",
+    [
         (0, 0.020, 0.001, 20),
         (0.300, 0.0, 0.001, 300),
         (0.100, 0.05, 0.002, 25),
-        (-0.150, 0.0, 0.015, 10),]
+        (-0.150, 0.0, 0.015, 10),
+    ],
 )
 def test_trenchcol_n_repeat(h_box, z_off, deltaz, exp, param) -> None:
     param['h_box'] = h_box
-    param['z_off']= z_off
+    param['z_off'] = z_off
     param['deltaz'] = deltaz
     tcol = TrenchColumn(**param)
     assert tcol.n_repeat == exp
