@@ -835,7 +835,7 @@ class NasuWaveguide(Waveguide):
     adj_scan_shift: tuple[float, float, float] = (0, 0.0004, 0)  #: (`x`, `y`, `z`)-shifts between adjacent passes
     adj_scan: int = 5  #: Number of adjacent scans
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         super().__post_init__()
         if not isinstance(self.adj_scan, int):
             raise ValueError(f'Number of adjacent scan must be of type int. Given type is {type(self.scan).__name__}.')

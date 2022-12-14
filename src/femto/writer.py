@@ -363,7 +363,7 @@ class TrenchWriter(Writer):
                 x0, y0, z0 = self.transform_points(
                     trench.xborder[0],
                     trench.yborder[0],
-                    np.array((nbox * column.h_box - column.z_off) / super().neff),
+                    np.array(nbox * column.h_box + column.z_off),
                 )
                 G.comment(f'+--- COLUMN #{index + 1}, TRENCH #{i_trc + 1} LEVEL {nbox + 1} ---+')
 

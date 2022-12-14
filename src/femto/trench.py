@@ -240,7 +240,7 @@ class TrenchColumn:
     bridge: float = 0.026
     length: float = 1
     nboxz: int = 4
-    z_off: float = 0.020
+    z_off: float = -0.020
     h_box: float = 0.075
     base_folder: str = ''
     deltaz: float = 0.0015
@@ -281,12 +281,7 @@ class TrenchColumn:
 
     @property
     def n_repeat(self) -> int:
-        """
-        The function n_repeat() returns the number of times the laser must be fired to cover the entire height of the
-        box
-        :return: The number of times the pattern should be repeated in the z direction.
-        """
-        return int(math.ceil((self.h_box + self.z_off) / self.deltaz))
+        return int(math.ceil((self.h_box - self.z_off) / self.deltaz))
 
     @property
     def fabrication_time(self) -> float:
@@ -411,6 +406,7 @@ class TrenchColumn:
 
         for block in listcast(sorted(trench_block.geoms, key=Trench)):
             block = block.buffer(self.round_corner, resolution=256, cap_style=1)
+            block = block.simplify(tolerance=5e-7, preserve_topology=True)
             self.trench_list.append(Trench(self.normalize(block), self.delta_floor))
 
         for index in sorted(listcast(remove), reverse=True):
@@ -427,15 +423,7 @@ class TrenchColumn:
 
         Function taken from https://stackoverflow.com/a/63402916
         """
-
-        def normalize_ring(ring):
-            """
-            It takes a ring (a list of coordinates) and returns the same ring, but with the coordinates in a different
-            order
-
-            :param ring: a shapely.geometry.Polygon object
-            :return: the coordinates of the ring, starting with the minimum value of the coordinates.
-            """
+        def normalize_ring(ring: geometry.polygon.LinearRing):
             coords = ring.coords[:-1]
             start_index = min(range(len(coords)), key=coords.__getitem__)
             return coords[start_index:] + coords[:start_index]
@@ -446,7 +434,7 @@ class TrenchColumn:
         return geometry.Polygon(normalized_exterior, normalized_interiors)
 
 
-def main():
+def main() -> None:
     # Data
     PARAM_WG = dotdict(speed=20, radius=25, pitch=0.080, int_dist=0.007, samplesize=(25, 3))
     PARAM_TC = dotdict(length=1.0, base_folder='', y_min=-0.1, y_max=19 * PARAM_WG['pitch'] + 0.1, u=[30.339, 32.825])

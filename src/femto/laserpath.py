@@ -36,7 +36,7 @@ class LaserPath:
     _f: npt.NDArray[np.float32] = np.array([], dtype=np.float32)
     _s: npt.NDArray[np.float32] = np.array([], dtype=np.float32)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if not isinstance(self.scan, int):
             raise ValueError(f'Number of scan must be integer. Given {self.scan}.')
 
@@ -595,7 +595,7 @@ class LaserPath:
             print(f'{self.__class__.__name__} exported to {fn}.')
 
 
-def main():
+def main() -> None:
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
 
