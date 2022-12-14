@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
+import inspect
 import pathlib
 from typing import Any
 from typing import Sequence
@@ -18,17 +19,17 @@ LP = TypeVar('LP', bound='LaserPath')
 class LaserPath:
     """Class that computes and stores the coordinates of a laser path."""
 
-    scan: int = 1  #: number of overlapped scans
-    speed: float = 1.0  #: opened shutter translation speed `[mm/s]`
-    samplesize: tuple[float, float] = (100, 50)  #: dimensions of the sample (x `[mm]`, y `[mm]`)
-    x_init: float = -2.0  #: initial x-coordinate for the laser path `[mm]`
-    y_init: float = 0.0  #: initial y-coordinate for the laser path `[mm]`
-    z_init: float | None = None  #: initial z-coordinate for the laser path `[mm]`
-    lsafe: float = 2.0  #: safe margin length `[mm]`
-    speed_closed: float = 5  #: closed shutter translation speed `[mm/s]`
-    speed_pos: float = 0.5  #: positioning speed (shutter closed)`[mm/s]`
-    cmd_rate_max: float = 1200  #: maximum command rate `[cmd/s]`
-    acc_max: float = 500  #: maximum acceleration/deceleration `[m/s^2]`
+    scan: int = 1  #: Number of overlapped scans.
+    speed: float = 1.0  #: Opened shutter translation speed `[mm/s]`.
+    samplesize: tuple[float, float] = (100, 50)  #: Dimensions of the sample (x `[mm]`, y `[mm]`).
+    x_init: float = -2.0  #: Initial x-coordinate for the laser path `[mm]`.
+    y_init: float = 0.0  #: Initial y-coordinate for the laser path `[mm]`
+    z_init: float | None = None  #: Initial z-coordinate for the laser path `[mm]`.
+    lsafe: float = 2.0  #: Safe margin length `[mm]`.
+    speed_closed: float = 5  #: Closed shutter translation speed `[mm/s]`.
+    speed_pos: float = 0.5  #: Positioning speed (shutter closed)`[mm/s]`.
+    cmd_rate_max: float = 1200  #: Maximum command rate `[cmd/s]`.
+    acc_max: float = 500  #: Maximum acceleration/deceleration `[m/s^2]`.
 
     _x: npt.NDArray[np.float32] = np.array([], dtype=np.float32)
     _y: npt.NDArray[np.float32] = np.array([], dtype=np.float32)
@@ -59,8 +60,7 @@ class LaserPath:
         -------
         Instance of class
         """
-
-        return cls(**param)
+        return cls(**{k: v for k, v in param.items() if k in inspect.signature(cls).parameters})
 
     @property
     def init_point(self) -> tuple[float, float, float]:
