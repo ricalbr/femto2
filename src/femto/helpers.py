@@ -241,5 +241,4 @@ def almost_equal(
     :param tol: tolerance controlling the similarity
     :return: boolean value True if the polygon are almost equal, False otherwise
     """
-    print(polygon.symmetric_difference(other).area)
     return bool(polygon.symmetric_difference(other).area < tol)
