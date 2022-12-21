@@ -373,6 +373,7 @@ class TrenchWriter(Writer):
                 G.shutter('OFF')
                 if column.u:
                     G.instruction(f'LINEAR U{column.u[0]:.6f}')
+                    G.dwell(self.long_pause)
                 G.move_to([float(x0), float(y0), float(z0)], speed_pos=column.speed_closed)
 
                 G.instruction(f'$ZCURR = {z0:.6f}')
@@ -389,6 +390,7 @@ class TrenchWriter(Writer):
                 G.instruction(f'MSGDISPLAY 1, "COL {index + 1:03}, TR {i_trc + 1:03}, LV {nbox + 1:03}, F"\n')
                 if column.u:
                     G.instruction(f'LINEAR U{column.u[-1]:.6f}')
+                    G.dwell(self.long_pause)
                 G.shutter(state='ON')
                 G.farcall(floor_filename)
                 G.shutter('OFF')
