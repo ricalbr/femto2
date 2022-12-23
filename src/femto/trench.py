@@ -58,8 +58,8 @@ class Trench:
     def border(self) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]:
         """Border of the trench.
 
-        It returns the border of the block as a tuple of two numpy arrays, one for the x coordinates and one for
-        the y coordinates.
+        It returns the border of the block as a tuple of two numpy arrays, one for the `x` coordinates and one for
+        the `y` coordinates.
 
         Returns
         -------
