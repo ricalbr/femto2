@@ -18,6 +18,12 @@ from femto.writer import WaveguideWriter
 
 
 class Device:
+    """Class representing a Device.
+
+    A Device is a collection of ``Waveguide``, ``NasuWaveguide``, ``Marker``, ``Trench`` (or ``TrenchColumn``)
+    objects.
+    """
+
     def __init__(self, **param) -> None:
         self._param: dict[str, Any] = dict(**param)
         self.unparsed_objects: list[Any] = []
@@ -30,14 +36,52 @@ class Device:
         }
 
     def append(self, obj: Any) -> None:
+        """Append object to Device.
+
+        Parameters
+        ----------
+        obj: any object that can be stored in a ``Device`` class.
+
+        Returns
+        -------
+        None
+        """
+
         self.parse_objects(unparsed_objects=copy.copy(flatten([obj])))
 
     def extend(self, obj: list[Any]) -> None:
+        """Exend Device objects list.
+
+        Parameters
+        ----------
+        obj: List of any object that can be stored in a ``Device`` class.
+
+        Returns
+        -------
+        None
+        """
+
         if not isinstance(obj, list):
             raise TypeError(f'The object must be a list. {type(obj)} was given.')
         self.parse_objects(unparsed_objects=copy.copy(obj))
 
     def parse_objects(self, unparsed_objects: Any | list[Any]) -> None:
+        """Parse objects.
+
+        The function takes a list of objects and parse all of them based on their types.
+        If the type of the object matches one of the types of the ``Writer`` registered in the ``Device`` class,
+        the object is added to the ``Writer.obj_list``. If not, a ``TypeError`` is raised.
+
+        Parameters
+        ----------
+        unparsed_objects : list
+            List of object that can be stored in a ``Device`` class.
+
+        Returns
+        -------
+        None
+        """
+
         # split the unparsed_object list based on the type of each element
         d = collections.defaultdict(list)
         while unparsed_objects:
@@ -55,6 +99,22 @@ class Device:
                 raise TypeError(f'Found unexpected type {err.args}.')
 
     def plot2d(self, show: bool = True, save: bool = False) -> None:
+        """Plot 2D.
+
+        2D plot of all the objects stored in the ``Device`` class.
+
+        Parameters
+        ----------
+        show : bool, optional
+            Boolean flag to automatically show the plot. The default value is True.
+        save : bool, optional
+            Boolean flag to automatically save the plot. The default value is False.
+
+        Returns
+        -------
+        None
+        """
+
         self.fig = go.Figure()
         for writer in self.writers.values():
             # TODO: fix standard fig update
@@ -66,6 +126,22 @@ class Device:
             self.save()
 
     def plot3d(self, show: bool = True, save: bool = False) -> None:
+        """Plot 3D.
+
+        3D plot of all the objects stored in the ``Device`` class.
+
+        Parameters
+        ----------
+        show : bool, optional
+            Boolean flag to automatically show the plot. The default value is True.
+        save : bool, optional
+            Boolean flag to automatically save the plot. The default value is False.
+
+        Returns
+        -------
+        None
+        """
+
         self.fig = go.Figure()
         for key, writer in self.writers.items():
             try:
@@ -79,6 +155,20 @@ class Device:
             self.save()
 
     def pgm(self, verbose: bool = True) -> None:
+        """Export to PGM.
+
+        Export all the objects stored in ``Device`` class as a `PGM` file.
+
+        Parameters
+        ----------
+        verbose : bool, optional
+            Boolean flag to print informations during the export operation.
+
+        Returns
+        -------
+        None
+        """
+
         for key, writer in self.writers.items():
             if verbose:
                 print(f'Exporting {key.__name__} objects...')
@@ -86,7 +176,27 @@ class Device:
         if verbose:
             print('Export .pgm files complete.\n')
 
-    def save(self, filename='scheme.html', opt: dict[str, Any] | None = None) -> None:
+    def save(self, filename: str = 'scheme.html', opt: dict[str, Any] | None = None) -> None:
+        """Save figure.
+
+        Save the plot as a file.
+
+        Parameters
+        ----------
+        filename: str, optional
+            Filename of the output image file. The default name is "scheme.html".
+        opt : dict, optional
+            Dictionary with exporting options specifications.
+
+        Returns
+        -------
+        None
+
+        See Also
+        --------
+        go.Figure.write_image : Method to export a plotly image.
+        """
+
         if opt is None:
             opt = dict()
         default_opt = {'width': 1980, 'height': 1080, 'scale': 2, 'engine': 'kaleido'}
