@@ -298,7 +298,7 @@ def test_trenchcol_adj_bridge(tc, param) -> None:
 
 
 @pytest.mark.parametrize(
-    "h_box, z_off, deltaz, exp",
+    'h_box, z_off, deltaz, exp',
     [
         (0, 0.020, 0.001, 20),
         (0.300, 0.0, 0.001, 300),
@@ -382,7 +382,7 @@ def test_trenchcol_dig() -> None:
     tc._dig(coords)
 
     for (t, c) in zip(tc.trench_list, comp_box):
-        assert tc.normalize(c).almost_equals(t.block)
+        assert tc.normalize(c).equals_exact(t.block, tolerance=1e-8)
         assert almost_equal(tc.normalize(c), t.block)
 
 
@@ -404,8 +404,7 @@ def test_trenchcol_dig_remove() -> None:
     tc._dig(coords, remove=[1])
 
     for (t, c) in zip(tc.trench_list, comp_box):
-        assert tc.normalize(c).almost_equals(t.block)
-        assert almost_equal(tc.normalize(c), t.block)
+        assert tc.normalize(c).equals_exact(t.block, tolerance=1e-8)
 
 
 def test_trenchcol_dig_remove_all() -> None:
@@ -497,6 +496,7 @@ def test_dig_from_array_raise(tc):
 
 def test_normalize(tc):
     from itertools import combinations
+    from femto.helpers import almost_equal
 
     poly1 = Polygon([(0, 0), (0, 1), (1, 1), (1, 0)])
     poly2 = Polygon([(0, 1), (1, 1), (1, 0), (0, 0)])
@@ -505,4 +505,4 @@ def test_normalize(tc):
     poly = [poly1, poly2, poly3, poly4]
 
     for p1, p2 in combinations(poly, 2):
-        tc.normalize(p1).almost_equals(tc.normalize(p2))
+        assert almost_equal(p1, p2)

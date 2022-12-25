@@ -178,7 +178,7 @@ class Trench:
 
         while polygon_list:
             current_poly = polygon_list.pop(0)
-            if current_poly:
+            if not current_poly.is_empty:
                 polygon_list.extend(self.buffer_polygon(current_poly, offset=-np.fabs(self.delta_floor)))
                 self.floor_length += current_poly.length
                 yield np.array(current_poly.exterior.coords).T
