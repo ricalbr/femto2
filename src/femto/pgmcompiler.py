@@ -79,22 +79,41 @@ class PGMCompiler:
 
     @classmethod
     def from_dict(cls: type[GC], param: dict[str, Any]) -> GC:
+        """Create an instance of the class from a dictionary.
+
+        It takes a class and a dictionary, and returns an instance of the class with the dictionary's keys as the
+        instance's attributes.
+
+        Parameters
+        ----------
+        param, dict()
+            Dictionary mapping values to class attributes.
+
+        Returns
+        -------
+        Instance of class
+        """
         return cls(**param)
 
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}@{id(self) & 0xFFFFFF:x}'
 
     def __enter__(self) -> PGMCompiler:
-        """
-        Context manager entry
+        """Context manager entry.
 
-        :return: Self
+        The context manager takes care to automatically add the proper header file (from the `self.laser` attribute,
+        add the G84 activation instruction (if needed) and printing some warning info for rotations.
 
-        Can be use like:
-        ::
-            with femto.PGMCompiler(filename, ind_rif) as gc:
-                <code block>
+        It can be use like:
+
+        >>>with femto.PGMCompiler(filename, ind_rif) as gc:
+        >>>     <code block>
+
+        Returns
+        -------
+        The object itself.
         """
+
         self.header()
         self.dwell(1.0)
         self.instruction('\n')
@@ -118,10 +137,11 @@ class PGMCompiler:
         exc_value: BaseException | None,
         traceback: TracebackType | None,
     ) -> None:
-        """
-        Context manager exit
+        """Context manager exit.
 
-        :return: None
+        Returns
+        -------
+        None
         """
 
         if self.aerotech_angle:
@@ -133,33 +153,43 @@ class PGMCompiler:
 
     @property
     def xsample(self) -> float:
+        """`x`-dimension of the sample
+
+        Returns
+        -------
+        The absolute value of the `x` element of the samplesize array.
         """
-        This function returns the absolute value of the first element of the samplesize array
-        :return: The absolute value of the first element of the samplesize array.
-        """
-        return float(np.fabs(self.samplesize[0]))
+        return float(abs(self.samplesize[0]))
 
     @property
     def ysample(self) -> float:
+        """`y`-dimension of the sample
+
+        Returns
+        -------
+        The absolute value of the `y` element of the samplesize array.
         """
-        This function returns the absolute value of the y-axis sample size
-        :return: The absolute value of the y-component of the sample size.
-        """
-        return float(np.fabs(self.samplesize[1]))
+        return float(abs(self.samplesize[1]))
 
     @property
     def neff(self) -> float:
-        """
-        > The function `neff` returns the effective index of refraction of the waveguide
-        :return: The refractive index of the glass.
+        """Effective refractive index.
+
+        Returns
+        -------
+        Effective refractive index of the waveguide.
         """
         return self.n_glass / self.n_environment
 
     @property
     def pso_label(self) -> str:
-        """
-        If the laser is ANT, return Z, otherwise return X
-        :return: The label of the PSO.
+        """PSO command lable.
+
+        If the laser is ANT, return Z, otherwise return X.
+
+        Returns
+        -------
+        Lable for the PSO commands.
         """
         if self.laser.lower() not in ['ant', 'carbide', 'pharos', 'uwe']:
             raise ValueError(f'Laser can be only ANT, CARBIDE, PHAROS or UWE. Given {self.laser.upper()}.')
@@ -170,37 +200,45 @@ class PGMCompiler:
 
     @property
     def tshutter(self) -> float:
-        """
-        Function that set the shuttering time given the fabrication laboratory.
+        """Shuttering delay.
 
-        :return: shuttering time
-        :rtype: float
+        Function that gives the shuttering delay time given the fabrication laboratory.
+
+        Returns
+        -------
+        Delay time [s].
         """
         if self.laser.lower() not in ['ant', 'carbide', 'pharos', 'uwe']:
             raise ValueError(f'Laser can be only ANT, CARBIDE, PHAROS or UWE. Given {self.laser.upper()}.')
         if self.laser.lower() == 'uwe':
+            # mechanical shutter
             return 0.005
         else:
+            # pockels cell
             return 0.000
 
     @property
     def dwell_time(self) -> float:
-        """
-        This function returns the total dwell time of the user
-        :return: The total dwell time of the customer.
+        """Total DWELL time.
+
+        Returns
+        -------
+        Total pausing times in the G-code script.
         """
         return self._total_dwell_time
 
-    # G-Code Methods
     def header(self) -> None:
-        """
-        It reads the header file for the laser cutter and adds it to the instructions
+        """Add header instructions.
 
-        The function print the header file of the G-Code file. The user can specify the fabrication line to work in
-        ``ANT``, ``CARBIDE``, ``PHAROS`` or ``UWE`` as parameter when the G-Code Compiler obj is instantiated.
+        It reads the header file for the laser cutter and adds it to the instructions list.
+        The user can specify the fabrication line to work in ``ANT``, ``CARBIDE``, ``PHAROS`` or ``UWE`` laser when
+        the G-Code Compiler obj is instantiated.
 
-        :return: None
+        Returns
+        -------
+        None
         """
+
         if self.laser is None or self.laser.lower() not in ['ant', 'carbide', 'pharos', 'uwe']:
             raise ValueError(f'Fabrication line should be PHAROS, CARBIDE or UWE. Given {self.laser}.')
 
@@ -210,16 +248,20 @@ class PGMCompiler:
         self.instruction('\n')
 
     def dvar(self, variables: list[str]) -> None:
-        """
+        """Add declared variable instructions.
+
         Adds the declaration of variables in a G-Code file.
 
-        :param variables: List of G-Code variables
-        :type variables: List[str]
-        :return: None
-        """
-        # cast variables to a flattened list (no nested lists)
-        variables = listcast(flatten(variables))
+        Parameters
+        ----------
+        variables : list(str)
+            List of G-Code variables.
 
+        Returns
+        -------
+        None
+        """
+        variables = listcast(flatten(variables))
         args = ' '.join(['${}'] * len(variables)).format(*variables)
         self._instructions.appendleft(f'DVAR {args}\n\n')
 
@@ -227,6 +269,20 @@ class PGMCompiler:
         self._dvars.extend([var.lower() for var in variables])
 
     def mode(self, mode: str = 'abs') -> None:
+        """Movements mode.
+
+        The function appends the mode string to the list of instructions. If the string is not 'abs' or 'inc',
+        it will raise a ValueError.
+
+        Parameters
+        ----------
+        mode: str, optional
+            Operation mode of the movements commands. It can be ABSOLUTE or INCREMENTAL. The default value is ABSOLUTE.
+
+        Returns
+        -------
+        None
+        """
         if mode is None or mode.lower() not in ['abs', 'inc']:
             raise ValueError(f'Mode should be either ABSOLUTE (ABS) or INCREMENTAL (INC). {mode} was given.')
 
@@ -238,31 +294,42 @@ class PGMCompiler:
             self._mode_abs = False
 
     def comment(self, comstring: str) -> None:
-        """
+        """Add a comment.
+
         Adds a comment to a G-Code file.
 
-        :param comstring: Content of the comment (without line-break character).
-        :type comstring: str
-        :return: None
+        Parameters
+        ----------
+        comstring : str
+            Comment string.
+
+        Returns
+        -------
+        None
         """
+
         if comstring:
             self._instructions.append(f'\n; {comstring}\n')
         else:
             self._instructions.append('\n')
 
     def shutter(self, state: str) -> None:
-        """
-        Adds the instruction to open (close) the shutter to a G-Code file only when necessary.
+        """Open and close shutter.
+
+        Adds the instruction to open (or close) the shutter to a G-Code file.
         The user specifies the state and the function compare it to the current state of the shutter (which is
-        tracked internally during the compilation of the .pgm file). The instruction is printed to file only if the
-        new state differs from the current one.
+        tracked internally during the compilation of the .pgm file).
 
-        :param state: New state of the shutter. ``ON`` or ``OFF``
-        :type state: str
-        :return: None
+        Parameters
+        ----------
+        state: str
+            State of the shutter (`ON` or `OFF`).
 
-        :raise ValueError: Shutter state not valid.
+        Returns
+        -------
+        None
         """
+
         if state is None or state.lower() not in ['on', 'off']:
             raise ValueError(f'Shutter state should be ON or OFF. Given {state}.')
 
@@ -276,32 +343,37 @@ class PGMCompiler:
             pass
 
     def dwell(self, pause: float) -> None:
-        """
-        Adds pause instruction to a G-Code file.
+        """Add pause.
 
-        :param pause: Value of the pause time [s].
-        :type pause: float
-        :return: None
+        Parameters
+        ----------
+        pause : float
+            Pause duration [s].
+
+        Returns
+        -------
+        None
         """
+
         if pause is None or pause == float(0.0):
             return None
         self._instructions.append(f'DWELL {np.fabs(pause)}\n')
         self._total_dwell_time += np.fabs(pause)
 
     def set_home(self, home_pos: list[float]) -> None:
-        """
-        Defines a preset position or a software home position to the one specified in the input list.
-        To exclude a variable set it to None.
+        """Set coordinates of present position.
 
-        :param home_pos: Ordered coordinate list that specifies software home position [mm].
-        ::
-            ``home_pos[0]`` -> X
-            ``home_pos[1]`` -> Y
-            ``home_pos[2]`` -> Z
-        :type home_pos: List[float]
-        :return: None
+        The user can set the current Aerotech postition to a particular set of coordinates, given as an input list.
+        A variable can be excluded if set to ``None``. The function can be used to set a user-defined home position.
 
-        :raise ValueError: Final position is not valid.
+        Parameters
+        ----------
+        home_pos: list(float)
+            List of coordinates `(x, y, z)` of the new value for the current point [mm].
+
+        Returns
+        -------
+        None
         """
 
         if np.size(home_pos) != 3:
@@ -314,18 +386,21 @@ class PGMCompiler:
         self._instructions.append(f'G92 {args}\n')
 
     def move_to(self, position: list[float | None], speed_pos: float | None = None) -> None:
-        """
-        Utility function to move to a given position with the shutter OFF. The user can specify the target position
-        and the positioning speed.
+        """Move to target.
 
-        :param position: Ordered coordinate list that specifies the target position [mm].
-            position[0] -> X
-            position[1] -> Y
-            position[2] -> Z
-        :type position: List[float]
-        :param speed_pos: Positioning speed [mm/s]. The default is self.speed_pos.
-        :type speed_pos: float
-        :return: None
+        Utility function to move to a given position with the shutter ``OFF``.
+        The user can specify the target position and the positioning speed.
+
+        Parameters
+        ----------
+        position: list(float, optional)
+            List of target coordinates `(x, y, z)` [mm].
+        speed_pos: float, optional
+            Translation speed. The default value is ``self.speed_pos``.
+
+        Returns
+        -------
+        None
         """
         if len(position) != 3:
             raise ValueError(f'Given final position is not valid. 3 values required, given {len(position)}.')
@@ -348,24 +423,43 @@ class PGMCompiler:
         self.instruction('\n')
 
     def go_origin(self) -> None:
-        """
-        Utility function, return to the origin (0,0,0) with shutter OFF.
+        """Return to origin.
 
-        :return: None
+        Utility function, returns to the origin `(0,0,0)` with shutter ``OFF``.
+
+        Returns
+        -------
+        None
         """
         self.comment('HOMING')
         self.move_to([0.0, 0.0, 0.0])
 
     def go_init(self) -> None:
-        """
-        Utility function to return to the initial point of fabrication (-2,0,0) with shutter OFF.
+        """Return to initial point.
 
-        :return: None
+        Utility function to return to the initial point of fabrication `(-2,0,0)` with shutter ``OFF``.
+
+        Returns
+        -------
+        None
         """
         self.move_to([-2, 0, 0])
 
     @contextlib.contextmanager
     def axis_rotation(self, angle: float | None = None) -> Generator[PGMCompiler, None, None]:
+        """Aerotech axis rotation (G84).
+
+        Context manager for the G84 command. The user can specify the angle (in degree) of the axis rotation.
+
+        Parameters
+        ----------
+        angle : float
+            Value [deg] of the rotation angle
+
+        Yields
+        ------
+        Current PGMCompiler instance
+        """
         self._enter_axis_rotation(angle=angle)
         try:
             yield self
@@ -374,14 +468,20 @@ class PGMCompiler:
 
     @contextlib.contextmanager
     def for_loop(self, var: str, num: int) -> Generator[PGMCompiler, None, None]:
-        """
-        Context manager that manages a FOR loop in a G-Code file.
+        """Foor loop instruction.
 
-        :param var: Name of the variable used for iteration.
-        :type var: str
-        :param num: Number of iterations.
-        :type num: int
-        :return: None
+        Context manager that manages a ``FOR`` loops in a G-Code file.
+
+        Parameters
+        ----------
+        var : str
+            Iterating variable.
+        num : int
+            Number of iterations.
+
+        Yields
+        ------
+        Current PGMCompiler instance
         """
         if num is None:
             raise ValueError("Number of iterations is None. Give a valid 'scan' attribute value.")
@@ -405,12 +505,18 @@ class PGMCompiler:
 
     @contextlib.contextmanager
     def repeat(self, num: int) -> Generator[PGMCompiler, None, None]:
-        """
-        Context manager that manages a REPEAT loop in a G-Code file.
+        """Repeat loop instruction.
 
-        :param num: Number of iterations.
-        :type num: int
-        :return: None
+        Context manager that manages a ``REPEAT`` loops in a G-Code file.
+
+        Parameters
+        ----------
+        num : int
+            Number of iterations.
+
+        Yields
+        ------
+        Current PGMCompiler instance
         """
         if num is None:
             raise ValueError("Number of iterations is None. Give a valid 'scan' attribute value.")
@@ -428,32 +534,44 @@ class PGMCompiler:
             self._total_dwell_time += int(num - 1) * (self._total_dwell_time - _temp_dt)
 
     def tic(self) -> None:
-        """
-        Print the current time (hh:mm:ss) in message panel. The function is intended to be used before the execution
+        """Start time measure.
+
+        Print the current time (hh:mm:ss) in message panel. The function is intended to be used *before* the execution
         of an operation or script to measure its time performances.
 
-        :return: None
+        Returns
+        -------
+        None
         """
         self._instructions.append('MSGDISPLAY 1, "START #TS"\n\n')
 
     def toc(self) -> None:
-        """
-        Print the current time (hh:mm:ss) in message panel. The function is intended to be used after the execution
+        """Stop time measure.
+
+        Print the current time (hh:mm:ss) in message panel. The function is intended to be used *after* the execution
         of an operation or script to measure its time performances.
 
-        :return: None
+        Returns
+        -------
+        None
         """
         self._instructions.append('MSGDISPLAY 1, "END   #TS"\n')
         self._instructions.append('MSGDISPLAY 1, "---------------------"\n')
         self._instructions.append('MSGDISPLAY 1, " "\n\n')
 
     def instruction(self, instr: str) -> None:
-        """
+        """Add G-Code instruction.
+
         Adds a G-Code instruction passed as parameter to the PGM file.
 
-        :param instr: Instruction line to be added to the PGM file. The ``\\n`` character is optional.
-        :type instr: str
-        :return: None
+        Parameters
+        ----------
+        instr : str
+            G-Code instruction to add.
+
+        Returns
+        -------
+        None
         """
         if instr.endswith('\n'):
             self._instructions.append(instr)
@@ -461,14 +579,21 @@ class PGMCompiler:
             self._instructions.append(instr + '\n')
 
     def load_program(self, filename: str, task_id: int = 0) -> None:
-        """
-        Adds the instruction to LOAD a program in a G-Code file.
+        """Load G-code script.
 
-        :param filename: Name of the file that have to be loaded.
-        :type filename: str
-        :param task_id: ID of the task associated to the process.
-        :type task_id: int
-        :return: None
+        Adds the instruction to `LOAD` an external G-Code script in the driver memory. The function is used for
+        `FARCALL` programs.
+
+        Parameters
+        ----------
+        filename : str
+            Filename of the G-code script.
+        task_id : int, optional
+            Task ID number onto which the program will be loaded (and executed). The default value is 0.
+
+        Returns
+        -------
+        None
         """
         if task_id is None:
             task_id = 0
@@ -477,19 +602,21 @@ class PGMCompiler:
         self._instructions.append(f'PROGRAM {int(task_id)} LOAD "{file}"\n')
         self._loaded_files.append(file.stem)
 
-    def programstop(self, task_id: int = 0) -> None:
-        self._instructions.append(f'PROGRAM {int(task_id)} STOP\n')
-        self._instructions.append(f'WAIT (TASKSTATUS({int(task_id)}, DATAITEM_TaskState) == TASKSTATE_Idle) -1\n')
-
     def remove_program(self, filename: str, task_id: int = 0) -> None:
-        """
-        Adds the instruction to REMOVE a program from memory buffer in a G-Code file.
+        """Remove program from memory buffer.
 
-        :param filename: Name of the file to remove.
-        :type filename: str
-        :param task_id: ID of the task associated to the process.
-        :type task_id: int
-        :return: None
+        Adds the instruction to `REMOVE` a program from memory buffer in a G-Code file.
+
+        Parameters
+        ----------
+        filename : str
+            Filename of the G-code script.
+        task_id : int, optional
+            Task ID number onto which the program will be loaded (and executed). The default value is 0.
+
+        Returns
+        -------
+        None
         """
         file = self._get_filepath(filename=filename, extension='pgm')
         if file.stem not in self._loaded_files:
@@ -500,13 +627,37 @@ class PGMCompiler:
         self._instructions.append(f'REMOVEPROGRAM "{file.name}"\n')
         self._loaded_files.remove(file.stem)
 
-    def farcall(self, filename: str) -> None:
-        """
-        Adds the FARCALL instruction in a G-Code file.
+    def programstop(self, task_id: int = 0) -> None:
+        """Program stop.
 
-        :param filename: Name of the file to call.
-        :type filename: str
-        :return: None
+        Add the instruction to stop the execution of an external G-Code script and empty the Task in which the
+        program was running.
+
+        Parameters
+        ----------
+        task_id : int, optional
+            Task ID number onto which the program will be loaded (and executed). The default value is 0.
+
+        Returns
+        -------
+        None
+        """
+        self._instructions.append(f'PROGRAM {int(task_id)} STOP\n')
+        self._instructions.append(f'WAIT (TASKSTATUS({int(task_id)}, DATAITEM_TaskState) == TASKSTATE_Idle) -1\n')
+
+    def farcall(self, filename: str) -> None:
+        """FARCALL instruction.
+
+        Adds the instruction to call and execute an external G-Code script in the current G-Code file.
+
+        Parameters
+        ----------
+        filename : str
+            Filename of the G-code script.
+
+        Returns
+        -------
+        None
         """
         file = self._get_filepath(filename=filename, extension='.pgm')
         if file.stem not in self._loaded_files:
@@ -517,14 +668,20 @@ class PGMCompiler:
         self._instructions.append(f'FARCALL "{file}"\n')
 
     def buffercall(self, filename: str, task_id: int = 0) -> None:
-        """
-        Adds the BUFFEREDRUN instruction in a G-Code file.
+        """BUFFEREDCALL instruction.
 
-        :param filename: Name of the file to call.
-        :type filename: str
-        :param task_id: ID of the task associated to the process.
-        :type task_id: int
-        :return: None
+        Adds the instruction to run an external G-Code script in queue mode.
+
+        Parameters
+        ----------
+        filename : str
+            Filename of the G-code script.
+        task_id : int, optional
+            Task ID number onto which the program will be loaded (and executed). The default value is 0.
+
+        Returns
+        -------
+        None
         """
         file = self._get_filepath(filename=filename, extension='.pgm')
         if file.stem not in self._loaded_files:
@@ -536,8 +693,23 @@ class PGMCompiler:
         self._instructions.append(f'PROGRAM {task_id} BUFFEREDRUN "{file}"\n')
 
     def call_list(self, filenames: list[str], task_id: list[int] | int = 0) -> None:
-        # Remove None from task_id
-        task_id = list(filter(None, listcast(task_id)))
+        """Chiamatutto.
+
+        Load and execute sequentially a list of G-Code scripts.
+
+        Parameters
+        ----------
+        filename : list(str)
+            List of filenames of the G-code scripts to be executed.
+        task_id : list(int), optional
+            Task ID number onto which the program will be loaded (and executed). The default value is 0 for all the
+            scripts in the filename list.
+
+        Returns
+        -------
+        None
+        """
+        task_id = list(filter(None, listcast(task_id)))         # Remove None from task_id
 
         # Ensure task_id and filenames have the same length. If task_id is longer take a slice, pad with 0 otherwise.
         if len(task_id) > len(filenames):
@@ -594,16 +766,21 @@ class PGMCompiler:
         self.instruction('\n')
 
     def close(self, filename: str | None = None, verbose: bool = False) -> None:
-        """
-        Dumps all the instruction in self._instruction in a .pgm file.
-        The filename is specified during the class instatiation. If no extension is present, the proper one is
-        automatically added.
+        """Close and export a G-Code file.
 
-        :param filename: Different filename. The default is None, using self.filename.
-        :type filename: str
-        :param verbose: Print when G-Code export is finished. The default is False.
-        :type verbose: bool
-        :return: None
+        The functions writes all the instructions in a .pgm file. The filename is specified during the class
+        instatiation. If no extension is present, the proper one is automatically added.
+
+        Parameters
+        ----------
+        filename: str, optional
+            Name of the .pgm file. The default value is ``self.filename``.
+        verbose: bool
+            Flag to print info during .pgm file compilation.
+
+        Returns
+        -------
+        None
         """
 
         # get filename and add the proper file extension
@@ -631,6 +808,25 @@ class PGMCompiler:
         y: npt.NDArray[np.float32],
         z: npt.NDArray[np.float32],
     ) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32], npt.NDArray[np.float32]]:
+        """Transform points.
+
+        The function takes in a set of points and apply a set of geometrical transformation (flip, translation,
+        rotation and warp compensation).
+
+        Parameters
+        ----------
+        x: numpy.ndarray
+            Array of the `x`-coordinates.
+        y: numpy.ndarray
+            Array of the `y`-coordinates.
+        z: numpy.ndarray
+            Array of the `z`-coordinates.
+
+        Returns
+        -------
+        tuple(numpy.ndarray, numpy.ndarray, numpy.ndarray)
+            Transformed `x`, `y` and `z` arrays.
+        """
 
         # flip x, y coordinates
         x, y = self.flip(x, y)
@@ -653,9 +849,21 @@ class PGMCompiler:
         xc: npt.NDArray[np.float32],
         yc: npt.NDArray[np.float32],
     ) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]:
-        """
-        Flip the laser path along the x-, y- and z-coordinates
-        :return: None
+        """Flip path.
+
+        Flip the laser path along the `x` and `y` coordinates.
+
+        Parameters
+        ----------
+        xc: numpy.ndarray
+            Array of the `x`-coordinates.
+        yc: numpy.ndarray
+            Array of the `y`-coordinates.
+
+        Returns
+        -------
+        tuple(numpy.ndarray, numpy.ndarray, numpy.ndarray)
+            Flipped `x` and `y` arrays.
         """
         flip_toggle = np.array([1, 1])
 
@@ -690,17 +898,23 @@ class PGMCompiler:
         y: npt.NDArray[np.float32],
         z: npt.NDArray[np.float32],
     ) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32], npt.NDArray[np.float32]]:
-        """
-        Returns the points compensated along z-direction for the refractive index, the offset and the glass warp.
+        """Warp compensation.
 
-        :param x: array of the x-coordinates
-        :type x: np.ndarray
-        :param y: array of the y-coordinates
-        :type y: np.ndarray
-        :param z: array of the z-coordinates
-        :type z: np.ndarray
-        :return: (x, y, zc) tuple of x, y and compensated z points
-        :rtype: tuple(np.ndarray, np.ndarray, np.ndarray)
+        Returns the `z`-compensated points for the glass warp using ``self.fwarp`` function.
+
+        Parameters
+        ----------
+        x: numpy.ndarray
+            Array of the `x`-coordinates.
+        y: numpy.ndarray
+            Array of the `y`-coordinates.
+        z: numpy.ndarray
+            Array of the `z`-coordinates.
+
+        Returns
+        -------
+        tuple(numpy.ndarray, numpy.ndarray, numpy.ndarray)
+            Untouched `x`, `y` arrays and `z`-compensated array.
         """
 
         x_comp = copy.deepcopy(np.array(x))
@@ -713,15 +927,18 @@ class PGMCompiler:
 
     @property
     def t_matrix(self) -> npt.NDArray[np.float32]:
-        """
-        Given the rotation rotation_angle and the rifraction index, the function compute the transformation matrix as
-        composition of rotatio matrix (RM) and a homothety matrix (SM).
+        """Composition of `xy` rotation matrix and `z` refractive index compensation.
 
-        :return: Transformation matrix, TM = SM*RM
-        :rtype: np.array
+        Given the rotation rotation_angle and the refractive index, the function compute the transformation matrix as
+        composition of rotation matrix (RM) and a homothety matrix (SM).
 
-        :raise ValueError: Dimension not valid
+        Returns
+        -------
+        numpy.ndarray
+            Composition of `xy` rotation matrix and `z` compensation for the refractive change between air (or water)
+            and glass interface.
         """
+
         RM = np.array(
             [
                 [np.cos(self.rotation_angle), -np.sin(self.rotation_angle), 0],
@@ -744,12 +961,14 @@ class PGMCompiler:
         It fetches an antiwarp function in the current working direcoty. If it doesn't exist, it lets you create a new
         one. The number of sampling points can be specified.
 
-        :param opt: if True apply antiwarp.
-        :type opt: bool
-        :param num: number of sampling points
-        :type num: int
-        :return: warp function, `f(x, y)`
-        :rtype: scipy.interpolate.interp2d
+        Parameters
+        ----------
+        opt
+        num
+
+        Returns
+        -------
+
         """
 
         if not opt:
@@ -889,17 +1108,20 @@ class PGMCompiler:
         self.comment('ACTIVATE AXIS ROTATION')
         self._instructions.append(f'LINEAR X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{self.speed_pos:.6f}\n')
         self._instructions.append('G84 X Y\n')
+        self.dwell(self.short_pause)
 
         if angle is None and self.aerotech_angle == 0.0:
             return
 
         angle = self.aerotech_angle if angle is None else float(angle % 360)
         self._instructions.append(f'G84 X Y F{angle}\n\n')
+        self.dwell(self.short_pause)
 
     def _exit_axis_rotation(self) -> None:
         self.comment('DEACTIVATE AXIS ROTATION')
         self._instructions.append(f'LINEAR X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{self.speed_pos:.6f}\n')
         self._instructions.append('G84 X Y\n')
+        self.dwell(self.short_pause)
 
 
 def main() -> None:
