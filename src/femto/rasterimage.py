@@ -11,9 +11,7 @@ from PIL import Image
 
 @dataclasses.dataclass(repr=False)
 class RasterImage(LaserPath):
-    """
-    Class representing an raster laser path in the xy-plane from a balck and white image.
-    """
+    """Class representing a laser path in the xy-plane of a b/w rastered image."""
 
     px_to_mm: float = 0.01  # pixel to millimeter scale convertion
     img_size: tuple[int, int] = (0, 0)
@@ -25,6 +23,13 @@ class RasterImage(LaserPath):
 
     @property
     def path_size(self) -> list[float]:
+        """Path size.
+
+        Returns
+        -------
+        list(float)
+            (`x`, `y`) size of the laser path [mm].
+        """
         if not all(self.img_size):  # check if img_size is non-zero
             raise ValueError('No image size given, unable to compute laserpath dimension.')
         else:
@@ -32,6 +37,22 @@ class RasterImage(LaserPath):
 
     # Methods
     def image_to_path(self, img: Image.Image) -> None:
+        """Convert image to path.
+
+        The function takes an image, converts it to a boolean matrix, and create a laser path with ablation lines
+        representing  only the black pixels of the image.
+
+        :param img: Image.Image - the image to be converted to a path
+
+        Parameters
+        ----------
+        img : Image.Image
+            Image to convert to laserpath.
+
+        Returns
+        -------
+        None
+        """
         # displaying image information
         self.img_size = img.size  # update of img_size property
         print('Image opened. Displaying information..')

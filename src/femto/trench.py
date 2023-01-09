@@ -58,8 +58,8 @@ class Trench:
     def border(self) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]:
         """Border of the trench.
 
-        It returns the border of the block as a tuple of two numpy arrays, one for the x coordinates and one for
-        the y coordinates.
+        It returns the border of the block as a tuple of two numpy arrays, one for the `x` coordinates and one for
+        the `y` coordinates.
 
         Returns
         -------
@@ -178,7 +178,7 @@ class Trench:
 
         while polygon_list:
             current_poly = polygon_list.pop(0)
-            if current_poly:
+            if not current_poly.is_empty:
                 polygon_list.extend(self.buffer_polygon(current_poly, offset=-np.fabs(self.delta_floor)))
                 self.floor_length += current_poly.length
                 yield np.array(current_poly.exterior.coords).T
