@@ -182,7 +182,9 @@ def test_enter_exit_method() -> None:
                 '\n; ACTIVATE AXIS ROTATION\n',
                 'LINEAR X0.000000 Y0.000000 Z0.000000 F5.000000\n',
                 'G84 X Y\n',
+                'DWELL 0.05\n',
                 'G84 X Y F2.0\n\n',
+                'DWELL 0.05\n'
             ]
         )
     assert G._instructions == deque([])
@@ -676,18 +678,19 @@ def test_axis_rotation_contex_manager(param) -> None:
     param['aerotech_angle'] = 2.0
     G = PGMCompiler(**param)
     with G.axis_rotation():
-        assert G._instructions[-4] == '\n; ACTIVATE AXIS ROTATION\n'
-        assert G._instructions[-3] == f'LINEAR X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{G.speed_pos:.6f}\n'
-        assert G._instructions[-2] == 'G84 X Y\n'
-        assert G._instructions[-1] == f'G84 X Y F{G.aerotech_angle}\n\n'
+        assert G._instructions[-6] == '\n; ACTIVATE AXIS ROTATION\n'
+        assert G._instructions[-5] == f'LINEAR X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{G.speed_pos:.6f}\n'
+        assert G._instructions[-4] == 'G84 X Y\n'
+        assert G._instructions[-2] == f'G84 X Y F{G.aerotech_angle}\n\n'
 
         # do operations in G-Code compiler
         G.move_to([1, 2, 3])
         G.go_origin()
 
-    assert G._instructions[-3] == '\n; DEACTIVATE AXIS ROTATION\n'
-    assert G._instructions[-2] == f'LINEAR X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{G.speed_pos:.6f}\n'
-    assert G._instructions[-1] == 'G84 X Y\n'
+    print(G._instructions)
+    assert G._instructions[-4] == '\n; DEACTIVATE AXIS ROTATION\n'
+    assert G._instructions[-3] == f'LINEAR X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{G.speed_pos:.6f}\n'
+    assert G._instructions[-2] == 'G84 X Y\n'
 
 
 @pytest.mark.parametrize('angle_p, angle', [(None, 13), (14, -3), (9, None), (-1, -1), (None, None)])
@@ -698,14 +701,14 @@ def test_enter_axis_rotation(param, angle_p, angle) -> None:
 
     a = G.aerotech_angle if angle is None else float(angle % 360)
     if a == 0.0:
-        assert G._instructions[-3] == '\n; ACTIVATE AXIS ROTATION\n'
-        assert G._instructions[-2] == f'LINEAR X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{G.speed_pos:.6f}\n'
-        assert G._instructions[-1] == 'G84 X Y\n'
-    else:
         assert G._instructions[-4] == '\n; ACTIVATE AXIS ROTATION\n'
         assert G._instructions[-3] == f'LINEAR X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{G.speed_pos:.6f}\n'
         assert G._instructions[-2] == 'G84 X Y\n'
-        assert G._instructions[-1] == f'G84 X Y F{a}\n\n'
+    else:
+        assert G._instructions[-6] == '\n; ACTIVATE AXIS ROTATION\n'
+        assert G._instructions[-5] == f'LINEAR X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{G.speed_pos:.6f}\n'
+        assert G._instructions[-4] == 'G84 X Y\n'
+        assert G._instructions[-2] == f'G84 X Y F{a}\n\n'
 
 
 @pytest.mark.parametrize(
