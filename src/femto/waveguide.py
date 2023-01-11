@@ -23,8 +23,7 @@ class Waveguide(LaserPath):
     int_length: float = 0.0  #: Directional Coupler's interaction length
     arm_length: float = 0.0  #: Mach-Zehnder interferometer's length of central arm
     dz_bridge: float = 0.007  #: Maximum `z`-height for 3D bridges
-
-    # ltrench: float = 1.0  #: Length of straight trench
+    ltrench: float = 0.0  #: Length of straight segment to accomodate trenches
 
     def __post_init__(self) -> None:
         super().__post_init__()

@@ -24,7 +24,7 @@ def param() -> dict:
         'int_dist': 0.005,
         'int_length': 0.0,
         'arm_length': 1.0,
-        # 'ltrench': 1.5,
+        'ltrench': 1.5,
         'dz_bridge': 0.006,
     }
     return p
@@ -55,7 +55,7 @@ def test_default_values() -> None:
     assert wg.int_dist is None
     assert wg.int_length == float(0.0)
     assert wg.arm_length == float(0.0)
-    # assert wg.ltrench == float(1.0)
+    assert wg.ltrench == float(0.0)
     assert wg.dz_bridge == float(0.007)
 
 
@@ -79,7 +79,7 @@ def test_wg_values(param) -> None:
     assert wg.int_dist == float(0.005)
     assert wg.int_length == float(0.0)
     assert wg.arm_length == float(1.0)
-    # assert wg.ltrench == float(1.5)
+    assert wg.ltrench == float(1.5)
     assert wg.dz_bridge == float(0.006)
 
 
@@ -103,7 +103,7 @@ def test_wg_from_dict(param) -> None:
     assert wg.int_dist == float(0.005)
     assert wg.int_length == float(0.0)
     assert wg.arm_length == float(1.0)
-    # assert wg.ltrench == float(1.5)
+    assert wg.ltrench == float(1.5)
     assert wg.dz_bridge == float(0.006)
 
 
