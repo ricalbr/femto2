@@ -399,3 +399,14 @@ def test_pickle(laser_path) -> None:
         lp = dill.load(f)
     assert type(lp) == type(laser_path)
     filename.unlink()
+
+
+def test_pickle_as_dict(laser_path) -> None:
+    filename = Path('test.pkl')
+    laser_path.export(filename.name, as_dict=True)
+    assert filename.is_file()
+
+    with open(filename, 'rb') as f:
+        lp = dill.load(f)
+    assert type(lp) == dict
+    filename.unlink()

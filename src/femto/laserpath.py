@@ -573,13 +573,15 @@ class LaserPath:
         else:
             return num
 
-    def export(self, filename: str) -> None:
+    def export(self, filename: str, as_dict: bool = False) -> None:
         """Export the object as a pickle file.
 
         Parameters
         ----------
         filename: str
             Name of (or path to) the file to be saved.
+        as_dict: bool, optional
+            Flag varibale to export the object as dictionary. The default value is False.
 
         Returns
         -------
@@ -589,9 +591,11 @@ class LaserPath:
         fn = pathlib.Path(filename)
         if fn.suffix not in ['.pickle', 'pkl']:
             fn = pathlib.Path(fn.stem + '.pkl')
-
         with open(fn, 'wb') as p:
-            dill.dump(self, p)
+            if as_dict:
+                dill.dump(self.__dict__, p)
+            else:
+                dill.dump(self, p)
             print(f'{self.__class__.__name__} exported to {fn}.')
 
 
