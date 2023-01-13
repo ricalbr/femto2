@@ -372,12 +372,13 @@ class Waveguide(LaserPath):
         self.arc_coupler(dy, radius=radius, int_length=int_length, speed=speed, shutter=shutter)
         return self
 
-    # TODO: method name and add XY, XZ bridges
+    # TODO: test disp_x
     # TODO: togliere dz optional
     def sin_bridge(
         self,
         dy: float,
         dz: float | None = None,
+        disp_x: float | None = None,
         omega: tuple[float, float] = (1.0, 1.0),
         radius: float | None = None,
         shutter: int = 1,
@@ -398,7 +399,10 @@ class Waveguide(LaserPath):
         dy: float
             `y` displacement of the sinusoidal-bend [mm].
         dz: float, optional
-            `z` displacement of the sinusoidal-bend [mm]. The default values is `self.dz_bridge`
+            `z` displacement of the sinusoidal-bend [mm]. The default values is `self.dz_bridge.
+        disp_x: float, optional
+            `x`-displacement  for the sinusoidal bend. If the value is ``None`` (the default value),
+            the `x`-displacement is computed with the formula for the circular `S`-bend.
         omega: tuple(float, float)
             Frequency of the Sin-bend oscillations for `y` and `z` coordinates, respectively.
             The deafult values are `fy` = 1, `fz` = 1.
@@ -438,7 +442,7 @@ class Waveguide(LaserPath):
         f = speed if speed is not None else self.speed
         dzb = dz if dz is not None else self.dz_bridge
 
-        _, dx = self.get_sbend_parameter(dy, r)
+        dx = disp_x if disp_x is not None else self.get_sbend_parameter(dy, r)[-1]
         num = self.num_subdivisions(dx, f)
 
         x_sin = np.linspace(self._x[-1], self._x[-1] + dx, num)
