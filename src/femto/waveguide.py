@@ -379,7 +379,7 @@ class Waveguide(LaserPath):
         dy: float,
         dz: float | None = None,
         disp_x: float | None = None,
-        omega: tuple[float, float] = (1.0, 1.0),
+        omega: tuple[float, float] = (1.0, 2.0),
         radius: float | None = None,
         shutter: int = 1,
         speed: float | None = None,
