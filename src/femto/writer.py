@@ -469,7 +469,8 @@ class TrenchWriter(Writer):
             print('=' * 79, '\n')
 
     def export_array2d(
-        self, filename: pathlib.Path, x: npt.NDArray[np.float32], y: npt.NDArray[np.float32], speed: float
+        self, filename: pathlib.Path, x: npt.NDArray[np.float32], y: npt.NDArray[np.float32], speed: float,
+            forced_deceleration: bool = False,
     ) -> None:
         """Export 2D path to PGM file.
 
@@ -488,6 +489,9 @@ class TrenchWriter(Writer):
             `y` coordinates array [mm].
         speed : float
             Translation speed [mm/s].
+        forced_deceleration: bool
+            Add a `G9` command before `LINEAR` movements to reduce the acceleration to zero after the motion is
+            completed.
 
         Returns
         -------
@@ -511,7 +515,11 @@ class TrenchWriter(Writer):
             self._format_args(x, y, z, f)
             for (x, y, z, f) in itertools.zip_longest(x_arr, y_arr, z_arr, listcast(speed))
         ]
-        gcode_instr = [f'LINEAR {line}\n' for line in instr]
+        if forced_deceleration:
+            gcode_instr = [f'G9 LINEAR {line}\n' for line in instr]
+        else:
+            gcode_instr = [f'LINEAR {line}\n' for line in instr]
+
         with open(filename, 'w') as file:
             file.write(''.join(gcode_instr))
 
@@ -884,9 +892,10 @@ class WaveguideWriter(Writer):
 
         for wg in listcast(flatten(self.obj_list)):
             x_wg, y_wg, z_wg, _, s = wg.points
-            x, y, _ = self.transform_points(x_wg, y_wg, z_wg)
+            x, y, z = self.transform_points(x_wg, y_wg, z_wg)
             xo = split_mask(x, s.astype(bool))
             yo = split_mask(y, s.astype(bool))
+            zo = split_mask(z, s.astype(bool))
             [
                 fig.add_trace(
                     go.Scattergl(
@@ -895,10 +904,11 @@ class WaveguideWriter(Writer):
                         mode='lines',
                         line=wg_args,
                         showlegend=False,
-                        hovertemplate='(%{x:.4f}, %{y:.4f})<extra>WG</extra>',
+                        customdata=zoo,
+                        hovertemplate='(%{x:.4f}, %{y:.4f}, %{customdata:.4f})<extra>WG</extra>',
                     )
                 )
-                for xoo, yoo in zip(xo, yo)
+                for xoo, yoo, zoo in zip(xo, yo, zo)
             ]
             if show_shutter_close:
                 xc = split_mask(x, ~s.astype(bool))
