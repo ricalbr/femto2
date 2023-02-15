@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import dataclasses
+import inspect
 import math
 import pathlib
 from typing import Generator
 from typing import Iterator
+from typing import TypeVar
+from typing import Any
 
 import numpy as np
 import numpy.typing as npt
@@ -14,6 +17,8 @@ from femto.helpers import flatten
 from femto.helpers import listcast
 from femto.waveguide import Waveguide
 from shapely import geometry
+
+TC = TypeVar('TC', bound='TrenchColumn')
 
 
 class Trench:
@@ -252,9 +257,10 @@ class TrenchColumn:
     beam_waist: float = 0.004  #: Diameter of the laser beam-waist [mm].
     round_corner: float = 0.010  #: Radius of the blocks round corners [mm].
 
+    _trench_list: list[Trench] = dataclasses.field(default_factory=list)  #: List of trench objects
+
     def __post_init__(self):
-        self.CWD: pathlib.Path = pathlib.Path.cwd()  #:
-        self.trench_list: list[Trench] = []  #:
+        self.CWD: pathlib.Path = pathlib.Path.cwd()  #: Current working directory
 
     def __iter__(self) -> Iterator[Trench]:
         """Iterator that yields single trench blocks of the column.
@@ -264,10 +270,28 @@ class TrenchColumn:
         Trench
             Single trench block of the TrenchColumn.
         """
-        return iter(self.trench_list)
+        return iter(self._trench_list)
 
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}@{id(self) & 0xFFFFFF:x}'
+
+    @classmethod
+    def from_dict(cls: type[TC], param: dict[str, Any]) -> TC:
+        """Create an instance of the class from a dictionary.
+
+        It takes a class and a dictionary, and returns an instance of the class with the dictionary's keys as the
+        instance's attributes.
+
+        Parameters
+        ----------
+        param, dict()
+            Dictionary mapping values to class attributes.
+
+        Returns
+        -------
+        Instance of class
+        """
+        return cls(**{k: v for k, v in param.items() if k in inspect.signature(cls).parameters})
 
     @property
     def adj_bridge(self) -> float:
@@ -303,7 +327,7 @@ class TrenchColumn:
         float
             Total fabrication time [s].
         """
-        l_tot = sum([self.nboxz * (self.n_repeat * t.wall_length + t.floor_length) for t in self.trench_list])
+        l_tot = sum([self.nboxz * (self.n_repeat * t.wall_length + t.floor_length) for t in self._trench_list])
         return l_tot / self.speed
 
     @property
@@ -448,10 +472,10 @@ class TrenchColumn:
             block = block.buffer(self.round_corner, resolution=256, cap_style=1)
             # simplify the shape to avoid path too much dense of points
             block = block.simplify(tolerance=5e-7, preserve_topology=True)
-            self.trench_list.append(Trench(self.normalize(block), self.delta_floor))
+            self._trench_list.append(Trench(self.normalize(block), self.delta_floor))
 
         for index in sorted(listcast(remove), reverse=True):
-            del self.trench_list[index]
+            del self._trench_list[index]
 
     @staticmethod
     def normalize(poly: geometry.Polygon) -> geometry.Polygon:
