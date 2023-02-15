@@ -265,7 +265,7 @@ def test_trenchcol_default() -> None:
     assert tcol.speed_pos == float(0.5)
 
     assert tcol.CWD == Path.cwd()
-    assert tcol.trench_list == []
+    assert tcol._trench_list == []
 
 
 def test_trenchcol_param(param) -> None:
@@ -290,7 +290,7 @@ def test_trenchcol_param(param) -> None:
     assert tcol.speed_pos == float(0.5)
 
     assert tcol.CWD == Path.cwd()
-    assert tcol.trench_list == []
+    assert tcol._trench_list == []
 
 
 def test_trenchcol_adj_bridge(tc, param) -> None:
@@ -322,7 +322,7 @@ def test_trenchcol_iterator(tc) -> None:
     t1 = Trench(Polygon([(0, 0), (1, 0), (1, 1), (0, 1)]))
     t2 = Trench(Polygon([(2, 2), (3, 2), (3, 3), (2, 3)]))
     t3 = Trench(Polygon([(4, 4), (5, 4), (5, 5), (4, 5)]))
-    tc.trench_list.extend([t1, t2, t3])
+    tc._trench_list.extend([t1, t2, t3])
 
     tc_iter = tc.__iter__()
 
@@ -357,10 +357,10 @@ def test_trenchcol_fabtime(tc, param) -> None:
     t1 = Trench(Polygon([(0, 0), (1, 0), (1, 1), (0, 1)]))
     t2 = Trench(Polygon([(2, 2), (3, 2), (3, 3), (2, 3)]))
     t3 = Trench(Polygon([(4, 4), (5, 4), (5, 5), (4, 5)]))
-    tc.trench_list.extend([t1, t2, t3])
+    tc._trench_list.extend([t1, t2, t3])
 
     assert pytest.approx(tc.fabrication_time) == sum(
-        param['nboxz'] * (tc.n_repeat * t.wall_length + t.floor_length) for t in tc.trench_list
+        param['nboxz'] * (tc.n_repeat * t.wall_length + t.floor_length) for t in tc._trench_list
     )
 
 
@@ -381,7 +381,7 @@ def test_trenchcol_dig() -> None:
 
     tc._dig(coords)
 
-    for (t, c) in zip(tc.trench_list, comp_box):
+    for (t, c) in zip(tc._trench_list, comp_box):
         assert tc.normalize(c).equals_exact(t.block, tolerance=1e-8)
         assert almost_equal(tc.normalize(c), t.block)
 
@@ -403,7 +403,7 @@ def test_trenchcol_dig_remove() -> None:
 
     tc._dig(coords, remove=[1])
 
-    for (t, c) in zip(tc.trench_list, comp_box):
+    for (t, c) in zip(tc._trench_list, comp_box):
         assert tc.normalize(c).equals_exact(t.block, tolerance=1e-8)
 
 
@@ -422,7 +422,7 @@ def test_trenchcol_dig_remove_all() -> None:
     coords = [[(-5.0, 3.0), (5.0, 3.0)], [(-5.0, 6.0), (5.0, 6.0)]]
 
     tc._dig(coords, remove=[0, 1, 2])
-    assert tc.trench_list == []
+    assert tc._trench_list == []
 
 
 def test_dig_from_waveguide(tc):
@@ -440,7 +440,7 @@ def test_dig_from_waveguide(tc):
     wgs.append(wg)
 
     assert tc.dig_from_waveguide(wgs) is None
-    assert bool(tc.trench_list)
+    assert bool(tc._trench_list)
 
 
 def test_dig_from_waveguide_empty(tc):
@@ -448,7 +448,7 @@ def test_dig_from_waveguide_empty(tc):
 
     wg_list = [Waveguide() for _ in range(4)]
     assert tc.dig_from_waveguide(wg_list) is None
-    assert not bool(tc.trench_list)
+    assert not bool(tc._trench_list)
 
 
 def test_dig_from_waveguide_raise(tc):
@@ -468,7 +468,7 @@ def test_dig_from_array(tc):
         np.array([[-5, 9], [1.5, 1.5]]).T,
     ]
     assert tc.dig_from_array(arr_list) is None
-    assert bool(tc.trench_list)
+    assert bool(tc._trench_list)
 
     arr_list = [
         np.array([[-5, 1.2], [0, 1.2], [5, 1.2], [9, 1.2]]).T,
@@ -476,13 +476,13 @@ def test_dig_from_array(tc):
     ]
     print(arr_list[0])
     assert tc.dig_from_array(arr_list) is None
-    assert bool(tc.trench_list)
+    assert bool(tc._trench_list)
 
 
 def test_dig_from_array_empty(tc):
     arr_list = [np.array([[1, 2, 3, 4], [9, 9, 9, 9]]).T for _ in range(4)]
     assert tc.dig_from_array(arr_list) is None
-    assert not bool(tc.trench_list)
+    assert not bool(tc._trench_list)
 
 
 def test_dig_from_array_raise(tc):
