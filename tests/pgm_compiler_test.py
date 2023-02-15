@@ -184,7 +184,7 @@ def test_enter_exit_method() -> None:
                 'G84 X Y\n',
                 'DWELL 0.05\n',
                 'G84 X Y F2.0\n\n',
-                'DWELL 0.05\n'
+                'DWELL 0.05\n',
             ]
         )
     assert G._instructions == deque([])
@@ -983,8 +983,8 @@ def test_call_list(param, fns, tid, id_exp, expectation) -> None:
             np.array([12, 12, 5, 6, 17, 15]),
             True,
             False,
-            np.array([-10, 2, 11, 15, 20, 27]),
-            np.array([15, 17, 6, 5, 12, 12]),
+            np.array([2, -5, -10, -14, -23, -35]),
+            np.array([12, 12, 5, 6, 17, 15]),
         ),
         (
             np.array([-2, 5, 10, 14, 23, 35]),
@@ -992,15 +992,15 @@ def test_call_list(param, fns, tid, id_exp, expectation) -> None:
             False,
             True,
             np.array([-2, 5, 10, 14, 23, 35]),
-            np.array([13, 13, 20, 19, 8, 10]),
+            np.array([-12, -12, -5, -6, -17, -15]),
         ),
         (
             np.array([-2, 5, 10, 14, 23, 35]),
             np.array([12, 12, 5, 6, 17, 15]),
             True,
             True,
-            np.array([-10, 2, 11, 15, 20, 27]),
-            np.array([10, 8, 19, 20, 13, 13]),
+            np.array([2, -5, -10, -14, -23, -35]),
+            np.array([-12, -12, -5, -6, -17, -15]),
         ),
     ],
 )
@@ -1098,8 +1098,8 @@ def test_t_matrix_matrix(param, angle, res) -> None:
             np.array([-2, 10, 10, 28]),
             np.array([5, 5, 16, 16]),
             np.array([0.0, 0.0, 0.0, 0.0]),
-            np.array([-3, 15, 15, 27]),
-            np.array([16, 16, 5, 5]),
+            np.array([2, -10, -10, -28]),
+            np.array([5, 5, 16, 16]),
             np.array([-0.001, -0.001, -0.001, -0.001]) * 1.33 / 1.5,
         ),
         (
@@ -1110,8 +1110,8 @@ def test_t_matrix_matrix(param, angle, res) -> None:
             np.array([-2, 10, 13, 34]),
             np.array([5, 5, 8, 16]),
             np.array([0.0, 0.0, 0.0, 0.0]),
-            np.array([-2.3487435, 9.6494288, 12.7013291, 33.83775]),
-            np.array([19.9620491, 20.1714780, 17.2242921, 9.5920110]),
+            np.array([-1.9124334, 10.085739, 13.1376393, 34.2740601]),
+            np.array([-5.0341433, -4.8247144, -7.7719003, -15.4041813]),
             np.array([-0.001, -0.001, -0.001, -0.001]) * 1.33 / 1.5,
         ),
     ],
@@ -1224,21 +1224,21 @@ def test_format_arguments_raise(param, x, y, z, f, expectation) -> None:
             ],
             deque(
                 [
-                    'LINEAR X26.995190 Y0.511209 Z0.031033 F0.500000\n',
+                    'LINEAR X1.998997 Y0.074899 Z0.031033 F0.500000\n',
                     '\n',
                     'DWELL 0.025\n',
                     'PSOCONTROL X ON\n',
                     'DWELL 1.0\n',
                     '\n',
-                    'LINEAR X17.944203 Y3.353680 Z0.031033 F20.000000\n',
-                    'LINEAR X20.996104 Y0.406494 Z2.691033 F20.000000\n',
-                    'LINEAR X23.995647 Y0.458852 Z5.351033 F20.000000\n',
+                    'LINEAR X-1.000546 Y0.022542 Z0.031033 F20.000000\n',
+                    'LINEAR X-4.000089 Y-0.029816 Z2.691033 F20.000000\n',
+                    'LINEAR X-7.051989 Y2.917370 Z5.351033 F20.000000\n',
                     '\n',
                     'DWELL 0.025\n',
                     'PSOCONTROL X OFF\n',
                     'DWELL 1.0\n',
                     '\n',
-                    'LINEAR X26.995190 Y0.511209 Z0.031033 F5.000000\n',
+                    'LINEAR X1.998997 Y0.074899 Z0.031033 F5.000000\n',
                     'DWELL 1.0\n',
                     '\n',
                 ]
@@ -1249,7 +1249,7 @@ def test_format_arguments_raise(param, x, y, z, f, expectation) -> None:
 def test_write(param, pts, expected) -> None:
     G = PGMCompiler(**param)
 
-    G.write(pts)
+    G.write(np.array(pts))
     assert G._instructions == expected
 
 
