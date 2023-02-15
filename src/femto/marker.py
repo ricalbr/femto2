@@ -240,9 +240,11 @@ class Marker(LaserPath):
         # Add linear segments
         for path in path_list:
             self.linear(path[0], mode='ABS', shutter=0)
+            self.linear(path[0], mode='ABS', shutter=1)
             for p in path:
                 self.linear(p, mode='ABS')
-            self.linear([None, None, None], mode='ABS', shutter=0)
+            self.linear(path[-1], mode='ABS', shutter=1)
+            self.linear(path[-1], mode='ABS', shutter=0)
         self.end()
 
 
@@ -252,11 +254,11 @@ def main() -> None:
     from femto.helpers import dotdict, split_mask
 
     PARAMETERS_MK = dotdict(scan=1, speed=2, speed_pos=5, speed_closed=5, depth=0.000, lx=1, ly=1)
-    PARAMETERS_GC = dotdict(filename='testPGM.pgm', laser='PHAROS', samplesize=(10, 10))
+    PARAMETERS_GC = dotdict(filename='testPGM.pgm', laser='PHAROS', samplesize=(10, 10), flip_x=True, new_origin=[1, 1])
 
     c = Marker(**PARAMETERS_MK)
     # c.cross([2.5, 1], 5, 2)
-    c.ablation([[0, 0, 0], [5, 0, 0]], shift=0.1)
+    c.ablation([[0, 0, 0], [5, 0, 0], [5, 1, 0], [2, 2, 0]])
     print(c.points)
 
     from femto.pgmcompiler import PGMCompiler
