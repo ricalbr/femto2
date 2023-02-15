@@ -166,13 +166,14 @@ class Writer(PGMCompiler, abc.ABC):
         go.Figure
             Input figure updated with sample glass shape, origin point and axis.
         """
+
         # GLASS
         fig.add_shape(
             type='rect',
-            x0=0 - self.new_origin[0],
-            y0=0 - self.new_origin[1],
-            x1=self.xsample - self.new_origin[0],
-            y1=self.ysample - self.new_origin[1],
+            x0=self.new_origin[0] if self.flip_x else 0 - self.new_origin[0],
+            y0=self.new_origin[1] if self.flip_y else 0 - self.new_origin[1],
+            x1=self.new_origin[0] - self.xsample if self.flip_x else self.xsample - self.new_origin[0],
+            y1=self.new_origin[1] - self.ysample if self.flip_y else self.ysample - self.new_origin[1],
             fillcolor='#D0FAF9',
             line_color='#000000',
             line_width=2,
@@ -340,7 +341,7 @@ class TrenchWriter(Writer):
         if not isinstance(obj, TrenchColumn):
             raise TypeError(f'The object must be a TrenchColumn. {type(obj).__name__} was given.')
         self.obj_list.append(obj)
-        self.trenches.extend(obj.trench_list)
+        self.trenches.extend(obj._trench_list)
 
     def extend(self, obj: list[TrenchColumn]) -> None:
         """Extend trench list.
@@ -469,8 +470,12 @@ class TrenchWriter(Writer):
             print('=' * 79, '\n')
 
     def export_array2d(
-        self, filename: pathlib.Path, x: npt.NDArray[np.float32], y: npt.NDArray[np.float32], speed: float,
-            forced_deceleration: bool = False,
+        self,
+        filename: pathlib.Path,
+        x: npt.NDArray[np.float32],
+        y: npt.NDArray[np.float32],
+        speed: float,
+        forced_deceleration: bool = False,
     ) -> None:
         """Export 2D path to PGM file.
 
