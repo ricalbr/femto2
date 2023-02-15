@@ -699,7 +699,7 @@ class PGMCompiler:
 
         Parameters
         ----------
-        filename : list(str)
+        filenames : list(str)
             List of filenames of the G-code scripts to be executed.
         task_id : list(int), optional
             Task ID number onto which the program will be loaded (and executed). The default value is 0 for all the
@@ -709,7 +709,7 @@ class PGMCompiler:
         -------
         None
         """
-        task_id = list(filter(None, listcast(task_id)))         # Remove None from task_id
+        task_id = list(filter(None, listcast(task_id)))  # Remove None from task_id
 
         # Ensure task_id and filenames have the same length. If task_id is longer take a slice, pad with 0 otherwise.
         if len(task_id) > len(filenames):
@@ -828,12 +828,17 @@ class PGMCompiler:
             Transformed `x`, `y` and `z` arrays.
         """
 
-        # flip x, y coordinates
-        x, y = self.flip(x, y)
+        # normalize data
+        x = np.asarray(x, dtype=np.float32)
+        y = np.asarray(y, dtype=np.float32)
+        z = np.asarray(z, dtype=np.float32)
 
         # translate points to new origin
         x -= self.new_origin[0]
         y -= self.new_origin[1]
+
+        # flip x, y coordinates
+        x, y = self.flip(x, y)
 
         # rotate points
         point_matrix = np.stack((x, y, z), axis=-1)
@@ -865,32 +870,14 @@ class PGMCompiler:
         tuple(numpy.ndarray, numpy.ndarray, numpy.ndarray)
             Flipped `x` and `y` arrays.
         """
-        flip_toggle = np.array([1, 1])
 
-        # reverse the coordinates arrays to flip
-        if self.flip_x:
-            flip_toggle[0] = -1
-            xc = np.flip(xc)
-        if self.flip_y:
-            flip_toggle[1] = -1
-            yc = np.flip(yc)
+        # disp = np.array([self.new_origin[0], self.new_origin[1], 0])
+        fx = int(self.flip_x) * 2 - 1
+        fy = int(self.flip_y) * 2 - 1
+        mirror_matrix = np.array([[-fx, 0], [0, -fy]])
+        flip_x, flip_y = mirror_matrix @ np.array([xc, yc])
 
-        # create flip matrix (+1 -> no flip, -1 -> flip)
-        flip_matrix = np.diag(flip_toggle)
-
-        # create the displacement matrix to map the transformed min/max coordinates to the original min/max coordinates)
-        points_matrix = np.array([xc, yc])
-        displacements = np.array([self.samplesize[0] - self.new_origin[0], self.samplesize[1] - self.new_origin[1]])
-        S = np.multiply((1 - flip_toggle) / 2, displacements)
-
-        # matrix multiplication and sum element-wise, add the displacement only to the flipped coordinates
-        flip_x, flip_y = map(operator.add, flip_matrix @ points_matrix, S)
-
-        # update coordinates
-        xc = flip_x
-        yc = np.flip(flip_y) if (self.flip_x ^ self.flip_y) else flip_y
-
-        return xc, yc
+        return flip_x, flip_y
 
     def compensate(
         self,
