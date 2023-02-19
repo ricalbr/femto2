@@ -4,17 +4,22 @@ import collections
 import copy
 import pathlib
 from typing import Any
+from typing import cast
 
+from pathlib import Path
 import plotly.graph_objects as go
 from femto.helpers import flatten
+from femto.helpers import listcast
 from femto.marker import Marker
 from femto.trench import TrenchColumn
 from femto.waveguide import NasuWaveguide
 from femto.waveguide import Waveguide
+from femto.pgmcompiler import PGMCompiler
 from femto.writer import MarkerWriter
 from femto.writer import NasuWriter
 from femto.writer import TrenchWriter
 from femto.writer import WaveguideWriter
+from femto.spreadsheet import Spreadsheet
 
 
 class Device:
@@ -175,7 +180,22 @@ class Device:
             writer.pgm(verbose=verbose)
         if verbose:
             print('Export .pgm files complete.\n')
-
+            
+    
+    def xlsx(self, verbose: bool = True, **param) -> None:
+        """Generate the spreadsheet.
+        
+        Add all waveguides and markers of the ``Device`` to the spreadsheet.
+        """
+        
+        with Spreadsheet(device=self, **param) as spsh:
+            if verbose:
+                print('Generating spreadsheet...')
+            spsh.write_structures(verbose=verbose)
+        if verbose:
+            print('Create .xlsx file complete.\n')
+        
+        
     def save(self, filename: str = 'scheme.html', opt: dict[str, Any] | None = None) -> None:
         """Save figure.
 
@@ -210,6 +230,40 @@ class Device:
             self.fig.write_html(str(fn.with_suffix('.html')))
         else:
             self.fig.write_image(str(fn), **opt)
+            
+    @property
+    def fabrication_time(self) -> float:
+        """Compute the total fabrication time of the device.
+        
+        Includes only the waveguides.
+        
+        Returns
+        -------
+        fab_time : float
+            Total fabrication time (in seconds).
+        """
+        
+        fab_time = 0.
+        
+        wgwr = cast(WaveguideWriter, self.writers[Waveguide])
+        
+        _wg_param = dict(wgwr._param.copy())
+        _wg_param['filename'] = Path(wgwr.filename).stem + '_dummy.pgm'
+        
+        with PGMCompiler(**_wg_param) as G:
+            for bunch in wgwr.obj_list:
+                with G.repeat(listcast(bunch)[0].scan):
+                    for wg in listcast(bunch):
+                        fab_time += wg.fabrication_time
+                        G.write(wg.points)
+                        
+            G.go_init()
+            fab_time += G._total_dwell_time
+        
+        # remove generated program files
+        Path(_wg_param['filename']).unlink()
+        
+        return fab_time
 
 
 def main() -> None:

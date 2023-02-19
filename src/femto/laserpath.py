@@ -18,7 +18,8 @@ LP = TypeVar('LP', bound='LaserPath')
 @dataclasses.dataclass(repr=False)
 class LaserPath:
     """Class that computes and stores the coordinates of a laser path."""
-
+    
+    name: str | None = None # Name of the laser path.
     scan: int = 1  #: Number of overlapped scans.
     speed: float = 1.0  #: Opened shutter translation speed `[mm/s]`.
     samplesize: tuple[float, float] = (100, 50)  #: Dimensions of the sample (x `[mm]`, y `[mm]`).
@@ -40,7 +41,10 @@ class LaserPath:
     def __post_init__(self) -> None:
         if not isinstance(self.scan, int):
             raise ValueError(f'Number of scan must be integer. Given {self.scan}.')
-
+            
+        if self.name is None:
+            self.name = type(self).__name__
+            
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}@{id(self) & 0xFFFFFF:x}'
 
