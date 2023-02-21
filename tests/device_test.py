@@ -15,6 +15,15 @@ from shapely.geometry import Polygon
 
 
 @pytest.fixture
+def ss_param() -> dict:
+    return dict(
+        book_name='custom_book_name.xlsx',
+        sheet_name='custom_sheet_name',
+        columns_names='name power speed scan depth int_dist yin yout obs',
+    )
+
+
+@pytest.fixture
 def gc_param() -> dict:
     p = dict(
         filename='testCell.pgm',
@@ -27,7 +36,9 @@ def gc_param() -> dict:
 
 @pytest.fixture
 def list_wg() -> list[Waveguide]:
-    PARAM_WG = dotdict(speed=20, radius=25, pitch=0.080, int_dist=0.007, samplesize=(25, 3))
+    PARAM_WG = dotdict(
+        speed=20, radius=25, pitch=0.080, int_dist=0.007, samplesize=(25, 3)
+    )
 
     coup = [Waveguide(**PARAM_WG) for _ in range(5)]
     for i, wg in enumerate(coup):
@@ -42,7 +53,9 @@ def list_wg() -> list[Waveguide]:
 
 @pytest.fixture
 def list_mk() -> list[Marker]:
-    PARAM_MK = dotdict(scan=1, speed=2, speed_pos=5, speed_closed=5, depth=0.000, lx=1, ly=1)
+    PARAM_MK = dotdict(
+        scan=1, speed=2, speed_pos=5, speed_closed=5, depth=0.000, lx=1, ly=1
+    )
     markers = []
     for (x, y) in zip(range(4, 8), range(3, 7)):
         m = Marker(**PARAM_MK)
@@ -53,7 +66,13 @@ def list_mk() -> list[Marker]:
 
 @pytest.fixture
 def list_tcol(list_wg) -> list[TrenchColumn]:
-    PARAM_TC = dotdict(length=1.0, base_folder='', y_min=-0.1, y_max=4 * 0.08 + 0.1, u=[30.339, 32.825])
+    PARAM_TC = dotdict(
+        length=1.0,
+        base_folder='',
+        y_min=-0.1,
+        y_max=4 * 0.08 + 0.1,
+        u=[30.339, 32.825],
+    )
     x_c = [3, 7.5, 10.5]
     t_col = []
     for x in x_c:
@@ -221,7 +240,10 @@ def test_device_extend(gc_param, list_wg, list_mk, list_tcol) -> None:
     [
         ([Waveguide(), Waveguide()], does_not_raise()),
         ([Marker(), [Waveguide(), Waveguide()]], does_not_raise()),
-        ([[[Waveguide(), Waveguide()], Waveguide()], Waveguide()], pytest.raises(TypeError)),
+        (
+            [[[Waveguide(), Waveguide()], Waveguide()], Waveguide()],
+            pytest.raises(TypeError),
+        ),
         ([], does_not_raise()),
         (Waveguide(), pytest.raises(TypeError)),
     ],
@@ -282,6 +304,14 @@ def test_device_pgm(device, list_wg, list_mk) -> None:
     assert (Path().cwd() / 'testCell_MK.pgm').is_file()
     (Path().cwd() / 'testCell_WG.pgm').unlink()
     (Path().cwd() / 'testCell_MK.pgm').unlink()
+
+
+def test_device_xlsx(device, list_wg, list_mk, ss_param) -> None:
+    device.extend(list_wg)
+    device.extend(list_mk)
+    device.xlsx(**ss_param)
+    assert (Path().cwd() / 'custom_book_name.xlsx').is_file()
+    (Path().cwd() / 'custom_book_name.xlsx').unlink()
 
 
 def test_device_save_empty(device) -> None:
