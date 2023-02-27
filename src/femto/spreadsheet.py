@@ -10,7 +10,6 @@ from femto import __file__ as fpath
 import numpy as np
 
 from types import TracebackType
-import numpy.typing as npt
 from femto.waveguide import Waveguide
 from femto.marker import Marker
 from femto.helpers import flatten

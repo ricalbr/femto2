@@ -324,6 +324,7 @@ class TrenchWriter(Writer):
 
         self._param: dict[str, Any] = dict(**param)
         self._export_path = self.CWD / (self.export_dir or '') / (self.dirname or '')
+        self._fabtime: float = 0.0
 
     def append(self, obj: TrenchColumn) -> None:
         """Append TrenchColumn objects.
@@ -468,6 +469,8 @@ class TrenchWriter(Writer):
                 time.strftime('%H:%M:%S', time.gmtime(_tc_fab_time)),
             )
             print('=' * 79, '\n')
+
+            self._fabtime = _tc_fab_time
 
     def export_array2d(
         self,
@@ -703,6 +706,7 @@ class WaveguideWriter(Writer):
 
         self._param: dict[str, Any] = dict(**param)
         self._export_path = self.CWD / (self.export_dir or '')
+        self._fabtime: float = 0.0
 
     def append(self, obj: Waveguide) -> None:
         """Append Waveguide objects.
@@ -861,7 +865,9 @@ class WaveguideWriter(Writer):
                 time.strftime('%H:%M:%S', time.gmtime(_wg_fab_time)),
             )
             print('=' * 79, '\n')
+            self._fabtime = _wg_fab_time
         self._instructions.clear()
+        
 
     def _plot2d_wg(
         self, fig: go.Figure, show_shutter_close: bool = True, style: dict[str, Any] | None = None
@@ -1015,6 +1021,7 @@ class NasuWriter(Writer):
 
         self._param: dict[str, Any] = dict(**param)
         self._export_path = self.CWD / (self.export_dir or '')
+        self._fabtime: float = 0.0
 
     def append(self, obj: NasuWaveguide) -> None:
         """Append NasuWaveguide objects.
@@ -1170,6 +1177,7 @@ class NasuWriter(Writer):
                 time.strftime('%H:%M:%S', time.gmtime(_nwg_fab_time)),
             )
             print('=' * 79, '\n')
+            self._fabtime = _nwg_fab_time
         self._instructions.clear()
 
     def _plot2d_nwg(
@@ -1328,6 +1336,7 @@ class MarkerWriter(Writer):
 
         self._param: dict[str, Any] = dict(**param)
         self._export_path = self.CWD / (self.export_dir or '')
+        self._fabtime: float = 0.0
 
     def append(self, obj: Marker) -> None:
         """Append Marker objects.
@@ -1483,6 +1492,7 @@ class MarkerWriter(Writer):
             print('=' * 79, '\n')
         self._instructions.clear()
         self._total_dwell_time = 0.0
+        self._fabtime = _mk_fab_time
 
     def _plot2d_mk(self, fig: go.Figure, style: dict[str, Any] | None = None) -> go.Figure:
         """2D plot helper.
