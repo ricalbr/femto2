@@ -27,9 +27,7 @@ import femto.device
 
 def generate_all_cols_data() -> nptyp.NDArray[
     Any,
-    nptyp.Structure[
-        "tagname: Str, fullname: Str, unit: Str, width: Int, format: Str"
-    ],
+    nptyp.Structure["tagname: Str, fullname: Str, unit: Str, width: Int, format: Str"],
 ]:
     """
     Create the available columns array from a file.
@@ -70,7 +68,7 @@ class NestedDict:
             return ret
         else:
             return None
-    
+
     @staticmethod
     def get_path(key, d, path=None, prev_k=None):
         """Get paths to all occurencies of the key in the dictionary."""
@@ -91,9 +89,7 @@ class NestedDict:
 
                 if isinstance(v, dict):
                     prev_k.append(k)
-                    path = NestedDict.get_path(
-                        key, v, path=path, prev_k=prev_k
-                    )
+                    path = NestedDict.get_path(key, v, path=path, prev_k=prev_k)
 
             if nothing and prev_k:
                 prev_k.pop(-1)
@@ -200,9 +196,7 @@ class Spreadsheet:
 
         """
         if self.device is None:
-            raise TypeError(
-                'Device must be given when initializing Spreadsheet.'
-            )
+            raise TypeError('Device must be given when initializing Spreadsheet.')
 
         if not self.columns_names:
             scn = 'name power speed scan radius int_dist depth yin yout obs'
@@ -229,22 +223,20 @@ class Spreadsheet:
 
         ac = generate_all_cols_data()
         if self.new_columns:
-            
+
             for elem in self.new_columns:
                 tns = ac['tagname']
                 if elem[0] in tns:
                     # tagname already present, replace
-                    ind = [i for i, tn in enumerate(tns) if tn != elem[0] ]
+                    ind = [i for i, tn in enumerate(tns) if tn != elem[0]]
                     ac = ac[ind]
-                    
+
                 ac = np.append(ac, np.array([elem], dtype=ac.dtype))
-        
+
         self.all_cols = ac
 
         defaults = {'font_name': self.font_name, 'font_size': self.font_size}
-        self.wb = Workbook(
-            self.book_name, options={'default_format_properties': defaults}
-        )
+        self.wb = Workbook(self.book_name, options={'default_format_properties': defaults})
         self.ws = self.wb.add_worksheet(self.sheet_name)
 
         self.wb.set_calc_mode('auto')
@@ -286,11 +278,7 @@ class Spreadsheet:
             '3))))-DATE(2020,1,0)-1,0))'
         )
         preamble['preghiera'].v = formula
-        preamble['preghiera'].n = (
-            '=IF(ISBLANK(INDIRECT(ADDRESS(INDEX('
-            'ROW(B:B),MATCH("Date",B:B,0)),3))),'
-            '"",FA1)'
-        )
+        preamble['preghiera'].n = '=IF(ISBLANK(INDIRECT(ADDRESS(INDEX(' 'ROW(B:B),MATCH("Date",B:B,0)),3))),' '"",FA1)'
         preamble['preghiera'].sz = np.array([2, 0])
 
         dt = time.gmtime(self.device.fabrication_time)
@@ -437,9 +425,7 @@ class Spreadsheet:
             wgstrucs = flatten(wgwr.obj_list)
             mkstrucs = flatten(mkwr.obj_list)
         else:
-            wgstrucs = [
-                s for s in flatten(str_list) if isinstance(s, Waveguide)
-            ]
+            wgstrucs = [s for s in flatten(str_list) if isinstance(s, Waveguide)]
             mkstrucs = [s for s in flatten(str_list) if isinstance(s, Marker)]
 
         wgstrucs.sort(key=lambda wg: wg.path3d[1][0])
@@ -539,11 +525,7 @@ class Spreadsheet:
                     item = getattr(ent, t, None)
 
                 if item is None:
-                    item = (
-                        1.1e5
-                        if self._dtype(t) in [np.float64, np.int64]
-                        else ''
-                    )
+                    item = 1.1e5 if self._dtype(t) in [np.float64, np.int64] else ''
 
                 sline.append(item)
 
@@ -560,17 +542,11 @@ class Spreadsheet:
                 keep.append(i)
                 continue
 
-            if table_lines.dtype.fields[t][0].char in 'ld' and np.all(
-                table_lines[t] > 1e5
-            ):
+            if table_lines.dtype.fields[t][0].char in 'ld' and np.all(table_lines[t] > 1e5):
                 ignored_fields.append(t)
                 continue
 
-            if (
-                np.all(table_lines[t] == table_lines[t][0])
-                and suppr_redd_cols
-                and table_lines[t][0] != ""
-            ):
+            if np.all(table_lines[t] == table_lines[t][0]) and suppr_redd_cols and table_lines[t][0] != "":
                 # eliminate reddundancies if explicitly requested
                 ignored_fields.append(t)
 
@@ -664,9 +640,7 @@ class Spreadsheet:
 
     def _create_numerical_format(self, fmt_string) -> None:
         wb = self.wb
-        self.formats[fmt_string] = wb.add_format(
-            {'align': 'center', 'valign': 'vcenter', 'num_format': fmt_string}
-        )
+        self.formats[fmt_string] = wb.add_format({'align': 'center', 'valign': 'vcenter', 'num_format': fmt_string})
 
     def _fill_spreadsheet(self):
 
@@ -676,18 +650,14 @@ class Spreadsheet:
         self.ws.set_row(2, 50)
 
         cols = self.columns_data
-        titles = [
-            f'{f} / {u}' if u != '' else f'{f}'
-            for f, u in zip(cols['fullname'], cols['unit'])
-        ]
+        titles = [f'{f} / {u}' if u != '' else f'{f}' for f, u in zip(cols['fullname'], cols['unit'])]
         self._add_line((7, 5), titles, fmt='title')
 
         for i, sdata in enumerate(self.struct_data):
 
             sdata = [
                 s
-                if (isinstance(s, (np.int64, np.float64)) and s < 1e5)
-                or (not isinstance(s, (np.int64, np.float64)))
+                if (isinstance(s, (np.int64, np.float64)) and s < 1e5) or (not isinstance(s, (np.int64, np.float64)))
                 else ''
                 for s in sdata
             ]
@@ -713,9 +683,7 @@ class Spreadsheet:
 
         # Write the header and leave space for fabrication description
         ws.merge_range(1, 3, 1, nc_f + 4, 'Description', self.formats['title'])
-        ws.merge_range(
-            2, 3, 2, nc_f + 4, self.description, self.formats['parval']
-        )
+        ws.merge_range(2, 3, 2, nc_f + 4, self.description, self.formats['parval'])
 
     def _write_preamble(self) -> None:
 
@@ -737,9 +705,7 @@ class Spreadsheet:
             for tname, p in parameters.items():
 
                 if np.any(p.sz):
-                    ws.merge_range(
-                        *p.loc, *(p.loc + p.sz), '', self.formats['parname']
-                    )
+                    ws.merge_range(*p.loc, *(p.loc + p.sz), '', self.formats['parname'])
 
                     ws.merge_range(
                         *(p.loc + np.array([0, 1])),
@@ -748,9 +714,7 @@ class Spreadsheet:
                         self.formats[p.fmt],
                     )
 
-                self._add_line(
-                    p.loc, [p.n.capitalize(), p.v], fmt=['parname', p.fmt]
-                )
+                self._add_line(p.loc, [p.n.capitalize(), p.v], fmt=['parname', p.fmt])
 
     def _add_line(
         self,
@@ -792,9 +756,7 @@ class Spreadsheet:
         elif not isinstance(fmt, list):
             fmt = len(data) * [fmt]
 
-        fmt = [
-            self.formats[key] if isinstance(key, str) else key for key in fmt
-        ]
+        fmt = [self.formats[key] if isinstance(key, str) else key for key in fmt]
 
         row, col = start_cell
 

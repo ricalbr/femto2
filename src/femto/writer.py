@@ -867,7 +867,6 @@ class WaveguideWriter(Writer):
             print('=' * 79, '\n')
             self._fabtime = _wg_fab_time
         self._instructions.clear()
-        
 
     def _plot2d_wg(
         self, fig: go.Figure, show_shutter_close: bool = True, style: dict[str, Any] | None = None
