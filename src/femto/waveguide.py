@@ -379,6 +379,7 @@ class Waveguide(LaserPath):
         dy: float,
         dz: float | None = None,
         disp_x: float | None = None,
+        flat_peaks: float = 0.0,
         omega: tuple[float, float] = (1.0, 2.0),
         radius: float | None = None,
         shutter: int = 1,
@@ -403,6 +404,10 @@ class Waveguide(LaserPath):
         disp_x: float, optional
             `x`-displacement  for the sinusoidal bend. If the value is ``None`` (the default value),
             the `x`-displacement is computed with the formula for the circular `S`-bend.
+        flat_peaks: float
+            Parameter that regulates the flatness of the sine's peaks. The higher the parameter the more the sine
+            function resembles a square function. If ``flat_peaks == 0`` the sine function does not have flat peaks.
+            The default value is `0`.
         omega: tuple(float, float)
             Frequency of the Sin-bend oscillations for `y` and `z` coordinates, respectively.
             The deafult values are `fy` = 1, `fz` = 1.
@@ -446,7 +451,14 @@ class Waveguide(LaserPath):
         num = self.num_subdivisions(dx, f)
 
         x_sin = np.linspace(self._x[-1], self._x[-1] + dx, num)
-        y_sin = self._y[-1] + 0.5 * dy * (1 - np.cos(omega_y * np.pi / dx * (x_sin - self._x[-1])))
+        y_sin = self._y[-1] + 0.5 * dy * (
+            1
+            - np.sqrt(
+                (1 + flat_peaks**2)
+                / (1 + flat_peaks**2 * np.cos(omega_y * np.pi / dx * (x_sin - self._x[-1])) ** 2)
+            )
+            * np.cos(omega_y * np.pi / dx * (x_sin - self._x[-1]))
+        )
         z_sin = self._z[-1] + 0.5 * dzb * (1 - np.cos(omega_z * np.pi / dx * (x_sin - self._x[-1])))
         f_sin = f * np.ones_like(x_sin)
         s_sin = shutter * np.ones_like(x_sin)
@@ -462,6 +474,7 @@ class Waveguide(LaserPath):
         self,
         dy: float,
         radius: float | None = None,
+        flat_peaks: float = 0.0,
         int_length: float | None = None,
         shutter: int = 1,
         speed: float | None = None,
@@ -474,6 +487,10 @@ class Waveguide(LaserPath):
             Vertical displacement of the waveguide of the sinusoidal-bend [mm].
         radius: float, optional
             Curvature radius [mm]. The default value is `self.radius`.
+        flat_peaks: float
+            Parameter that regulates the flatness of the sine's peaks. The higher the parameter the more the sine
+            function resembles a square function. If ``flat_peaks == 0`` the sine function does not have flat peaks.
+            The default value is `0`.
         int_length: float, optional
             Length of the Directional Coupler's straight interaction region [mm]. The default is `self.int_length`.
         shutter: int
@@ -508,6 +525,7 @@ class Waveguide(LaserPath):
         self,
         dy: float,
         radius: float | None = None,
+        flat_peaks: float = 0.0,
         int_length: float | None = None,
         arm_length: float | None = None,
         shutter: int = 1,
@@ -522,6 +540,10 @@ class Waveguide(LaserPath):
             Vertical displacement of the waveguide of the sinusoidal-bend [mm].
         radius: float, optional
             Curvature radius [mm]. The default value is `self.radius`.
+        flat_peaks: float
+            Parameter that regulates the flatness of the sine's peaks. The higher the parameter the more the sine
+            function resembles a square function. If ``flat_peaks == 0`` the sine function does not have flat peaks.
+            The default value is `0`.
         int_length: float, optional
             Length of the Directional Coupler's straight interaction region [mm]. The default is `self.int_length`.
         arm_length: float
