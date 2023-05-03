@@ -247,6 +247,34 @@ class Marker(LaserPath):
             self.linear(path[-1], mode='ABS', shutter=0)
         self.end()
 
+    def box(self, lower_left_corner: list[float], width: float = 1.0, height: float = 0.06) -> None:
+        """Box.
+        The function creates a rectangular ablation pattern. It takes in the lower left corner of the rectangle,
+        the width and height of the rectangle as input and generates a list of points representing the vertices of
+        the rectangle. The `ablation` method is then called with this list of points to create the ablation
+        pattern.
+
+        lower_left_corner: list[float]
+            List of points representing the lower left corner of the rectangle.
+        width: float
+            Width of the rectangle [mm]. The default value is 1.0 mm.
+        height: float
+            Height of the rectangle [mm]. The default value is 0.060 mm.
+        """
+
+        if not lower_left_corner:
+            return
+        lower_left_corner = np.array(lower_left_corner)
+
+        pts = [
+            lower_left_corner,
+            lower_left_corner + np.array([width, 0, 0]),
+            lower_left_corner + np.array([width, height, 0]),
+            lower_left_corner + np.array([0, height, 0]),
+            lower_left_corner,
+        ]
+        self.ablation(points=pts, shift=None)
+
 
 def main() -> None:
     import matplotlib.pyplot as plt
@@ -258,7 +286,8 @@ def main() -> None:
 
     c = Marker(**PARAMETERS_MK)
     # c.cross([2.5, 1], 5, 2)
-    c.ablation([[0, 0, 0], [5, 0, 0], [5, 1, 0], [2, 2, 0]])
+    # c.ablation([[0, 0, 0], [5, 0, 0], [5, 1, 0], [2, 2, 0]])
+    c.box([1, 2, 3], width=5.0, height=0.01)
     print(c.points)
 
     from femto.pgmcompiler import PGMCompiler
