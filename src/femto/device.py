@@ -4,17 +4,24 @@ import collections
 import copy
 import pathlib
 from typing import Any
+from typing import cast
+from typing import Union
+from typing import Type
 
+from pathlib import Path
 import plotly.graph_objects as go
 from femto.helpers import flatten
+from femto.helpers import listcast
 from femto.marker import Marker
 from femto.trench import TrenchColumn
 from femto.waveguide import NasuWaveguide
 from femto.waveguide import Waveguide
+from femto.pgmcompiler import PGMCompiler
 from femto.writer import MarkerWriter
 from femto.writer import NasuWriter
 from femto.writer import TrenchWriter
 from femto.writer import WaveguideWriter
+from femto.spreadsheet import Spreadsheet
 
 
 class Device:
@@ -28,6 +35,7 @@ class Device:
         self._param: dict[str, Any] = dict(**param)
         self.unparsed_objects: list[Any] = []
         self.fig: go.Figure | None = None
+        self.fabrication_time: float = 0.0
         self.writers = {
             Waveguide: WaveguideWriter(wg_list=[], **param),
             NasuWaveguide: NasuWriter(nw_list=[], **param),
@@ -172,9 +180,26 @@ class Device:
         for key, writer in self.writers.items():
             if verbose:
                 print(f'Exporting {key.__name__} objects...')
+
+            writer = cast(Union[WaveguideWriter, NasuWriter, TrenchWriter, MarkerWriter], writer)
             writer.pgm(verbose=verbose)
+
+            self.fabrication_time += writer._fabtime
         if verbose:
             print('Export .pgm files complete.\n')
+
+    def xlsx(self, verbose: bool = True, **param) -> None:
+        """Generate the spreadsheet.
+
+        Add all waveguides and markers of the ``Device`` to the spreadsheet.
+        """
+
+        with Spreadsheet(device=self, **param) as spsh:
+            if verbose:
+                print('Generating spreadsheet...')
+            spsh.write_structures(verbose=verbose)
+        if verbose:
+            print('Create .xlsx file complete.\n')
 
     def save(self, filename: str = 'scheme.html', opt: dict[str, Any] | None = None) -> None:
         """Save figure.

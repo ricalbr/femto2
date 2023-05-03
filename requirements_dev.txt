@@ -5,3 +5,4 @@ pytest-cov>=2.12.1
 mypy>=0.910
 black>=22.10.0
 pre-commit>=2.1.0
+openpyxl>=3.0.10
