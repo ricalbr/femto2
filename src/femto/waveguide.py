@@ -512,9 +512,9 @@ class Waveguide(LaserPath):
 
         int_length = int_length if int_length is not None else self.int_length
 
-        self.sin_bend(dy, radius=radius, speed=speed, shutter=shutter)
+        self.sin_bend(dy, radius=radius, flat_peaks=flat_peaks, speed=speed, shutter=shutter)
         self.linear([np.fabs(int_length), 0, 0], speed=speed, shutter=shutter)
-        self.sin_bend(-dy, radius=radius, speed=speed, shutter=shutter)
+        self.sin_bend(-dy, radius=radius, flat_peaks=flat_peaks, speed=speed, shutter=shutter)
         return self
 
     def sin_mzi(
@@ -567,9 +567,9 @@ class Waveguide(LaserPath):
 
         arm_length = arm_length if arm_length is not None else self.arm_length
 
-        self.sin_coupler(dy, radius=radius, int_length=int_length, shutter=shutter, speed=speed)
+        self.sin_coupler(dy, radius=radius, flat_peaks=flat_peaks, int_length=int_length, shutter=shutter, speed=speed)
         self.linear([np.fabs(arm_length), 0, 0], shutter=shutter, speed=speed)
-        self.sin_coupler(dy, radius=radius, int_length=int_length, shutter=shutter, speed=speed)
+        self.sin_coupler(dy, radius=radius, flat_peaks=flat_peaks, int_length=int_length, shutter=shutter, speed=speed)
         return self
 
     def spline(
@@ -949,7 +949,7 @@ def main() -> None:
         wg.y_init = -wg.pitch / 2 + index * wg.pitch
         wg.start()
         wg.linear(increment)
-        wg.sin_mzi((-1) ** index * wg.dy_bend)
+        wg.sin_mzi((-1) ** index * wg.dy_bend, flat_peaks=0)
         wg.sin_bridge((-1) ** index * 0.08, (-1) ** index * 0.015)
         wg.arc_bend((-1) ** (index + 1) * wg.dy_bend)
         wg.linear(increment)
