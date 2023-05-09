@@ -106,54 +106,6 @@ class Waveguide(LaserPath):
         dx = 2 * radius * np.sin(a)
         return a, dx
 
-    def get_spline_parameter(
-        self,
-        disp_x: float | None = None,
-        disp_y: float | None = None,
-        disp_z: float | None = None,
-        radius: float | None = None,
-    ) -> tuple[float, float, float, float]:
-        """Compute `x`, `y`, `z` displacement, and length of the curve.
-
-        The `disp_x`, `disp_y` and `disp_z` displacements are given as input. If `disp_x` is unknown and it is
-        computed using the `get_sbend_parameter()` method for the given radius.
-        In this latter case, the `l_curve` is computed using the formula for the circular arc (radius * angle) which is
-        then multiply by a factor of 2 in order to retrieve the S-bend shape.
-
-        Parameters
-        ----------
-        disp_x: float
-            Displacement along `x`-direction [mm].
-        disp_y: float
-            Displacement along `y`-direction [mm].
-        disp_z: float
-            Displacement along `z`-direction [mm].
-        radius: float, optional
-            Curvature radius [mm]. The default value is `self.radius`.
-
-        Returns
-        -------
-        tuple(float, float, float)
-            `x`, `y`, `z`-displacements [mm] and the length of the curve [mm].
-        """
-        if disp_y is None:
-            raise ValueError('y-displacement is None. Give a valid disp_y.')
-        if disp_z is None:
-            raise ValueError('z-displacement is None. Give a valid disp_z.')
-        if radius is None and self.radius is None:
-            raise ValueError("radius is None. Give a valid radius value or set Waveguide's 'radius' attribute.")
-
-        r = radius if radius is not None else self.radius
-
-        if disp_x is None:
-            disp_yz = np.sqrt(disp_y**2 + disp_z**2)
-            ang, disp_x = self.get_sbend_parameter(disp_yz, r)
-            l_curve = 2 * ang * r
-        else:
-            disp = np.array([disp_x, disp_y, disp_z])
-            l_curve = np.sqrt(np.sum(disp**2))
-        return disp_x, disp_y, disp_z, l_curve
-
     # Methods
     def circ(
         self,
@@ -456,8 +408,8 @@ class Waveguide(LaserPath):
             1 - np.sqrt((1 + flat_peaks**2) / (1 + flat_peaks**2 * tmp_cos**2)) * tmp_cos
         )
         z_sin = self._z[-1] + 0.5 * dzb * (1 - np.cos(omega_z * np.pi / dx * (x_sin - self._x[-1])))
-        f_sin = f * np.ones_like(x_sin)
-        s_sin = shutter * np.ones_like(x_sin)
+        f_sin = np.repeat(f, num)
+        s_sin = np.repeat(shutter, num)
 
         # update coordinates
         self.add_path(x_sin, y_sin, z_sin, f_sin, s_sin)
@@ -542,9 +494,9 @@ class Waveguide(LaserPath):
             The default value is `0`.
         int_length: float, optional
             Length of the Directional Coupler's straight interaction region [mm]. The default is `self.int_length`.
-        arm_length: float
+        arm_length: float, optional
             Length of the Mach-Zehnder Interferometer's straight arm [mm]. The default is `self.arm_length`.
-        shutter: int
+        shutter: int, optional
             State of the shutter during the transition (0: 'OFF', 1: 'ON'). The default value is 1.
         speed: float, optional
             Translation speed [mm/s]. The default value is `self.speed`.
@@ -574,46 +526,46 @@ class Waveguide(LaserPath):
 
     def spline(
         self,
-        disp_x: float,
-        disp_y: float,
-        disp_z: float,
-        init_pos: npt.NDArray[np.float32] | None = None,
+        dy: float,
+        dz: float = 0.0,
+        disp_x: float | None = None,
+        y_derivatives: tuple[tuple[float]] = ((0.0, 0.0), (0.0, 0.0)),
+        z_derivatives: tuple[tuple[float]] = ((0.0, 0.0), (0.0, 0.0)),
         radius: float | None = None,
         shutter: int = 1,
         speed: float | None = None,
-        bc_y: tuple[tuple[float, float], tuple[float, float]] = ((1, 0.0), (1, 0.0)),
-        bc_z: tuple[tuple[float, float], tuple[float, float]] = ((1, 0.0), (1, 0.0)),
     ) -> Waveguide:
-        """Connect the current position to a new point with a Bezier curve.
-
-        It takes in an initial position (`x_0`, `y_0`, `z_0`) and linear displacements in the `x`, `y`,
-        and `z` directions. The final point of the curved is computed as (`x_0` + `dx`, `y_0` + `dy`, `z_0` + `dz`).
-        The points are connected with a Cubic Spline function.
+        """
+        The function construct a piecewise 3D polynomial in the Bernstein basis, compatible with the specified values
+        and derivatives at breakpoints.
+        The user can specify the `y` and `z` displacements as well as the values of the first and second derivatives
+        at the initial and final points (separaterly for the `y` and `z` coordinates).
 
         Parameters
         ----------
-        disp_x: float
-            `x`-displacement from initial position [mm].
-        disp_y: float
+        dy: float
             `y`-displacement from initial position [mm].
-        disp_z: float
-            `z`-displacement from initial position [mm].
-        init_pos: numpy.ndarray, optional
-            `x`-displacement from initial position.
+        dz: float, optional
+            `z`-displacement from initial position [mm]. The default value is 0.0.
+        disp_x: float, optional
+            The displacement along the x-axis. If not specified, it is calculated using the`get_sbend_parameter`
+            method of the `Waveguide` class.
+        y_derivatives   : tuple(tuple(float))
+            Tuple containing the derivates for the `y` coordinate for the initial and final point. The number of
+            derivatives is arbitrary. For example ``y_derivatives=((0.0, 1.0, 2.0), (0.0,-1.0,-0.2))`` generates a
+            polynomial spline curve `f(x)` such that `f'(x0) = 0.0`, `f''(x0) = 1.0`, `f'''(x0) = 2.0`, `f'(x0+dx) =
+            0.0`, `f''(x0+dx) = -1.0` and `f'''(x0+dx) = -0.2`. The default value is `((0.0, 0.0), (0.0, 0.0))`.
+        z_derivatives   : tuple(tuple(float))
+            Tuple containing the derivates for the `z` coordinate for the initial and final point. The number of
+            derivatives is arbitrary. For example ``z_derivatives=((0.0, 1.0, 2.0), (0.0,-1.0,-0.2))`` generates a
+            polynomial spline curve `f(x)` such that `f'(x0) = 0.0`, `f''(x0) = 1.0`, `f'''(x0) = 2.0`, `f'(x0+dx) =
+            0.0`, `f''(x0+dx) = -1.0` and `f'''(x0+dx) = -0.2`. The default value is `((0.0, 0.0), (0.0, 0.0))`.
         radius: float, optional
             Curvature radius [mm]. The default value is `self.radius`.
         shutter: int
             State of the shutter during the transition (0: 'OFF', 1: 'ON'). The default value is 1.
         speed: float, optional
             Translation speed [mm/s]. The default value is `self.speed`.
-        bc_y, bc_z : 2-tuple, optional
-            Boundary condition type.
-
-            The tuple `(order, deriv_values)` allows to specify arbitrary derivatives at
-            curve ends. The first and the second value will be applied at the curve start and end respectively:
-
-            * `order`: the derivative order, 1 or 2.
-            * `deriv_value`: array_like containing derivative values.
 
         Returns
         -------
@@ -621,36 +573,55 @@ class Waveguide(LaserPath):
 
         See Also
         --------
-        CubicSpline : Cubic spline data interpolator.
+        scipy.interpolate.BPoly.from_derivatives : Construct piecewise polymonial from derivatives at breakpoints.
         """
 
-        f = speed if speed is not None else self.speed
-        if f is None:
+        if radius is None and self.radius is None:
+            raise ValueError('Radius is None. Set Waveguide\'s "radius" attribute or give a radius as input.')
+        if speed is None and self.speed is None:
             raise ValueError('Speed is None. Set Waveguide\'s "speed" attribute or give a speed as input.')
+        if dy is None:
+            raise ValueError('dy is None. Give a valid dy as input.')
+        if dz is None:
+            raise ValueError('dz is None. Give a valid dz as input.')
 
-        x_spl, y_spl, z_spl = self._get_spline_points(
-            disp_x=disp_x,
-            disp_y=disp_y,
-            disp_z=disp_z,
-            init_pos=init_pos,
-            radius=radius,
-            speed=f,
-            bc_y=bc_y,
-            bc_z=bc_z,
-        )
-        f_spl = np.repeat(f, x_spl.size)
-        s_spl = np.repeat(shutter, x_spl.size)
+        r = radius if radius is not None else self.radius
+        f = speed if speed is not None else self.speed
 
-        # update coordinates or return
-        self.add_path(x_spl, y_spl, z_spl, f_spl, s_spl)
+        dx = disp_x if disp_x is not None else self.get_sbend_parameter(np.sqrt(dy**2 + dz**2), r)[-1]
+        num = self.num_subdivisions(dx, f)
+
+        # Define initial and final point of the curve
+        x0, x1 = self._x[-1], self._x[-1] + dx
+        y0, y1 = self._y[-1], self._y[-1] + dy
+        z0, z1 = self._z[-1], self._z[-1] + dz
+
+        from scipy.interpolate import BPoly
+
+        y_poly = BPoly.from_derivatives([x0, x1], [[y0, *y_derivatives[0]], [y1, *y_derivatives[-1]]])
+        z_poly = BPoly.from_derivatives([x0, x1], [[z0, *z_derivatives[0]], [z1, *z_derivatives[-1]]])
+
+        x_poly = np.linspace(x0, x1, num)
+        y_poly = y_poly(x_poly)
+        z_poly = z_poly(x_poly)
+        f_poly = np.repeat(f, num)
+        s_poly = np.repeat(shutter, num)
+
+        # update coordinates
+        self.add_path(x_poly, y_poly, z_poly, f_poly, s_poly)
         return self
+
+    poly_bend = functools.partialmethod(
+        spline,
+        y_derivatives=((0.0, 0.0), (0.0, 0.0)),
+        z_derivatives=((0.0, 0.0), (0.0, 0.0)),
+    )
 
     def spline_bridge(
         self,
-        disp_x: float,
-        disp_y: float,
-        disp_z: float,
-        init_pos: npt.NDArray[np.float32] | None = None,
+        dy: float,
+        dz: float,
+        disp_x: float | None = None,
         radius: float | None = None,
         shutter: int = 1,
         speed: float | None = None,
@@ -668,20 +639,14 @@ class Waveguide(LaserPath):
         The values of the first derivatives df(x, y)/dx, df(x, z)/dx are set to zero in the initial and final point
         of the spline bridge.
 
-        Moreover, to increase the regularity of the curve, the points of the spline bridge are fitted
-        with a spline of the 5-th order. In this way the final curve has second derivatives close to zero (~1e-4)
-        while maintaining the first derivative to zero.
-
         Parameters
         ----------
-        disp_x: float
-            `x`-displacement from initial position [mm].
-        disp_y: float
+        dy: float
             `y`-displacement from initial position [mm].
-        disp_z: float
+        dz: float
             `z`-displacement from initial position [mm].
-        init_pos: numpy.ndarray, optional
-            `x`-displacement from initial position.
+        disp_x: float, optional
+            `x`-displacement from initial position [mm].
         radius: float, optional
             Curvature radius [mm]. The default value is `self.radius`.
         shutter: int
@@ -699,149 +664,37 @@ class Waveguide(LaserPath):
         InterpolatedUnivariateSpline : 1-D interpolating spline for a given set of data points.
         spline : Connect the current position to a new point with a Bezier curve.
         """
-
-        f = speed if speed is not None else self.speed
-
-        if disp_x is None:
-            disp_x, *_ = self.get_spline_parameter(disp_y=disp_y, disp_z=disp_z, radius=radius)
-
-        # First half of the spline
-        x1, y1, z1 = self._get_spline_points(
-            disp_x=disp_x,
-            disp_y=disp_y / 2,
-            disp_z=disp_z,
-            init_pos=init_pos,
-            radius=radius,
-            speed=f,
-            bc_y=((1, 0.0), (1, disp_y / disp_x)),
-            bc_z=((1, 0.0), (1, 0.0)),
-        )
-        # Second half of the spline
-        init_pos2 = np.array([x1[-1], y1[-1], z1[-1]])
-        x2, y2, z2 = self._get_spline_points(
-            disp_x=disp_x,
-            disp_y=disp_y / 2,
-            disp_z=-disp_z,
-            init_pos=init_pos2,
-            radius=radius,
-            speed=f,
-            bc_y=((1, disp_y / disp_x), (1, 0.0)),
-            bc_z=((1, 0.0), (1, 0.0)),
-        )
-        # Merge points
-        x = np.append(x1[1:-1], x2)
-        y = np.append(y1[1:-1], y2)
-        z = np.append(z1[1:-1], z2)
-
-        # Construct a 5th-order spline using CubicSpline points as control points for interpolation
-        y_uspline = interpolate.InterpolatedUnivariateSpline(x, y, k=5)(x)
-        z_uspline = interpolate.InterpolatedUnivariateSpline(x, z, k=5)(x)
-        f_uspline = np.repeat(f, x.size)
-        s_uspline = np.repeat(shutter, x.size)
-
-        self.add_path(x, y_uspline, z_uspline, f_uspline, s_uspline)
-        return self
-
-    # Private interface
-    def _get_spline_points(
-        self,
-        disp_x: float | None = None,
-        disp_y: float | None = None,
-        disp_z: float | None = None,
-        init_pos: npt.NDArray[np.float32] | None = None,
-        radius: float | None = None,
-        speed: float | None = None,
-        bc_y: tuple[tuple[float, float], tuple[float, float]] = ((1, 0.0), (1, 0.0)),
-        bc_z: tuple[tuple[float, float], tuple[float, float]] = ((1, 0.0), (1, 0.0)),
-    ) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32], npt.NDArray[np.float32]]:
-        # TODO: fix docstring
-        """
-        It takes in a bunch of parameters and returns the x, y, and z coordinates of a spline segment
-
-        :param disp_x: float | None = None,
-        :type disp_x: float | None
-        :param disp_y: float | None = None,
-        :type disp_y: float | None
-        :param disp_z: float | None = None,
-        :type disp_z: float | None
-        :param init_pos: The initial position of the spline. If None, the last point of the waveguide is used
-        :type init_pos: npt.NDArray[np.float32] | None
-        :param radius: The radius of the curve
-        :type radius: float | None
-        :param speed: The speed of the waveguide
-        :type speed: float | None
-        :param bc_y: tuple[tuple[float, float], tuple[float, float]] = ((1, 0.0), (1, 0.0)),
-        :type bc_y: tuple[tuple[float, float], tuple[float, float]]
-        :param bc_z: tuple[tuple[float, float], tuple[float, float]] = ((1, 0.0), (1, 0.0)),
-        :type bc_z: tuple[tuple[float, float], tuple[float, float]]
-        :return: The x, y, and z coordinates of the spline.
-
-
-        Function for the generation of a 3D spline curve. Starting from init_point the function compute a 3D spline
-        with a displacement dy in y-direction and dz in z-direction.
-        The user can specify the length of the curve or (alternatively) provide a curvature radius that is used to
-        compute the displacement along x-direction as the displacement of the equivalent circular S-bend.
-
-        User can provide the boundary conditions for the derivatives in the y- and z-directions. Boundary conditions
-        are a tuple of tuples in which we have:
-            bc = ((initial point), (final point))
-        where the (initial point) and (final point) tuples are specified as follows:
-            (derivative order, value of derivative)
-        the derivative order can be either 0, 1, 2.
-
-        :param disp_y: Displacement along y-direction [mm].
-        :type disp_y: float
-        :param disp_z: Displacement along z-direction [mm].
-        :type disp_z: float
-        :param init_pos: Initial position of the curve.
-        :type init_pos: np.ndarray
-        :param radius: Curvature radius of the spline [mm]. The default is 20 mm.
-        :type radius: float
-        :param disp_x: Displacement along x-direction [mm]. The default is 0 mm.
-        :type disp_x: float
-        :param speed: Transition speed [mm/s]. The default is self.speed.
-        :type speed: float
-        :param bc_y: Boundary conditions for the Y-coordinates. The default is ((1, 0.0), (1, 0.0)).
-        :type bc_y: tuple
-        :param bc_z: Boundary conditions for the z-coordinates. The default is ((1, 0.0), (1, 0.0)).
-        :type bc_z: tuple
-        :return: (x-coordinates, y-coordinates, z-coordinates) of the spline curve.
-        :rtype: Tuple(np.ndarray, np.ndarray, np.ndarray)
-        """
-
-        if init_pos is None:
-            if self._x.size != 0:
-                init_pos = np.array([self._x[-1], self._y[-1], self._z[-1]])
-            elif any([self.x_init, self.y_init, self.z_init]):
-                init_pos = np.array([self.x_init, self.y_init, self.z_init])
-            else:
-                raise ValueError(
-                    'Initial position is None or non-valid. Set Waveguide\'s "x_init", "y_init" and "z_init"'
-                    'attributes or give a valid "init_pos" as input or the current Waveguide is empty, '
-                    'in that case use the start() method before attaching spline segments.'
-                )
-
-        if (radius is None and self.radius is None) and disp_x is None:
-            raise ValueError(
-                'Radius is None. Set Waveguide\'s "radius" attribute or give a radius as input.'
-                'Alternatively, give a valid x-displacement as input.'
-            )
-
-        f = speed if speed is not None else self.speed
-        if f is None:
-            raise ValueError('Speed is None. Set Waveguide\'s "speed" attribute or give a speed as input.')
+        if dy is None:
+            raise ValueError('dy is None. Give a valid dy as input.')
+        if dz is None:
+            raise ValueError('dz is None. Give a valid dz as input.')
 
         r = radius if radius is not None else self.radius
+        dx = disp_x if disp_x is not None else self.get_sbend_parameter(np.sqrt(dy**2 + dz**2), r)[-1]
 
-        dx, dy, dz, l_curve = self.get_spline_parameter(disp_x=disp_x, disp_y=disp_y, disp_z=disp_z, radius=np.fabs(r))
-        num = self.num_subdivisions(l_curve, f)
-
-        t = np.linspace(0, dx, num)
-        x_cspline = init_pos[0] + t
-        y_cspline = init_pos[1] + interpolate.CubicSpline((0.0, dx), (0.0, dy), bc_type=bc_y)(t)
-        z_cspline = init_pos[2] + interpolate.CubicSpline((0.0, dx), (0.0, dz), bc_type=bc_z)(t)
-
-        return x_cspline, y_cspline, z_cspline
+        # First half of the spline bridge
+        self.spline(
+            dy=dy / 2,
+            dz=dz,
+            disp_x=dx,
+            y_derivatives=((0.0, 0.0), (dy / dx, 0.0)),
+            z_derivatives=((0.0, 0.0), (0.0, 0.0)),
+            radius=radius,
+            shutter=shutter,
+            speed=speed,
+        )
+        # Second half of the spline bridge
+        self.spline(
+            dy=dy / 2,
+            dz=-dz,
+            disp_x=dx,
+            y_derivatives=((dy / dx, 0.0), (0.0, 0.0)),
+            z_derivatives=((0.0, 0.0), (0.0, 0.0)),
+            radius=radius,
+            shutter=shutter,
+            speed=speed,
+        )
+        return self
 
 
 @dataclasses.dataclass
@@ -949,7 +802,7 @@ def main() -> None:
         wg.y_init = -wg.pitch / 2 + index * wg.pitch
         wg.start()
         wg.linear(increment)
-        wg.sin_mzi((-1) ** index * wg.dy_bend, flat_peaks=0)
+        wg.poly_bend((-1) ** index * wg.dy_bend, flat_peaks=0)
         wg.sin_bridge((-1) ** index * 0.08, (-1) ** index * 0.015)
         wg.arc_bend((-1) ** (index + 1) * wg.dy_bend)
         wg.linear(increment)

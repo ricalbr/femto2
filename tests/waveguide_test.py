@@ -248,62 +248,6 @@ def test_get_sbend_length_nil_dy(dy, r, exp, param) -> None:
     wg = Waveguide(**param)
     assert pytest.approx(wg.get_sbend_parameter(dy, r)[1]) == exp
 
-
-def test_get_spline_raise_dy(param) -> None:
-    disp_x = 0.5
-    disp_z = 1
-    radius = 30
-    wg = Waveguide(**param)
-    with pytest.raises(ValueError):
-        wg.get_spline_parameter(disp_x=disp_x, disp_z=disp_z, radius=radius)
-
-
-def test_get_spline_raise_radius(param) -> None:
-    disp_x = 0.5
-    disp_y = 1
-    disp_z = 0.6
-    radius = None
-    wg = Waveguide(radius=None)
-    with pytest.raises(ValueError):
-        wg.get_spline_parameter(disp_x=disp_x, disp_y=disp_y, disp_z=disp_z, radius=radius)
-
-
-def test_get_spline_raise_dz(param) -> None:
-    disp_x = 0.5
-    disp_y = 0.04
-    radius = 20
-    wg = Waveguide(**param)
-    with pytest.raises(ValueError):
-        wg.get_spline_parameter(disp_x=disp_x, disp_y=disp_y, radius=radius)
-
-
-def test_get_spline_nil_dispx(param) -> None:
-    disp_y = 0.5
-    disp_z = 0.6
-    radius = 20
-    wg = Waveguide(**param)
-    dx, dy, dz, lc = wg.get_spline_parameter(disp_y=disp_y, disp_z=disp_z, radius=radius)
-
-    assert pytest.approx(dx) == 7.865876
-    assert dy == disp_y
-    assert dz == disp_z
-    assert pytest.approx(lc) == 7.917474
-
-
-def test_get_spline_dispx(param) -> None:
-    disp_x = 0.9
-    disp_y = 0.5
-    disp_z = 0.6
-    radius = 40
-    wg = Waveguide(**param)
-    dx, dy, dz, lc = wg.get_spline_parameter(disp_x=disp_x, disp_y=disp_y, disp_z=disp_z, radius=radius)
-
-    assert dx == disp_x
-    assert dy == disp_y
-    assert dz == disp_z
-    assert pytest.approx(lc) == 1.191638
-
-
 def test_repr(param) -> None:
     r = Waveguide(**param).__repr__()
     print()
@@ -826,10 +770,9 @@ def test_sin_mzi_len(param):
 def test_spline_dy_default(param):
     dx = 5
     dz = 0.01
-    i_pos = np.array([0, 0, 0])
 
     wg = Waveguide(**param)
-    wg.start([0, 0, 0]).spline(disp_x=dx, disp_y=wg.dy_bend, disp_z=dz, init_pos=i_pos)
+    wg.start([0, 0, 0]).spline(disp_x=dx, dy=wg.dy_bend, dz=dz)
     x, y, z, *_ = wg.points
     assert pytest.approx(x[-1] - x[0]) == dx
     assert pytest.approx(y[-1] - y[0]) == wg.dy_bend
@@ -841,10 +784,9 @@ def test_spline_dy_custom(param):
     dx = 3.12
     dy = 0.08
     dz = 0.15
-    i_pos = np.array([0, 0, 0])
 
     wg = Waveguide(**param)
-    wg.start([0, 0, 0]).spline(disp_x=dx, disp_y=dy, disp_z=dz, init_pos=i_pos)
+    wg.start([0, 0, 0]).spline(disp_x=dx, dy=dy, dz=dz)
     x, y, z, *_ = wg.points
     assert pytest.approx(x[-1] - x[0]) == dx
     assert pytest.approx(y[-1] - y[0]) == dy
@@ -852,7 +794,7 @@ def test_spline_dy_custom(param):
     wg.end()
 
     wg = Waveguide(**param)
-    wg.start([0, 0, 0]).spline(disp_x=dx, disp_y=-dy, disp_z=dz, init_pos=i_pos)
+    wg.start([0, 0, 0]).spline(disp_x=dx, dy=-dy, dz=dz)
     x, y, z, *_ = wg.points
     assert pytest.approx(x[-1] - x[0]) == dx
     assert pytest.approx(y[-1] - y[0]) == -dy
@@ -863,20 +805,18 @@ def test_spline_dy_custom(param):
 def test_spline_dy_none(param):
     dx = 5
     dz = 0.01
-    i_pos = np.array([0, 0, 0])
 
     wg = Waveguide(**param)
     with pytest.raises(ValueError):
-        wg.start([0, 0, 0]).spline(disp_x=dx, disp_y=None, disp_z=dz, init_pos=i_pos).end()
+        wg.start([0, 0, 0]).spline(disp_x=dx, dy=None, dz=dz).end()
 
 
 def test_spline_dz_default(param):
     dx = 5
     dy = 0.01
-    i_pos = np.array([0, 0, 0])
 
     wg = Waveguide(**param)
-    wg.start([0, 0, 0]).spline(disp_x=dx, disp_y=dy, disp_z=wg.dz_bridge, init_pos=i_pos)
+    wg.start([0, 0, 0]).spline(disp_x=dx, dy=dy, dz=wg.dz_bridge)
     x, y, z, *_ = wg.points
     assert pytest.approx(x[-1] - x[0]) == dx
     assert pytest.approx(y[-1] - y[0]) == dy
@@ -888,10 +828,9 @@ def test_spline_dz_custom(param):
     dx = 3.12
     dy = 1.85
     dz = 1.2
-    i_pos = np.array([0, 0, 0])
 
     wg = Waveguide(**param)
-    wg.start([0, 0, 0]).spline(disp_x=dx, disp_y=dy, disp_z=dz, init_pos=i_pos)
+    wg.start([0, 0, 0]).spline(disp_x=dx, dy=dy, dz=dz)
     x, y, z, *_ = wg.points
     assert pytest.approx(x[-1] - x[0]) == dx
     assert pytest.approx(y[-1] - y[0]) == dy
@@ -899,7 +838,7 @@ def test_spline_dz_custom(param):
     wg.end()
 
     wg = Waveguide(**param)
-    wg.start([0, 0, 0]).spline(disp_x=dx, disp_y=dy, disp_z=-dz, init_pos=i_pos)
+    wg.start([0, 0, 0]).spline(disp_x=dx, dy=dy, dz=-dz)
     x, y, z, *_ = wg.points
     assert pytest.approx(x[-1] - x[0]) == dx
     assert pytest.approx(y[-1] - y[0]) == dy
@@ -910,11 +849,10 @@ def test_spline_dz_custom(param):
 def test_spline_dz_none(param):
     dx = 7
     dy = 0.01
-    i_pos = np.array([0, 0, 0])
 
     wg = Waveguide(**param)
     with pytest.raises(ValueError):
-        wg.start([0, 0, 0]).spline(disp_x=dx, disp_y=dy, disp_z=None, init_pos=i_pos).end()
+        wg.start([0, 0, 0]).spline(disp_x=dx, dy=dy, dz=None).end()
 
 
 def test_spline_init_pos_default(param):
@@ -924,7 +862,7 @@ def test_spline_init_pos_default(param):
     init_p = [-1, 5, -0.21]
 
     wg = Waveguide(**param)
-    wg.start(init_p).spline(disp_x=dx, disp_y=dy, disp_z=dz)
+    wg.start(init_p).spline(disp_x=dx, dy=dy, dz=dz)
     x, y, z, *_ = wg.points
     assert pytest.approx(x[-1]) == dx + init_p[0]
     assert pytest.approx(y[-1]) == dy + init_p[1]
@@ -942,7 +880,7 @@ def test_spline_init_pos_custom(param):
     wg.x_init = 1.0
     wg.y_init = 2.0
     wg.z_init = 3.0
-    wg.start([0, 0, 0]).spline(disp_x=dx, disp_y=dy, disp_z=dz, init_pos=i_pos)
+    wg.start(i_pos).spline(disp_x=dx, dy=dy, dz=dz)
     x, y, z, *_ = wg.points
     assert pytest.approx(x[-1]) == dx + i_pos[0]
     assert pytest.approx(y[-1]) == dy + i_pos[1]
@@ -960,7 +898,7 @@ def test_spline_init_none(param):
     wg.x_init = None
     wg.y_init = None
     wg.z_init = None
-    wg.start([x0, y0, z0]).spline(disp_x=dx, disp_y=dy, disp_z=dz)
+    wg.start([x0, y0, z0]).spline(disp_x=dx, dy=dy, dz=dz)
     x, y, z, *_ = wg.points
     assert pytest.approx(x[-1]) == dx + x0
     assert pytest.approx(y[-1]) == dy + y0
@@ -972,7 +910,7 @@ def test_spline_radius_default(param):
     dy, dz = (0.3, 0.69)
 
     wg = Waveguide(**param)
-    wg.start([0, 0, 0]).spline(disp_x=None, disp_y=dy, disp_z=dz)
+    wg.start([0, 0, 0]).spline(disp_x=None, dy=dy, dz=dz)
     x = wg.x
     assert pytest.approx(x[-1]) == wg.get_sbend_parameter(np.sqrt(dy**2 + dz**2), wg.radius)[1]
     wg.end()
@@ -983,7 +921,7 @@ def test_spline_radius_custom(param):
     r = 90
 
     wg = Waveguide(**param)
-    wg.start([0, 0, 0]).spline(disp_x=None, disp_y=dy, disp_z=dz, radius=r)
+    wg.start([0, 0, 0]).spline(disp_x=None, dy=dy, dz=dz, radius=r)
     x = wg.x
     assert pytest.approx(x[-1]) == wg.get_sbend_parameter(np.sqrt(dy**2 + dz**2), r)[1]
     wg.end()
@@ -996,7 +934,7 @@ def test_spline_radius_none(param):
     wg = Waveguide(**param)
     wg.radius = None
     with pytest.raises(ValueError):
-        wg.start([0, 0, 0]).spline(disp_x=None, disp_y=dy, disp_z=dz, radius=r).end()
+        wg.start([0, 0, 0]).spline(disp_x=None, dy=dy, dz=dz, radius=r).end()
 
 
 def test_spline_speed_none(param):
@@ -1004,106 +942,49 @@ def test_spline_speed_none(param):
     wg = Waveguide(**param)
     wg.speed = None
     with pytest.raises(ValueError):
-        wg.start([0, 0, 0]).spline(disp_x=dx, disp_y=dy, disp_z=dz, speed=None).end()
+        wg.start([0, 0, 0]).spline(disp_x=dx, dy=dy, dz=dz, speed=None).end()
 
-
-def test_get_spline_points_raise(param):
-    wg = Waveguide(**param)
-    with pytest.raises(ValueError):
-        _ = wg._get_spline_points(disp_x=4, disp_y=None, disp_z=0.3)
-
-    wg = Waveguide(**param)
-    with pytest.raises(ValueError):
-        _ = wg._get_spline_points(disp_x=4, disp_y=0.2, disp_z=None)
-
-
-def test_get_spline_points_init_pos_default(param):
-    dx, dy, dz = (9.8, 7.5, 3.1)
-    wg = Waveguide(**param)
-    wg.x_init = 0.0
-    wg.y_init = 1.2
-    wg.z_init = 4.5
-    x, y, z = wg._get_spline_points(disp_x=dx, disp_y=dy, disp_z=dz)
-    assert pytest.approx(x[0]) == wg.x_init
-    assert pytest.approx(y[0]) == wg.y_init
-    assert pytest.approx(z[0]) == wg.z_init
-
-
-def test_get_spline_points_init_pos_custom(param):
-    dx, dy, dz = (9.8, 7.5, 3.1)
-    i_pos = [3, 4, 5.254]
-    wg = Waveguide(**param)
-    x, y, z = wg._get_spline_points(disp_x=dx, disp_y=dy, disp_z=dz, init_pos=i_pos)
-    assert pytest.approx(x[0]) == i_pos[0]
-    assert pytest.approx(y[0]) == i_pos[1]
-    assert pytest.approx(z[0]) == i_pos[2]
-
-
-def test_get_spline_points_init_pos_none(param):
-    dx, dy, dz = (9.8, 7.5, 3.1)
-    l_inc = [1.34, 3.56, 5.78]
-    wg = Waveguide(**param)
-    wg.x_init = None
-    wg.y_init = None
-    wg.z_init = None
-    wg.start([0, 0, 0]).linear(l_inc, mode='abs')
-    x, y, z = wg._get_spline_points(disp_x=dx, disp_y=dy, disp_z=dz)
-    assert pytest.approx(x[0]) == l_inc[0]
-    assert pytest.approx(y[0]) == l_inc[1]
-    assert pytest.approx(z[0]) == l_inc[2]
-    wg.end()
+@pytest.mark.parametrize('ddy', [((0.0,0.0),(0.0,0.0)),
+                                 ((1.0,0.0),(1.0,1.0)),
+                                 ((-2.0,0.5),(0.5,0.6)),
+                                 ((0.1,0.1), (0.0, 0.23))])
+def test_spline_y_derivative(param, ddy):
+    dx, dy, dz = (0.1, 0.23, 0.456)
+    dz_der = ((0.0,0.0),(0.0,0.0))
 
     wg = Waveguide(**param)
-    wg.x_init = None
-    wg.y_init = None
-    wg.z_init = None
-    with pytest.raises(ValueError):
-        wg._get_spline_points(disp_x=dx, disp_y=dy, disp_z=dz)
+    wg.start([0,0,0]).spline(dy=dy, dz=dz, y_derivatives=ddy, z_derivatives=dz_der)
 
+    # Extract the x and y coordinates as separate arrays
+    x, y, z = wg.path3d
+    yp = np.gradient(y, x)
+    ypp = 2*np.gradient(yp, x)
 
-def test_get_spline_points_radius_default(param):
-    dx, dy, dz = (None, 6.8, 3.3)
+    assert pytest.approx(yp[0], abs=1e-1) == ddy[0][0]
+    assert pytest.approx(yp[-2], abs=1e-1) == ddy[-1][0]
+    assert pytest.approx(ypp[0], abs=1e-1) == ddy[0][1]
+    assert pytest.approx(ypp[-1], abs=1e-1) == ddy[-1][1]
+
+@pytest.mark.parametrize('ddz', [((0.0,0.0),(0.0,0.0)),
+                                 ((1.0,0.0),(1.0,1.0)),
+                                 ((-2.0,0.5),(0.5,0.6)),
+                                 ((0.1,0.1), (0.0, 0.23))])
+def test_spline_z_derivative(param, ddz):
+    dx, dy, dz = (0.1, 0.23, 0.456)
+    dy_der = ((0.0,0.0),(0.0,0.0))
+
     wg = Waveguide(**param)
-    wg.radius = None
-    with pytest.raises(ValueError):
-        _ = wg._get_spline_points(disp_x=dx, disp_y=dy, disp_z=dz, radius=None)
+    wg.start([0,0,0]).spline(dy=dy, dz=dz, y_derivatives=dy_der, z_derivatives=ddz)
 
+    # Extract the x and y coordinates as separate arrays
+    x, y, z = wg.path3d
+    zp = np.gradient(z, x)
+    zpp = 2*np.gradient(zp, x)
 
-def test_get_spline_points_speed_none(param):
-    dx, dy, dz = (None, 6.8, 3.3)
-    wg = Waveguide(**param)
-    wg.speed = None
-    with pytest.raises(ValueError):
-        _ = wg._get_spline_points(disp_x=dx, disp_y=dy, disp_z=dz, speed=None)
-
-
-def test_get_spline_points_derivatives_default(param):
-    dx, dy, dz = (8.6, 6.8, 3.3)
-    wg = Waveguide(**param)
-    wg.x_init = 6
-    wg.y_init = 4
-    wg.z_init = 3
-    x, y, z = wg._get_spline_points(disp_x=dx, disp_y=dy, disp_z=dz)
-    assert pytest.approx((y[1] - y[0]) / (x[1] - x[0]), abs=1e-2) == 0.0
-    assert pytest.approx((y[-2] - y[-1]) / (x[-2] - x[-1]), abs=1e-2) == 0.0
-    assert pytest.approx((z[1] - z[0]) / (x[1] - x[0]), abs=1e-2) == 0.0
-    assert pytest.approx((z[-2] - z[-1]) / (x[-2] - x[-1]), abs=1e-2) == 0.0
-
-
-def test_get_spline_points_derivatives_custom(param):
-    dx, dy, dz = (8.6, 6.8, 3.3)
-    bcy = ((1, 1.0), (1, -1.0))
-    bcz = ((1, 0.4), (1, -0.6321))
-    wg = Waveguide(**param)
-    wg.x_init = 1
-    wg.y_init = 2
-    wg.z_init = 3
-    x, y, z = wg._get_spline_points(disp_x=dx, disp_y=dy, disp_z=dz, bc_y=bcy, bc_z=bcz)
-    assert pytest.approx((y[1] - y[0]) / (x[1] - x[0]), abs=1e-2) == bcy[0][1]
-    assert pytest.approx((y[-2] - y[-1]) / (x[-2] - x[-1]), abs=1e-2) == bcy[1][1]
-    assert pytest.approx((z[1] - z[0]) / (x[1] - x[0]), abs=1e-2) == bcz[0][1]
-    assert pytest.approx((z[-2] - z[-1]) / (x[-2] - x[-1]), abs=1e-2) == bcz[1][1]
-
+    assert pytest.approx(zp[0], abs=1e-1) == ddz[0][0]
+    assert pytest.approx(zp[-2], abs=1e-1) == ddz[-1][0]
+    assert pytest.approx(zpp[0], abs=1e-1) == ddz[0][1]
+    assert pytest.approx(zpp[-1], abs=1e-1) == ddz[-1][1]
 
 @pytest.mark.parametrize('r_input', [5, 10, 15, 20, 25, 30, 35, 40, 50, 60])
 def test_curvature_radius(param, r_input) -> None:
@@ -1137,25 +1018,25 @@ def test_cmd_rate(param) -> None:
 def test_spline_bridge_error(param) -> None:
     wg = Waveguide(**param)
     with pytest.raises(ValueError):
-        wg.start().spline_bridge(disp_x=None, disp_y=None, disp_z=None).end()
+        wg.start().spline_bridge(disp_x=None, dy=None, dz=None).end()
 
     with pytest.raises(ValueError):
-        wg.start().spline_bridge(disp_x=None, disp_y=0.05, disp_z=None).end()
+        wg.start().spline_bridge(disp_x=None, dy=0.05, dz=None).end()
 
     with pytest.raises(ValueError):
-        wg.start().spline_bridge(disp_x=None, disp_y=None, disp_z=0.006).end()
+        wg.start().spline_bridge(disp_x=None, dy=None, dz=0.006).end()
 
 
 def test_spline_bridge_speed(param) -> None:
     dy, dz, f_custom = (0.06, 0.006, 99)
 
     wg = Waveguide(**param)
-    wg.start().spline_bridge(disp_x=None, disp_y=dy, disp_z=dz)
+    wg.start().spline_bridge(disp_x=None, dy=dy, dz=dz)
     assert wg._f[-1] == wg.speed
     wg.end()
 
     wg = Waveguide(**param)
-    wg.start().spline_bridge(disp_x=None, disp_y=dy, disp_z=dz, speed=f_custom)
+    wg.start().spline_bridge(disp_x=None, dy=dy, dz=dz, speed=f_custom)
     assert wg._f[-1] == f_custom
     wg.end()
 
@@ -1164,12 +1045,12 @@ def test_spline_bridge_dx(param) -> None:
     dx, dy, dz = (10, 0.06, 0.006)
 
     wg = Waveguide(**param)
-    wg.start([0, 0, 0]).spline_bridge(disp_x=None, disp_y=dy, disp_z=dz)
-    assert pytest.approx(wg.x[-1]) == 2 * wg.get_spline_parameter(disp_y=dy, disp_z=dz)[0]
+    wg.start([0, 0, 0]).spline_bridge(disp_x=None, dy=dy, dz=dz)
+    assert pytest.approx(wg.x[-1]) == 2*wg.get_sbend_parameter(dy=np.sqrt(dy**2+dz**2), radius=wg.radius)[-1]
     wg.end()
 
     wg = Waveguide(**param)
-    wg.start([0, 0, 0]).spline_bridge(disp_x=dx, disp_y=dy, disp_z=dz)
+    wg.start([0, 0, 0]).spline_bridge(disp_x=dx, dy=dy, dz=dz)
     assert pytest.approx(wg.x[-1]) == 2 * dx
     wg.end()
 
@@ -1178,9 +1059,9 @@ def test_spline_bridge_dy_dz(param) -> None:
     dx, dy, dz = (15, 0.789, 0.123)
 
     wg = Waveguide(**param)
-    wg.start([0, 0, 0]).spline_bridge(disp_x=dx, disp_y=dy, disp_z=dz)
+    wg.start([0, 0, 0]).spline_bridge(disp_x=dx, dy=dy, dz=dz)
     assert pytest.approx(wg.y[-1]) == dy
-    assert pytest.approx(wg.z[-1]) == wg.z[0]
+    assert pytest.approx(wg.z[-1] - wg.z[0], abs=1e-8) == 0.0
     assert pytest.approx(np.max(wg.z) - np.min(wg.z)) == dz
     wg.end()
 
@@ -1189,7 +1070,7 @@ def test_spline_bridge_derivatives(param) -> None:
     dx, dy, dz = (19.45, 12.38, 3.56)
     wg = Waveguide(**param)
 
-    wg.start([0, 0, 0.5]).spline_bridge(disp_x=dx, disp_y=dy, disp_z=dz)
+    wg.start([0, 0, 0.5]).spline_bridge(disp_x=dx, dy=dy, dz=dz)
     x, y, z = wg.path3d
     assert pytest.approx((y[1] - y[0]) / (x[1] - x[0]), abs=1e-2) == 0.0
     assert pytest.approx((y[-2] - y[-1]) / (x[-2] - x[-1]), abs=1e-2) == 0.0
