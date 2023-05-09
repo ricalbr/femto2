@@ -128,7 +128,12 @@ with PGMCompiler(**PARAM_GC) as G:
 
 ```
 
-Other example files can be found [here](https://github.com/ricalbr/femto/tree/main/examples)
+Other example files can be found [here](https://github.com/ricalbr/femto/tree/main/examples).
+
+<p align="right">(<a href="#top">back to top</a>)</p>
+
+## Documentation
+The complete documentation can be found [here](https://femto.readthedocs.io/en/latest/).
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
