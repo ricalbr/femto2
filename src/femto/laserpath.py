@@ -355,27 +355,20 @@ class LaserPath:
             Array of curvature radii of the trajectory.
         """
 
-        (x, y, z) = self.path3d
+        points = np.array(self.path3d).T
 
-        dx_dt = np.gradient(x)
-        dy_dt = np.gradient(y)
-        dz_dt = np.gradient(z)
+        # Compute the first and second derivatives of the curve
+        t = np.linspace(0, 1, len(points))
+        r1 = np.gradient(points, t, axis=0)
+        r2 = np.gradient(d1, t, axis=0)
 
-        d2x_dt2 = np.gradient(dx_dt)
-        d2y_dt2 = np.gradient(dy_dt)
-        d2z_dt2 = np.gradient(dz_dt)
+        # Compute the cross product and norm of the cross product
+        cross = np.cross(r1, r2)
+        norm_cross = np.linalg.norm(cross, axis=1)
+        norm_r1 = np.linalg.norm(r1, axis=1)
 
-        num = (dx_dt**2 + dy_dt**2 + dz_dt**2) ** 1.5
-        den = np.sqrt(
-            (d2z_dt2 * dy_dt - d2y_dt2 * dz_dt) ** 2
-            + (d2x_dt2 * dz_dt - d2z_dt2 * dx_dt) ** 2
-            + (d2y_dt2 * dx_dt - d2x_dt2 * dy_dt) ** 2
-        )
-        default_zero = np.repeat(np.inf, np.size(num))
-
-        # only divide nonzeros else Inf
-        curvature_radius = np.divide(num, den, out=default_zero, where=(den != 0))
-        return curvature_radius[2:-2]
+        # Return the local curvature radius, where cannot divide by 0 return inf
+        return np.divide(r**3, norm_cross, out=np.full_like(norm_r1, fill_value=np.inf), where=~(norm_cross==0))
 
     @property
     def cmd_rate(self) -> npt.NDArray[np.float32]:
