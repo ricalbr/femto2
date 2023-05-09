@@ -42,9 +42,7 @@ def saints() -> list:
 
 @pytest.fixture
 def list_wg() -> list[Waveguide]:
-    PARAM_WG = dotdict(
-        speed=20, radius=25, pitch=0.080, int_dist=0.007, samplesize=(25, 3)
-    )
+    PARAM_WG = dotdict(speed=20, radius=25, pitch=0.080, int_dist=0.007, samplesize=(25, 3))
 
     coup = [Waveguide(**PARAM_WG) for _ in range(5)]
     for i, wg in enumerate(coup):
@@ -59,9 +57,7 @@ def list_wg() -> list[Waveguide]:
 
 @pytest.fixture
 def list_mk() -> list[Marker]:
-    PARAM_MK = dotdict(
-        scan=1, speed=2, speed_pos=5, speed_closed=5, depth=0.000, lx=1, ly=1
-    )
+    PARAM_MK = dotdict(scan=1, speed=2, speed_pos=5, speed_closed=5, depth=0.000, lx=1, ly=1)
     markers = []
     for (x, y) in zip(range(4, 8), range(3, 7)):
         m = Marker(**PARAM_MK)
@@ -171,10 +167,7 @@ def device_redd_cols(redd_cols, non_redd_cols, gc_param):
 def test_spsh_defaults(device):
     spsh = Spreadsheet(device)
     spsh.close()
-    assert (
-        spsh.columns_names
-        == 'name power speed scan radius int_dist depth yin yout obs'
-    )
+    assert spsh.columns_names == 'name power speed scan radius int_dist depth yin yout obs'
     assert spsh.wb.default_format_properties['font_name'] == 'DejaVu Sans Mono'
     assert spsh.wb.default_format_properties['font_size'] == 11
     assert spsh.wb.filename == 'my_fabrication.xlsx'
@@ -226,9 +219,7 @@ def test_extra_preamble_info(all_cols, device, ss_param):
     for k, v in extra_preamble_info.items():
         found_extra_par = False
         for row in range(1, 50):
-            if worksheet.cell(
-                row=row, column=2
-            ).value == k.capitalize().replace('_', ' '):
+            if worksheet.cell(row=row, column=2).value == k.capitalize().replace('_', ' '):
                 found_extra_par = True
                 assert worksheet.cell(row=row, column=3).value == v
                 break
@@ -254,9 +245,7 @@ def test_add_custom_column(device, ss_param):
         samplesize=(25, 25),
     )
 
-    for i_guide, (rr, p, so) in enumerate(
-        product(rep_rates, powers, scan_offsets)
-    ):
+    for i_guide, (rr, p, so) in enumerate(product(rep_rates, powers, scan_offsets)):
 
         start_pt = [-2, 2 + i_guide * 0.08, wg_param.depth]
 
@@ -292,9 +281,7 @@ def test_add_custom_column(device, ss_param):
     (dot_path / 'test_new_column.xlsx').unlink()
 
 
-@pytest.mark.parametrize(
-    'day', [0, 20, 35, 64, 72, 128, 148, 182, 234, 300, 310]
-)
+@pytest.mark.parametrize('day', [0, 20, 35, 64, 72, 128, 148, 182, 234, 300, 310])
 def test_write_saints_list(device, ss_param, saints, day):
     spsh = Spreadsheet(device, **ss_param)
     spsh._write_saints_list()
@@ -401,9 +388,7 @@ def test_static_preamble(powers, speeds, scans, gc_param, wg_param, ss_param):
 
     obj_list = device.writers[Waveguide].obj_list
     spsh = Spreadsheet(device=device, book_name=ss_param.book_name)
-    spsh._build_struct_list(
-        obj_list, columns_names=ss_param.columns_names, static_preamble=True
-    )
+    spsh._build_struct_list(obj_list, columns_names=ss_param.columns_names, static_preamble=True)
     spsh.close()
 
     for k, v in {'power': powers, 'speed': speeds, 'scan': scans}.items():
@@ -439,9 +424,7 @@ def test_device_init(device, ss_param, init_dev, bsl_dev):
 
 
 @pytest.mark.parametrize('verbose', [True, False])
-def test_build_structure_list(
-    empty_device, list_wg, list_mk, ss_param, verbose
-):
+def test_build_structure_list(empty_device, list_wg, list_mk, ss_param, verbose):
     empty_device.extend(list_wg)
 
     obj_list = empty_device.writers[Waveguide].obj_list
