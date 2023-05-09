@@ -359,8 +359,8 @@ class LaserPath:
 
         # Compute the first and second derivatives of the curve
         t = np.linspace(0, 1, len(points))
-        r1 = np.gradient(points, t, axis=0)
-        r2 = np.gradient(d1, t, axis=0)
+        r1 = np.gradient(points, t, axis=0, edge_order=2)
+        r2 = np.gradient(r1, t, axis=0, edge_order=2)
 
         # Compute the cross product and norm of the cross product
         cross = np.cross(r1, r2)
@@ -368,7 +368,7 @@ class LaserPath:
         norm_r1 = np.linalg.norm(r1, axis=1)
 
         # Return the local curvature radius, where cannot divide by 0 return inf
-        return np.divide(r**3, norm_cross, out=np.full_like(norm_r1, fill_value=np.inf), where=~(norm_cross==0))
+        return np.divide(norm_r1**3, norm_cross, out=np.full_like(norm_r1, fill_value=np.inf), where=~(norm_cross==0))
 
     @property
     def cmd_rate(self) -> npt.NDArray[np.float32]:
