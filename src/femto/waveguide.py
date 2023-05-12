@@ -30,6 +30,12 @@ class Waveguide(LaserPath):
         if self.z_init is None:
             self.z_init = self.depth
 
+        # Adjust the pitch for the glass shrinking. Only change the external pitch in case of Fan-IN and Fan-out
+        # segments.
+        if self.pitch == self.pitch_fa:
+            self.pitch /= self.shrink_correction_factor
+        self.pitch_fa /= self.shrink_correction_factor
+
     @property
     def dy_bend(self) -> float:
         """`y`-displacement of an S-bend.

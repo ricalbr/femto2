@@ -26,6 +26,7 @@ class LaserPath:
     x_init: float = -2.0  #: Initial x-coordinate for the laser path `[mm]`.
     y_init: float = 0.0  #: Initial y-coordinate for the laser path `[mm]`
     z_init: float | None = None  #: Initial z-coordinate for the laser path `[mm]`.
+    shrink_correction_factor: float = 1.0  #: Correcting factor for glass shrinking.
     lsafe: float = 2.0  #: Safe margin length `[mm]`.
     speed_closed: float = 5  #: Closed shutter translation speed `[mm/s]`.
     speed_pos: float = 0.5  #: Positioning speed (shutter closed)`[mm/s]`.
