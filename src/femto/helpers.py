@@ -294,13 +294,19 @@ def load_param(param_file: str | pathlib.Path) -> list[dict]:
     -------
     List of the parameters dictionaries.
     """
-    with open(param_file, mode="rb") as fp:
-        config = tomli.load(fp)
+
+    fp = pathlib.Path(param_file).stem + '.toml'
+    with open(fp, mode="rb") as f:
+        config = tomli.load(f)
 
     if not config:
         return []
 
     # remove the DEFAULT dictionary and merge it to all the other dictionaries
-    default_dict = config.pop("DEFAULT")
+    try:
+        default_dict = config.pop("DEFAULT")
+    except KeyError:
+        default_dict = {}
+
     dc = [dict(config[s]) for s in config.keys()]
     return [{**default_dict, **param_dict} for param_dict in dc]
