@@ -248,6 +248,7 @@ def test_get_sbend_length_nil_dy(dy, r, exp, param) -> None:
     wg = Waveguide(**param)
     assert pytest.approx(wg.get_sbend_parameter(dy, r)[1]) == exp
 
+
 def test_repr(param) -> None:
     r = Waveguide(**param).__repr__()
     print()
@@ -944,47 +945,48 @@ def test_spline_speed_none(param):
     with pytest.raises(ValueError):
         wg.start([0, 0, 0]).spline(disp_x=dx, dy=dy, dz=dz, speed=None).end()
 
-@pytest.mark.parametrize('ddy', [((0.0,0.0),(0.0,0.0)),
-                                 ((1.0,0.0),(1.0,1.0)),
-                                 ((-2.0,0.5),(0.5,0.6)),
-                                 ((0.1,0.1), (0.0, 0.23))])
+
+@pytest.mark.parametrize(
+    'ddy', [((0.0, 0.0), (0.0, 0.0)), ((1.0, 0.0), (1.0, 1.0)), ((-2.0, 0.5), (0.5, 0.6)), ((0.1, 0.1), (0.0, 0.23))]
+)
 def test_spline_y_derivative(param, ddy):
     dx, dy, dz = (0.1, 0.23, 0.456)
-    dz_der = ((0.0,0.0),(0.0,0.0))
+    dz_der = ((0.0, 0.0), (0.0, 0.0))
 
     wg = Waveguide(**param)
-    wg.start([0,0,0]).spline(dy=dy, dz=dz, y_derivatives=ddy, z_derivatives=dz_der)
+    wg.start([0, 0, 0]).spline(dy=dy, dz=dz, y_derivatives=ddy, z_derivatives=dz_der)
 
     # Extract the x and y coordinates as separate arrays
     x, y, z = wg.path3d
     yp = np.gradient(y, x)
-    ypp = 2*np.gradient(yp, x)
+    ypp = 2 * np.gradient(yp, x)
 
     assert pytest.approx(yp[0], abs=1e-1) == ddy[0][0]
     assert pytest.approx(yp[-2], abs=1e-1) == ddy[-1][0]
     assert pytest.approx(ypp[0], abs=1e-1) == ddy[0][1]
     assert pytest.approx(ypp[-1], abs=1e-1) == ddy[-1][1]
 
-@pytest.mark.parametrize('ddz', [((0.0,0.0),(0.0,0.0)),
-                                 ((1.0,0.0),(1.0,1.0)),
-                                 ((-2.0,0.5),(0.5,0.6)),
-                                 ((0.1,0.1), (0.0, 0.23))])
+
+@pytest.mark.parametrize(
+    'ddz', [((0.0, 0.0), (0.0, 0.0)), ((1.0, 0.0), (1.0, 1.0)), ((-2.0, 0.5), (0.5, 0.6)), ((0.1, 0.1), (0.0, 0.23))]
+)
 def test_spline_z_derivative(param, ddz):
     dx, dy, dz = (0.1, 0.23, 0.456)
-    dy_der = ((0.0,0.0),(0.0,0.0))
+    dy_der = ((0.0, 0.0), (0.0, 0.0))
 
     wg = Waveguide(**param)
-    wg.start([0,0,0]).spline(dy=dy, dz=dz, y_derivatives=dy_der, z_derivatives=ddz)
+    wg.start([0, 0, 0]).spline(dy=dy, dz=dz, y_derivatives=dy_der, z_derivatives=ddz)
 
     # Extract the x and y coordinates as separate arrays
     x, y, z = wg.path3d
     zp = np.gradient(z, x)
-    zpp = 2*np.gradient(zp, x)
+    zpp = 2 * np.gradient(zp, x)
 
     assert pytest.approx(zp[0], abs=1e-1) == ddz[0][0]
     assert pytest.approx(zp[-2], abs=1e-1) == ddz[-1][0]
     assert pytest.approx(zpp[0], abs=1e-1) == ddz[0][1]
     assert pytest.approx(zpp[-1], abs=1e-1) == ddz[-1][1]
+
 
 @pytest.mark.parametrize('r_input', [5, 10, 15, 20, 25, 30, 35, 40, 50, 60])
 def test_curvature_radius(param, r_input) -> None:
@@ -1046,7 +1048,7 @@ def test_spline_bridge_dx(param) -> None:
 
     wg = Waveguide(**param)
     wg.start([0, 0, 0]).spline_bridge(disp_x=None, dy=dy, dz=dz)
-    assert pytest.approx(wg.x[-1]) == 2*wg.get_sbend_parameter(dy=np.sqrt(dy**2+dz**2), radius=wg.radius)[-1]
+    assert pytest.approx(wg.x[-1]) == 2 * wg.get_sbend_parameter(dy=np.sqrt(dy**2 + dz**2), radius=wg.radius)[-1]
     wg.end()
 
     wg = Waveguide(**param)

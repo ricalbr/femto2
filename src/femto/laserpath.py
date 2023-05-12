@@ -26,6 +26,7 @@ class LaserPath:
     x_init: float = -2.0  #: Initial x-coordinate for the laser path `[mm]`.
     y_init: float = 0.0  #: Initial y-coordinate for the laser path `[mm]`
     z_init: float | None = None  #: Initial z-coordinate for the laser path `[mm]`.
+    shrink_correction_factor: float = 1.0  #: Correcting factor for glass shrinking.
     lsafe: float = 2.0  #: Safe margin length `[mm]`.
     speed_closed: float = 5  #: Closed shutter translation speed `[mm/s]`.
     speed_pos: float = 0.5  #: Positioning speed (shutter closed)`[mm/s]`.
@@ -368,7 +369,9 @@ class LaserPath:
         norm_r1 = np.linalg.norm(r1, axis=1)
 
         # Return the local curvature radius, where cannot divide by 0 return inf
-        return np.divide(norm_r1**3, norm_cross, out=np.full_like(norm_r1, fill_value=np.inf), where=~(norm_cross==0))
+        return np.divide(
+            norm_r1**3, norm_cross, out=np.full_like(norm_r1, fill_value=np.inf), where=~(norm_cross == 0)
+        )
 
     @property
     def cmd_rate(self) -> npt.NDArray[np.float32]:

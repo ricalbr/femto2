@@ -2,11 +2,14 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
+import toml
+import pathlib
 from femto.helpers import almost_equal
 from femto.helpers import dotdict
 from femto.helpers import flatten
 from femto.helpers import grouped
 from femto.helpers import listcast
+from femto.helpers import load_param
 from femto.helpers import nest_level
 from femto.helpers import pairwise
 from femto.helpers import sign
@@ -258,3 +261,131 @@ def test_dotdict():
 
     del dd.tpl
     del dd
+
+
+def test_load_param_empty_default():
+
+    PARAM_WG = dict(
+        scan=6,
+        speed=15,
+        speed_closed=60,
+        radius=15,
+        y_init=1.25,
+        depth=0.035,
+        pitch_fa=0.127,
+        shrink_correction_factor=0.9993,
+        pitch=0.080,
+        int_length=0.0,
+        arm_length=0.0,
+        ltrench=0.0,
+        dz_bridge=0.000,
+        lsafe=2,
+    )
+    PARAM_MK = dict(
+        scan=1,
+        speed=1,
+        depth=0.000,
+        speed_pos=5,
+        lx=1.0,
+        ly=0.040,
+    )
+    PARAM_GC = dict(filename='UPP8.pgm', laser='PHAROS', aerotech_angle=0.0, rotation_angle=0.0)
+    p_dicts = {'DEFAULT': {}, 'wg': PARAM_WG, 'mk': PARAM_MK, 'gc': PARAM_GC}
+
+    with open('test.toml', "w") as f:
+        toml.dump(p_dicts, f)
+
+    pw, pm, pg = load_param('test.toml')
+    assert pw == PARAM_WG
+    assert pm == PARAM_MK
+    assert pg == PARAM_GC
+    pathlib.Path('test.toml').unlink()
+
+
+def test_load_param_no_default():
+
+    PARAM_WG = dict(
+        scan=6,
+        speed=15,
+        speed_closed=60,
+        radius=15,
+        y_init=1.25,
+        depth=0.035,
+        pitch_fa=0.127,
+        shrink_correction_factor=0.9993,
+        pitch=0.080,
+        int_length=0.0,
+        arm_length=0.0,
+        ltrench=0.0,
+        dz_bridge=0.000,
+        lsafe=2,
+    )
+    PARAM_MK = dict(
+        scan=1,
+        speed=1,
+        depth=0.000,
+        speed_pos=5,
+        lx=1.0,
+        ly=0.040,
+    )
+    PARAM_GC = dict(filename='UPP8.pgm', laser='PHAROS', aerotech_angle=0.0, rotation_angle=0.0)
+    p_dicts = {'wg': PARAM_WG, 'mk': PARAM_MK, 'gc': PARAM_GC}
+
+    with open('test.toml', "w") as f:
+        toml.dump(p_dicts, f)
+
+    pw, pm, pg = load_param('test.toml')
+    assert pw == PARAM_WG
+    assert pm == PARAM_MK
+    assert pg == PARAM_GC
+    pathlib.Path('test.toml').unlink()
+
+
+def test_load_param_pathlib():
+
+    PARAM_WG = dict(
+        scan=6,
+        speed=15,
+        speed_closed=60,
+        radius=15,
+        y_init=1.25,
+        depth=0.035,
+        pitch_fa=0.127,
+        shrink_correction_factor=0.9993,
+        pitch=0.080,
+        int_length=0.0,
+        arm_length=0.0,
+        ltrench=0.0,
+        dz_bridge=0.000,
+        lsafe=2,
+    )
+    PARAM_MK = dict(
+        scan=1,
+        speed=1,
+        depth=0.000,
+        speed_pos=5,
+        lx=1.0,
+        ly=0.040,
+    )
+    PARAM_GC = dict(filename='UPP8.pgm', laser='PHAROS', aerotech_angle=0.0, rotation_angle=0.0)
+    p_dicts = {'wg': PARAM_WG, 'mk': PARAM_MK, 'gc': PARAM_GC}
+
+    fp = pathlib.Path('test.toml')
+    with open(fp, "w") as f:
+        toml.dump(p_dicts, f)
+
+    pw, pm, pg = load_param(fp)
+    assert pw == PARAM_WG
+    assert pm == PARAM_MK
+    assert pg == PARAM_GC
+    pathlib.Path('test.toml').unlink()
+
+def test_load_param_empty():
+    p_dicts = {}
+    fp = pathlib.Path('test.toml')
+    with open(fp, "w") as f:
+        toml.dump(p_dicts, f)
+
+    assert load_param(fp) == []
+    pathlib.Path('test.toml').unlink()
+

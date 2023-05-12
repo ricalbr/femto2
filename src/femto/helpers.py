@@ -10,6 +10,8 @@ from typing import Iterator
 import numpy as np
 import numpy.typing as npt
 from shapely import geometry
+import tomli
+import pathlib
 
 
 def grouped(iterable: Iterable[Any], n: int) -> Iterable[Any]:
@@ -273,3 +275,38 @@ def almost_equal(
     :return: boolean value True if the polygon are almost equal, False otherwise
     """
     return bool(polygon.symmetric_difference(other).area < tol)
+
+
+def load_param(param_file: str | pathlib.Path) -> list[dict]:
+    """
+    The `load_param` function loads a TOML configuration file and returns a list of dictionaries containing the parameters.
+    The function first opens the TOML file in binary mode and uses the `tomli` library to load the configuration into a
+    dictionary. The function then removes the `DEFAULT` dictionary from the configuration and merges its contents with the
+    other dictionaries in the configuration. Finally, the function returns a list of dictionaries, where each dictionary
+    contains the merged contents of the `DEFAULT` dictionary and one of the other dictionaries in the configuration.
+
+    Parameters
+    ----------
+    param_file: str, pathlib.Path
+        Path to the TOML parameter file.
+
+    Returns
+    -------
+    List of the parameters dictionaries.
+    """
+
+    fp = pathlib.Path(param_file).stem + '.toml'
+    with open(fp, mode="rb") as f:
+        config = tomli.load(f)
+
+    if not config:
+        return []
+
+    # remove the DEFAULT dictionary and merge it to all the other dictionaries
+    try:
+        default_dict = config.pop("DEFAULT")
+    except KeyError:
+        default_dict = {}
+
+    dc = [dict(config[s]) for s in config.keys()]
+    return [{**default_dict, **param_dict} for param_dict in dc]
