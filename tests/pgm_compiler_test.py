@@ -849,7 +849,7 @@ def test_load_program(param, fn, i) -> None:
 
     f = Path(fn)
     if i is None:
-        i = 0
+        i = 2
     assert G._instructions[-1] == f'PROGRAM {i} LOAD "{f}"\n'
     assert f.stem in G._loaded_files
 
@@ -863,8 +863,8 @@ def test_load_program_raise(param) -> None:
 def test_programstop(param) -> None:
     G = PGMCompiler(**param)
     G.programstop()
-    assert G._instructions[-2] == 'PROGRAM 0 STOP\n'
-    assert G._instructions[-1] == 'WAIT (TASKSTATUS(0, DATAITEM_TaskState) == TASKSTATE_Idle) -1\n'
+    assert G._instructions[-2] == 'PROGRAM 2 STOP\n'
+    assert G._instructions[-1] == 'WAIT (TASKSTATUS(2, DATAITEM_TaskState) == TASKSTATE_Idle) -1\n'
 
     G = PGMCompiler(**param)
     G.programstop(task_id=3)
@@ -924,19 +924,19 @@ def test_farcall_value(param) -> None:
         ('test.pgm', None, pytest.raises(ValueError)),
     ],
 )
-def test_buffercall_raise(param, lp, cp, expectation) -> None:
+def test_bufferedcall_raise(param, lp, cp, expectation) -> None:
     G = PGMCompiler(**param)
     G.load_program(lp)
     with expectation:
-        G.buffercall(cp) is None
+        G.bufferedcall(cp) is None
 
 
-def test_buffercall_value(param) -> None:
+def test_bufferedcall_value(param) -> None:
     fn = 'test.pgm'
     G = PGMCompiler(**param)
     G.load_program(fn)
-    G.buffercall(fn)
-    assert G._instructions[-1] == f'PROGRAM 0 BUFFEREDRUN "{fn}"\n'
+    G.bufferedcall(fn)
+    assert G._instructions[-1] == f'PROGRAM 2 BUFFEREDRUN "{fn}"\n'
 
 
 @pytest.mark.parametrize(
@@ -944,15 +944,15 @@ def test_buffercall_value(param) -> None:
     [
         (['f1.pgm', 'f2.pgm', 'f3.pgm'], [1, 2, 3], [1, 2, 3], does_not_raise()),
         (['f1.pgm', 'f2.pgm', 'f3.pgm'], [1, 2, 3, 4, 5], [1, 2, 3], does_not_raise()),
-        (['f1.pgm', 'f2.pgm', 'f3.pgm'], [1], [1, 0, 0], does_not_raise()),
-        (['f1.pgm', 'f2.pgm', 'f3.pgm'], [], [0, 0, 0], does_not_raise()),
+        (['f1.pgm', 'f2.pgm', 'f3.pgm'], [1], [1, 2, 2], does_not_raise()),
+        (['f1.pgm', 'f2.pgm', 'f3.pgm'], [], [2,2,2], does_not_raise()),
         ([], [1, 2, 3], [], does_not_raise()),
     ],
 )
-def test_call_list(param, fns, tid, id_exp, expectation) -> None:
+def test_farcall_list(param, fns, tid, id_exp, expectation) -> None:
     G = PGMCompiler(**param)
     with expectation:
-        G.call_list(fns, tid) is None
+        G.farcall_list(fns, tid) is None
 
     T = PGMCompiler(**param)
     for fpath, t_id in zip(fns, id_exp):

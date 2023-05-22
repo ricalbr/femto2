@@ -578,7 +578,7 @@ class PGMCompiler:
         else:
             self._instructions.append(instr + '\n')
 
-    def load_program(self, filename: str, task_id: int = 0) -> None:
+    def load_program(self, filename: str, task_id: int = 2) -> None:
         """Load G-code script.
 
         Adds the instruction to `LOAD` an external G-Code script in the driver memory. The function is used for
@@ -589,20 +589,20 @@ class PGMCompiler:
         filename : str
             Filename of the G-code script.
         task_id : int, optional
-            Task ID number onto which the program will be loaded (and executed). The default value is 0.
+            Task ID number onto which the program will be loaded (and executed). The default value is 2.
 
         Returns
         -------
         None
         """
         if task_id is None:
-            task_id = 0
+            task_id = 2
 
         file = self._get_filepath(filename=filename, extension='pgm')
         self._instructions.append(f'PROGRAM {int(task_id)} LOAD "{file}"\n')
         self._loaded_files.append(file.stem)
 
-    def remove_program(self, filename: str, task_id: int = 0) -> None:
+    def remove_program(self, filename: str, task_id: int = 2) -> None:
         """Remove program from memory buffer.
 
         Adds the instruction to `REMOVE` a program from memory buffer in a G-Code file.
@@ -612,7 +612,7 @@ class PGMCompiler:
         filename : str
             Filename of the G-code script.
         task_id : int, optional
-            Task ID number onto which the program will be loaded (and executed). The default value is 0.
+            Task ID number onto which the program will be loaded (and executed). The default value is 2.
 
         Returns
         -------
@@ -627,7 +627,7 @@ class PGMCompiler:
         self._instructions.append(f'REMOVEPROGRAM "{file.name}"\n')
         self._loaded_files.remove(file.stem)
 
-    def programstop(self, task_id: int = 0) -> None:
+    def programstop(self, task_id: int = 2) -> None:
         """Program stop.
 
         Add the instruction to stop the execution of an external G-Code script and empty the Task in which the
@@ -636,7 +636,7 @@ class PGMCompiler:
         Parameters
         ----------
         task_id : int, optional
-            Task ID number onto which the program will be loaded (and executed). The default value is 0.
+            Task ID number onto which the program will be loaded (and executed). The default value is 2.
 
         Returns
         -------
@@ -667,7 +667,7 @@ class PGMCompiler:
         self.dwell(self.short_pause)
         self._instructions.append(f'FARCALL "{file}"\n')
 
-    def buffercall(self, filename: str, task_id: int = 0) -> None:
+    def bufferedcall(self, filename: str, task_id: int = 2) -> None:
         """BUFFEREDCALL instruction.
 
         Adds the instruction to run an external G-Code script in queue mode.
@@ -677,7 +677,7 @@ class PGMCompiler:
         filename : str
             Filename of the G-code script.
         task_id : int, optional
-            Task ID number onto which the program will be loaded (and executed). The default value is 0.
+            Task ID number onto which the program will be loaded (and executed). The default value is 2.
 
         Returns
         -------
@@ -692,7 +692,7 @@ class PGMCompiler:
         self.instruction('\n')
         self._instructions.append(f'PROGRAM {task_id} BUFFEREDRUN "{file}"\n')
 
-    def call_list(self, filenames: list[str], task_id: list[int] | int = 0) -> None:
+    def farcall_list(self, filenames: list[str], task_id: list[int] | int = 2) -> None:
         """Chiamatutto.
 
         Load and execute sequentially a list of G-Code scripts.
@@ -702,7 +702,7 @@ class PGMCompiler:
         filenames : list(str)
             List of filenames of the G-code scripts to be executed.
         task_id : list(int), optional
-            Task ID number onto which the program will be loaded (and executed). The default value is 0 for all the
+            Task ID number onto which the program will be loaded (and executed). The default value is 2 for all the
             scripts in the filename list.
 
         Returns
@@ -715,7 +715,7 @@ class PGMCompiler:
         if len(task_id) > len(filenames):
             task_id = task_id[: len(filenames)]
         else:
-            task_id = list(pad(task_id, len(filenames), 0))
+            task_id = list(pad(task_id, len(filenames), 2))
 
         for fpath, t_id in zip(filenames, task_id):
             file = pathlib.Path(fpath)
