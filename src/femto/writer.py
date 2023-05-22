@@ -455,7 +455,7 @@ class TrenchWriter(Writer):
             str(pathlib.Path(col.base_folder) / f'FARCALL{i + 1:03}.pgm') for i, col in enumerate(self.obj_list)
         ]
         with PGMCompiler(**main_param) as G:
-            G.call_list(farcall_list)
+            G.farcall_list(farcall_list)
 
         if verbose:
             _tc_fab_time = 0.0
