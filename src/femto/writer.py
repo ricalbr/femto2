@@ -8,6 +8,8 @@ from typing import Any
 
 import numpy as np
 import numpy.typing as npt
+from shapely import geometry
+
 from femto.helpers import flatten
 from femto.helpers import listcast
 from femto.helpers import nest_level
@@ -560,7 +562,7 @@ class TrenchWriter(Writer):
                 filename=column_path / f'trench{i + 1:03}_WALL.pgm',
                 x=x_wall,
                 y=y_wall,
-                speed=column.speed,
+                speed=column.speed_wall,
             )
             del x_wall, y_wall
 
@@ -575,7 +577,7 @@ class TrenchWriter(Writer):
                 filename=column_path / f'trench{i + 1:03}_FLOOR.pgm',
                 x=x_floor,
                 y=y_floor,
-                speed=column.speed,
+                speed=column.speed_floor,
             )
             del x_floor, y_floor
 

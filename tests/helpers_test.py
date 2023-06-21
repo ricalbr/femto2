@@ -380,6 +380,7 @@ def test_load_param_pathlib():
     assert pg == PARAM_GC
     pathlib.Path('test.toml').unlink()
 
+
 def test_load_param_empty():
     p_dicts = {}
     fp = pathlib.Path('test.toml')
@@ -388,4 +389,3 @@ def test_load_param_empty():
 
     assert load_param(fp) == []
     pathlib.Path('test.toml').unlink()
-

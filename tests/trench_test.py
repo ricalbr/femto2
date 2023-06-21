@@ -31,7 +31,7 @@ def param() -> dict:
         'beam_waist': 0.002,
         'round_corner': 0.010,
         'u': [28, 29.47],
-        'speed': 5,
+        'speed_wall': 5,
         'speed_closed': 5,
         'speed_pos': 0.5,
     }
@@ -260,7 +260,8 @@ def test_trenchcol_default() -> None:
     assert tcol.beam_waist == float(0.004)
     assert tcol.round_corner == float(0.010)
     assert tcol.u is None
-    assert tcol.speed == float(4)
+    assert tcol.speed_wall == float(4)
+    assert tcol.speed_floor == float(1.0)
     assert tcol.speed_closed == float(5)
     assert tcol.speed_pos == float(0.5)
 
@@ -285,7 +286,8 @@ def test_trenchcol_param(param) -> None:
     assert tcol.beam_waist == float(0.002)
     assert tcol.round_corner == float(0.010)
     assert tcol.u == [28, 29.47]
-    assert tcol.speed == float(5)
+    assert tcol.speed_wall == float(5)
+    assert tcol.speed_floor == float(1)
     assert tcol.speed_closed == float(5)
     assert tcol.speed_pos == float(0.5)
 
