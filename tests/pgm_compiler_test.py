@@ -945,7 +945,7 @@ def test_bufferedcall_value(param) -> None:
         (['f1.pgm', 'f2.pgm', 'f3.pgm'], [1, 2, 3], [1, 2, 3], does_not_raise()),
         (['f1.pgm', 'f2.pgm', 'f3.pgm'], [1, 2, 3, 4, 5], [1, 2, 3], does_not_raise()),
         (['f1.pgm', 'f2.pgm', 'f3.pgm'], [1], [1, 2, 2], does_not_raise()),
-        (['f1.pgm', 'f2.pgm', 'f3.pgm'], [], [2,2,2], does_not_raise()),
+        (['f1.pgm', 'f2.pgm', 'f3.pgm'], [], [2, 2, 2], does_not_raise()),
         ([], [1, 2, 3], [], does_not_raise()),
     ],
 )

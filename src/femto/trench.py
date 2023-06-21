@@ -250,8 +250,9 @@ class TrenchColumn:
     deltaz: float = 0.0015  #: Offset distance between countors paths of the trench wall [mm].
     delta_floor: float = 0.001  #: Offset distance between buffered polygons in the trench toolpath [mm].
     u: list[float] | None = None  #:
-    speed: float = 4  #: Translation speed [mm/s].
-    speed_closed: float = 5  #: Translation speed with closed shutter [mm/s].
+    speed_wall: float = 4.0  #: Translation speed of the wall section [mm/s].
+    speed_floor: float = 1.0  #: Translation speed of the floor section [mm/s].
+    speed_closed: float = 5.0  #: Translation speed with closed shutter [mm/s].
     speed_pos: float = 0.5  #: Positioning speed with closed shutter [mm/s].
     base_folder: str = ''  #: Location where PGM files are stored in lab PC. If empty, load files with relative path.
     beam_waist: float = 0.004  #: Diameter of the laser beam-waist [mm].
@@ -327,8 +328,12 @@ class TrenchColumn:
         float
             Total fabrication time [s].
         """
-        l_tot = sum([self.nboxz * (self.n_repeat * t.wall_length + t.floor_length) for t in self._trench_list])
-        return l_tot / self.speed
+        return sum(
+            [
+                self.nboxz * (self.n_repeat * t.wall_length / self.speed_wall + t.floor_length / self.speed_floor)
+                for t in self._trench_list
+            ]
+        )
 
     @property
     def rect(self) -> geometry.Polygon:
