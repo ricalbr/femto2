@@ -276,6 +276,10 @@ class Writer(PGMCompiler, abc.ABC):
         )
 
         fig.update_layout(
+            scene_camera=dict(
+                    up=dict(x=0, y=np.cos(45), z=np.sin(45)),
+                eye=dict(x=0.0, y=0.0, z=-2.5)
+            ),
             scene=dict(
                 bgcolor='rgba(0,0,0,0)',
                 aspectratio=dict(
@@ -407,7 +411,16 @@ class TrenchWriter(Writer):
         style: dict[str, Any] | None = None,
     ) -> go.Figure:
         """Plot 3D - Not implemented."""
-        raise NotImplementedError()
+        # raise NotImplementedError()
+        if fig is not None:
+            return self._plot3d_trench(fig=fig, style=style)
+
+        # If fig is None create a new figure from scratch
+        fig = go.Figure()
+        fig = self._plot3d_trench(fig=fig, style=style)
+        fig = super().standard_2d_figure_update(fig)  # Add glass, origin and axis elements
+        return fig
+
 
     def pgm(self, verbose: bool = True) -> None:
         """Export to PGM file.
@@ -696,6 +709,46 @@ class TrenchWriter(Writer):
                     hovertemplate='(%{x:.4f}, %{y:.4f})<extra>TR</extra>',
                 )
             )
+        return fig
+
+    def _plot3d_trench(self, fig: go.Figure, style: dict[str, Any] | None = None) -> go.Figure:
+        if style is None:
+            style = dict()
+        default_tcargs = {'dash': 'solid', 'color': '#000000', 'width': 1.5}
+        tcargs = {**default_tcargs, **style}
+
+        for tr in self.trenches:
+            # get points and transform them
+            xt, yt = tr.border
+            xt, yt, *_ = self.transform_points(xt, yt, np.zeros_like(xt, dtype=np.float32))
+
+            x = np.array([xt, xt])
+            y = np.array([yt, yt])
+            z = np.array([np.zeros_like(xt), tr.height*np.ones_like(xt)])
+            fig.add_trace(
+                go.Surface(
+                    x=x,
+                    y=y,
+                    z=z,
+                    colorscale=[[0, 'grey'],
+                                [1, 'grey']],
+                    showlegend=False,
+                    hoverinfo='skip',
+                    showscale=False,
+                    opacity=0.6,
+                ))
+            for zval in [0.0, tr.height]:
+                fig.add_trace(
+                    go.Scatter3d(
+                        x=xt,
+                        y=yt,
+                        z=zval*np.ones_like(xt),
+                        mode='lines',
+                        line=tcargs,
+                        showlegend=False,
+                        hovertemplate='(%{x:.4f}, %{y:.4f})<extra>TR</extra>',
+                    )
+                )
         return fig
 
 

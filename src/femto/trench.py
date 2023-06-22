@@ -24,9 +24,11 @@ TC = TypeVar('TC', bound='TrenchColumn')
 class Trench:
     """Class that represents a trench block and provides methods to compute the toolpath of the block."""
 
-    def __init__(self, block: geometry.Polygon, delta_floor: float = 0.001) -> None:
+    def __init__(self, block: geometry.Polygon, delta_floor: float = 0.001, height: float = 0.300) -> None:
         self.block: geometry.Polygon = block  #: Polygon shape of the trench.
         self.delta_floor: float = delta_floor  #: Offset distance between buffered polygons in the trench toolpath.
+        self.height: float = height  #: Depth of the trench box.
+
         # TODO: create properties for floor_length and wall_length and rename these with underscores
         self.floor_length: float = 0.0  #: Length of the floor path.
         self.wall_length: float = 0.0  #: Length of the wall path.
@@ -336,6 +338,17 @@ class TrenchColumn:
         )
 
     @property
+    def height(self) -> float:
+        """Total trench height.
+
+        Returns
+        -------
+        float
+            Total trench height [um].
+        """
+        return float(self.nboxz * self.h_box)
+
+    @property
     def rect(self) -> geometry.Polygon:
         """Area of the trench column.
 
@@ -477,7 +490,7 @@ class TrenchColumn:
             block = block.buffer(self.round_corner, resolution=256, cap_style=1)
             # simplify the shape to avoid path too much dense of points
             block = block.simplify(tolerance=5e-7, preserve_topology=True)
-            self._trench_list.append(Trench(self.normalize(block), self.delta_floor))
+            self._trench_list.append(Trench(self.normalize(block), self.delta_floor, self.height))
 
         for index in sorted(listcast(remove), reverse=True):
             del self._trench_list[index]

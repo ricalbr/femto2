@@ -196,9 +196,16 @@ def test_trench_writer_plot2d(gc_param, list_tcol) -> None:
 
 
 def test_trench_writer_plot3d(gc_param, list_tcol) -> None:
+    from plotly import graph_objs as go
+
+    fig = go.Figure()
     twr = TrenchWriter(list_tcol, **gc_param)
-    with pytest.raises(NotImplementedError):
-        twr.plot3d()
+    assert twr.plot3d(fig=fig) is not None
+    del twr, fig
+
+    twr = TrenchWriter(list_tcol, **gc_param)
+    assert twr.plot3d() is not None
+    del twr
 
 
 def test_trench_writer_pgm_empty(gc_param) -> None:
