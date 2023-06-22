@@ -93,5 +93,5 @@ circ.append(col)
 
 # PLOT AND G-CODE EXPORT
 # Use Device's built-in functions to generate G-code scripts for the waveguides, markers and trench it contains
-circ.plot2d()
+circ.plot3d()
 circ.pgm()
