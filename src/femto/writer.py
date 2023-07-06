@@ -276,10 +276,7 @@ class Writer(PGMCompiler, abc.ABC):
         )
 
         fig.update_layout(
-            scene_camera=dict(
-                    up=dict(x=0, y=np.cos(45), z=np.sin(45)),
-                eye=dict(x=0.0, y=0.0, z=-2.5)
-            ),
+            scene_camera=dict(up=dict(x=0, y=np.cos(45), z=np.sin(45)), eye=dict(x=0.0, y=0.0, z=-2.5)),
             scene=dict(
                 bgcolor='rgba(0,0,0,0)',
                 aspectratio=dict(
@@ -314,7 +311,7 @@ class Writer(PGMCompiler, abc.ABC):
                         font=dict(color='red'),
                     )
                 ],
-            )
+            ),
         )
         return fig
 
@@ -420,7 +417,6 @@ class TrenchWriter(Writer):
         fig = self._plot3d_trench(fig=fig, style=style)
         fig = super().standard_2d_figure_update(fig)  # Add glass, origin and axis elements
         return fig
-
 
     def pgm(self, verbose: bool = True) -> None:
         """Export to PGM file.
@@ -724,25 +720,25 @@ class TrenchWriter(Writer):
 
             x = np.array([xt, xt])
             y = np.array([yt, yt])
-            z = np.array([np.zeros_like(xt), tr.height*np.ones_like(xt)])
+            z = np.array([np.zeros_like(xt), tr.height * np.ones_like(xt)])
             fig.add_trace(
                 go.Surface(
                     x=x,
                     y=y,
                     z=z,
-                    colorscale=[[0, 'grey'],
-                                [1, 'grey']],
+                    colorscale=[[0, 'grey'], [1, 'grey']],
                     showlegend=False,
                     hoverinfo='skip',
                     showscale=False,
                     opacity=0.6,
-                ))
+                )
+            )
             for zval in [0.0, tr.height]:
                 fig.add_trace(
                     go.Scatter3d(
                         x=xt,
                         y=yt,
-                        z=zval*np.ones_like(xt),
+                        z=zval * np.ones_like(xt),
                         mode='lines',
                         line=tcargs,
                         showlegend=False,

@@ -127,7 +127,6 @@ class LaserPath:
         else:
             return self.samplesize[0] - self.lsafe
 
-
     @property
     def points(self) -> npt.NDArray[np.float32]:
         """Matrix of the unique points in the trajectory.

@@ -328,7 +328,12 @@ def test_load_param_no_default():
         lx=1.0,
         ly=0.040,
     )
-    PARAM_GC = dict(filename='UPP8.pgm', laser='PHAROS', aerotech_angle=0.0, rotation_angle=0.0,)
+    PARAM_GC = dict(
+        filename='UPP8.pgm',
+        laser='PHAROS',
+        aerotech_angle=0.0,
+        rotation_angle=0.0,
+    )
     p_dicts = {'wg': PARAM_WG, 'mk': PARAM_MK, 'gc': PARAM_GC}
 
     with open('test.yaml', "w") as f:
