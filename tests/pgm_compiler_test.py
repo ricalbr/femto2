@@ -180,7 +180,7 @@ def test_enter_exit_method() -> None:
                 'DWELL 1.0\n',
                 '\n',
                 '\n; ACTIVATE AXIS ROTATION\n',
-                'LINEAR X0.000000 Y0.000000 Z0.000000 F5.000000\n',
+                'G1 X0.000000 Y0.000000 Z0.000000 F5.000000\n',
                 'G84 X Y\n',
                 'DWELL 0.05\n',
                 'G84 X Y F2.0\n\n',
@@ -657,7 +657,7 @@ def test_move_to_values(param, speedp, pos, speed) -> None:
     if all(coord is None for coord in pos):
         assert G._instructions[-3] == f'{args}\n'
     else:
-        assert G._instructions[-3] == f'LINEAR {args}\n'
+        assert G._instructions[-3] == f'G1 {args}\n'
     assert G._shutter_on is False
 
 
@@ -665,13 +665,13 @@ def test_homing(param) -> None:
     G = PGMCompiler(**param)
     G.go_origin()
     assert G._instructions[-4] == '\n; HOMING\n'
-    assert G._instructions[-3] == f'LINEAR X0.000000 Y0.000000 Z0.000000 F{G.speed_pos:.6f}\n'
+    assert G._instructions[-3] == f'G1 X0.000000 Y0.000000 Z0.000000 F{G.speed_pos:.6f}\n'
 
 
 def test_go_init(param) -> None:
     G = PGMCompiler(**param)
     G.go_init()
-    assert G._instructions[-3] == f'LINEAR X-2.000000 Y0.000000 Z0.000000 F{G.speed_pos:.6f}\n'
+    assert G._instructions[-3] == f'G1 X-2.000000 Y0.000000 Z0.000000 F{G.speed_pos:.6f}\n'
 
 
 def test_axis_rotation_contex_manager(param) -> None:
@@ -679,7 +679,7 @@ def test_axis_rotation_contex_manager(param) -> None:
     G = PGMCompiler(**param)
     with G.axis_rotation():
         assert G._instructions[-6] == '\n; ACTIVATE AXIS ROTATION\n'
-        assert G._instructions[-5] == f'LINEAR X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{G.speed_pos:.6f}\n'
+        assert G._instructions[-5] == f'G1 X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{G.speed_pos:.6f}\n'
         assert G._instructions[-4] == 'G84 X Y\n'
         assert G._instructions[-2] == f'G84 X Y F{G.aerotech_angle}\n\n'
 
@@ -689,7 +689,7 @@ def test_axis_rotation_contex_manager(param) -> None:
 
     print(G._instructions)
     assert G._instructions[-4] == '\n; DEACTIVATE AXIS ROTATION\n'
-    assert G._instructions[-3] == f'LINEAR X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{G.speed_pos:.6f}\n'
+    assert G._instructions[-3] == f'G1 X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{G.speed_pos:.6f}\n'
     assert G._instructions[-2] == 'G84 X Y\n'
 
 
@@ -702,11 +702,11 @@ def test_enter_axis_rotation(param, angle_p, angle) -> None:
     a = G.aerotech_angle if angle is None else float(angle % 360)
     if a == 0.0:
         assert G._instructions[-4] == '\n; ACTIVATE AXIS ROTATION\n'
-        assert G._instructions[-3] == f'LINEAR X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{G.speed_pos:.6f}\n'
+        assert G._instructions[-3] == f'G1 X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{G.speed_pos:.6f}\n'
         assert G._instructions[-2] == 'G84 X Y\n'
     else:
         assert G._instructions[-6] == '\n; ACTIVATE AXIS ROTATION\n'
-        assert G._instructions[-5] == f'LINEAR X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{G.speed_pos:.6f}\n'
+        assert G._instructions[-5] == f'G1 X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{G.speed_pos:.6f}\n'
         assert G._instructions[-4] == 'G84 X Y\n'
         assert G._instructions[-2] == f'G84 X Y F{a}\n\n'
 
@@ -1224,21 +1224,21 @@ def test_format_arguments_raise(param, x, y, z, f, expectation) -> None:
             ],
             deque(
                 [
-                    'LINEAR X1.998997 Y0.074899 Z0.031033 F0.500000\n',
+                    'G1 X1.998997 Y0.074899 Z0.031033 F0.500000\n',
                     '\n',
                     'DWELL 0.025\n',
                     'PSOCONTROL X ON\n',
                     'DWELL 1.0\n',
                     '\n',
-                    'LINEAR X-1.000546 Y0.022542 Z0.031033 F20.000000\n',
-                    'LINEAR X-4.000089 Y-0.029816 Z2.691033 F20.000000\n',
-                    'LINEAR X-7.051989 Y2.917370 Z5.351033 F20.000000\n',
+                    'G1 X-1.000546 Y0.022542 Z0.031033 F20.000000\n',
+                    'G1 X-4.000089 Y-0.029816 Z2.691033 F20.000000\n',
+                    'G1 X-7.051989 Y2.917370 Z5.351033 F20.000000\n',
                     '\n',
                     'DWELL 0.025\n',
                     'PSOCONTROL X OFF\n',
                     'DWELL 1.0\n',
                     '\n',
-                    'LINEAR X1.998997 Y0.074899 Z0.031033 F5.000000\n',
+                    'G1 X1.998997 Y0.074899 Z0.031033 F5.000000\n',
                     'DWELL 1.0\n',
                     '\n',
                 ]
