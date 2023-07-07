@@ -45,15 +45,17 @@ def test_grouped(it, n, exp):
         ([1, 2, 3, 4], [(1, 2), (3, 4)]),
         ([1, 2, 3], [(1, 2)]),
         ([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], [(1, 2), (3, 4), (5, 6), (7, 8), (9, 10)]),
-        (
-            [Waveguide(), Waveguide(), Waveguide(), Waveguide()],
-            [(Waveguide(), Waveguide()), (Waveguide(), Waveguide())],
-        ),
     ],
 )
 def test_pairwise(it, exp) -> None:
     assert list(pairwise(it)) == exp
 
+def test_pairwise_wg() -> None:
+    wg1 = Waveguide()
+    wg2 = Waveguide()
+    wg3 = Waveguide()
+    wg4 = Waveguide()
+    assert list(pairwise([wg1, wg2, wg3, wg4])) == [(wg1, wg2), (wg3, wg4)]
 
 @pytest.mark.parametrize(
     'lst, swp, exp',
