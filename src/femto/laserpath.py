@@ -34,11 +34,11 @@ class LaserPath:
     acc_max: float = 500  #: Maximum acceleration/deceleration `[m/s^2]`.
     end_off_sample: bool = True  #: Flag to end laserpath off of the sample. (See `x_end`).
 
-    _x: npt.NDArray[np.float32] = np.array([], dtype=np.float32)
-    _y: npt.NDArray[np.float32] = np.array([], dtype=np.float32)
-    _z: npt.NDArray[np.float32] = np.array([], dtype=np.float32)
-    _f: npt.NDArray[np.float32] = np.array([], dtype=np.float32)
-    _s: npt.NDArray[np.float32] = np.array([], dtype=np.float32)
+    _x: npt.NDArray[np.float32] = dataclasses.field(default_factory=lambda: np.array([], dtype=np.float32))
+    _y: npt.NDArray[np.float32] = dataclasses.field(default_factory=lambda: np.array([], dtype=np.float32))
+    _z: npt.NDArray[np.float32] = dataclasses.field(default_factory=lambda: np.array([], dtype=np.float32))
+    _f: npt.NDArray[np.float32] = dataclasses.field(default_factory=lambda: np.array([], dtype=np.float32))
+    _s: npt.NDArray[np.float32] = dataclasses.field(default_factory=lambda: np.array([], dtype=np.float32))
 
     def __post_init__(self) -> None:
         if not isinstance(self.scan, int):
