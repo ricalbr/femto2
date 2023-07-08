@@ -268,9 +268,9 @@ class Marker(LaserPath):
 
         pts = [
             lower_left_corner,
-            lower_left_corner + np.array([width, 0, 0]),
-            lower_left_corner + np.array([width, height, 0]),
-            lower_left_corner + np.array([0, height, 0]),
+            lower_left_corner + np.array([abs(width), 0, 0]),
+            lower_left_corner + np.array([abs(width), abs(height), 0]),
+            lower_left_corner + np.array([0, abs(height), 0]),
             lower_left_corner,
         ]
         self.ablation(points=pts, shift=None)
