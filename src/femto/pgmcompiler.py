@@ -418,7 +418,7 @@ class PGMCompiler:
         if all(coord is None for coord in position):
             self._instructions.append(f'{args}\n')
         else:
-            self._instructions.append(f'LINEAR {args}\n')
+            self._instructions.append(f'G1 {args}\n')
         self.dwell(self.long_pause)
         self.instruction('\n')
 
@@ -734,7 +734,7 @@ class PGMCompiler:
         is True the points are compensated along the z-direction.
 
         The transformed points are then parsed together with the feed rate and shutter state coordinate to produce
-        the LINEAR movements.
+        the LINEAR (G1) movements.
 
         :param points: Numpy matrix containing the values of the tuple [X,Y,Z,F,S] coordinates.
         :type points: numpy.ndarray
@@ -761,7 +761,7 @@ class PGMCompiler:
                 self.dwell(self.long_pause)
                 self.instruction('\n')
             else:
-                self._instructions.append(f'LINEAR {arg}\n')
+                self._instructions.append(f'G1 {arg}\n')
         self.dwell(self.long_pause)
         self.instruction('\n')
 
@@ -1093,7 +1093,7 @@ class PGMCompiler:
 
     def _enter_axis_rotation(self, angle: float | None = None) -> None:
         self.comment('ACTIVATE AXIS ROTATION')
-        self._instructions.append(f'LINEAR X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{self.speed_pos:.6f}\n')
+        self._instructions.append(f'G1 X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{self.speed_pos:.6f}\n')
         self._instructions.append('G84 X Y\n')
         self.dwell(self.short_pause)
 
@@ -1106,7 +1106,7 @@ class PGMCompiler:
 
     def _exit_axis_rotation(self) -> None:
         self.comment('DEACTIVATE AXIS ROTATION')
-        self._instructions.append(f'LINEAR X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{self.speed_pos:.6f}\n')
+        self._instructions.append(f'G1 X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{self.speed_pos:.6f}\n')
         self._instructions.append('G84 X Y\n')
         self.dwell(self.short_pause)
 
