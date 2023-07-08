@@ -71,7 +71,7 @@ def test_laserpath_values(laser_path) -> None:
     assert laser_path.cmd_rate_max == int(1200)
     assert laser_path.acc_max == int(500)
     assert laser_path.samplesize == (100, 15)
-    assert lp.end_off_sample == True
+    assert laser_path.end_off_sample == True
 
 
 def test_from_dict(param) -> None:
