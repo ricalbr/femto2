@@ -490,7 +490,6 @@ class TrenchWriter(Writer):
         x: npt.NDArray[np.float32],
         y: npt.NDArray[np.float32],
         speed: float,
-        forced_deceleration: bool = False,
     ) -> None:
         """Export 2D path to PGM file.
 
@@ -509,9 +508,6 @@ class TrenchWriter(Writer):
             `y` coordinates array [mm].
         speed : float
             Translation speed [mm/s].
-        forced_deceleration: bool
-            Add a `G9` command before `LINEAR` movements to reduce the acceleration to zero after the motion is
-            completed.
 
         Returns
         -------
@@ -535,10 +531,7 @@ class TrenchWriter(Writer):
             self._format_args(x, y, z, f)
             for (x, y, z, f) in itertools.zip_longest(x_arr, y_arr, z_arr, listcast(speed))
         ]
-        if forced_deceleration:
-            gcode_instr = [f'G9 LINEAR {line}\n' for line in instr]
-        else:
-            gcode_instr = [f'LINEAR {line}\n' for line in instr]
+        gcode_instr = [f'G1 {line}\n' for line in instr]
 
         with open(filename, 'w') as file:
             file.write(''.join(gcode_instr))
@@ -635,7 +628,7 @@ class TrenchWriter(Writer):
                 G.instruction(f'MSGDISPLAY 1, "COL {index + 1:03}, TR {i_trc + 1:03}, LV {nbox + 1:03}, W"\n')
                 G.shutter('OFF')
                 if column.u:
-                    G.instruction(f'LINEAR U{column.u[0]:.6f}')
+                    G.instruction(f'G1 U{column.u[0]:.6f}')
                     G.dwell(self.long_pause)
                 G.move_to([float(x0), float(y0), float(z0)], speed_pos=column.speed_closed)
 
@@ -644,7 +637,7 @@ class TrenchWriter(Writer):
                 with G.repeat(column.n_repeat):
                     G.farcall(wall_filename)
                     G.instruction(f'$ZCURR = $ZCURR + {column.deltaz / super().neff:.6f}')
-                    G.instruction('LINEAR Z$ZCURR')
+                    G.instruction('G1 Z$ZCURR')
                 G.remove_program(wall_filename)
 
                 # FLOOR
@@ -652,13 +645,13 @@ class TrenchWriter(Writer):
                 G.load_program(str(floor_path))
                 G.instruction(f'MSGDISPLAY 1, "COL {index + 1:03}, TR {i_trc + 1:03}, LV {nbox + 1:03}, F"\n')
                 if column.u:
-                    G.instruction(f'LINEAR U{column.u[-1]:.6f}')
+                    G.instruction(f'G1 U{column.u[-1]:.6f}')
                     G.dwell(self.long_pause)
                 G.shutter(state='ON')
                 G.farcall(floor_filename)
                 G.shutter('OFF')
                 if column.u:
-                    G.instruction(f'LINEAR U{column.u[0]:.6f}')
+                    G.instruction(f'G1 U{column.u[0]:.6f}')
                 G.remove_program(floor_filename)
             G.instruction('MSGCLEAR -1\n')
 
@@ -860,7 +853,7 @@ class UTrenchWriter(TrenchWriter):
                 G.instruction(f'MSGDISPLAY 1, "COL {index + 1:03}, TR {i_trc + 1:03}, LV {nbox + 1:03}, W"\n')
                 G.shutter('OFF')
                 if column.u:
-                    G.instruction(f'LINEAR U{column.u[0]:.6f}')
+                    G.instruction(f'G1 U{column.u[0]:.6f}')
                     G.dwell(self.long_pause)
                 G.move_to([float(x0), float(y0), float(z0)], speed_pos=column.speed_closed)
 
@@ -869,7 +862,7 @@ class UTrenchWriter(TrenchWriter):
                 with G.repeat(column.n_repeat):
                     G.farcall(wall_filename)
                     G.instruction(f'$ZCURR = $ZCURR + {column.deltaz / super().neff:.6f}')
-                    G.instruction('LINEAR Z$ZCURR')
+                    G.instruction('G1 Z$ZCURR')
                 G.remove_program(wall_filename)
 
                 # FLOOR
@@ -877,13 +870,13 @@ class UTrenchWriter(TrenchWriter):
                 G.load_program(str(floor_path))
                 G.instruction(f'MSGDISPLAY 1, "COL {index + 1:03}, TR {i_trc + 1:03}, LV {nbox + 1:03}, F"\n')
                 if column.u:
-                    G.instruction(f'LINEAR U{column.u[-1]:.6f}')
+                    G.instruction(f'G1 U{column.u[-1]:.6f}')
                     G.dwell(self.long_pause)
                 G.shutter(state='ON')
                 G.farcall(floor_filename)
                 G.shutter('OFF')
                 if column.u:
-                    G.instruction(f'LINEAR U{column.u[0]:.6f}')
+                    G.instruction(f'G1 U{column.u[0]:.6f}')
                 G.remove_program(floor_filename)
 
             for i_bed, bed_block in enumerate(column.trenchbed):
@@ -897,13 +890,13 @@ class UTrenchWriter(TrenchWriter):
                 G.load_program(str(bed_path))
                 G.instruction(f'MSGDISPLAY 1, "COL {index + 1:03}, BED {i_bed + 1:03}"\n')
                 if column.u:
-                    G.instruction(f'LINEAR U{column.u[-1]:.6f}')
+                    G.instruction(f'G1 U{column.u[-1]:.6f}')
                     G.dwell(self.long_pause)
                 G.shutter(state='ON')
                 G.farcall(bed_filename)
                 G.shutter('OFF')
                 if column.u:
-                    G.instruction(f'LINEAR U{column.u[0]:.6f}')
+                    G.instruction(f'G1 U{column.u[0]:.6f}')
                 G.remove_program(bed_filename)
 
             G.instruction('MSGCLEAR -1\n')
