@@ -559,7 +559,7 @@ class TrenchColumn:
 class UTrenchColumn(TrenchColumn):
     n_pillars: int = 0  #: number of sustaining pillars
     pillar_width: float = 0.040  #: width of the pillars
-    trenchbed: list(geometry.Polygon) = dataclasses.field(default_factory=list)  #: List of bed blocks
+    trenchbed: list(geometry.Polygon) = dataclasses.field(default_factory=list)  #: List of beds blocks
 
     def __post_init__(self) -> None:
         super().__post_init__()

@@ -753,11 +753,8 @@ class UTrenchWriter(TrenchWriter):
     """U-Trench Writer class."""
 
     def __init__(self, utc_list: UTrenchColumn | list[UTrenchColumn], dirname: str = 'U-TRENCH', **param) -> None:
-        super().__init__(utc_list, **param)
-        self.obj_list: list[UTrenchColumn] = flatten(listcast(utc_list))
-        self.trenches: list[Trench] = [utr for col in self.obj_list for utr in col]
-        self.bed: list[Trench] = [ubed for col in self.obj_list for ubed in col.trenchbed]
-        self.dirname: str = dirname
+        super().__init__(tc_list=utc_list, dirname=dirname, **param)
+        self.beds: list[Trench] = [ubed for col in utc_list for ubed in col.trenchbed]
 
     def append(self, obj: UTrenchColumn) -> None:
         """Append UTrenchColumn objects.
@@ -776,7 +773,7 @@ class UTrenchWriter(TrenchWriter):
             raise TypeError(f'The object must be a UTrenchColumn. {type(obj).__name__} was given.')
         self.obj_list.append(obj)
         self.trenches.extend(obj._trench_list)
-        self.bed.extend(obj.trenchbed)
+        self.beds.extend(obj.trenchbed)
 
     # Private interface
     def _export_trench_column(self, column: UTrenchColumn, column_path: pathlib.Path) -> None:
@@ -890,7 +887,7 @@ class UTrenchWriter(TrenchWriter):
                 G.remove_program(floor_filename)
 
             for i_bed, bed_block in enumerate(column.trenchbed):
-                # load filenames (bed))
+                # load filenames (beds)
                 bed_filename = f'trench_BED_{i_bed + 1:03}.pgm'
                 bed_path = pathlib.Path(column.base_folder) / f'trenchCol{index + 1:03}' / bed_filename
 
@@ -939,7 +936,7 @@ class UTrenchWriter(TrenchWriter):
             style = dict()
         default_utcargs = {'fillcolor': '#BEBEBE', 'mode': 'none', 'hoverinfo': 'none'}
         utcargs = {**default_utcargs, **style}
-        for bd in self.bed:
+        for bd in self.beds:
             xt, yt = bd.border
             xt, yt, *_ = self.transform_points(xt, yt, np.zeros_like(xt, dtype=np.float32))
 
@@ -994,7 +991,7 @@ class UTrenchWriter(TrenchWriter):
                         hovertemplate='(%{x:.4f}, %{y:.4f})<extra>TR</extra>',
                     )
                 )
-        for bd in self.bed:
+        for bd in self.beds:
             xt, yt = bd.border
             xt, yt, *_ = self.transform_points(xt, yt, np.zeros_like(xt, dtype=np.float32))
 
