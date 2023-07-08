@@ -6,18 +6,14 @@ import pathlib
 from typing import Any
 from typing import cast
 from typing import Union
-from typing import Type
 
-from pathlib import Path
 import plotly.graph_objects as go
 from femto.helpers import flatten
-from femto.helpers import listcast
 from femto.marker import Marker
-from femto.trench import TrenchColumn
+from femto.trench import TrenchColumn, UTrenchColumn
 from femto.waveguide import NasuWaveguide
 from femto.waveguide import Waveguide
-from femto.pgmcompiler import PGMCompiler
-from femto.writer import MarkerWriter
+from femto.writer import MarkerWriter, UTrenchWriter
 from femto.writer import NasuWriter
 from femto.writer import TrenchWriter
 from femto.writer import WaveguideWriter
@@ -40,6 +36,7 @@ class Device:
             Waveguide: WaveguideWriter(wg_list=[], **param),
             NasuWaveguide: NasuWriter(nw_list=[], **param),
             TrenchColumn: TrenchWriter(tc_list=[], **param),
+            UTrenchColumn: UTrenchWriter(utc_list=[], **param),
             Marker: MarkerWriter(mk_list=[], **param),
         }
 
@@ -181,7 +178,7 @@ class Device:
             if verbose:
                 print(f'Exporting {key.__name__} objects...')
 
-            writer = cast(Union[WaveguideWriter, NasuWriter, TrenchWriter, MarkerWriter], writer)
+            writer = cast(Union[WaveguideWriter, NasuWriter, TrenchWriter, UTrenchWriter, MarkerWriter], writer)
             writer.pgm(verbose=verbose)
 
             self.fabrication_time += writer._fabtime
