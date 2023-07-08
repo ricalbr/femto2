@@ -114,6 +114,7 @@ def test_dl(laser_path) -> None:
 def test_x_end(laser_path) -> None:
     assert pytest.approx(laser_path.x_end) == 104.3
 
+
 def test_x_end_inside(param) -> None:
     lp = LaserPath(end_off_sample=False, **param)
     assert pytest.approx(lp.x_end) == 95.7

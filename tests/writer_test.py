@@ -252,10 +252,6 @@ def test_trench_writer_export_array2d_raise(gc_param, list_tcol) -> None:
         twr.export_array2d(filename=None, x=np.array([1, 2, 3]), y=np.array([1, 2, 3]), speed=4)
 
 
-
-
-
-
 def test_utrench_writer_init(gc_param, list_utcol) -> None:
     twr = UTrenchWriter(list_utcol, **gc_param)
     dirname = 'U-TRENCH'
@@ -326,9 +322,12 @@ def test_utrench_writer_extend(gc_param, list_utcol) -> None:
     new_list = [[[list_utcol, list_utcol], list_utcol], list_utcol]
     twr.extend(new_list)
     assert twr.obj_list == flatten([list_utcol, list_utcol, list_utcol, list_utcol])
-    assert twr.trenches == flatten([tr for col in flatten([list_utcol, list_utcol, list_utcol, list_utcol]) for tr in
-                                    col])
-    assert twr.beds == flatten([bd for col in flatten([list_utcol, list_utcol, list_utcol, list_utcol]) for bd in col.trenchbed])
+    assert twr.trenches == flatten(
+        [tr for col in flatten([list_utcol, list_utcol, list_utcol, list_utcol]) for tr in col]
+    )
+    assert twr.beds == flatten(
+        [bd for col in flatten([list_utcol, list_utcol, list_utcol, list_utcol]) for bd in col.trenchbed]
+    )
     del twr
 
 
