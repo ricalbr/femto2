@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 from femto.helpers import almost_equal
-from femto.trench import Trench
+from femto.trench import Trench, UTrenchColumn
 from femto.trench import TrenchColumn
 from shapely.geometry import box
 from shapely.geometry import MultiPolygon
@@ -39,8 +39,39 @@ def param() -> dict:
 
 
 @pytest.fixture
+def uparam() -> dict:
+    p = {
+        'x_center': 6,
+        'y_min': 1,
+        'y_max': 2,
+        'bridge': 0.050,
+        'length': 3,
+        'nboxz': 4,
+        'z_off': -0.02,
+        'h_box': 0.080,
+        'base_folder': '',
+        'deltaz': 0.002,
+        'delta_floor': 0.0015,
+        'beam_waist': 0.002,
+        'round_corner': 0.010,
+        'u': [28, 29.47],
+        'speed_wall': 5,
+        'speed_closed': 5,
+        'speed_pos': 0.5,
+        'n_pillars': 4,
+        'pillar_width': 0.044,
+    }
+    return p
+
+
+@pytest.fixture
 def tc(param) -> TrenchColumn:
     return TrenchColumn(**param)
+
+
+@pytest.fixture
+def utc(uparam) -> UTrenchColumn:
+    return UTrenchColumn(**uparam)
 
 
 @pytest.fixture
@@ -508,3 +539,92 @@ def test_normalize(tc):
 
     for p1, p2 in combinations(poly, 2):
         assert almost_equal(p1, p2)
+
+
+def test_utrenchcol_default() -> None:
+    x, ymin, ymax = 1, 2, 5
+    tcol = UTrenchColumn(x, ymin, ymax)
+
+    assert tcol.x_center == x
+    assert tcol.y_min == ymin
+    assert tcol.y_max == ymax
+    assert tcol.bridge == float(0.026)
+    assert tcol.length == float(1)
+    assert tcol.nboxz == int(4)
+    assert tcol.z_off == float(-0.020)
+    assert tcol.h_box == float(0.075)
+    assert tcol.base_folder == ''
+    assert tcol.deltaz == float(0.0015)
+    assert tcol.delta_floor == float(0.001)
+    assert tcol.beam_waist == float(0.004)
+    assert tcol.round_corner == float(0.010)
+    assert tcol.u is None
+    assert tcol.speed_wall == float(4)
+    assert tcol.speed_floor == float(1.0)
+    assert tcol.speed_closed == float(5)
+    assert tcol.speed_pos == float(0.5)
+    assert tcol.n_pillars == int(0)
+    assert tcol.pillar_width == float(0.040)
+    assert tcol.trenchbed == []
+
+    assert tcol.CWD == Path.cwd()
+    assert tcol._trench_list == []
+
+
+def test_utrenchcol_param(uparam) -> None:
+    tcol = UTrenchColumn(**uparam)
+
+    assert tcol.x_center == float(6)
+    assert tcol.y_min == float(1)
+    assert tcol.y_max == float(2)
+    assert tcol.bridge == float(0.050)
+    assert tcol.length == float(3)
+    assert tcol.nboxz == int(4)
+    assert tcol.z_off == float(-0.020)
+    assert tcol.h_box == float(0.080)
+    assert tcol.base_folder == ''
+    assert tcol.deltaz == float(0.002)
+    assert tcol.delta_floor == float(0.0015)
+    assert tcol.beam_waist == float(0.002)
+    assert tcol.round_corner == float(0.010)
+    assert tcol.u == [28, 29.47]
+    assert tcol.speed_wall == float(5)
+    assert tcol.speed_floor == float(1)
+    assert tcol.speed_closed == float(5)
+    assert tcol.speed_pos == float(0.5)
+    assert tcol.n_pillars == int(4)
+    assert tcol.pillar_width == float(0.044)
+    assert tcol.trenchbed == []
+
+    assert tcol.CWD == Path.cwd()
+    assert tcol._trench_list == []
+
+
+def test_adj_pillar_width(utc, uparam) -> None:
+    assert utc.adj_pillar_width == uparam['pillar_width'] / 2 + uparam['beam_waist']
+
+
+def test_u_dig() -> None:
+    p = {
+        'x_center': 0.0,
+        'y_min': 0.0,
+        'y_max': 9.0,
+        'length': 4.0,
+        'bridge': 1.0,
+        'beam_waist': 0.1,
+        'round_corner': 0.0,
+        'n_pillars': 3,
+    }
+    utc = UTrenchColumn(**p)
+
+    coords = [[(-5.0, 3.0), (5.0, 3.0)], [(-5.0, 6.0), (5.0, 6.0)]]
+    comp_box = [box(-2.0, 0.0, 2.0, 2.4), box(-2.0, 3.6, 2.0, 5.4), box(-2.0, 6.6, 2.0, 9.0)]
+
+    utc._dig(coords)
+
+    for (t, c) in zip(utc._trench_list, comp_box):
+        assert utc.normalize(c).equals_exact(t.block, tolerance=1e-8)
+        assert almost_equal(utc.normalize(c), t.block)
+    assert utc.trenchbed is not []
+
+    assert len(utc.trenchbed) == utc.n_pillars + 1
