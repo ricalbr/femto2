@@ -415,3 +415,57 @@ def test_ablation_shift_custom(param) -> None:
             ]
         ),
     )
+
+
+def test_box_empty(param) -> None:
+    mk = Marker(**param)
+    mk.box(lower_left_corner=None)
+
+    np.testing.assert_almost_equal(mk.x, np.array([]))
+    np.testing.assert_almost_equal(mk.y, np.array([]))
+    np.testing.assert_almost_equal(mk.z, np.array([]))
+
+
+@pytest.mark.parametrize(
+    'w, h, exp_x, exp_y, exp_z',
+    [
+        (0, 0, np.array([0, 0, 0, 0]), np.array([0, 0, 0, 0]), np.array([0, 0, 0, 0])),
+        (1, 0, np.array([0, 0, 1, 0, 0, 0]), np.array([0, 0, 0, 0, 0, 0]), np.array([0, 0, 0, 0, 0, 0])),
+        (0, 1, np.array([0, 0, 0, 0, 0, 0]), np.array([0, 0, 1, 0, 0, 0]), np.array([0, 0, 0, 0, 0, 0])),
+        (
+            1,
+            1,
+            np.array([0, 0, 1, 1, 0, 0, 0, 0]),
+            np.array([0, 0, 0, 1, 1, 0, 0, 0]),
+            np.array([0, 0, 0, 0, 0, 0, 0, 0]),
+        ),
+        (
+            1,
+            2,
+            np.array([0, 0, 1, 1, 0, 0, 0, 0]),
+            np.array([0, 0, 0, 2, 2, 0, 0, 0]),
+            np.array([0, 0, 0, 0, 0, 0, 0, 0]),
+        ),
+        (
+            5,
+            5,
+            np.array([0, 0, 5, 5, 0, 0, 0, 0]),
+            np.array([0, 0, 0, 5, 5, 0, 0, 0]),
+            np.array([0, 0, 0, 0, 0, 0, 0, 0]),
+        ),
+        (
+            -5,
+            -5,
+            np.array([0, 0, 5, 5, 0, 0, 0, 0]),
+            np.array([0, 0, 0, 5, 5, 0, 0, 0]),
+            np.array([0, 0, 0, 0, 0, 0, 0, 0]),
+        ),
+    ],
+)
+def test_box(w, h, exp_x, exp_y, exp_z, param) -> None:
+    mk = Marker(**param)
+    mk.box(lower_left_corner=[0, 0, 0], height=h, width=w)
+
+    np.testing.assert_almost_equal(mk.x, exp_x)
+    np.testing.assert_almost_equal(mk.y, exp_y)
+    np.testing.assert_almost_equal(mk.z, exp_z)

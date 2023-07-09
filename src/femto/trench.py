@@ -11,6 +11,8 @@ from typing import Any
 
 import numpy as np
 import numpy.typing as npt
+from shapely.ops import unary_union
+
 from femto.helpers import almost_equal
 from femto.helpers import dotdict
 from femto.helpers import flatten
@@ -29,9 +31,8 @@ class Trench:
         self.delta_floor: float = delta_floor  #: Offset distance between buffered polygons in the trench toolpath.
         self.height: float = height  #: Depth of the trench box.
 
-        # TODO: create properties for floor_length and wall_length and rename these with underscores
-        self.floor_length: float = 0.0  #: Length of the floor path.
-        self.wall_length: float = 0.0  #: Length of the wall path.
+        self._floor_length: float = 0.0  #: Length of the floor path.
+        self._wall_length: float = 0.0  #: Length of the wall path.
 
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}@{id(self) & 0xFFFFFF:x}'
@@ -155,6 +156,16 @@ class Trench:
         """
         return self.block.centroid.x, self.block.centroid.y
 
+    @property
+    def floor_length(self) -> float:
+        """Total length of the floor path."""
+        return self._floor_length
+
+    @property
+    def wall_length(self) -> float:
+        """Length of a single layer of the wall path."""
+        return self._wall_length
+
     def toolpath(self) -> Generator[npt.NDArray[np.float32], None, None]:
         """Toolpath generator.
 
@@ -180,14 +191,14 @@ class Trench:
         geometry.Multipolygon : collections of shapely polygon objects.
         """
 
-        self.wall_length = self.block.length
+        self._wall_length = self.block.length
         polygon_list = [self.block]
 
         while polygon_list:
             current_poly = polygon_list.pop(0)
             if not current_poly.is_empty:
                 polygon_list.extend(self.buffer_polygon(current_poly, offset=-np.fabs(self.delta_floor)))
-                self.floor_length += current_poly.length
+                self._floor_length += current_poly.length
                 yield np.array(current_poly.exterior.coords).T
 
     @staticmethod
@@ -490,7 +501,7 @@ class TrenchColumn:
             block = block.buffer(self.round_corner, resolution=256, cap_style=1)
             # simplify the shape to avoid path too much dense of points
             block = block.simplify(tolerance=5e-7, preserve_topology=True)
-            self._trench_list.append(Trench(self.normalize(block), self.delta_floor, self.height))
+            self._trench_list.append(Trench(self.normalize(block), self.delta_floor))
 
         for index in sorted(listcast(remove), reverse=True):
             del self._trench_list[index]
@@ -546,6 +557,78 @@ class TrenchColumn:
         return geometry.Polygon(normalized_exterior, normalized_interiors)
 
 
+@dataclasses.dataclass
+class UTrenchColumn(TrenchColumn):
+    """Class representing a column of isolation U-trenches."""
+
+    n_pillars: int = 0  #: number of sustaining pillars
+    pillar_width: float = 0.040  #: width of the pillars
+    trenchbed: list[Trench] = dataclasses.field(default_factory=list)  #: List of beds blocks
+
+    def __post_init__(self) -> None:
+        super().__post_init__()
+
+    @property
+    def adj_pillar_width(self) -> float:
+        """Pillar length adjusted for the laser beam waist.
+
+        Returns
+        -------
+        float
+            Adjustted pillar size considering the size of the laser focus [mm].
+        """
+        return self.pillar_width / 2 + self.beam_waist
+
+    def trenchbed_shape(self) -> None:
+        """Trenchbed shape.
+        This method is used to calculate the shape of the plane beneath the column of trenches based on a list of
+        trenches.
+
+        The trench bed is defined as a rectangular-ish shape with the top and bottom part with the same shape of the
+        top and bottom trench (respectively) of the column of trenches.
+        This trench bed can be divided into several `beds` divided by structural pillars of a given `x`-width. The
+        width and the number of the pillars can be defined by the user when the ``UTrenchColumn`` object is created.
+
+        This method populated the ``self.trenchbed`` attribute of the ``UTrenchColumn`` object.
+
+
+        Returns
+        -------
+        None
+        """
+        if not self._trench_list:
+            print('No trench is present. Trenchbed cannot be defined.')
+            return None
+
+        # Define the trench bed shape as union of a rectangle and the first and last trench of the column
+        t1, t2 = self._trench_list[0], self._trench_list[-1]
+        tmp_rect = geometry.box(t1.xmin, t1.center[1], t2.xmax, t2.center[1])
+        tmp_bed = unary_union([t1.block, t2.block, tmp_rect])
+
+        # Add pillars and define the bed layer as a Trench object
+        xmin, ymin, xmax, ymax = tmp_bed.bounds
+        if not self.n_pillars:
+            self.trenchbed = [Trench(block=tmp_bed, height=0.025)]
+        else:
+            x_pillars = np.linspace(xmin, xmax, self.n_pillars + 2)[1:-1]
+            for x in x_pillars:
+                tmp_pillar = geometry.LineString([[x, ymin], [x, ymax]]).buffer(self.adj_pillar_width)
+                tmp_bed = tmp_bed.difference(tmp_pillar)
+            self.trenchbed = [
+                Trench(block=p.buffer(-self.round_corner).buffer(self.round_corner), height=0.025)
+                for p in tmp_bed.geoms
+            ]
+        return None
+
+    def _dig(
+        self,
+        coords_list: list[list[tuple[float, float]]],
+        remove: list[int] | None = None,
+    ) -> None:
+        super()._dig(coords_list, remove)
+        self.trenchbed_shape()
+
+
 def main() -> None:
     # Data
     PARAM_WG = dotdict(speed=20, radius=25, pitch=0.080, int_dist=0.007, samplesize=(25, 3))
@@ -562,8 +645,19 @@ def main() -> None:
         wg.end()
 
     # Trench
-    T = TrenchColumn(x_center=x_c, **PARAM_TC)
+    T = UTrenchColumn(x_center=x_c, n_pillars=3, **PARAM_TC)
     T.dig_from_waveguide(flatten([coup]))
+
+    import matplotlib.pyplot as plt
+
+    for t in T._trench_list:
+        tx, ty = t.block.exterior.coords.xy
+        plt.plot(tx, ty, '-b')
+
+    for b in T.trenchbed:
+        for (xx, yy) in b.toolpath():
+            plt.plot(xx, yy, '-r')
+    plt.show()
 
 
 if __name__ == '__main__':

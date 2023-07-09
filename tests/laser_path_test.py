@@ -56,6 +56,7 @@ def test_default_values() -> None:
     assert lp.cmd_rate_max == int(1200)
     assert lp.acc_max == int(500)
     assert lp.samplesize == (100, 50)
+    assert lp.end_off_sample == True
 
 
 def test_laserpath_values(laser_path) -> None:
@@ -70,6 +71,7 @@ def test_laserpath_values(laser_path) -> None:
     assert laser_path.cmd_rate_max == int(1200)
     assert laser_path.acc_max == int(500)
     assert laser_path.samplesize == (100, 15)
+    assert laser_path.end_off_sample == True
 
 
 def test_from_dict(param) -> None:
@@ -86,6 +88,7 @@ def test_from_dict(param) -> None:
     assert lp.cmd_rate_max == int(1200)
     assert lp.acc_max == int(500)
     assert lp.samplesize == (100, 15)
+    assert lp.end_off_sample == True
 
 
 def test_repr(param) -> None:
@@ -110,6 +113,11 @@ def test_dl(laser_path) -> None:
 
 def test_x_end(laser_path) -> None:
     assert pytest.approx(laser_path.x_end) == 104.3
+
+
+def test_x_end_inside(param) -> None:
+    lp = LaserPath(end_off_sample=False, **param)
+    assert pytest.approx(lp.x_end) == 95.7
 
 
 def test_x_end_none(laser_path) -> None:

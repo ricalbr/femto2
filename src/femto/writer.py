@@ -18,6 +18,7 @@ from femto.marker import Marker
 from femto.pgmcompiler import PGMCompiler
 from femto.trench import Trench
 from femto.trench import TrenchColumn
+from femto.trench import UTrenchColumn
 from femto.waveguide import NasuWaveguide
 from femto.waveguide import Waveguide
 from plotly import graph_objs as go
@@ -489,7 +490,6 @@ class TrenchWriter(Writer):
         x: npt.NDArray[np.float32],
         y: npt.NDArray[np.float32],
         speed: float,
-        forced_deceleration: bool = False,
     ) -> None:
         """Export 2D path to PGM file.
 
@@ -508,9 +508,6 @@ class TrenchWriter(Writer):
             `y` coordinates array [mm].
         speed : float
             Translation speed [mm/s].
-        forced_deceleration: bool
-            Add a `G9` command before `LINEAR` movements to reduce the acceleration to zero after the motion is
-            completed.
 
         Returns
         -------
@@ -534,10 +531,7 @@ class TrenchWriter(Writer):
             self._format_args(x, y, z, f)
             for (x, y, z, f) in itertools.zip_longest(x_arr, y_arr, z_arr, listcast(speed))
         ]
-        if forced_deceleration:
-            gcode_instr = [f'G9 LINEAR {line}\n' for line in instr]
-        else:
-            gcode_instr = [f'LINEAR {line}\n' for line in instr]
+        gcode_instr = [f'G1 {line}\n' for line in instr]
 
         with open(filename, 'w') as file:
             file.write(''.join(gcode_instr))
@@ -634,7 +628,7 @@ class TrenchWriter(Writer):
                 G.instruction(f'MSGDISPLAY 1, "COL {index + 1:03}, TR {i_trc + 1:03}, LV {nbox + 1:03}, W"\n')
                 G.shutter('OFF')
                 if column.u:
-                    G.instruction(f'LINEAR U{column.u[0]:.6f}')
+                    G.instruction(f'G1 U{column.u[0]:.6f}')
                     G.dwell(self.long_pause)
                 G.move_to([float(x0), float(y0), float(z0)], speed_pos=column.speed_closed)
 
@@ -643,7 +637,7 @@ class TrenchWriter(Writer):
                 with G.repeat(column.n_repeat):
                     G.farcall(wall_filename)
                     G.instruction(f'$ZCURR = $ZCURR + {column.deltaz / super().neff:.6f}')
-                    G.instruction('LINEAR Z$ZCURR')
+                    G.instruction('G1 Z$ZCURR')
                 G.remove_program(wall_filename)
 
                 # FLOOR
@@ -651,13 +645,13 @@ class TrenchWriter(Writer):
                 G.load_program(str(floor_path))
                 G.instruction(f'MSGDISPLAY 1, "COL {index + 1:03}, TR {i_trc + 1:03}, LV {nbox + 1:03}, F"\n')
                 if column.u:
-                    G.instruction(f'LINEAR U{column.u[-1]:.6f}')
+                    G.instruction(f'G1 U{column.u[-1]:.6f}')
                     G.dwell(self.long_pause)
                 G.shutter(state='ON')
                 G.farcall(floor_filename)
                 G.shutter('OFF')
                 if column.u:
-                    G.instruction(f'LINEAR U{column.u[0]:.6f}')
+                    G.instruction(f'G1 U{column.u[0]:.6f}')
                 G.remove_program(floor_filename)
             G.instruction('MSGCLEAR -1\n')
 
@@ -745,6 +739,270 @@ class TrenchWriter(Writer):
                         hovertemplate='(%{x:.4f}, %{y:.4f})<extra>TR</extra>',
                     )
                 )
+        return fig
+
+
+class UTrenchWriter(TrenchWriter):
+    """U-Trench Writer class."""
+
+    def __init__(self, utc_list: UTrenchColumn | list[UTrenchColumn], dirname: str = 'U-TRENCH', **param) -> None:
+        super().__init__(tc_list=utc_list, dirname=dirname, **param)
+        self.beds: list[Trench] = [ubed for col in utc_list for ubed in col.trenchbed]
+
+    def append(self, obj: UTrenchColumn) -> None:
+        """Append UTrenchColumn objects.
+
+        Parameters
+        ----------
+        obj: UTrenchColumn
+            UTrenchColumn object to be added to object list.
+
+        Returns
+        -------
+        None
+        """
+
+        if not isinstance(obj, UTrenchColumn):
+            raise TypeError(f'The object must be a UTrenchColumn. {type(obj).__name__} was given.')
+        self.obj_list.append(obj)
+        self.trenches.extend(obj._trench_list)
+        self.beds.extend(obj.trenchbed)
+
+    # Private interface
+    def _export_trench_column(self, column: UTrenchColumn, column_path: pathlib.Path) -> None:
+        """Export Trench columns to PGM file.
+
+        Helper function that exports the wall and floor scripts for each trench in a Trench Column.
+
+        Parameters
+        ----------
+        column : UTrenchColumn
+            TrenchColumn object containing the Trench blocks to export.
+        column_path : pathlib.Path
+            Directory for the floor and wall `PGM` files.
+
+        Returns
+        -------
+        None
+
+        See Also
+        --------
+        pathlib.Path : class representing cross-system filepaths.
+        """
+
+        super()._export_trench_column(column=column, column_path=column_path)
+
+        # Bed script
+        for i, bed_block in enumerate(column.trenchbed):
+
+            x_bed_block = np.array([])
+            y_bed_block = np.array([])
+            for x_temp, y_temp in bed_block.toolpath():
+                x_bed_block = np.append(x_bed_block, x_temp)
+                y_bed_block = np.append(y_bed_block, y_temp)
+
+            self.export_array2d(
+                filename=column_path / f'trench_BED_{i + 1:03}.pgm',
+                x=x_bed_block,
+                y=y_bed_block,
+                speed=column.speed_floor,
+            )
+            del x_bed_block, y_bed_block
+
+    def _farcall_trench_column(self, column: UTrenchColumn, index: int) -> None:
+        """Trench Column FARCALL generator
+
+        The function compiles a Trench Column by loading the wall and floor scripts, and then calling them with the
+        appropriate order and `U` parameters.
+        It produces a `FARCALL` file calling all the trenches of the TrenchColumn.
+
+        Parameters
+        ----------
+        column: TrenchColumn
+            TrenchColumn object to fabricate (and export as `PGM` file).
+        index: int
+            Index of the trench column. It is used for automatic filename creation.
+
+        Returns
+        -------
+        None
+        """
+
+        column_param = dict(self._param.copy())
+        column_param['filename'] = self._export_path / f'FARCALL{index + 1:03}.pgm'
+        with PGMCompiler(**column_param) as G:
+            G.dvar(['ZCURR'])
+
+            for nbox, (i_trc, trench) in list(itertools.product(range(column.nboxz), list(enumerate(column)))):
+                # load filenames (wall/floor)
+                wall_filename = f'trench{i_trc + 1:03}_WALL.pgm'
+                floor_filename = f'trench{i_trc + 1:03}_FLOOR.pgm'
+                wall_path = pathlib.Path(column.base_folder) / f'trenchCol{index + 1:03}' / wall_filename
+                floor_path = pathlib.Path(column.base_folder) / f'trenchCol{index + 1:03}' / floor_filename
+
+                # INIT POINT
+                x0, y0, z0 = self.transform_points(
+                    trench.xborder[0],
+                    trench.yborder[0],
+                    np.array(nbox * column.h_box + column.z_off),
+                )
+                G.comment(f'+--- COLUMN #{index + 1}, TRENCH #{i_trc + 1} LEVEL {nbox + 1} ---+')
+
+                # WALL
+                G.load_program(str(wall_path))
+                G.instruction(f'MSGDISPLAY 1, "COL {index + 1:03}, TR {i_trc + 1:03}, LV {nbox + 1:03}, W"\n')
+                G.shutter('OFF')
+                if column.u:
+                    G.instruction(f'G1 U{column.u[0]:.6f}')
+                    G.dwell(self.long_pause)
+                G.move_to([float(x0), float(y0), float(z0)], speed_pos=column.speed_closed)
+
+                G.instruction(f'$ZCURR = {z0:.6f}')
+                G.shutter('ON')
+                with G.repeat(column.n_repeat):
+                    G.farcall(wall_filename)
+                    G.instruction(f'$ZCURR = $ZCURR + {column.deltaz / super().neff:.6f}')
+                    G.instruction('G1 Z$ZCURR')
+                G.remove_program(wall_filename)
+
+                # FLOOR
+                G.shutter(state='OFF')
+                G.load_program(str(floor_path))
+                G.instruction(f'MSGDISPLAY 1, "COL {index + 1:03}, TR {i_trc + 1:03}, LV {nbox + 1:03}, F"\n')
+                if column.u:
+                    G.instruction(f'G1 U{column.u[-1]:.6f}')
+                    G.dwell(self.long_pause)
+                G.shutter(state='ON')
+                G.farcall(floor_filename)
+                G.shutter('OFF')
+                if column.u:
+                    G.instruction(f'G1 U{column.u[0]:.6f}')
+                G.remove_program(floor_filename)
+
+            for i_bed, bed_block in enumerate(column.trenchbed):
+                # load filenames (beds)
+                bed_filename = f'trench_BED_{i_bed + 1:03}.pgm'
+                bed_path = pathlib.Path(column.base_folder) / f'trenchCol{index + 1:03}' / bed_filename
+
+                G.comment(f'+--- COLUMN #{index + 1}, TRENCH BED #{i_bed + 1} ---+')
+
+                G.shutter(state='OFF')
+                G.load_program(str(bed_path))
+                G.instruction(f'MSGDISPLAY 1, "COL {index + 1:03}, BED {i_bed + 1:03}"\n')
+                if column.u:
+                    G.instruction(f'G1 U{column.u[-1]:.6f}')
+                    G.dwell(self.long_pause)
+                G.shutter(state='ON')
+                G.farcall(bed_filename)
+                G.shutter('OFF')
+                if column.u:
+                    G.instruction(f'G1 U{column.u[0]:.6f}')
+                G.remove_program(bed_filename)
+
+            G.instruction('MSGCLEAR -1\n')
+
+    def _plot2d_trench(self, fig: go.Figure, style: dict[str, Any] | None = None) -> go.Figure:
+        """2D plot helper.
+
+        The function takes a figure and a style dictionary as inputs, and adds a trace to the figure for each ``Trench``
+        stored in the ``Writer`` object.
+
+        Parameters
+        ----------
+        fig : go.Figure
+            Plotly figure object to add the trench traces.
+        style : dict
+            Dictionary containing all the styling parameters of the trench traces.
+
+        Returns
+        -------
+        go.Figure
+            Input figure with added trench traces.
+
+        See Also
+        --------
+        go.Figure : Plotly's figure object.
+        go.Scattergl : Plotly's method to trace paths and lines.
+        """
+
+        if style is None:
+            style = dict()
+        default_utcargs = {'fillcolor': '#BEBEBE', 'mode': 'none', 'hoverinfo': 'none'}
+        utcargs = {**default_utcargs, **style}
+        for bd in self.beds:
+            xt, yt = bd.border
+            xt, yt, *_ = self.transform_points(xt, yt, np.zeros_like(xt, dtype=np.float32))
+
+            fig.add_trace(
+                go.Scattergl(
+                    x=xt,
+                    y=yt,
+                    fill='toself',
+                    **utcargs,
+                    showlegend=False,
+                    hovertemplate='(%{x:.4f}, %{y:.4f})<extra>TR</extra>',
+                )
+            )
+        super()._plot2d_trench(fig, style)
+        return fig
+
+    def _plot3d_trench(self, fig: go.Figure, style: dict[str, Any] | None = None) -> go.Figure:
+        if style is None:
+            style = dict()
+        default_utcargs = {'dash': 'solid', 'color': '#000000', 'width': 1.5}
+        utcargs = {**default_utcargs, **style}
+
+        for tr in self.trenches:
+            # get points and transform them
+            xt, yt = tr.border
+            xt, yt, *_ = self.transform_points(xt, yt, np.zeros_like(xt, dtype=np.float32))
+
+            x = np.array([xt, xt])
+            y = np.array([yt, yt])
+            z = np.array([np.zeros_like(xt), tr.height * np.ones_like(xt)])
+            fig.add_trace(
+                go.Surface(
+                    x=x,
+                    y=y,
+                    z=z,
+                    colorscale=[[0, 'grey'], [1, 'grey']],
+                    showlegend=False,
+                    hoverinfo='skip',
+                    showscale=False,
+                    opacity=0.6,
+                )
+            )
+            for zval in [0.0, tr.height]:
+                fig.add_trace(
+                    go.Scatter3d(
+                        x=xt,
+                        y=yt,
+                        z=zval * np.ones_like(xt),
+                        mode='lines',
+                        line=utcargs,
+                        showlegend=False,
+                        hovertemplate='(%{x:.4f}, %{y:.4f})<extra>TR</extra>',
+                    )
+                )
+        for bd in self.beds:
+            xt, yt = bd.border
+            xt, yt, *_ = self.transform_points(xt, yt, np.zeros_like(xt, dtype=np.float32))
+
+            x = np.array([xt, xt])
+            y = np.array([yt, yt])
+            z = np.array([tr.height * np.ones_like(xt), (tr.height + 0.01) * np.ones_like(xt)])
+            fig.add_trace(
+                go.Surface(
+                    x=x,
+                    y=y,
+                    z=z,
+                    colorscale=[[0, 'grey'], [1, 'grey']],
+                    showlegend=False,
+                    hoverinfo='skip',
+                    showscale=False,
+                    opacity=0.6,
+                )
+            )
         return fig
 
 
@@ -1649,7 +1907,7 @@ def main() -> None:
     from femto.waveguide import NasuWaveguide
 
     # Data
-    PARAM_WG: dict[str, Any] = dict(scan=6, speed=20, radius=15, pitch=0.080, int_dist=0.007, lsamplesize=(10, 3))
+    PARAM_WG: dict[str, Any] = dict(scan=6, speed=20, radius=15, pitch=0.080, int_dist=0.007, samplesize=(10, 3))
     PARAM_GC: dict[str, Any] = dict(filename='testPGM.pgm', samplesize=PARAM_WG['samplesize'])
 
     increment = [5.0, 0, 0]
