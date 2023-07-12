@@ -311,3 +311,53 @@ def load_parameters(param_file: str | pathlib.Path) -> list[dict]:
 
     dc = [dict(config[s]) for s in config.keys()]
     return [{**default_dict, **param_dict} for param_dict in dc]
+
+
+def normalize_polygon(poly: geometry.Polygon) -> geometry.Polygon:
+    """Normalize polygon.
+
+    The function standardize the input polygon. It set a given orientation and set a definite starting point for
+    the inner and outer rings of the polygon.
+
+    Parameters
+    ----------
+    poly: geometry.Polygon
+        Input ``Polygon`` object.
+
+    Returns
+    -------
+    geometry.Polygon
+        New ``Polygon`` object constructed with the new ordered sequence of points.
+
+    See Also
+    --------
+    `This <https://stackoverflow.com/a/63402916>`_ stackoverflow answer.
+    """
+
+    def normalize_ring(ring: geometry.polygon.LinearRing):
+        """Normalize ring
+        It takes the exterior ring (a list of coordinates) of a ``Polygon`` object and returns the same ring,
+        but with the sorted coordinates.
+
+
+        Parameters
+        ----------
+        ring : geometry.LinearRing
+            List of coordinates of a ``Polygon`` object.
+
+        Returns
+        -------
+            The coordinates of the ring, sorted from the minimum value to the maximum.
+
+        See Also
+        --------
+        shapely.geometry.LinearRing : ordered sequence of (x, y[, z]) point tuples.
+        """
+        coords = ring.coords[:-1]
+        start_index = min(range(len(coords)), key=coords.__getitem__)
+        return coords[start_index:] + coords[:start_index]
+
+    poly = geometry.polygon.orient(poly)
+    normalized_exterior = normalize_ring(poly.exterior)
+    normalized_interiors = list(map(normalize_ring, poly.interiors))
+    return geometry.Polygon(normalized_exterior, normalized_interiors)
