@@ -8,8 +8,6 @@ from typing import Any
 
 import numpy as np
 import numpy.typing as npt
-from shapely import geometry
-
 from femto.helpers import flatten
 from femto.helpers import listcast
 from femto.helpers import nest_level
@@ -489,7 +487,7 @@ class TrenchWriter(Writer):
         filename: pathlib.Path,
         x: npt.NDArray[np.float32],
         y: npt.NDArray[np.float32],
-        speed: float|list[float],
+        speed: float | list[float],
     ) -> None:
         """Export 2D path to PGM file.
 
