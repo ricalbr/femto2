@@ -489,7 +489,7 @@ class TrenchWriter(Writer):
         filename: pathlib.Path,
         x: npt.NDArray[np.float32],
         y: npt.NDArray[np.float32],
-        speed: float,
+        speed: float|list[float],
     ) -> None:
         """Export 2D path to PGM file.
 
@@ -506,7 +506,7 @@ class TrenchWriter(Writer):
             `x` coordinates array [mm].
         y : numpy.ndarray
             `y` coordinates array [mm].
-        speed : float
+        speed : float | list[float]
             Translation speed [mm/s].
 
         Returns
