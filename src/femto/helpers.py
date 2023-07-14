@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import functools
 import itertools
+import pathlib
 from typing import Any
 from typing import Dict
 from typing import Iterable
@@ -9,9 +10,8 @@ from typing import Iterator
 
 import numpy as np
 import numpy.typing as npt
-from shapely import geometry
 import yaml
-import pathlib
+from shapely import geometry
 
 
 def grouped(iterable: Iterable[Any], n: int) -> Iterable[Any]:
@@ -282,9 +282,10 @@ def load_parameters(param_file: str | pathlib.Path) -> list[dict]:
     The `load_param` function loads a YAML configuration file and returns a list of dictionaries containing the
     parameters.
     The function first opens the YAML file in binary mode and uses the `tomli` library to load the configuration into a
-    dictionary. The function then removes the `DEFAULT` dictionary from the configuration and merges its contents with the
-    other dictionaries in the configuration. Finally, the function returns a list of dictionaries, where each dictionary
-    contains the merged contents of the `DEFAULT` dictionary and one of the other dictionaries in the configuration.
+    dictionary. The function then removes the `DEFAULT` dictionary from the configuration and merges its contents
+    with the other dictionaries in the configuration. Finally, the function returns a list of dictionaries,
+    where each dictionary contains the merged contents of the `DEFAULT` dictionary and one of the other dictionaries
+    in the configuration.
 
     Parameters
     ----------
@@ -297,7 +298,7 @@ def load_parameters(param_file: str | pathlib.Path) -> list[dict]:
     """
 
     fp = pathlib.Path(param_file).stem + '.yaml'
-    with open(fp, mode="rb") as f:
+    with open(fp, mode='rb') as f:
         config = yaml.safe_load(f)
 
     if not config:
@@ -305,7 +306,7 @@ def load_parameters(param_file: str | pathlib.Path) -> list[dict]:
 
     # remove the DEFAULT dictionary and merge it to all the other dictionaries
     try:
-        default_dict = config.pop("DEFAULT")
+        default_dict = config.pop('DEFAULT')
     except KeyError:
         default_dict = {}
 
@@ -361,3 +362,20 @@ def normalize_polygon(poly: geometry.Polygon) -> geometry.Polygon:
     normalized_exterior = normalize_ring(poly.exterior)
     normalized_interiors = list(map(normalize_ring, poly.interiors))
     return geometry.Polygon(normalized_exterior, normalized_interiors)
+
+
+def lookahead(iterable):
+    """Pass through all values from the given iterable, augmented by the
+    information if there are more values to come after the current one
+    (True), or if it is the last value (False).
+    """
+    # Get an iterator and pull the first value.
+    it = iter(iterable)
+    last = next(it)
+    # Run the iterator to exhaustion (starting from the second value).
+    for val in it:
+        # Report the *previous* value (more to come).
+        yield last, True
+        last = val
+    # Report the last value.
+    yield last, False
