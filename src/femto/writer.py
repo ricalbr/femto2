@@ -576,22 +576,29 @@ class TrenchWriter(Writer):
                 y=y_wall,
                 speed=column.speed_wall,
             )
-            del x_wall, y_wall
+            # del x_wall, y_wall
 
             # Floor script
             x_floor = np.array([])
             y_floor = np.array([])
-            for x_temp, y_temp in trench.toolpath():
+            size_last = 0
+            for (x_temp, y_temp), last_it in lookahead(trench.toolpath()):
                 x_floor = np.append(x_floor, x_temp)
                 y_floor = np.append(y_floor, y_temp)
+                if last_it:
+                    size_last = x_temp.shape[0]
+
+            f_decel = np.empty_like(x_floor, dtype=object)
+            f_decel[-size_last::] = True
 
             self.export_array2d(
                 filename=column_path / f'trench{i + 1:03}_FLOOR.pgm',
                 x=x_floor,
                 y=y_floor,
                 speed=column.speed_floor,
+                forced_deceleration=f_decel,
             )
-            del x_floor, y_floor
+            # del x_floor, y_floor
 
     def _farcall_trench_column(self, column: TrenchColumn, index: int) -> None:
         """Trench Column FARCALL generator
@@ -823,7 +830,7 @@ class UTrenchWriter(TrenchWriter):
                 speed=column.speed_floor,
                 forced_deceleration=f_decel,
             )
-            del x_bed_block, y_bed_block
+            # del x_bed_block, y_bed_block
 
     def _farcall_trench_column(self, column: UTrenchColumn, index: int) -> None:
         """Trench Column FARCALL generator
