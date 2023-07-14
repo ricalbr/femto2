@@ -271,7 +271,7 @@ class Trench:
 
         num_insets = int((min(dx, dy) - self.lmin) / (2 * self.delta_floor))
         for _ in range(num_insets):
-            current_poly = normalize_polygon(polygon_list.pop(0))
+            current_poly = polygon_list.pop(0)
             if not current_poly.is_empty:
                 polygon_list.extend(self.buffer_polygon(current_poly, offset=-np.fabs(self.delta_floor)))
                 self._floor_length += current_poly.length
@@ -697,11 +697,11 @@ def main() -> None:
             norm_r1**3, norm_cross, out=np.full_like(norm_r1, fill_value=np.inf), where=~(norm_cross == 0)
         )
 
-    b = T._trench_list[1]
+    b = T.trenchbed[0]
     for (x, y) in b.toolpath():
-        z = np.zeros_like(x)
-        r = r_curv(x, y, z)
-        plt.plot(1 / r)
+        # r = r_curv(x, y, np.zeros_like(x))
+        # plt.plot(1 / r)
+        plt.plot(x, y)
 
     # plt.axis('equal')
     plt.show()

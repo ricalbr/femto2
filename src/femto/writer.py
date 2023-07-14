@@ -10,6 +10,7 @@ import numpy as np
 import numpy.typing as npt
 from femto.helpers import flatten
 from femto.helpers import listcast
+from femto.helpers import lookahead
 from femto.helpers import nest_level
 from femto.helpers import split_mask
 from femto.marker import Marker
@@ -488,6 +489,7 @@ class TrenchWriter(Writer):
         x: npt.NDArray[np.float32],
         y: npt.NDArray[np.float32],
         speed: float | list[float],
+        forced_deceleration: bool | list[bool] | npt.NDArray[np.bool] = False,
     ) -> None:
         """Export 2D path to PGM file.
 
@@ -506,6 +508,9 @@ class TrenchWriter(Writer):
             `y` coordinates array [mm].
         speed : float | list[float]
             Translation speed [mm/s].
+        forced_deceleration: bool
+            Add a `G9` command before `LINEAR` movements to reduce the acceleration to zero after the motion is
+            completed.
 
         Returns
         -------
@@ -529,7 +534,13 @@ class TrenchWriter(Writer):
             self._format_args(x, y, z, f)
             for (x, y, z, f) in itertools.zip_longest(x_arr, y_arr, z_arr, listcast(speed))
         ]
-        gcode_instr = [f'G1 {line}\n' for line in instr]
+
+        gcode_instr = []
+        for (line, dec) in itertools.zip_longest(instr, listcast(forced_deceleration)):
+            if bool(dec):
+                gcode_instr.append(f'G9 G1 {line}\n')
+            else:
+                gcode_instr.append(f'G1 {line}\n')
 
         with open(filename, 'w') as file:
             file.write(''.join(gcode_instr))
@@ -795,15 +806,22 @@ class UTrenchWriter(TrenchWriter):
 
             x_bed_block = np.array([])
             y_bed_block = np.array([])
-            for x_temp, y_temp in bed_block.toolpath():
+            size_last = 0
+            for (x_temp, y_temp), last_it in lookahead(bed_block.toolpath()):
                 x_bed_block = np.append(x_bed_block, x_temp)
                 y_bed_block = np.append(y_bed_block, y_temp)
+                if last_it:
+                    size_last = x_temp.shape[0]
+
+            f_decel = np.empty_like(x_bed_block, dtype=object)
+            f_decel[-size_last::] = True
 
             self.export_array2d(
                 filename=column_path / f'trench_BED_{i + 1:03}.pgm',
                 x=x_bed_block,
                 y=y_bed_block,
                 speed=column.speed_floor,
+                forced_deceleration=f_decel,
             )
             del x_bed_block, y_bed_block
 
