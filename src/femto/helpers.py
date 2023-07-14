@@ -371,11 +371,11 @@ def lookahead(iterable):
     """
     # Get an iterator and pull the first value.
     it = iter(iterable)
-    last = next(it)
+    next_item = next(it)
     # Run the iterator to exhaustion (starting from the second value).
     for val in it:
         # Report the *previous* value (more to come).
-        yield last, True
-        last = val
+        yield next_item, False
+        next_item = val
     # Report the last value.
-    yield last, False
+    yield next_item, True
