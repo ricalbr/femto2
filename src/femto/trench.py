@@ -271,7 +271,6 @@ class Trench:
         """
 
         self._wall_length = self.block.length
-        print('ciao')
         polygon_list = [self.block]
 
         for _ in range(self.num_insets):
