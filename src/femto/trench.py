@@ -632,24 +632,24 @@ class UTrenchColumn(TrenchColumn):
             print('No trench is present. Trenchbed cannot be defined.')
             return None
 
-        # Define the trench bed shape as union of a rectangle and the first and last trench of the column
+        # Define the trench bed shape as union of a rectangle and the first and last trench of the column.
+        # Automatically convert the bed polygon to a MultiPolygon to keep the code flexible to word with the
+        # no-pillar case.
         t1, t2 = self._trench_list[0], self._trench_list[-1]
         tmp_rect = geometry.box(t1.xmin, t1.center[1], t2.xmax, t2.center[1])
-        tmp_bed = unary_union([t1.block, t2.block, tmp_rect])
+        tmp_bed = geometry.MultiPolygon([unary_union([t1.block, t2.block, tmp_rect])])
 
         # Add pillars and define the bed layer as a Trench object
         xmin, ymin, xmax, ymax = tmp_bed.bounds
-        if not self.n_pillars:
-            self.trenchbed = [Trench(block=tmp_bed, height=0.025)]
-        else:
-            x_pillars = np.linspace(xmin, xmax, self.n_pillars + 2)[1:-1]
-            for x in x_pillars:
-                tmp_pillar = geometry.LineString([[x, ymin], [x, ymax]]).buffer(self.adj_pillar_width)
-                tmp_bed = tmp_bed.difference(tmp_pillar)
-            self.trenchbed = [
-                Trench(block=normalize_polygon(p.buffer(-self.round_corner).buffer(self.round_corner)), height=0.015)
-                for p in tmp_bed.geoms
-            ]
+        x_pillars = np.linspace(xmin, xmax, self.n_pillars + 2)[1:-1]
+        for x in x_pillars:
+            tmp_pillar = geometry.LineString([[x, ymin], [x, ymax]]).buffer(self.adj_pillar_width)
+            tmp_bed = tmp_bed.difference(tmp_pillar)
+        # Add bed blocks
+        self.trenchbed = [
+            Trench(block=normalize_polygon(p.buffer(-self.round_corner).buffer(self.round_corner)), height=0.015)
+            for p in tmp_bed.geoms
+        ]
         return None
 
     def _dig(

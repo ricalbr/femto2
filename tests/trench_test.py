@@ -354,6 +354,23 @@ def test_trenchcol_fabrication_time_empty(tc) -> None:
     assert tc.fabrication_time == 0.0
 
 
+@pytest.mark.parametrize(
+    'h_box, n_box, exp',
+    [
+        (0, 0.1, 0.0),
+        (0.3, 0, 0.0),
+        (0.5, 5, 2.5),
+        (1, 1, 1.0),
+        (0.025, 8, 0.2),
+    ],
+)
+def test_trench_total_height(h_box, n_box, exp, param) -> None:
+    param['h_box'] = h_box
+    param['nboxz'] = n_box
+    tcol = TrenchColumn(**param)
+    assert tcol.total_height == exp
+
+
 def test_trenchcol_iterator(tc) -> None:
     t1 = Trench(Polygon([(0, 0), (1, 0), (1, 1), (0, 1)]))
     t2 = Trench(Polygon([(2, 2), (3, 2), (3, 3), (2, 3)]))
@@ -631,3 +648,45 @@ def test_u_dig() -> None:
     assert utc.trenchbed is not []
 
     assert len(utc.trenchbed) == utc.n_pillars + 1
+
+
+def test_u_dig_no_pillars() -> None:
+    p = {
+        'x_center': 0.0,
+        'y_min': 0.0,
+        'y_max': 9.0,
+        'length': 4.0,
+        'bridge': 1.0,
+        'beam_waist': 0.1,
+        'round_corner': 0.0,
+        'n_pillars': 0,
+    }
+    utc = UTrenchColumn(**p)
+
+    coords = [[(-5.0, 3.0), (5.0, 3.0)], [(-5.0, 6.0), (5.0, 6.0)]]
+    comp_box = [box(-2.0, 0.0, 2.0, 2.4), box(-2.0, 3.6, 2.0, 5.4), box(-2.0, 6.6, 2.0, 9.0)]
+
+    utc._dig(coords)
+
+    for (t, c) in zip(utc._trench_list, comp_box):
+        assert normalize_polygon(c).equals_exact(t.block, tolerance=1e-8)
+        assert almost_equal(normalize_polygon(c), t.block)
+    assert utc.trenchbed is not []
+
+    assert len(utc.trenchbed) == utc.n_pillars + 1
+
+
+def test_u_dig_no_trench() -> None:
+    p = {
+        'x_center': 0.0,
+        'y_min': 0.0,
+        'y_max': 9.0,
+        'length': 4.0,
+        'bridge': 1.0,
+        'beam_waist': 0.1,
+        'round_corner': 0.0,
+        'n_pillars': 0,
+    }
+    utc = UTrenchColumn(**p)
+    assert utc.trenchbed_shape() is None
+    assert utc.trenchbed == []
