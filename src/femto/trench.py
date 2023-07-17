@@ -27,13 +27,10 @@ TC = TypeVar('TC', bound='TrenchColumn')
 class Trench:
     """Class that represents a trench block and provides methods to compute the toolpath of the block."""
 
-    def __init__(
-        self, block: geometry.Polygon, delta_floor: float = 0.001, height: float = 0.300, lmin: float = 0.020
-    ) -> None:
+    def __init__(self, block: geometry.Polygon, delta_floor: float = 0.001, height: float = 0.300) -> None:
         self.block: geometry.Polygon = block  #: Polygon shape of the trench.
         self.delta_floor: float = delta_floor  #: Offset distance between buffered polygons in the trench toolpath.
         self.height: float = height  #: Depth of the trench box.
-        self.lmin: float = lmin  #: Minimum dimension of the inner spiral for the floor path.
 
         self._floor_length: float = 0.0  #: Length of the floor path.
         self._wall_length: float = 0.0  #: Length of the wall path.
@@ -181,7 +178,7 @@ class Trench:
         """Number of spiral turns."""
         p = np.array([[[x, y] for (x, y) in self.block.exterior.coords[:-1]]], np.float32) * 1e3
         _, _, dx, dy = lir.lir(p.astype(np.int32), np.int32) / 1e3
-        return int((min(dx, dy) - self.lmin) / (2 * self.delta_floor))
+        return int((min(dx, dy)) / (4 * self.delta_floor))
 
     def zigzag_mask(self) -> geometry.collection.GeometryCollection:
         """Zig-zag mask.
@@ -344,7 +341,7 @@ class TrenchColumn:
     z_off: float = -0.020  #: Starting offset in `z` with respect to the sample's surface [mm].
     deltaz: float = 0.0015  #: Offset distance between countors paths of the trench wall [mm].
     delta_floor: float = 0.001  #: Offset distance between buffered polygons in the trench toolpath [mm].
-    u: list[float] | None = None  #:
+    u: list[float] | None = None  #: List of U coordinate to change irradiation power automatically [deg].
     speed_wall: float = 4.0  #: Translation speed of the wall section [mm/s].
     speed_floor: float = 2.0  #: Translation speed of the floor section [mm/s].
     speed_closed: float = 5.0  #: Translation speed with closed shutter [mm/s].
@@ -700,13 +697,14 @@ def main() -> None:
             norm_r1**3, norm_cross, out=np.full_like(norm_r1, fill_value=np.inf), where=~(norm_cross == 0)
         )
 
+    # b = T._trench_list[2]
     b = T.trenchbed[0]
     for (x, y) in b.toolpath():
         # r = r_curv(x, y, np.zeros_like(x))
         # plt.plot(1 / r)
         plt.plot(x, y)
 
-    # plt.axis('equal')
+    plt.axis('equal')
     plt.show()
     # k = 1-(1/r - np.min(1/r)) / (np.max(1/r) - np.min(1/r))
     # f = 4*k
