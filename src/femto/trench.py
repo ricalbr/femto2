@@ -431,7 +431,7 @@ class TrenchColumn:
         )
 
     @property
-    def height(self) -> float:
+    def total_height(self) -> float:
         """Total trench height.
 
         Returns
