@@ -1026,7 +1026,6 @@ class PGMCompiler:
         ax = plt.axes(projection='3d')
         ax.contour3D(xprobe, yprobe, zprobe, 200, cmap='viridis')
         ax.set_xlabel('X [mm]'), ax.set_ylabel('Y [mm]'), ax.set_zlabel('Z [mm]')
-        plt.axis('equal')
         plt.show()
         return func_antiwarp
 
