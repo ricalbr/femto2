@@ -6,8 +6,10 @@ from pathlib import Path
 import numpy as np
 import pytest
 from femto.helpers import almost_equal
-from femto.trench import Trench, UTrenchColumn
+from femto.helpers import normalize_polygon
+from femto.trench import Trench
 from femto.trench import TrenchColumn
+from femto.trench import UTrenchColumn
 from shapely.geometry import box
 from shapely.geometry import MultiPolygon
 from shapely.geometry import Point
@@ -266,10 +268,11 @@ def test_toolpath() -> None:
     p = Point(0, 0).buffer(5)
     pp = deepcopy(p)
     tc = Trench(p, delta_floor=0.1)
+    it_path = tc.toolpath()
 
-    for path in tc.toolpath():
+    for i in range(tc.num_insets):
+        np.testing.assert_array_equal(next(it_path), np.array(p.exterior.coords).T)
         assert pytest.approx(tc.wall_length) == pp.length
-        np.testing.assert_array_equal(path, np.array(p.exterior.coords).T)
         p = p.buffer(-0.1)
 
 
@@ -292,9 +295,9 @@ def test_trenchcol_default() -> None:
     assert tcol.round_corner == float(0.010)
     assert tcol.u is None
     assert tcol.speed_wall == float(4)
-    assert tcol.speed_floor == float(1.0)
+    assert tcol.speed_floor == float(2.0)
     assert tcol.speed_closed == float(5)
-    assert tcol.speed_pos == float(0.5)
+    assert tcol.speed_pos == float(2.0)
 
     assert tcol.CWD == Path.cwd()
     assert tcol._trench_list == []
@@ -318,7 +321,7 @@ def test_trenchcol_param(param) -> None:
     assert tcol.round_corner == float(0.010)
     assert tcol.u == [28, 29.47]
     assert tcol.speed_wall == float(5)
-    assert tcol.speed_floor == float(1)
+    assert tcol.speed_floor == float(2)
     assert tcol.speed_closed == float(5)
     assert tcol.speed_pos == float(0.5)
 
@@ -415,8 +418,8 @@ def test_trenchcol_dig() -> None:
     tc._dig(coords)
 
     for (t, c) in zip(tc._trench_list, comp_box):
-        assert tc.normalize(c).equals_exact(t.block, tolerance=1e-8)
-        assert almost_equal(tc.normalize(c), t.block)
+        assert normalize_polygon(c).equals_exact(t.block, tolerance=1e-8)
+        assert almost_equal(normalize_polygon(c), t.block)
 
 
 def test_trenchcol_dig_remove() -> None:
@@ -437,7 +440,7 @@ def test_trenchcol_dig_remove() -> None:
     tc._dig(coords, remove=[1])
 
     for (t, c) in zip(tc._trench_list, comp_box):
-        assert tc.normalize(c).equals_exact(t.block, tolerance=1e-8)
+        assert normalize_polygon(c).equals_exact(t.block, tolerance=1e-8)
 
 
 def test_trenchcol_dig_remove_all() -> None:
@@ -560,9 +563,9 @@ def test_utrenchcol_default() -> None:
     assert tcol.round_corner == float(0.010)
     assert tcol.u is None
     assert tcol.speed_wall == float(4)
-    assert tcol.speed_floor == float(1.0)
+    assert tcol.speed_floor == float(2.0)
     assert tcol.speed_closed == float(5)
-    assert tcol.speed_pos == float(0.5)
+    assert tcol.speed_pos == float(2.0)
     assert tcol.n_pillars == int(0)
     assert tcol.pillar_width == float(0.040)
     assert tcol.trenchbed == []
@@ -589,7 +592,7 @@ def test_utrenchcol_param(uparam) -> None:
     assert tcol.round_corner == float(0.010)
     assert tcol.u == [28, 29.47]
     assert tcol.speed_wall == float(5)
-    assert tcol.speed_floor == float(1)
+    assert tcol.speed_floor == float(2)
     assert tcol.speed_closed == float(5)
     assert tcol.speed_pos == float(0.5)
     assert tcol.n_pillars == int(4)
@@ -623,8 +626,8 @@ def test_u_dig() -> None:
     utc._dig(coords)
 
     for (t, c) in zip(utc._trench_list, comp_box):
-        assert utc.normalize(c).equals_exact(t.block, tolerance=1e-8)
-        assert almost_equal(utc.normalize(c), t.block)
+        assert normalize_polygon(c).equals_exact(t.block, tolerance=1e-8)
+        assert almost_equal(normalize_polygon(c), t.block)
     assert utc.trenchbed is not []
 
     assert len(utc.trenchbed) == utc.n_pillars + 1

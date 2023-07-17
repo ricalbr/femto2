@@ -365,17 +365,20 @@ def normalize_polygon(poly: geometry.Polygon) -> geometry.Polygon:
 
 
 def lookahead(iterable):
-    """Pass through all values from the given iterable, augmented by the
+    """Lookahead.
+    Pass through all values from the given iterable, augmented by the
     information if there are more values to come after the current one
-    (True), or if it is the last value (False).
+    (False), or if it is the last value (True).
     """
     # Get an iterator and pull the first value.
     it = iter(iterable)
     next_item = next(it)
+
     # Run the iterator to exhaustion (starting from the second value).
     for val in it:
         # Report the *previous* value (more to come).
         yield next_item, False
         next_item = val
+
     # Report the last value.
     yield next_item, True
