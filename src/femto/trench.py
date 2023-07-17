@@ -176,6 +176,13 @@ class Trench:
         (xmin, ymin, xmax, ymax) = self.block.minimum_rotated_rectangle.bounds
         return 'v' if (xmax - xmin) <= (ymax - ymin) else 'h'
 
+    @property
+    def num_insets(self) -> int:
+        """Number of spiral turns."""
+        p = np.array([[[x, y] for (x, y) in self.block.exterior.coords[:-1]]], np.float32) * 1e3
+        _, _, dx, dy = lir.lir(p.astype(np.int32), np.int32) / 1e3
+        return int((min(dx, dy) - self.lmin) / (2 * self.delta_floor))
+
     def zigzag_mask(self) -> geometry.collection.GeometryCollection:
         """Zig-zag mask.
         The function returns a Shapely geometry (MultiLineString, or more rarely, GeometryCollection) for a simple
@@ -264,13 +271,10 @@ class Trench:
         """
 
         self._wall_length = self.block.length
+        print('ciao')
         polygon_list = [self.block]
 
-        p = np.array([[[x, y] for (x, y) in self.block.exterior.coords[:-1]]], np.float32) * 1e3
-        _, _, dx, dy = lir.lir(p.astype(np.int32), np.int32) / 1e3
-
-        num_insets = int((min(dx, dy) - self.lmin) / (2 * self.delta_floor))
-        for _ in range(num_insets):
+        for _ in range(self.num_insets):
             current_poly = polygon_list.pop(0)
             if not current_poly.is_empty:
                 polygon_list.extend(self.buffer_polygon(current_poly, offset=-np.fabs(self.delta_floor)))
