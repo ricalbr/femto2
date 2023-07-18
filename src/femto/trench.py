@@ -27,10 +27,13 @@ TC = TypeVar('TC', bound='TrenchColumn')
 class Trench:
     """Class that represents a trench block and provides methods to compute the toolpath of the block."""
 
-    def __init__(self, block: geometry.Polygon, delta_floor: float = 0.001, height: float = 0.300) -> None:
+    def __init__(
+        self, block: geometry.Polygon, delta_floor: float = 0.001, height: float = 0.300, safe_inner_turns: int = 5
+    ) -> None:
         self.block: geometry.Polygon = block  #: Polygon shape of the trench.
         self.delta_floor: float = delta_floor  #: Offset distance between buffered polygons in the trench toolpath.
         self.height: float = height  #: Depth of the trench box.
+        self.safe_inner_turns: int = safe_inner_turns  #: Number of spiral turns befor zig-zag filling
 
         self._floor_length: float = 0.0  #: Length of the floor path.
         self._wall_length: float = 0.0  #: Length of the wall path.
@@ -176,9 +179,22 @@ class Trench:
     @property
     def num_insets(self) -> int:
         """Number of spiral turns."""
-        p = np.array([[[x, y] for (x, y) in self.block.exterior.coords[:-1]]], np.float32) * 1e3
-        _, _, dx, dy = lir.lir(p.astype(np.int32), np.int32) / 1e3
-        return int((min(dx, dy)) / (4 * self.delta_floor))
+        if self.block.contains(self.block.convex_hull.buffer(-0.01 * self.delta_floor)):
+            return self.safe_inner_turns
+        else:
+            # External rectangle
+            (xmin, ymin, xmax, ymax) = self.block.minimum_rotated_rectangle.bounds
+            d_ext = min(xmax - xmin, ymax - ymin)
+
+            # Internal rectangle
+            p = (
+                np.array([[[x, y] for (x, y) in self.block.buffer(-2 * self.delta_floor).exterior.coords]], np.float32)
+                * 1e3
+            )
+            _, _, dx_int, dy_int = lir.lir(p.astype(np.int32), np.int32) / 1e3
+            d_int = min(dx_int, dy_int)
+
+            return int((d_ext - d_int) / (2 * self.delta_floor)) + self.safe_inner_turns
 
     def zigzag_mask(self) -> geometry.collection.GeometryCollection:
         """Zig-zag mask.
@@ -341,6 +357,7 @@ class TrenchColumn:
     z_off: float = -0.020  #: Starting offset in `z` with respect to the sample's surface [mm].
     deltaz: float = 0.0015  #: Offset distance between countors paths of the trench wall [mm].
     delta_floor: float = 0.001  #: Offset distance between buffered polygons in the trench toolpath [mm].
+    safe_inner_turns: int = 5  #: Number of spiral turns befor zig-zag filling
     u: list[float] | None = None  #: List of U coordinate to change irradiation power automatically [deg].
     speed_wall: float = 4.0  #: Translation speed of the wall section [mm/s].
     speed_floor: float = 2.0  #: Translation speed of the floor section [mm/s].
@@ -580,7 +597,9 @@ class TrenchColumn:
             block = block.buffer(self.round_corner, resolution=256, cap_style=1)
             # simplify the shape to avoid path too much dense of points
             block = block.simplify(tolerance=5e-7, preserve_topology=True)
-            self._trench_list.append(Trench(normalize_polygon(block), self.delta_floor))
+            self._trench_list.append(
+                Trench(normalize_polygon(block), delta_floor=self.delta_floor, safe_inner_turns=self.safe_inner_turns)
+            )
 
         for index in sorted(listcast(remove), reverse=True):
             del self._trench_list[index]
@@ -642,9 +661,15 @@ class UTrenchColumn(TrenchColumn):
         for x in x_pillars:
             tmp_pillar = geometry.LineString([[x, ymin], [x, ymax]]).buffer(self.adj_pillar_width)
             tmp_bed = tmp_bed.difference(tmp_pillar)
+
         # Add bed blocks
         self.trenchbed = [
-            Trench(block=normalize_polygon(p.buffer(-self.round_corner).buffer(self.round_corner)), height=0.015)
+            Trench(
+                block=normalize_polygon(p.buffer(-self.round_corner).buffer(self.round_corner)),
+                height=0.015,
+                delta_floor=self.delta_floor,
+                safe_inner_turns=self.safe_inner_turns,
+            )
             for p in tmp_bed.geoms
         ]
         return None
@@ -679,35 +704,13 @@ def main() -> None:
 
     import matplotlib.pyplot as plt
 
-    def r_curv(x, y, z):
-        points = np.stack([x, y, z], axis=1)
-
-        # Compute the first and second derivatives of the curve
-        t = np.linspace(0, 1, len(points))
-        r1 = np.gradient(points, t, axis=0, edge_order=2)
-        r2 = np.gradient(r1, t, axis=0, edge_order=2)
-
-        # Compute the cross product and norm of the cross product
-        cross = np.cross(r1, r2)
-        norm_cross = np.linalg.norm(cross, axis=1)
-        norm_r1 = np.linalg.norm(r1, axis=1)
-
-        # Return the local curvature radius, where cannot divide by 0 return inf
-        return np.divide(
-            norm_r1**3, norm_cross, out=np.full_like(norm_r1, fill_value=np.inf), where=~(norm_cross == 0)
-        )
-
-    # b = T._trench_list[2]
-    b = T.trenchbed[0]
-    for (x, y) in b.toolpath():
-        # r = r_curv(x, y, np.zeros_like(x))
-        # plt.plot(1 / r)
-        plt.plot(x, y)
+    # b = T._trench_list[0]
+    # b = T.trenchbed[0]
+    for tr in T._trench_list:
+        for (x, y) in tr.toolpath():
+            plt.plot(x, y)
 
     plt.axis('equal')
-    plt.show()
-    # k = 1-(1/r - np.min(1/r)) / (np.max(1/r) - np.min(1/r))
-    # f = 4*k
 
 
 if __name__ == '__main__':
