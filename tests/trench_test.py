@@ -36,6 +36,7 @@ def param() -> dict:
         'speed_wall': 5,
         'speed_closed': 5,
         'speed_pos': 0.5,
+        'safe_inner_turns': 8,
     }
     return p
 
@@ -62,6 +63,7 @@ def uparam() -> dict:
         'speed_pos': 0.5,
         'n_pillars': 4,
         'pillar_width': 0.044,
+        'safe_inner_turns': 7,
     }
     return p
 
@@ -291,6 +293,7 @@ def test_trenchcol_default() -> None:
     assert tcol.base_folder == ''
     assert tcol.deltaz == float(0.0015)
     assert tcol.delta_floor == float(0.001)
+    assert tcol.safe_inner_turns == int(5)
     assert tcol.beam_waist == float(0.004)
     assert tcol.round_corner == float(0.010)
     assert tcol.u is None
@@ -317,6 +320,7 @@ def test_trenchcol_param(param) -> None:
     assert tcol.base_folder == ''
     assert tcol.deltaz == float(0.002)
     assert tcol.delta_floor == float(0.0015)
+    assert tcol.safe_inner_turns == int(8)
     assert tcol.beam_waist == float(0.002)
     assert tcol.round_corner == float(0.010)
     assert tcol.u == [28, 29.47]
@@ -576,6 +580,7 @@ def test_utrenchcol_default() -> None:
     assert tcol.base_folder == ''
     assert tcol.deltaz == float(0.0015)
     assert tcol.delta_floor == float(0.001)
+    assert tcol.safe_inner_turns == int(5)
     assert tcol.beam_waist == float(0.004)
     assert tcol.round_corner == float(0.010)
     assert tcol.u is None
@@ -605,6 +610,7 @@ def test_utrenchcol_param(uparam) -> None:
     assert tcol.base_folder == ''
     assert tcol.deltaz == float(0.002)
     assert tcol.delta_floor == float(0.0015)
+    assert tcol.safe_inner_turns == int(7)
     assert tcol.beam_waist == float(0.002)
     assert tcol.round_corner == float(0.010)
     assert tcol.u == [28, 29.47]
@@ -690,3 +696,25 @@ def test_u_dig_no_trench() -> None:
     utc = UTrenchColumn(**p)
     assert utc.trenchbed_shape() is None
     assert utc.trenchbed == []
+
+
+@pytest.mark.parametrize(
+    'ymin, ymax, exp',
+    [
+        (0, 0.1, 'h'),
+        (0, 3, 'v'),
+        (0.5, -5, 'v'),
+        (1, 1.2, 'h'),
+        (-0.025, -8, 'v'),
+    ],
+)
+def test_orientation(ymin, ymax, exp, param) -> None:
+    pass
+
+
+def test_num_insets_convex() -> None:
+    pass
+
+
+def test_num_insets_concave() -> None:
+    pass
