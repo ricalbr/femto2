@@ -576,7 +576,6 @@ class TrenchWriter(Writer):
                 y=y_wall,
                 speed=column.speed_wall,
             )
-            # del x_wall, y_wall
 
             # Floor script
             x_floor = np.array([])
@@ -598,7 +597,6 @@ class TrenchWriter(Writer):
                 speed=column.speed_floor,
                 forced_deceleration=f_decel,
             )
-            # del x_floor, y_floor
 
     def _farcall_trench_column(self, column: TrenchColumn, index: int) -> None:
         """Trench Column FARCALL generator
@@ -830,7 +828,6 @@ class UTrenchWriter(TrenchWriter):
                 speed=column.speed_floor,
                 forced_deceleration=f_decel,
             )
-            # del x_bed_block, y_bed_block
 
     def _farcall_trench_column(self, column: UTrenchColumn, index: int) -> None:
         """Trench Column FARCALL generator
@@ -902,7 +899,13 @@ class UTrenchWriter(TrenchWriter):
                     G.instruction(f'G1 U{column.u[0]:.6f}')
                 G.remove_program(floor_filename)
 
+            # BED
             for i_bed, bed_block in enumerate(column.trenchbed):
+                x0, y0, z0 = self.transform_points(
+                    np.array(bed_block.block.exterior.coords.xy[0])[0],
+                    np.array(bed_block.block.exterior.coords.xy[1])[0],
+                    np.array(nbox * column.h_box + column.z_off),
+                )
                 # load filenames (beds)
                 bed_filename = f'trench_BED_{i_bed + 1:03}.pgm'
                 bed_path = pathlib.Path(column.base_folder) / f'trenchCol{index + 1:03}' / bed_filename
@@ -915,6 +918,7 @@ class UTrenchWriter(TrenchWriter):
                 if column.u:
                     G.instruction(f'G1 U{column.u[-1]:.6f}')
                     G.dwell(self.long_pause)
+                G.move_to([float(x0), float(y0), None], speed_pos=column.speed_closed)
                 G.shutter(state='ON')
                 G.farcall(bed_filename)
                 G.shutter('OFF')
