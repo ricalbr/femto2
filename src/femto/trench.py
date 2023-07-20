@@ -4,21 +4,22 @@ import dataclasses
 import inspect
 import math
 import pathlib
+from typing import Any
 from typing import Generator
 from typing import Iterator
 from typing import TypeVar
-from typing import Any
 
+import largestinteriorrectangle as lir
 import numpy as np
 import numpy.typing as npt
-from shapely.ops import unary_union
-
 from femto.helpers import almost_equal
 from femto.helpers import dotdict
 from femto.helpers import flatten
 from femto.helpers import listcast
+from femto.helpers import normalize_polygon
 from femto.waveguide import Waveguide
 from shapely import geometry
+from shapely.ops import unary_union
 
 TC = TypeVar('TC', bound='TrenchColumn')
 
@@ -26,10 +27,13 @@ TC = TypeVar('TC', bound='TrenchColumn')
 class Trench:
     """Class that represents a trench block and provides methods to compute the toolpath of the block."""
 
-    def __init__(self, block: geometry.Polygon, delta_floor: float = 0.001, height: float = 0.300) -> None:
+    def __init__(
+        self, block: geometry.Polygon, delta_floor: float = 0.001, height: float = 0.300, safe_inner_turns: int = 5
+    ) -> None:
         self.block: geometry.Polygon = block  #: Polygon shape of the trench.
         self.delta_floor: float = delta_floor  #: Offset distance between buffered polygons in the trench toolpath.
         self.height: float = height  #: Depth of the trench box.
+        self.safe_inner_turns: int = safe_inner_turns  #: Number of spiral turns befor zig-zag filling
 
         self._floor_length: float = 0.0  #: Length of the floor path.
         self._wall_length: float = 0.0  #: Length of the wall path.
@@ -166,19 +170,107 @@ class Trench:
         """Length of a single layer of the wall path."""
         return self._wall_length
 
+    @property
+    def orientation(self) -> str:
+        """Orientation of the trench block."""
+        (xmin, ymin, xmax, ymax) = self.block.minimum_rotated_rectangle.bounds
+        return 'v' if (xmax - xmin) <= (ymax - ymin) else 'h'
+
+    @property
+    def num_insets(self) -> int:
+        """Number of spiral turns."""
+        if self.block.contains(self.block.convex_hull.buffer(-0.01 * self.delta_floor)):
+            return self.safe_inner_turns
+        else:
+            # External rectangle
+            (xmin, ymin, xmax, ymax) = self.block.minimum_rotated_rectangle.bounds
+            d_ext = min(xmax - xmin, ymax - ymin)
+
+            # Internal rectangle
+            p = (
+                np.array([[[x, y] for (x, y) in self.block.buffer(-2 * self.delta_floor).exterior.coords]], np.float32)
+                * 1e3
+            )
+            _, _, dx_int, dy_int = lir.lir(p.astype(np.int32), np.int32) / 1e3
+            d_int = min(dx_int, dy_int)
+
+            return int((d_ext - d_int) / (2 * self.delta_floor)) + self.safe_inner_turns
+
+    def zigzag_mask(self) -> geometry.collection.GeometryCollection:
+        """Zig-zag mask.
+        The function returns a Shapely geometry (MultiLineString, or more rarely, GeometryCollection) for a simple
+        hatched rectangle. The spacing between the lines is given by ``self.delta_floor`` while the rectangle is the
+        minimum rotated rectangle containing the trench block.
+
+        The lines of the zig-zag pattern are along the longest dimension of the rectangular envelope of the trench
+        block.
+
+        Returns
+        -------
+        shapely.MultiLineString | shapely.GeometryCollection
+            Collection of hatch lines (in case a hatch line intersects with the corner of the clipping
+            rectangle, which produces a point along with the usual lines).
+
+        See Also
+        --------
+        shapely.minimum_rotated_rectangle : oriented rectangular envelope that encloses an input geometry.
+        """
+
+        (xmin, ymin, xmax, ymax) = self.block.minimum_rotated_rectangle.bounds
+        number_of_lines = 2 + int((xmax - xmin) / self.delta_floor)
+
+        coords = []
+        if self.orientation == 'v':
+            # Vertical hatching
+            for i in range(0, number_of_lines, 2):
+                coords.extend([((xmin + i * self.delta_floor, ymin), (xmin + i * self.delta_floor, ymax))])
+                coords.extend([((xmin + (i + 1) * self.delta_floor, ymax), (xmin + (i + 1) * self.delta_floor, ymin))])
+        else:
+            # Horizontal hatching
+            for i in range(0, number_of_lines, 2):
+                coords.extend([((xmin, ymin + i * self.delta_floor), (xmax, ymin + i * self.delta_floor))])
+                coords.extend([((xmax, ymin + (i + 1) * self.delta_floor), (xmin, ymin + (i + 1) * self.delta_floor))])
+        return geometry.MultiLineString(coords)
+
+    def zigzag(self, poly: geometry.Polygon) -> npt.NDArray[np.float32]:
+        """Zig-zag filling pattern.
+        The function `zigzag` takes a polygon as input, applies a zig-zag filling pattern to it, and returns the
+        coordinates of the resulting zigzag pattern.
+
+        Parameters
+        ----------
+        poly: geometry.Polygon
+            The parameter `poly` is of type `geometry.Polygon`. It represents a polygon object that you want to
+            apply the zig-zag filling pattern to.
+
+        Returns
+        -------
+        numpy.ndarray
+            Coordinates array of the zig-zag filling pattern.
+        """
+        mask = self.zigzag_mask()
+        path_collection = poly.intersection(mask)
+        coords = []
+        for line in path_collection.geoms:
+            coords.extend(line.coords)
+        return np.array(coords).T
+
     def toolpath(self) -> Generator[npt.NDArray[np.float32], None, None]:
         """Toolpath generator.
 
-        The function takes a polygon.
+        The function takes a polygon and computes the filling toolpath.
+        Such path is obtained with two strategy:
+        -   First, the outer border is added to the ``polygon_list``. The functions pops polygon objects from this list,
+            buffers it, and yields the exterior coordinates of the buffered polygon.
+            Before yielding, the new polygon is added to the list as the buffered inset will be computed in the next
+            iteration. If the buffering operation returns polygons composed of different non-touching parts (`i.e.`
+            ``MultiPolygon``), each part is added to the list as a single ``Polygon`` object.
+            If no inset can be computed from the starting polygon, no object is added to the list. The generator
+            terminates when no more buffered polygons can be computed.
 
-
-        First, the outer border is added to the ``polygon_list``. The functions pops polygon objects from this list,
-        buffers it, and yields the exterior coordinates of the buffered polygon.
-        Before yielding, the new polygon is added to the list as the buffered inset will be computed in the next
-        iteration. If the buffering operation returns polygons composed of different non-touching parts (`i.e.`
-        ``Multipolygon``), each part is added to the list as a single ``Polygon`` object.
-        If no inset can be computed from the starting polygon, no object is added to the list. The generator
-        terminates when no more buffered polygons can be computed.
+        -   Second, after a number of insets the center of the trench floor is filled with a zig-zag pattern to avoid
+            harsh acceleration and small displacements.
+            The zig-zag hatching pattern is computed for each polygon in the ``polygon_list``.
 
         Yields
         ------
@@ -194,12 +286,15 @@ class Trench:
         self._wall_length = self.block.length
         polygon_list = [self.block]
 
-        while polygon_list:
+        for _ in range(self.num_insets):
             current_poly = polygon_list.pop(0)
             if not current_poly.is_empty:
                 polygon_list.extend(self.buffer_polygon(current_poly, offset=-np.fabs(self.delta_floor)))
                 self._floor_length += current_poly.length
                 yield np.array(current_poly.exterior.coords).T
+
+        for poly in polygon_list:
+            yield self.zigzag(poly.buffer(1.05 * self.delta_floor))
 
     @staticmethod
     def buffer_polygon(shape: geometry.Polygon, offset: float) -> list[geometry.Polygon]:
@@ -241,7 +336,7 @@ class Trench:
         """
 
         if shape.is_valid or isinstance(shape, geometry.MultiPolygon):
-            buff_polygon = shape.buffer(offset)
+            buff_polygon = shape.buffer(offset).simplify(tolerance=1e-5, preserve_topology=True)
             if isinstance(buff_polygon, geometry.MultiPolygon):
                 return [geometry.Polygon(subpol) for subpol in buff_polygon.geoms]
             return [geometry.Polygon(buff_polygon)]
@@ -262,11 +357,12 @@ class TrenchColumn:
     z_off: float = -0.020  #: Starting offset in `z` with respect to the sample's surface [mm].
     deltaz: float = 0.0015  #: Offset distance between countors paths of the trench wall [mm].
     delta_floor: float = 0.001  #: Offset distance between buffered polygons in the trench toolpath [mm].
-    u: list[float] | None = None  #:
+    safe_inner_turns: int = 5  #: Number of spiral turns befor zig-zag filling
+    u: list[float] | None = None  #: List of U coordinate to change irradiation power automatically [deg].
     speed_wall: float = 4.0  #: Translation speed of the wall section [mm/s].
-    speed_floor: float = 1.0  #: Translation speed of the floor section [mm/s].
+    speed_floor: float = 2.0  #: Translation speed of the floor section [mm/s].
     speed_closed: float = 5.0  #: Translation speed with closed shutter [mm/s].
-    speed_pos: float = 0.5  #: Positioning speed with closed shutter [mm/s].
+    speed_pos: float = 2.0  #: Positioning speed with closed shutter [mm/s].
     base_folder: str = ''  #: Location where PGM files are stored in lab PC. If empty, load files with relative path.
     beam_waist: float = 0.004  #: Diameter of the laser beam-waist [mm].
     round_corner: float = 0.010  #: Radius of the blocks round corners [mm].
@@ -349,7 +445,7 @@ class TrenchColumn:
         )
 
     @property
-    def height(self) -> float:
+    def total_height(self) -> float:
         """Total trench height.
 
         Returns
@@ -501,60 +597,12 @@ class TrenchColumn:
             block = block.buffer(self.round_corner, resolution=256, cap_style=1)
             # simplify the shape to avoid path too much dense of points
             block = block.simplify(tolerance=5e-7, preserve_topology=True)
-            self._trench_list.append(Trench(self.normalize(block), self.delta_floor))
+            self._trench_list.append(
+                Trench(normalize_polygon(block), delta_floor=self.delta_floor, safe_inner_turns=self.safe_inner_turns)
+            )
 
         for index in sorted(listcast(remove), reverse=True):
             del self._trench_list[index]
-
-    @staticmethod
-    def normalize(poly: geometry.Polygon) -> geometry.Polygon:
-        """Normalize polygon.
-
-        The function standardize the input polygon. It set a given orientation and set a definite starting point for
-        the inner and outer rings of the polygon.
-
-        Parameters
-        ----------
-        poly: geometry.Polygon
-            Input ``Polygon`` object.
-
-        Returns
-        -------
-        geometry.Polygon
-            New ``Polygon`` object constructed with the new ordered sequence of points.
-
-        See Also
-        --------
-        `This <https://stackoverflow.com/a/63402916>`_ stackoverflow answer.
-        """
-
-        def normalize_ring(ring: geometry.polygon.LinearRing):
-            """Normalize ring
-            It takes the exterior ring (a list of coordinates) of a ``Polygon`` object and returns the same ring,
-            but with the sorted coordinates.
-
-
-            Parameters
-            ----------
-            ring : geometry.LinearRing
-                List of coordinates of a ``Polygon`` object.
-
-            Returns
-            -------
-                The coordinates of the ring, sorted from the minimum value to the maximum.
-
-            See Also
-            --------
-            shapely.geometry.LinearRing : ordered sequence of (x, y[, z]) point tuples.
-            """
-            coords = ring.coords[:-1]
-            start_index = min(range(len(coords)), key=coords.__getitem__)
-            return coords[start_index:] + coords[:start_index]
-
-        poly = geometry.polygon.orient(poly)
-        normalized_exterior = normalize_ring(poly.exterior)
-        normalized_interiors = list(map(normalize_ring, poly.interiors))
-        return geometry.Polygon(normalized_exterior, normalized_interiors)
 
 
 @dataclasses.dataclass
@@ -600,24 +648,30 @@ class UTrenchColumn(TrenchColumn):
             print('No trench is present. Trenchbed cannot be defined.')
             return None
 
-        # Define the trench bed shape as union of a rectangle and the first and last trench of the column
+        # Define the trench bed shape as union of a rectangle and the first and last trench of the column.
+        # Automatically convert the bed polygon to a MultiPolygon to keep the code flexible to word with the
+        # no-pillar case.
         t1, t2 = self._trench_list[0], self._trench_list[-1]
         tmp_rect = geometry.box(t1.xmin, t1.center[1], t2.xmax, t2.center[1])
-        tmp_bed = unary_union([t1.block, t2.block, tmp_rect])
+        tmp_bed = geometry.MultiPolygon([unary_union([t1.block, t2.block, tmp_rect])])
 
         # Add pillars and define the bed layer as a Trench object
         xmin, ymin, xmax, ymax = tmp_bed.bounds
-        if not self.n_pillars:
-            self.trenchbed = [Trench(block=tmp_bed, height=0.025)]
-        else:
-            x_pillars = np.linspace(xmin, xmax, self.n_pillars + 2)[1:-1]
-            for x in x_pillars:
-                tmp_pillar = geometry.LineString([[x, ymin], [x, ymax]]).buffer(self.adj_pillar_width)
-                tmp_bed = tmp_bed.difference(tmp_pillar)
-            self.trenchbed = [
-                Trench(block=p.buffer(-self.round_corner).buffer(self.round_corner), height=0.025)
-                for p in tmp_bed.geoms
-            ]
+        x_pillars = np.linspace(xmin, xmax, self.n_pillars + 2)[1:-1]
+        for x in x_pillars:
+            tmp_pillar = geometry.LineString([[x, ymin], [x, ymax]]).buffer(self.adj_pillar_width)
+            tmp_bed = tmp_bed.difference(tmp_pillar)
+
+        # Add bed blocks
+        self.trenchbed = [
+            Trench(
+                block=normalize_polygon(p.buffer(-self.round_corner).buffer(self.round_corner)),
+                height=0.015,
+                delta_floor=self.delta_floor,
+                safe_inner_turns=self.safe_inner_turns,
+            )
+            for p in tmp_bed.geoms
+        ]
         return None
 
     def _dig(
@@ -650,14 +704,13 @@ def main() -> None:
 
     import matplotlib.pyplot as plt
 
-    for t in T._trench_list:
-        tx, ty = t.block.exterior.coords.xy
-        plt.plot(tx, ty, '-b')
+    # b = T._trench_list[0]
+    # b = T.trenchbed[0]
+    for tr in T._trench_list:
+        for (x, y) in tr.toolpath():
+            plt.plot(x, y)
 
-    for b in T.trenchbed:
-        for (xx, yy) in b.toolpath():
-            plt.plot(xx, yy, '-r')
-    plt.show()
+    plt.axis('equal')
 
 
 if __name__ == '__main__':

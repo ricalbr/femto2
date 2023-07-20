@@ -6,7 +6,6 @@ import copy
 import dataclasses
 import itertools
 import math
-import operator
 import pathlib
 from types import TracebackType
 from typing import Any
@@ -909,7 +908,7 @@ class PGMCompiler:
         z_comp = copy.deepcopy(np.array(z))
 
         zwarp = np.array([float(self.fwarp(x, y)) for x, y in zip(x_comp, y_comp)])
-        z_comp = z_comp + zwarp / self.neff
+        z_comp += zwarp / self.neff
         return x_comp, y_comp, z_comp
 
     @property
@@ -950,12 +949,15 @@ class PGMCompiler:
 
         Parameters
         ----------
-        opt
-        num
+        opt: bool
+            Flag to bypass the warp compensation.
+        num: int
+            Number of points for the interpolation of the sample's surface.
 
         Returns
         -------
-
+        interpolate.interp2d
+            Interpolating function S(x, y) of the surface of the sample.
         """
 
         if not opt:
@@ -1013,6 +1015,7 @@ class PGMCompiler:
                 xlist.append(x)
                 ylist.append(y)
                 zlist.append(float(z_temp) * 1e-3)
+
         # surface interpolation
         func_antiwarp = interpolate.interp2d(xlist, ylist, zlist, kind='cubic')
 

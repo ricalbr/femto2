@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import functools
 import itertools
+import pathlib
 from typing import Any
 from typing import Dict
 from typing import Iterable
@@ -9,9 +10,8 @@ from typing import Iterator
 
 import numpy as np
 import numpy.typing as npt
-from shapely import geometry
 import yaml
-import pathlib
+from shapely import geometry
 
 
 def grouped(iterable: Iterable[Any], n: int) -> Iterable[Any]:
@@ -282,9 +282,10 @@ def load_parameters(param_file: str | pathlib.Path) -> list[dict]:
     The `load_param` function loads a YAML configuration file and returns a list of dictionaries containing the
     parameters.
     The function first opens the YAML file in binary mode and uses the `tomli` library to load the configuration into a
-    dictionary. The function then removes the `DEFAULT` dictionary from the configuration and merges its contents with the
-    other dictionaries in the configuration. Finally, the function returns a list of dictionaries, where each dictionary
-    contains the merged contents of the `DEFAULT` dictionary and one of the other dictionaries in the configuration.
+    dictionary. The function then removes the `DEFAULT` dictionary from the configuration and merges its contents
+    with the other dictionaries in the configuration. Finally, the function returns a list of dictionaries,
+    where each dictionary contains the merged contents of the `DEFAULT` dictionary and one of the other dictionaries
+    in the configuration.
 
     Parameters
     ----------
@@ -297,7 +298,7 @@ def load_parameters(param_file: str | pathlib.Path) -> list[dict]:
     """
 
     fp = pathlib.Path(param_file).stem + '.yaml'
-    with open(fp, mode="rb") as f:
+    with open(fp, mode='rb') as f:
         config = yaml.safe_load(f)
 
     if not config:
@@ -305,9 +306,79 @@ def load_parameters(param_file: str | pathlib.Path) -> list[dict]:
 
     # remove the DEFAULT dictionary and merge it to all the other dictionaries
     try:
-        default_dict = config.pop("DEFAULT")
+        default_dict = config.pop('DEFAULT')
     except KeyError:
         default_dict = {}
 
     dc = [dict(config[s]) for s in config.keys()]
     return [{**default_dict, **param_dict} for param_dict in dc]
+
+
+def normalize_polygon(poly: geometry.Polygon) -> geometry.Polygon:
+    """Normalize polygon.
+
+    The function standardize the input polygon. It set a given orientation and set a definite starting point for
+    the inner and outer rings of the polygon.
+
+    Parameters
+    ----------
+    poly: geometry.Polygon
+        Input ``Polygon`` object.
+
+    Returns
+    -------
+    geometry.Polygon
+        New ``Polygon`` object constructed with the new ordered sequence of points.
+
+    See Also
+    --------
+    `This <https://stackoverflow.com/a/63402916>`_ stackoverflow answer.
+    """
+
+    def normalize_ring(ring: geometry.polygon.LinearRing):
+        """Normalize ring
+        It takes the exterior ring (a list of coordinates) of a ``Polygon`` object and returns the same ring,
+        but with the sorted coordinates.
+
+
+        Parameters
+        ----------
+        ring : geometry.LinearRing
+            List of coordinates of a ``Polygon`` object.
+
+        Returns
+        -------
+            The coordinates of the ring, sorted from the minimum value to the maximum.
+
+        See Also
+        --------
+        shapely.geometry.LinearRing : ordered sequence of (x, y[, z]) point tuples.
+        """
+        coords = ring.coords[:-1]
+        start_index = min(range(len(coords)), key=coords.__getitem__)
+        return coords[start_index:] + coords[:start_index]
+
+    poly = geometry.polygon.orient(poly)
+    normalized_exterior = normalize_ring(poly.exterior)
+    normalized_interiors = list(map(normalize_ring, poly.interiors))
+    return geometry.Polygon(normalized_exterior, normalized_interiors)
+
+
+def lookahead(iterable):
+    """Lookahead.
+    Pass through all values from the given iterable, augmented by the
+    information if there are more values to come after the current one
+    (False), or if it is the last value (True).
+    """
+    # Get an iterator and pull the first value.
+    it = iter(iterable)
+    next_item = next(it)
+
+    # Run the iterator to exhaustion (starting from the second value).
+    for val in it:
+        # Report the *previous* value (more to come).
+        yield next_item, False
+        next_item = val
+
+    # Report the last value.
+    yield next_item, True
