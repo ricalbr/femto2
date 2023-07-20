@@ -709,12 +709,34 @@ def test_u_dig_no_trench() -> None:
     ],
 )
 def test_orientation(ymin, ymax, exp, param) -> None:
-    pass
+    length = 1
+    x_c = 0.5
+
+    t_poly = box(x_c - length / 2, ymin, x_c + length / 2, ymax)
+    t = Trench(t_poly)
+    assert t.orientation == exp
 
 
-def test_num_insets_convex() -> None:
-    pass
+@pytest.mark.parametrize(
+    'poly, sit',
+    [
+        (box(0, 0, 3, 4), 10),
+        (box(0, 0, 55, 7), 7),
+        (Point(0, 0).buffer(8), 1),
+    ],
+)
+def test_num_insets_convex(poly, sit) -> None:
+    t = Trench(poly, safe_inner_turns=sit)
+    assert t.num_insets == sit
 
 
-def test_num_insets_concave() -> None:
-    pass
+@pytest.mark.parametrize(
+    'poly, sit, exp',
+    [
+        (box(0, 0, 2, 2).difference(box(1, 1, 1.5, 3)), 4, 10),
+        (box(0, 0, 2, 2).difference(box(0.2, 0.5, 0.8, 3)), 4, 9),
+    ],
+)
+def test_num_insets_concave(poly, sit, exp) -> None:
+    t = Trench(poly, safe_inner_turns=sit, delta_floor=0.1)
+    assert t.num_insets == exp
