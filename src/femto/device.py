@@ -10,14 +10,16 @@ from typing import Union
 import plotly.graph_objects as go
 from femto.helpers import flatten
 from femto.marker import Marker
-from femto.trench import TrenchColumn, UTrenchColumn
+from femto.spreadsheet import Spreadsheet
+from femto.trench import TrenchColumn
+from femto.trench import UTrenchColumn
 from femto.waveguide import NasuWaveguide
 from femto.waveguide import Waveguide
-from femto.writer import MarkerWriter, UTrenchWriter
+from femto.writer import MarkerWriter
 from femto.writer import NasuWriter
 from femto.writer import TrenchWriter
+from femto.writer import UTrenchWriter
 from femto.writer import WaveguideWriter
-from femto.spreadsheet import Spreadsheet
 
 
 class Device:
@@ -175,7 +177,7 @@ class Device:
         """
 
         for key, writer in self.writers.items():
-            if verbose:
+            if verbose and writer.obj_list:
                 print(f'Exporting {key.__name__} objects...')
 
             writer = cast(Union[WaveguideWriter, NasuWriter, TrenchWriter, UTrenchWriter, MarkerWriter], writer)
