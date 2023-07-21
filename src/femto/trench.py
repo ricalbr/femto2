@@ -196,7 +196,7 @@ class Trench:
 
             return int((d_ext - d_int) / (2 * self.delta_floor)) + self.safe_inner_turns
 
-    def zigzag_mask(self) -> geometry.collection.GeometryCollection:
+    def zigzag_mask(self) -> geometry.MultiLineString:
         """Zig-zag mask.
         The function returns a Shapely geometry (MultiLineString, or more rarely, GeometryCollection) for a simple
         hatched rectangle. The spacing between the lines is given by ``self.delta_floor`` while the rectangle is the
@@ -626,6 +626,27 @@ class UTrenchColumn(TrenchColumn):
             Adjustted pillar size considering the size of the laser focus [mm].
         """
         return self.pillar_width / 2 + self.beam_waist
+
+    @property
+    def fabrication_time(self) -> float:
+        """Total fabrication time.
+
+        The fabrication time is the sum of the lengths of all the walls, floors and bedfloors of all the trenches,
+        divided by the translation speed.
+
+        Returns
+        -------
+        float
+            Total fabrication time [s].
+        """
+        t_box = sum(
+            [
+                self.nboxz * (self.n_repeat * t.wall_length / self.speed_wall + t.floor_length / self.speed_floor)
+                for t in self._trench_list
+            ]
+        )
+        t_bed = sum([b.floor_length / self.speed_floor for b in self.trenchbed])
+        return t_box + t_bed
 
     def trenchbed_shape(self) -> None:
         """Trenchbed shape.
