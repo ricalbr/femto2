@@ -10,7 +10,6 @@ import numpy as np
 import numpy.typing as npt
 from femto.helpers import flatten
 from femto.helpers import listcast
-from femto.helpers import lookahead
 from femto.helpers import nest_level
 from femto.helpers import split_mask
 from femto.marker import Marker
@@ -581,10 +580,10 @@ class TrenchWriter(Writer):
             x_floor = np.array([])
             y_floor = np.array([])
             size_last = 0
-            for (x_temp, y_temp), last_it in lookahead(trench.toolpath()):
+            for idx, (x_temp, y_temp) in enumerate(trench.toolpath()):
                 x_floor = np.append(x_floor, x_temp)
                 y_floor = np.append(y_floor, y_temp)
-                if last_it:
+                if idx == trench.num_insets:
                     size_last = x_temp.shape[0]
 
             f_decel = np.empty_like(x_floor, dtype=object)
@@ -812,10 +811,10 @@ class UTrenchWriter(TrenchWriter):
             x_bed_block = np.array([])
             y_bed_block = np.array([])
             size_last = 0
-            for (x_temp, y_temp), last_it in lookahead(bed_block.toolpath()):
+            for idx, (x_temp, y_temp) in enumerate(bed_block.toolpath()):
                 x_bed_block = np.append(x_bed_block, x_temp)
                 y_bed_block = np.append(y_bed_block, y_temp)
-                if last_it:
+                if idx == bed_block.num_insets:
                     size_last = x_temp.shape[0]
 
             f_decel = np.empty_like(x_bed_block, dtype=object)

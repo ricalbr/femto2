@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
+import functools
 import inspect
 import math
 import pathlib
@@ -66,7 +67,7 @@ class Trench:
             raise TypeError(f'Trying comparing Trench with {other.__class__.__name__}')
         return bool(self.yborder[0] >= other.yborder[0])
 
-    @property
+    @functools.cached_property
     def border(self) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]:
         """Border of the trench.
 
@@ -173,17 +174,17 @@ class Trench:
     @property
     def orientation(self) -> str:
         """Orientation of the trench block."""
-        (xmin, ymin, xmax, ymax) = self.block.minimum_rotated_rectangle.bounds
+        (xmin, ymin, xmax, ymax) = self.block.bounds
         return 'v' if (xmax - xmin) <= (ymax - ymin) else 'h'
 
-    @property
+    @functools.cached_property
     def num_insets(self) -> int:
         """Number of spiral turns."""
         if self.block.contains(self.block.convex_hull.buffer(-0.01 * self.delta_floor)):
             return self.safe_inner_turns
         else:
             # External rectangle
-            (xmin, ymin, xmax, ymax) = self.block.minimum_rotated_rectangle.bounds
+            (xmin, ymin, xmax, ymax) = self.block.bounds
             d_ext = min(xmax - xmin, ymax - ymin)
 
             # Internal rectangle
@@ -210,13 +211,9 @@ class Trench:
         shapely.MultiLineString | shapely.GeometryCollection
             Collection of hatch lines (in case a hatch line intersects with the corner of the clipping
             rectangle, which produces a point along with the usual lines).
-
-        See Also
-        --------
-        shapely.minimum_rotated_rectangle : oriented rectangular envelope that encloses an input geometry.
         """
 
-        (xmin, ymin, xmax, ymax) = self.block.minimum_rotated_rectangle.bounds
+        (xmin, ymin, xmax, ymax) = self.block.bounds
         number_of_lines = 2 + int((xmax - xmin) / self.delta_floor)
 
         coords = []
@@ -252,6 +249,7 @@ class Trench:
         path_collection = poly.intersection(mask)
         coords = []
         for line in path_collection.geoms:
+            self._floor_length += line.length + self.delta_floor
             coords.extend(line.coords)
         return np.array(coords).T
 
