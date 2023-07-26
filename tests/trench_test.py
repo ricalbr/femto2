@@ -34,6 +34,7 @@ def param() -> dict:
         'round_corner': 0.010,
         'u': [28, 29.47],
         'speed_wall': 5,
+        'speed_floor': 3,
         'speed_closed': 5,
         'speed_pos': 0.5,
         'safe_inner_turns': 8,
@@ -298,7 +299,7 @@ def test_trenchcol_default() -> None:
     assert tcol.round_corner == float(0.010)
     assert tcol.u is None
     assert tcol.speed_wall == float(4)
-    assert tcol.speed_floor == float(2.0)
+    assert tcol.speed_floor == float(4.0)
     assert tcol.speed_closed == float(5)
     assert tcol.speed_pos == float(2.0)
 
@@ -324,9 +325,9 @@ def test_trenchcol_param(param) -> None:
     assert tcol.beam_waist == float(0.002)
     assert tcol.round_corner == float(0.010)
     assert tcol.u == [28, 29.47]
-    assert tcol.speed_wall == float(5)
-    assert tcol.speed_floor == float(2)
-    assert tcol.speed_closed == float(5)
+    assert tcol.speed_wall == float(5.0)
+    assert tcol.speed_floor == float(3.0)
+    assert tcol.speed_closed == float(5.0)
     assert tcol.speed_pos == float(0.5)
 
     assert tcol.CWD == Path.cwd()
@@ -584,8 +585,8 @@ def test_utrenchcol_default() -> None:
     assert tcol.beam_waist == float(0.004)
     assert tcol.round_corner == float(0.010)
     assert tcol.u is None
-    assert tcol.speed_wall == float(4)
-    assert tcol.speed_floor == float(2.0)
+    assert tcol.speed_wall == float(4.0)
+    assert tcol.speed_floor == float(4.0)
     assert tcol.speed_closed == float(5)
     assert tcol.speed_pos == float(2.0)
     assert tcol.n_pillars == int(0)
@@ -615,7 +616,7 @@ def test_utrenchcol_param(uparam) -> None:
     assert tcol.round_corner == float(0.010)
     assert tcol.u == [28, 29.47]
     assert tcol.speed_wall == float(5)
-    assert tcol.speed_floor == float(2)
+    assert tcol.speed_floor == float(5)
     assert tcol.speed_closed == float(5)
     assert tcol.speed_pos == float(0.5)
     assert tcol.n_pillars == int(4)
