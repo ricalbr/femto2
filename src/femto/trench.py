@@ -171,7 +171,7 @@ class Trench:
         """Length of a single layer of the wall path."""
         return self._wall_length
 
-    @property
+    @cached_property
     def orientation(self) -> str:
         """Orientation of the trench block."""
         (xmin, ymin, xmax, ymax) = self.block.bounds
@@ -184,18 +184,26 @@ class Trench:
             return self.safe_inner_turns
         else:
             # External rectangle
-            (xmin, ymin, xmax, ymax) = self.block.bounds
-            d_ext = min(xmax - xmin, ymax - ymin)
+            (xmin_ext, ymin_ext, xmax_ext, ymax_ext) = self.block.bounds
 
             # Internal rectangle
-            p = (
-                np.array([[[x, y] for (x, y) in self.block.buffer(-2 * self.delta_floor).exterior.coords]], np.float32)
-                * 1e3
-            )
-            _, _, dx_int, dy_int = lir.lir(p.astype(np.int32), np.int32) / 1e3
-            d_int = min(dx_int, dy_int)
+            buffer_length = 2 * self.delta_floor
+            p = np.array([[[x, y] for (x, y) in self.block.buffer(-buffer_length).exterior.coords]], np.float32) * 1e3
+            xmin_int, ymin_int, dx_int, dy_int = lir.lir(p.astype(np.int32), np.int32) / 1e3
+            xmax_int, ymax_int = xmin_int + dx_int, ymin_int + dy_int
 
-            return int((d_ext - d_int) / (2 * self.delta_floor)) + self.safe_inner_turns
+            if self.orientation == 'h':
+                d_upper = np.abs(ymax_ext - ymax_int)
+                d_lower = np.abs(ymin_ext - ymin_int)
+            else:
+                d_upper = np.abs(xmax_ext - xmax_int)
+                d_lower = np.abs(xmin_ext - xmin_int)
+
+            # Distinguish concave / biconcave
+            if d_upper <= buffer_length or d_lower <= buffer_length:
+                return int((d_upper + d_lower) / self.delta_floor) + self.safe_inner_turns
+            else:
+                return int((d_upper + d_lower) / (2 * self.delta_floor)) + self.safe_inner_turns
 
     def zigzag_mask(self) -> geometry.MultiLineString:
         """Zig-zag mask.
