@@ -579,15 +579,18 @@ class TrenchWriter(Writer):
             # Floor script
             x_floor = np.array([])
             y_floor = np.array([])
-            size_last = 0
+            f_decel = np.array([])
+
             for idx, (x_temp, y_temp) in enumerate(trench.toolpath()):
+                if idx == trench.num_insets:
+                    f_temp = np.ones_like(x_temp, dtype=bool)
+                else:
+                    f_temp = np.empty_like(x_temp, dtype=object)
+                    f_temp[0], f_temp[-1] = True, True
+
                 x_floor = np.append(x_floor, x_temp)
                 y_floor = np.append(y_floor, y_temp)
-                if idx == trench.num_insets:
-                    size_last = x_temp.shape[0]
-
-            f_decel = np.empty_like(x_floor, dtype=object)
-            f_decel[-size_last::] = True
+                f_decel = np.append(f_decel, f_temp)
 
             self.export_array2d(
                 filename=column_path / f'trench{i + 1:03}_FLOOR.pgm',
@@ -810,15 +813,18 @@ class UTrenchWriter(TrenchWriter):
 
             x_bed_block = np.array([])
             y_bed_block = np.array([])
-            size_last = 0
+            f_decel = np.array([])
+
             for idx, (x_temp, y_temp) in enumerate(bed_block.toolpath()):
+                if idx == bed_block.num_insets:
+                    f_temp = np.ones_like(x_temp, dtype=bool)
+                else:
+                    f_temp = np.empty_like(x_temp, dtype=object)
+                    f_temp[0], f_temp[-1] = True, True
+
                 x_bed_block = np.append(x_bed_block, x_temp)
                 y_bed_block = np.append(y_bed_block, y_temp)
-                if idx == bed_block.num_insets:
-                    size_last = x_temp.shape[0]
-
-            f_decel = np.empty_like(x_bed_block, dtype=object)
-            f_decel[-size_last::] = True
+                f_decel = np.append(f_decel, f_temp)
 
             self.export_array2d(
                 filename=column_path / f'trench_BED_{i + 1:03}.pgm',
