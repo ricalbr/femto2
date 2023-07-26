@@ -366,7 +366,7 @@ class TrenchColumn:
     safe_inner_turns: int = 5  #: Number of spiral turns befor zig-zag filling
     u: list[float] | None = None  #: List of U coordinate to change irradiation power automatically [deg].
     speed_wall: float = 4.0  #: Translation speed of the wall section [mm/s].
-    speed_floor: float = 2.0  #: Translation speed of the floor section [mm/s].
+    speed_floor: float | None = None  #: Translation speed of the floor section [mm/s].
     speed_closed: float = 5.0  #: Translation speed with closed shutter [mm/s].
     speed_pos: float = 2.0  #: Positioning speed with closed shutter [mm/s].
     base_folder: str = ''  #: Location where PGM files are stored in lab PC. If empty, load files with relative path.
@@ -377,6 +377,8 @@ class TrenchColumn:
 
     def __post_init__(self):
         self.CWD: pathlib.Path = pathlib.Path.cwd()  #: Current working directory
+        if self.speed_floor is None:
+            self.speed_floor = self.speed_wall
 
     def __iter__(self) -> Iterator[Trench]:
         """Iterator that yields single trench blocks of the column.
