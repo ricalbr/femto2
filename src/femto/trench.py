@@ -1,7 +1,15 @@
 from __future__ import annotations
 
 import dataclasses
-import functools
+
+try:
+    from functools import cached_property
+except ImportError:
+
+    def cached_property():  # Python < 3.8
+        return lambda x: x
+
+
 import inspect
 import math
 import pathlib
@@ -67,7 +75,7 @@ class Trench:
             raise TypeError(f'Trying comparing Trench with {other.__class__.__name__}')
         return bool(self.yborder[0] >= other.yborder[0])
 
-    @functools.cached_property
+    @cached_property
     def border(self) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]:
         """Border of the trench.
 
@@ -177,7 +185,7 @@ class Trench:
         (xmin, ymin, xmax, ymax) = self.block.bounds
         return 'v' if (xmax - xmin) <= (ymax - ymin) else 'h'
 
-    @functools.cached_property
+    @cached_property
     def num_insets(self) -> int:
         """Number of spiral turns."""
         if self.block.contains(self.block.convex_hull.buffer(-0.01 * self.delta_floor)):
