@@ -1,18 +1,10 @@
 from __future__ import annotations
 
 import dataclasses
-
-try:
-    from functools import cached_property
-except ImportError:
-
-    def cached_property():  # Python < 3.8
-        return lambda x: x
-
-
 import inspect
 import math
 import pathlib
+from functools import cached_property
 from typing import Any
 from typing import Generator
 from typing import Iterator
