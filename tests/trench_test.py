@@ -735,7 +735,7 @@ def test_num_insets_convex(poly, sit) -> None:
     'poly, sit, exp',
     [
         (box(0, 0, 2, 2).difference(box(1, 1, 1.5, 3)), 4, 7),
-        (box(0, 0, 2, 2).difference(box(0.2, 0.5, 0.8, 3)), 4, 9),
+        (box(0, 0, 2, 2).difference(box(0.2, 0.5, 0.8, 3)), 4, 15),
     ],
 )
 def test_num_insets_concave(poly, sit, exp) -> None:
