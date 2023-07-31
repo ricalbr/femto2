@@ -67,7 +67,7 @@ class Trench:
             raise TypeError(f'Trying comparing Trench with {other.__class__.__name__}')
         return bool(self.yborder[0] >= other.yborder[0])
 
-    @cached_property
+    @property
     def border(self) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]:
         """Border of the trench.
 
