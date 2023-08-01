@@ -582,7 +582,7 @@ class TrenchWriter(Writer):
             f_decel = np.array([])
 
             for idx, (x_temp, y_temp) in enumerate(trench.toolpath()):
-                if idx == trench.num_insets:
+                if idx >= trench.num_insets:
                     f_temp = np.ones_like(x_temp, dtype=bool)
                 else:
                     f_temp = np.empty_like(x_temp, dtype=object)
