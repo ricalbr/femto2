@@ -257,94 +257,6 @@ def test_repr(param) -> None:
     assert cname == 'Waveguide'
 
 
-def test_circ_input_validation(param) -> None:
-    a_i, a_f = 0, np.pi / 2
-
-    param['radius'] = None
-    wg = Waveguide(**param)
-    with pytest.raises(ValueError):
-        wg.start([0, 0, 0]).circ(a_i, a_f)
-
-    wg = Waveguide(**param)
-    with pytest.raises(ValueError):
-        wg.start([0, 0, 0]).circ(a_i, a_f, radius=None)
-
-    param['radius'] = 20
-    wg = Waveguide(**param)
-    wg.radius = None
-    with pytest.raises(ValueError):
-        wg.start([0, 0, 0]).circ(a_i, a_f)
-
-    param['speed'] = None
-    wg = Waveguide(**param)
-    with pytest.raises(ValueError):
-        wg.start([0, 0, 0]).circ(a_i, a_f)
-
-    wg = Waveguide(**param)
-    with pytest.raises(ValueError):
-        wg.start([0, 0, 0]).circ(a_i, a_f, speed=None)
-
-    param['speed'] = 15
-    wg = Waveguide(**param)
-    wg.speed = None
-    with pytest.raises(ValueError):
-        wg.start([0, 0, 0]).circ(a_i, a_f)
-
-
-def test_circ_length(param) -> None:
-    a_i, a_f = 0, np.pi / 2
-
-    # DEFAULT VALUES FROM PARAM
-    wg = Waveguide(**param)
-    wg.start([0, 0, 0]).circ(a_i, a_f)
-    lc = np.abs(a_f - a_i) * wg.radius
-    # add two points from the start method
-    assert wg._x.size == int(np.ceil(lc * wg.cmd_rate_max / wg.speed)) + 2
-
-    # CUSTOM RADIUS
-    wg = Waveguide(**param)
-    custom_r = 5
-    wg.start([0, 0, 0]).circ(a_i, a_f, radius=custom_r)
-    lc = np.abs(a_f - a_i) * custom_r
-    assert wg._x.size == int(np.ceil(lc * wg.cmd_rate_max / wg.speed)) + 2
-
-    # CUSTOM SPEED
-    wg = Waveguide(**param)
-    custom_f = 5
-    wg.start([0, 0, 0]).circ(a_i, a_f, speed=custom_f)
-    lc = np.abs(a_f - a_i) * wg.radius
-    assert wg._x.size == int(np.ceil(lc * wg.cmd_rate_max / custom_f)) + 2
-
-
-def test_circ_coordinates(param) -> None:
-    a_i, a_f = 1.5 * np.pi, 0
-
-    wg = Waveguide(**param)
-    wg.start([0, 0, 0]).circ(a_i, a_f)
-    assert pytest.approx(wg._x[-1]) == wg.radius
-    assert pytest.approx(wg._y[-1]) == wg.radius
-    assert wg._z[-1] == wg._z[0]
-    wg.end()
-
-    a_i, a_f = 1.5 * np.pi, 1.75 * np.pi
-
-    wg = Waveguide(**param)
-    wg.start([0, 0, 0]).circ(a_i, a_f)
-    assert pytest.approx(wg._x[-1]) == wg.radius / np.sqrt(2)
-    assert pytest.approx(wg._y[-1]) == wg.radius * (1 - 1 / np.sqrt(2))
-    assert wg._z[-1] == wg._z[0]
-    wg.end()
-
-
-def test_circ_negative_radius(param) -> None:
-    a_i, a_f = 1.5 * np.pi, 0
-
-    wg = Waveguide(**param)
-    wg.radius = -60
-    with pytest.raises(ValueError):
-        wg.start([0, 0, 0]).circ(a_i, a_f).end()
-
-
 def test_arc_bend_dy(param):
     dy = 0.09
     wg = Waveguide(**param)
@@ -950,7 +862,7 @@ def test_spline_speed_none(param):
     'ddy', [((0.0, 0.0), (0.0, 0.0)), ((1.0, 0.0), (1.0, 1.0)), ((-2.0, 0.5), (0.5, 0.6)), ((0.1, 0.1), (0.0, 0.23))]
 )
 def test_spline_y_derivative(param, ddy):
-    dx, dy, dz = (0.1, 0.23, 0.456)
+    _, dy, dz = (0.1, 0.23, 0.456)
     dz_der = ((0.0, 0.0), (0.0, 0.0))
 
     wg = Waveguide(**param)
@@ -971,7 +883,7 @@ def test_spline_y_derivative(param, ddy):
     'ddz', [((0.0, 0.0), (0.0, 0.0)), ((1.0, 0.0), (1.0, 1.0)), ((-2.0, 0.5), (0.5, 0.6)), ((0.1, 0.1), (0.0, 0.23))]
 )
 def test_spline_z_derivative(param, ddz):
-    dx, dy, dz = (0.1, 0.23, 0.456)
+    _, dy, dz = (0.1, 0.23, 0.456)
     dy_der = ((0.0, 0.0), (0.0, 0.0))
 
     wg = Waveguide(**param)

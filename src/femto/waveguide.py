@@ -5,10 +5,12 @@ import functools
 from typing import Any
 
 import numpy as np
-import numpy.typing as npt
 from femto.helpers import dotdict
 from femto.laserpath import LaserPath
-from scipy import interpolate
+
+# import numpy.typing as npt
+
+# from scipy import interpolate
 
 
 @dataclasses.dataclass(repr=False)
@@ -16,7 +18,6 @@ class Waveguide(LaserPath):
     """Class that computes and stores the coordinates of an optical waveguide."""
 
     depth: float = 0.035  #: Distance for sample's bottom facet
-    radius: float = 15  #: Curvature radius
     pitch: float = 0.080  #: Distance between adjacent modes
     pitch_fa: float = 0.127  #: Distance between fiber arrays' adjacent modes (for fan-in, fan-out)
     int_dist: float | None = None  #: Directional Coupler's interaction distance
@@ -85,156 +86,6 @@ class Waveguide(LaserPath):
             Sum of two `x`-displacements Directional Coupler segments and the ``arm_length`` distance straight segment.
         """
         return 4 * self.dx_bend + 2 * self.int_length + self.arm_length
-
-    @staticmethod
-    def get_sbend_parameter(dy: float | None, radius: float | None) -> tuple[float, float]:
-        """Compute the rotation angle, and `x`-displacement for a circular S-bend.
-
-        Parameters
-        ----------
-        dy: float, optional
-            Displacement along `y`-direction [mm].
-        radius: float, optional
-            Curvature radius of the S-bend [mm]. The default value is `self.radius`
-
-        Returns
-        -------
-        tuple(float, float)
-            rotation angle [rad], `x`-displacement [mm].
-        """
-
-        if radius is None or radius <= 0:
-            raise ValueError(f'Radius should be a positive value. Given {radius}.')
-        if dy is None:
-            raise ValueError('dy is None. Give a valid input valid.')
-
-        a = np.arccos(1 - (np.abs(dy / 2) / radius))
-        dx = 2 * radius * np.sin(a)
-        return a, dx
-
-    # Methods
-    def circ(
-        self,
-        initial_angle: float,
-        final_angle: float,
-        radius: float | None = None,
-        shutter: int = 1,
-        speed: float | None = None,
-    ) -> Waveguide:
-        """Add a circular curved path to the waveguide.
-
-        Computes the points in the xy-plane that connects two angles (initial_angle and final_angle) with a circular
-        arc of a given radius. The transition speed and the shutter state during the movement can be given as input.
-
-        Parameters
-        ----------
-        initial_angle: float
-            Starting angle of the circular arc [radians].
-        final_angle: float
-            Final angle of the circular arc [radians].
-        radius: float, optional
-            Curvature radius [mm]. The default value is `self.radius`
-        shutter: int
-            State of the shutter during the transition (0: 'OFF', 1: 'ON'). The default value is 1.
-        speed: float, optional
-            Translation speed [mm/s]. The default value is `self.speed`.
-
-        Returns
-        -------
-        The object itself.
-        """
-
-        if radius is None and self.radius is None:
-            raise ValueError('Radius is None. Set Waveguide\'s "radius" attribute or give a radius as input.')
-        r = radius if radius is not None else self.radius
-        if r < 0:
-            raise ValueError('Radius is negative. Set Waveguide\'s "radius" attribute or give a radius as input.')
-
-        f = speed if speed is not None else self.speed
-        if f is None:
-            raise ValueError('Speed is None. Set Waveguide\'s "speed" attribute or give a speed as input.')
-
-        delta_angle = final_angle - initial_angle
-        num = self.num_subdivisions(np.fabs(delta_angle * r), f)
-
-        t = np.linspace(initial_angle, final_angle, num)
-        x_circ = self._x[-1] + np.fabs(r) * (-np.cos(initial_angle) + np.cos(t))
-        y_circ = self._y[-1] + np.fabs(r) * (-np.sin(initial_angle) + np.sin(t))
-        z_circ = np.repeat(self._z[-1], num)
-        f_circ = np.repeat(f, num)
-        s_circ = np.repeat(shutter, num)
-
-        # update coordinates
-        self.add_path(x_circ, y_circ, z_circ, f_circ, s_circ)
-        return self
-
-    def arc_bend(
-        self,
-        dy: float,
-        radius: float | None = None,
-        shutter: int = 1,
-        speed: float | None = None,
-    ) -> Waveguide:
-        """Concatenate two circular arc to make a circular S-bend.
-
-        The vertical displacement of the S-bend and the curvature radius are given as input.
-        Starting and ending angles of the arcs are computed automatically.
-
-        The sign of `dy` encodes the direction of the S-bend:
-
-        - `dy` > 0, upward S-bend
-        - `dy` < 0, downward S-bend
-
-        Parameters
-        ----------
-        dy: float
-            Vertical displacement of the waveguide of the S-bend [mm].
-        radius: float, optional
-            Curvature radius [mm]. The default value is `self.radius`.
-        shutter: int
-            State of the shutter during the transition (0: 'OFF', 1: 'ON'). The default value is 1.
-        speed: float, optional
-            Translation speed [mm/s]. The default value is `self.speed`.
-
-        Returns
-        -------
-        The object itself.
-        """
-
-        r = radius if radius is not None else self.radius
-        a, _ = self.get_sbend_parameter(dy, r)
-
-        if dy > 0:
-            self.circ(
-                np.pi * (3 / 2),
-                np.pi * (3 / 2) + a,
-                radius=r,
-                speed=speed,
-                shutter=shutter,
-            )
-            self.circ(
-                np.pi * (1 / 2) + a,
-                np.pi * (1 / 2),
-                radius=r,
-                speed=speed,
-                shutter=shutter,
-            )
-        else:
-            self.circ(
-                np.pi * (1 / 2),
-                np.pi * (1 / 2) - a,
-                radius=radius,
-                speed=speed,
-                shutter=shutter,
-            )
-            self.circ(
-                np.pi * (3 / 2) - a,
-                np.pi * (3 / 2),
-                radius=radius,
-                speed=speed,
-                shutter=shutter,
-            )
-        return self
 
     def arc_coupler(
         self,
@@ -320,7 +171,7 @@ class Waveguide(LaserPath):
 
         if arm_length is None and self.arm_length is None:
             raise ValueError(
-                'Arm length is None. Set Waveguide\'s "arm_length" attribute or give a valid ' 'arm length as ' 'input.'
+                'Arm length is None. Set Waveguide\'s "arm_length" attribute or give a valid arm length as input.'
             )
 
         arm_length = arm_length if arm_length is not None else self.arm_length
@@ -808,7 +659,7 @@ def main() -> None:
         wg.y_init = -wg.pitch / 2 + index * wg.pitch
         wg.start()
         wg.linear(increment)
-        wg.poly_bend((-1) ** index * wg.dy_bend, flat_peaks=0)
+        # wg.poly_bend((-1) ** index * wg.dy_bend, flat_peaks=0)
         wg.sin_bridge((-1) ** index * 0.08, (-1) ** index * 0.015)
         wg.arc_bend((-1) ** (index + 1) * wg.dy_bend)
         wg.linear(increment)

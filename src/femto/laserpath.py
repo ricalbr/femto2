@@ -20,6 +20,7 @@ class LaserPath:
     """Class that computes and stores the coordinates of a laser path."""
 
     name: str | None = None  # Name of the laser path.
+    radius: float = 15  #: Curvature radius
     scan: int = 1  #: Number of overlapped scans.
     speed: float = 1.0  #: Opened shutter translation speed `[mm/s]`.
     samplesize: tuple[float, float] = (100, 50)  #: Dimensions of the sample (x `[mm]`, y `[mm]`).
@@ -400,6 +401,32 @@ class LaserPath:
         cmd_rate = np.divide(f, dt, out=default_zero, where=(dt != 0))
         return np.array(cmd_rate, dtype=np.float32)
 
+    @staticmethod
+    def get_sbend_parameter(dy: float, radius: float) -> tuple[float, float]:
+        """Compute the rotation angle, and `x`-displacement for a circular S-bend.
+
+        Parameters
+        ----------
+        dy: float, optional
+            Displacement along `y`-direction [mm].
+        radius: float, optional
+            Curvature radius of the S-bend [mm]. The default value is `self.radius`
+
+        Returns
+        -------
+        tuple(float, float)
+            rotation angle [rad], `x`-displacement [mm].
+        """
+
+        if radius is None or radius <= 0:
+            raise ValueError(f'Radius should be a positive value. Given {radius}.')
+        if dy is None:
+            raise ValueError('dy is None. Give a valid input valid.')
+
+        a = np.arccos(1 - (np.abs(dy / 2) / radius))
+        dx = 2 * radius * np.sin(a)
+        return a, dx
+
     # Methods
     def start(self, init_pos: list[float] | None = None, speed_pos: float | None = None) -> LaserPath:
         """Start a laser path.
@@ -547,6 +574,129 @@ class LaserPath:
         s_inc = np.array([shutter])
 
         self.add_path(x_inc, y_inc, z_inc, f_inc, s_inc)
+        return self
+
+    def circ(
+        self,
+        initial_angle: float,
+        final_angle: float,
+        radius: float | None = None,
+        shutter: int = 1,
+        speed: float | None = None,
+    ) -> LaserPath:
+        """Add a circular curved path to the waveguide.
+
+        Computes the points in the xy-plane that connects two angles (initial_angle and final_angle) with a circular
+        arc of a given radius. The transition speed and the shutter state during the movement can be given as input.
+
+        Parameters
+        ----------
+        initial_angle: float
+            Starting angle of the circular arc [radians].
+        final_angle: float
+            Final angle of the circular arc [radians].
+        radius: float, optional
+            Curvature radius [mm]. The default value is `self.radius`
+        shutter: int
+            State of the shutter during the transition (0: 'OFF', 1: 'ON'). The default value is 1.
+        speed: float, optional
+            Translation speed [mm/s]. The default value is `self.speed`.
+
+        Returns
+        -------
+        The object itself.
+        """
+
+        if radius is None and self.radius is None:
+            raise ValueError('Radius is None. Set Waveguide\'s "radius" attribute or give a radius as input.')
+        r = radius if radius is not None else self.radius
+        if r < 0:
+            raise ValueError('Radius is negative. Set Waveguide\'s "radius" attribute or give a radius as input.')
+
+        f = speed if speed is not None else self.speed
+        if f is None:
+            raise ValueError('Speed is None. Set Waveguide\'s "speed" attribute or give a speed as input.')
+
+        delta_angle = final_angle - initial_angle
+        num = self.num_subdivisions(np.fabs(delta_angle * r), f)
+
+        t = np.linspace(initial_angle, final_angle, num)
+        x_circ = self._x[-1] + np.fabs(r) * (-np.cos(initial_angle) + np.cos(t))
+        y_circ = self._y[-1] + np.fabs(r) * (-np.sin(initial_angle) + np.sin(t))
+        z_circ = np.repeat(self._z[-1], num)
+        f_circ = np.repeat(f, num)
+        s_circ = np.repeat(shutter, num)
+
+        # update coordinates
+        self.add_path(x_circ, y_circ, z_circ, f_circ, s_circ)
+        return self
+
+    def arc_bend(
+        self,
+        dy: float,
+        radius: float | None = None,
+        shutter: int = 1,
+        speed: float | None = None,
+    ) -> LaserPath:
+        """Concatenate two circular arc to make a circular S-bend.
+
+        The vertical displacement of the S-bend and the curvature radius are given as input.
+        Starting and ending angles of the arcs are computed automatically.
+
+        The sign of `dy` encodes the direction of the S-bend:
+
+        - `dy` > 0, upward S-bend
+        - `dy` < 0, downward S-bend
+
+        Parameters
+        ----------
+        dy: float
+            Vertical displacement of the waveguide of the S-bend [mm].
+        radius: float, optional
+            Curvature radius [mm]. The default value is `self.radius`.
+        shutter: int
+            State of the shutter during the transition (0: 'OFF', 1: 'ON'). The default value is 1.
+        speed: float, optional
+            Translation speed [mm/s]. The default value is `self.speed`.
+
+        Returns
+        -------
+        The object itself.
+        """
+
+        r = radius if radius is not None else self.radius
+        a, _ = self.get_sbend_parameter(dy, r)
+
+        if dy > 0:
+            self.circ(
+                np.pi * (3 / 2),
+                np.pi * (3 / 2) + a,
+                radius=r,
+                speed=speed,
+                shutter=shutter,
+            )
+            self.circ(
+                np.pi * (1 / 2) + a,
+                np.pi * (1 / 2),
+                radius=r,
+                speed=speed,
+                shutter=shutter,
+            )
+        else:
+            self.circ(
+                np.pi * (1 / 2),
+                np.pi * (1 / 2) - a,
+                radius=radius,
+                speed=speed,
+                shutter=shutter,
+            )
+            self.circ(
+                np.pi * (3 / 2) - a,
+                np.pi * (3 / 2),
+                radius=radius,
+                speed=speed,
+                shutter=shutter,
+            )
         return self
 
     def num_subdivisions(self, l_curve: float = 0, speed: float | None = None) -> int:
