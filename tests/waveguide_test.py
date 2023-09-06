@@ -4,6 +4,9 @@ from contextlib import nullcontext as does_not_raise
 
 import numpy as np
 import pytest
+from femto.curves import sin_bend
+from femto.curves import spline
+from femto.curves import spline_bridge
 from femto.waveguide import coupler
 from femto.waveguide import NasuWaveguide
 from femto.waveguide import Waveguide
@@ -424,125 +427,125 @@ def test_arc_mzi_len(param):
         wg.start([0, 0, 0]).arc_mzi(dy=wg.dy_bend, arm_length=None).end()
 
 
-def test_sin_bridge_dy_default(param):
-    wg = Waveguide(**param)
-    wg.start([0, 0, 0]).sin_bridge(dy=wg.dy_bend)
-    y = wg.y
-    assert pytest.approx(y[-1] - y[0]) == wg.dy_bend
-    wg.end()
-
-
-def test_sin_bridge_dy(param):
-    dy = 0.2
-    wg = Waveguide(**param)
-    wg.start([0, 0, 0]).sin_bridge(dy=dy)
-    y = wg.y
-    assert pytest.approx(y[-1] - y[0]) == dy
-    wg.end()
-
-
-def test_sin_bridge_dy_negative(param):
-    dy = -0.5
-    wg = Waveguide(**param)
-    wg.start([0, 0, 0]).sin_bridge(dy=dy)
-    y = wg.y
-    assert y[-1] - y[0] < 0
-    assert pytest.approx(np.abs(y[-1] - y[0])) == np.abs(dy)
-    wg.end()
-
-
-def test_sin_bridge_dy_none(param):
-    wg = Waveguide(**param)
-    with pytest.raises(ValueError):
-        wg.start([0, 0, 0]).sin_bridge(dy=None).end()
-
-
-def test_sin_bridge_dz_default(param):
-    wg = Waveguide(**param)
-    wg.start([0, 0, 0]).sin_bridge(dy=wg.dy_bend)
-    z = wg.z
-    assert pytest.approx(np.max(z) - np.min(z)) == wg.dz_bridge
-    wg.end()
-
-
-def test_sin_bridge_dz_0(param):
-    wg = Waveguide(**param)
-    wg.start([0, 0, 0]).sin_bridge(dy=wg.dy_bend, dz=0)
-    z = wg.z
-    assert pytest.approx(np.max(z) - np.min(z)) == 0.0
-    wg.end()
-
-
-def test_sin_bridge_dz(param):
-    dz = 0.5
-    wg = Waveguide(**param)
-    wg.start([0, 0, 0]).sin_bridge(dy=wg.dy_bend, dz=dz)
-    z = wg.z
-    assert pytest.approx(np.max(z) - np.min(z)) == dz
-    wg.end()
-
-
-def test_sin_bridge_dz_negative(param):
-    dz = -0.89
-    wg = Waveguide(**param)
-    wg.start([0, 0, 0]).sin_bridge(dy=wg.dy_bend, dz=dz)
-    z = wg.z
-    assert pytest.approx(np.max(z) - np.min(z)) == np.abs(dz)
-    wg.end()
-
-
-def test_sin_bridge_dz_none(param):
-    wg = Waveguide(**param)
-    wg.dz_bridge = None
-    with pytest.raises(ValueError):
-        wg.start([0, 0, 0]).sin_bridge(dy=wg.dy_bend, dz=None).end()
-
-
-def test_sin_bridge_radius(param):
-    r = 15
-    wg = Waveguide(**param)
-    wg.start([0, 0, 0]).sin_bridge(dy=wg.dy_bend, dz=wg.dz_bridge, radius=r)
-    x = wg.x
-    assert pytest.approx(x[-1] - x[0]) == wg.get_sbend_parameter(wg.dy_bend, r)[1]
-    wg.end()
-
-
-def test_sin_bridge_radius_negative(param):
-    r = -10
-    wg = Waveguide(**param)
-    with pytest.raises(ValueError):
-        wg.start([0, 0, 0]).sin_bridge(dy=wg.dy_bend, dz=wg.dz_bridge, radius=r).end()
-
-
-def test_sin_bridge_radius_none(param):
-    wg = Waveguide(**param)
-    wg.radius = None
-    with pytest.raises(ValueError):
-        wg.start([0, 0, 0]).sin_bridge(dy=wg.dy_bend, dz=wg.dz_bridge, radius=None).end()
-
-
-def test_sin_bridge_speed(param):
-    wg = Waveguide(**param)
-    wg.speed = None
-    with pytest.raises(ValueError):
-        wg.start([0, 0, 0]).sin_bridge(dy=wg.dy_bend, dz=wg.dz_bridge, radius=None, speed=None).end()
-
-
-def test_sin_bridge_length(param):
-    r = 11
-    wg = Waveguide(**param)
-    wg.start([0, 0, 0]).sin_bridge(dy=wg.dy_bend, dz=wg.dz_bridge, radius=r)
-    x, y, z, *_ = wg.points
-    assert pytest.approx(x[-1] - x[0]) == wg.get_sbend_parameter(wg.dy_bend, np.abs(r))[1]
-    assert pytest.approx(np.max(y) - np.min(y)) == wg.dy_bend
-    assert pytest.approx(y[-1] - y[0]) == wg.dy_bend
-    assert pytest.approx(np.max(z) - np.min(z)) == wg.dz_bridge
-    wg.end()
+# def test_sin_bridge_dy_default(param):
+#     wg = Waveguide(**param)
+#     wg.start([0, 0, 0]).bend(dy=wg.dy_bend, dz=0, fx=s)
+#     y = wg.y
+#     assert pytest.approx(y[-1] - y[0]) == wg.dy_bend
+#     wg.end()
+#
+#
+# def test_sin_bridge_dy(param):
+#     dy = 0.2
+#     wg = Waveguide(**param)
+#     wg.start([0, 0, 0]).sin_bridge(dy=dy)
+#     y = wg.y
+#     assert pytest.approx(y[-1] - y[0]) == dy
+#     wg.end()
+#
+#
+# def test_sin_bridge_dy_negative(param):
+#     dy = -0.5
+#     wg = Waveguide(**param)
+#     wg.start([0, 0, 0]).sin_bridge(dy=dy)
+#     y = wg.y
+#     assert y[-1] - y[0] < 0
+#     assert pytest.approx(np.abs(y[-1] - y[0])) == np.abs(dy)
+#     wg.end()
+#
+#
+# def test_sin_bridge_dy_none(param):
+#     wg = Waveguide(**param)
+#     with pytest.raises(ValueError):
+#         wg.start([0, 0, 0]).sin_bridge(dy=None).end()
+#
+#
+# def test_sin_bridge_dz_default(param):
+#     wg = Waveguide(**param)
+#     wg.start([0, 0, 0]).sin_bridge(dy=wg.dy_bend)
+#     z = wg.z
+#     assert pytest.approx(np.max(z) - np.min(z)) == wg.dz_bridge
+#     wg.end()
+#
+#
+# def test_sin_bridge_dz_0(param):
+#     wg = Waveguide(**param)
+#     wg.start([0, 0, 0]).sin_bridge(dy=wg.dy_bend, dz=0)
+#     z = wg.z
+#     assert pytest.approx(np.max(z) - np.min(z)) == 0.0
+#     wg.end()
+#
+#
+# def test_sin_bridge_dz(param):
+#     dz = 0.5
+#     wg = Waveguide(**param)
+#     wg.start([0, 0, 0]).sin_bridge(dy=wg.dy_bend, dz=dz)
+#     z = wg.z
+#     assert pytest.approx(np.max(z) - np.min(z)) == dz
+#     wg.end()
+#
+#
+# def test_sin_bridge_dz_negative(param):
+#     dz = -0.89
+#     wg = Waveguide(**param)
+#     wg.start([0, 0, 0]).sin_bridge(dy=wg.dy_bend, dz=dz)
+#     z = wg.z
+#     assert pytest.approx(np.max(z) - np.min(z)) == np.abs(dz)
+#     wg.end()
+#
+#
+# def test_sin_bridge_dz_none(param):
+#     wg = Waveguide(**param)
+#     wg.dz_bridge = None
+#     with pytest.raises(ValueError):
+#         wg.start([0, 0, 0]).sin_bridge(dy=wg.dy_bend, dz=None).end()
+#
+#
+# def test_sin_bridge_radius(param):
+#     r = 15
+#     wg = Waveguide(**param)
+#     wg.start([0, 0, 0]).sin_bridge(dy=wg.dy_bend, dz=wg.dz_bridge, radius=r)
+#     x = wg.x
+#     assert pytest.approx(x[-1] - x[0]) == wg.get_sbend_parameter(wg.dy_bend, r)[1]
+#     wg.end()
+#
+#
+# def test_sin_bridge_radius_negative(param):
+#     r = -10
+#     wg = Waveguide(**param)
+#     with pytest.raises(ValueError):
+#         wg.start([0, 0, 0]).sin_bridge(dy=wg.dy_bend, dz=wg.dz_bridge, radius=r).end()
+#
+#
+# def test_sin_bridge_radius_none(param):
+#     wg = Waveguide(**param)
+#     wg.radius = None
+#     with pytest.raises(ValueError):
+#         wg.start([0, 0, 0]).sin_bridge(dy=wg.dy_bend, dz=wg.dz_bridge, radius=None).end()
+#
+#
+# def test_sin_bridge_speed(param):
+#     wg = Waveguide(**param)
+#     wg.speed = None
+#     with pytest.raises(ValueError):
+#         wg.start([0, 0, 0]).sin_bridge(dy=wg.dy_bend, dz=wg.dz_bridge, radius=None, speed=None).end()
+#
+#
+# def test_sin_bridge_length(param):
+#     r = 11
+#     wg = Waveguide(**param)
+#     wg.start([0, 0, 0]).sin_bridge(dy=wg.dy_bend, dz=wg.dz_bridge, radius=r)
+#     x, y, z, *_ = wg.points
+#     assert pytest.approx(x[-1] - x[0]) == wg.get_sbend_parameter(wg.dy_bend, np.abs(r))[1]
+#     assert pytest.approx(np.max(y) - np.min(y)) == wg.dy_bend
+#     assert pytest.approx(y[-1] - y[0]) == wg.dy_bend
+#     assert pytest.approx(np.max(z) - np.min(z)) == wg.dz_bridge
+#     wg.end()
 
 
 def test_sin_bend_default(param):
     wg = Waveguide(**param)
-    wg.start([0, 0, 0]).sin_bend(dy=wg.dy_bend)
+    wg.start([0, 0, 0]).bend(dy=wg.dy_bend, dz=0.0, fx=sin_bend)
     x, y, z, *_ = wg.points
     assert pytest.approx(x[-1] - x[0]) == wg.get_sbend_parameter(wg.dy_bend, np.abs(wg.radius))[1]
     assert pytest.approx(np.max(y) - np.min(y)) == wg.dy_bend
@@ -554,7 +557,7 @@ def test_sin_bend_default(param):
 def test_sin_bend_values(param):
     r = 23
     wg = Waveguide(**param)
-    wg.start([0, 0, 0]).sin_bend(dy=wg.dy_bend, radius=r)
+    wg.start([0, 0, 0]).bend(dy=wg.dy_bend, dz=0.0, fx=sin_bend, radius=r)
     x, y, z, *_ = wg.points
     assert pytest.approx(x[-1] - x[0]) == wg.get_sbend_parameter(wg.dy_bend, np.abs(r))[1]
     assert pytest.approx(np.max(y) - np.min(y)) == wg.dy_bend
@@ -565,23 +568,11 @@ def test_sin_bend_values(param):
     r = 17
     dy = 0.9876
     wg = Waveguide(**param)
-    wg.start([0, 0, 0]).sin_bend(dy=dy, radius=r)
+    wg.start([0, 0, 0]).bend(dy=dy, dz=0.0, fx=sin_bend, radius=r)
     x, y, z, *_ = wg.points
     assert pytest.approx(x[-1] - x[0]) == wg.get_sbend_parameter(dy, np.abs(r))[1]
     assert pytest.approx(np.max(y) - np.min(y)) == dy
     assert pytest.approx(y[-1] - y[0]) == dy
-    assert pytest.approx(np.max(z) - np.min(z)) == 0.0
-    wg.end()
-
-
-def test_sin_comp_displacements(param):
-    r = 15.3
-    dy = 0.123
-    wg = Waveguide(**param)
-    wg.start([0, 0, 0]).sin_comp(dy=dy, radius=r)
-    x, y, z, *_ = wg.points
-    assert pytest.approx(np.max(y) - np.min(y)) == dy
-    assert pytest.approx(y[-1] - y[0]) == 0.0
     assert pytest.approx(np.max(z) - np.min(z)) == 0.0
     wg.end()
 
@@ -592,31 +583,31 @@ def test_sin_acc_len(param):
     i_len = 1
 
     wg = Waveguide(**param)
-    wg.start([0, 0, 0]).sin_coupler(dy=wg.dy_bend)
+    wg.start([0, 0, 0]).coupler(dy=wg.dy_bend, dz=0.0, fx=sin_bend)
     x = wg.x
     assert pytest.approx(x[-1] - x[0]) == 2 * wg.get_sbend_parameter(wg.dy_bend, wg.radius)[1] + wg.int_length
     wg.end()
 
     wg = Waveguide(**param)
-    wg.start([0, 0, 0]).sin_coupler(dy=dy)
+    wg.start([0, 0, 0]).coupler(dy=dy, dz=0.0, fx=sin_bend)
     x = wg.x
     assert pytest.approx(x[-1] - x[0]) == 2 * wg.get_sbend_parameter(dy, wg.radius)[1] + wg.int_length
     wg.end()
 
     wg = Waveguide(**param)
-    wg.start([0, 0, 0]).sin_coupler(dy=dy, radius=r)
+    wg.start([0, 0, 0]).coupler(dy=dy, dz=0.0, fx=sin_bend, radius=r)
     x = wg.x
     assert pytest.approx(x[-1] - x[0]) == 2 * wg.get_sbend_parameter(dy, r)[1] + wg.int_length
     wg.end()
 
     wg = Waveguide(**param)
-    wg.start([0, 0, 0]).sin_coupler(dy=dy, radius=r, int_length=i_len)
+    wg.start([0, 0, 0]).coupler(dy=dy, dz=0.0, fx=sin_bend, radius=r, int_length=i_len)
     x = wg.x
     assert pytest.approx(x[-1] - x[0]) == 2 * wg.get_sbend_parameter(dy, r)[1] + i_len
     wg.end()
 
     wg = Waveguide(**param)
-    wg.start([0, 0, 0]).sin_coupler(dy=wg.dy_bend, int_length=-i_len)
+    wg.start([0, 0, 0]).coupler(dy=wg.dy_bend, dz=0.0, fx=sin_bend, int_length=-i_len)
     x = wg.x
     assert pytest.approx(x[-1] - x[0]) == 2 * wg.get_sbend_parameter(wg.dy_bend, wg.radius)[1] + i_len
     wg.end()
@@ -624,7 +615,7 @@ def test_sin_acc_len(param):
     wg = Waveguide(**param)
     wg.int_length = None
     with pytest.raises(ValueError):
-        wg.start([0, 0, 0]).sin_coupler(dy=wg.dy_bend, int_length=None).end()
+        wg.start([0, 0, 0]).coupler(dy=dy, dz=0.0, fx=sin_bend, int_length=None).end()
 
 
 def test_sin_mzi_len(param):
@@ -634,7 +625,7 @@ def test_sin_mzi_len(param):
     a_len = 8
 
     wg = Waveguide(**param)
-    wg.start([0, 0, 0]).sin_mzi(dy=wg.dy_bend)
+    wg.start([0, 0, 0]).mzi(dy=wg.dy_bend, dz=0.0, fx=sin_bend)
     x = wg.x
     assert (
         pytest.approx(x[-1] - x[0])
@@ -643,7 +634,7 @@ def test_sin_mzi_len(param):
     wg.end()
 
     wg = Waveguide(**param)
-    wg.start([0, 0, 0]).sin_mzi(dy=dy)
+    wg.start([0, 0, 0]).mzi(dy=dy, dz=0.0, fx=sin_bend)
     x = wg.x
     assert (
         pytest.approx(x[-1] - x[0]) == 4 * wg.get_sbend_parameter(dy, wg.radius)[1] + 2 * wg.int_length + wg.arm_length
@@ -651,25 +642,25 @@ def test_sin_mzi_len(param):
     wg.end()
 
     wg = Waveguide(**param)
-    wg.start([0, 0, 0]).sin_mzi(dy=dy, radius=r)
+    wg.start([0, 0, 0]).mzi(dy=dy, dz=0.0, fx=sin_bend, radius=r)
     x = wg.x
     assert pytest.approx(x[-1] - x[0]) == 4 * wg.get_sbend_parameter(dy, r)[1] + 2 * wg.int_length + wg.arm_length
     wg.end()
 
     wg = Waveguide(**param)
-    wg.start([0, 0, 0]).sin_mzi(dy=dy, radius=r, int_length=i_len)
+    wg.start([0, 0, 0]).mzi(dy=dy, dz=0.0, fx=sin_bend, radius=r, int_length=i_len)
     x = wg.x
     assert pytest.approx(x[-1] - x[0]) == 4 * wg.get_sbend_parameter(dy, r)[1] + 2 * i_len + wg.arm_length
     wg.end()
 
     wg = Waveguide(**param)
-    wg.start([0, 0, 0]).sin_mzi(dy=dy, radius=r, int_length=i_len, arm_length=a_len)
+    wg.start([0, 0, 0]).mzi(dy=dy, dz=0.0, fx=sin_bend, radius=r, int_length=i_len, arm_length=a_len)
     x = wg.x
     assert pytest.approx(x[-1] - x[0]) == 4 * wg.get_sbend_parameter(dy, r)[1] + 2 * i_len + a_len
     wg.end()
 
     wg = Waveguide(**param)
-    wg.start([0, 0, 0]).sin_mzi(dy=wg.dy_bend, int_length=-i_len, arm_length=-a_len)
+    wg.start([0, 0, 0]).mzi(dy=wg.dy_bend, dz=0.0, fx=sin_bend, int_length=-i_len, arm_length=-a_len)
     x = wg.x
     assert pytest.approx(x[-1] - x[0]) == 4 * wg.get_sbend_parameter(wg.dy_bend, wg.radius)[1] + 2 * i_len + a_len
     wg.end()
@@ -677,7 +668,7 @@ def test_sin_mzi_len(param):
     wg = Waveguide(**param)
     wg.arm_length = None
     with pytest.raises(ValueError):
-        wg.start([0, 0, 0]).sin_mzi(dy=wg.dy_bend, arm_length=None).end()
+        wg.start([0, 0, 0]).mzi(dy=dy, dz=0.0, fx=sin_bend, arm_length=None).end()
 
 
 def test_spline_dy_default(param):
@@ -685,7 +676,7 @@ def test_spline_dy_default(param):
     dz = 0.01
 
     wg = Waveguide(**param)
-    wg.start([0, 0, 0]).spline(disp_x=dx, dy=wg.dy_bend, dz=dz)
+    wg.start([0, 0, 0]).bend(disp_x=dx, dy=wg.dy_bend, dz=dz, fx=spline)
     x, y, z, *_ = wg.points
     assert pytest.approx(x[-1] - x[0]) == dx
     assert pytest.approx(y[-1] - y[0]) == wg.dy_bend
@@ -699,7 +690,7 @@ def test_spline_dy_custom(param):
     dz = 0.15
 
     wg = Waveguide(**param)
-    wg.start([0, 0, 0]).spline(disp_x=dx, dy=dy, dz=dz)
+    wg.start([0, 0, 0]).bend(disp_x=dx, dy=dy, dz=dz, fx=spline)
     x, y, z, *_ = wg.points
     assert pytest.approx(x[-1] - x[0]) == dx
     assert pytest.approx(y[-1] - y[0]) == dy
@@ -707,7 +698,7 @@ def test_spline_dy_custom(param):
     wg.end()
 
     wg = Waveguide(**param)
-    wg.start([0, 0, 0]).spline(disp_x=dx, dy=-dy, dz=dz)
+    wg.start([0, 0, 0]).bend(disp_x=dx, dy=-dy, dz=dz, fx=spline)
     x, y, z, *_ = wg.points
     assert pytest.approx(x[-1] - x[0]) == dx
     assert pytest.approx(y[-1] - y[0]) == -dy
@@ -721,7 +712,7 @@ def test_spline_dy_none(param):
 
     wg = Waveguide(**param)
     with pytest.raises(ValueError):
-        wg.start([0, 0, 0]).spline(disp_x=dx, dy=None, dz=dz).end()
+        wg.start([0, 0, 0]).bend(disp_x=dx, dy=None, dz=dz, fx=spline).end()
 
 
 def test_spline_dz_default(param):
@@ -729,7 +720,7 @@ def test_spline_dz_default(param):
     dy = 0.01
 
     wg = Waveguide(**param)
-    wg.start([0, 0, 0]).spline(disp_x=dx, dy=dy, dz=wg.dz_bridge)
+    wg.start([0, 0, 0]).bend(disp_x=dx, dy=dy, dz=wg.dz_bridge, fx=spline)
     x, y, z, *_ = wg.points
     assert pytest.approx(x[-1] - x[0]) == dx
     assert pytest.approx(y[-1] - y[0]) == dy
@@ -743,7 +734,7 @@ def test_spline_dz_custom(param):
     dz = 1.2
 
     wg = Waveguide(**param)
-    wg.start([0, 0, 0]).spline(disp_x=dx, dy=dy, dz=dz)
+    wg.start([0, 0, 0]).bend(disp_x=dx, dy=dy, dz=dz, fx=spline)
     x, y, z, *_ = wg.points
     assert pytest.approx(x[-1] - x[0]) == dx
     assert pytest.approx(y[-1] - y[0]) == dy
@@ -751,7 +742,7 @@ def test_spline_dz_custom(param):
     wg.end()
 
     wg = Waveguide(**param)
-    wg.start([0, 0, 0]).spline(disp_x=dx, dy=dy, dz=-dz)
+    wg.start([0, 0, 0]).bend(disp_x=dx, dy=dy, dz=-dz, fx=spline)
     x, y, z, *_ = wg.points
     assert pytest.approx(x[-1] - x[0]) == dx
     assert pytest.approx(y[-1] - y[0]) == dy
@@ -762,10 +753,11 @@ def test_spline_dz_custom(param):
 def test_spline_dz_none(param):
     dx = 7
     dy = 0.01
+    param['dz_bridge'] = None
 
     wg = Waveguide(**param)
     with pytest.raises(ValueError):
-        wg.start([0, 0, 0]).spline(disp_x=dx, dy=dy, dz=None).end()
+        wg.start([0, 0, 0]).bend(disp_x=dx, dy=dy, dz=None, fx=spline).end()
 
 
 def test_spline_init_pos_default(param):
@@ -775,7 +767,7 @@ def test_spline_init_pos_default(param):
     init_p = [-1, 5, -0.21]
 
     wg = Waveguide(**param)
-    wg.start(init_p).spline(disp_x=dx, dy=dy, dz=dz)
+    wg.start(init_p).bend(disp_x=dx, dy=dy, dz=dz, fx=spline)
     x, y, z, *_ = wg.points
     assert pytest.approx(x[-1]) == dx + init_p[0]
     assert pytest.approx(y[-1]) == dy + init_p[1]
@@ -793,7 +785,7 @@ def test_spline_init_pos_custom(param):
     wg.x_init = 1.0
     wg.y_init = 2.0
     wg.z_init = 3.0
-    wg.start(i_pos).spline(disp_x=dx, dy=dy, dz=dz)
+    wg.start(i_pos).bend(disp_x=dx, dy=dy, dz=dz, fx=spline)
     x, y, z, *_ = wg.points
     assert pytest.approx(x[-1]) == dx + i_pos[0]
     assert pytest.approx(y[-1]) == dy + i_pos[1]
@@ -811,7 +803,7 @@ def test_spline_init_none(param):
     wg.x_init = None
     wg.y_init = None
     wg.z_init = None
-    wg.start([x0, y0, z0]).spline(disp_x=dx, dy=dy, dz=dz)
+    wg.start([x0, y0, z0]).bend(disp_x=dx, dy=dy, dz=dz, fx=spline)
     x, y, z, *_ = wg.points
     assert pytest.approx(x[-1]) == dx + x0
     assert pytest.approx(y[-1]) == dy + y0
@@ -823,7 +815,7 @@ def test_spline_radius_default(param):
     dy, dz = (0.3, 0.69)
 
     wg = Waveguide(**param)
-    wg.start([0, 0, 0]).spline(disp_x=None, dy=dy, dz=dz)
+    wg.start([0, 0, 0]).bend(disp_x=None, dy=dy, dz=dz, fx=spline)
     x = wg.x
     assert pytest.approx(x[-1]) == wg.get_sbend_parameter(np.sqrt(dy**2 + dz**2), wg.radius)[1]
     wg.end()
@@ -834,7 +826,7 @@ def test_spline_radius_custom(param):
     r = 90
 
     wg = Waveguide(**param)
-    wg.start([0, 0, 0]).spline(disp_x=None, dy=dy, dz=dz, radius=r)
+    wg.start([0, 0, 0]).bend(disp_x=None, dy=dy, dz=dz, fx=spline, radius=r)
     x = wg.x
     assert pytest.approx(x[-1]) == wg.get_sbend_parameter(np.sqrt(dy**2 + dz**2), r)[1]
     wg.end()
@@ -847,15 +839,15 @@ def test_spline_radius_none(param):
     wg = Waveguide(**param)
     wg.radius = None
     with pytest.raises(ValueError):
-        wg.start([0, 0, 0]).spline(disp_x=None, dy=dy, dz=dz, radius=r).end()
+        wg.start([0, 0, 0]).bend(disp_x=None, dy=dy, dz=dz, fx=spline, radius=r).end()
 
 
 def test_spline_speed_none(param):
-    dx, dy, dz = (0.1, 0.23, 0.456)
+    _, dy, dz = (0.1, 0.23, 0.456)
     wg = Waveguide(**param)
     wg.speed = None
     with pytest.raises(ValueError):
-        wg.start([0, 0, 0]).spline(disp_x=dx, dy=dy, dz=dz, speed=None).end()
+        wg.start([0, 0, 0]).bend(disp_x=None, dy=dy, dz=dz, fx=spline, speed=None).end()
 
 
 @pytest.mark.parametrize(
@@ -866,7 +858,7 @@ def test_spline_y_derivative(param, ddy):
     dz_der = ((0.0, 0.0), (0.0, 0.0))
 
     wg = Waveguide(**param)
-    wg.start([0, 0, 0]).spline(dy=dy, dz=dz, y_derivatives=ddy, z_derivatives=dz_der)
+    wg.start([0, 0, 0]).bend(dy=dy, dz=dz, fx=spline, y_derivatives=ddy, z_derivatives=dz_der)
 
     # Extract the x and y coordinates as separate arrays
     x, y, z = wg.path3d
@@ -887,7 +879,7 @@ def test_spline_z_derivative(param, ddz):
     dy_der = ((0.0, 0.0), (0.0, 0.0))
 
     wg = Waveguide(**param)
-    wg.start([0, 0, 0]).spline(dy=dy, dz=dz, y_derivatives=dy_der, z_derivatives=ddz)
+    wg.start([0, 0, 0]).bend(dy=dy, dz=dz, fx=spline, y_derivatives=dy_der, z_derivatives=ddz)
 
     # Extract the x and y coordinates as separate arrays
     x, y, z = wg.path3d
@@ -924,7 +916,7 @@ def test_curvature_radius_default(param) -> None:
 
 def test_cmd_rate(param) -> None:
     wg = Waveguide(**param)
-    wg.start().linear([1, 2, 3], mode='abs').sin_mzi(wg.dy_bend).linear([4, 5, 6]).end()
+    wg.start().linear([1, 2, 3], mode='abs').bend(dy=wg.dy_bend, dz=0.0, fx=sin_bend).linear([4, 5, 6]).end()
 
     assert np.mean(wg.cmd_rate) <= wg.cmd_rate_max
 
@@ -932,25 +924,25 @@ def test_cmd_rate(param) -> None:
 def test_spline_bridge_error(param) -> None:
     wg = Waveguide(**param)
     with pytest.raises(ValueError):
-        wg.start().spline_bridge(disp_x=None, dy=None, dz=None).end()
+        wg.start().bend(disp_x=None, dy=None, dz=None, fx=spline_bridge).end()
 
     with pytest.raises(ValueError):
-        wg.start().spline_bridge(disp_x=None, dy=0.05, dz=None).end()
+        wg.start().bend(disp_x=None, dy=0.05, dz=None, fx=spline_bridge).end()
 
     with pytest.raises(ValueError):
-        wg.start().spline_bridge(disp_x=None, dy=None, dz=0.006).end()
+        wg.start().bend(disp_x=None, dy=None, dz=0.006, fx=spline_bridge).end()
 
 
 def test_spline_bridge_speed(param) -> None:
     dy, dz, f_custom = (0.06, 0.006, 99)
 
     wg = Waveguide(**param)
-    wg.start().spline_bridge(disp_x=None, dy=dy, dz=dz)
+    wg.start().bend(disp_x=None, dy=dy, dz=dz, fx=spline_bridge)
     assert wg._f[-1] == wg.speed
     wg.end()
 
     wg = Waveguide(**param)
-    wg.start().spline_bridge(disp_x=None, dy=dy, dz=dz, speed=f_custom)
+    wg.start().bend(disp_x=None, dy=dy, dz=dz, fx=spline_bridge, speed=f_custom)
     assert wg._f[-1] == f_custom
     wg.end()
 
@@ -959,13 +951,13 @@ def test_spline_bridge_dx(param) -> None:
     dx, dy, dz = (10, 0.06, 0.006)
 
     wg = Waveguide(**param)
-    wg.start([0, 0, 0]).spline_bridge(disp_x=None, dy=dy, dz=dz)
-    assert pytest.approx(wg.x[-1]) == 2 * wg.get_sbend_parameter(dy=np.sqrt(dy**2 + dz**2), radius=wg.radius)[-1]
+    wg.start([0, 0, 0]).bend(disp_x=None, dy=dy, dz=dz, fx=spline_bridge)
+    assert pytest.approx(wg.x[-1]) == wg.get_sbend_parameter(dy=np.sqrt(dy**2 + dz**2), radius=wg.radius)[-1]
     wg.end()
 
     wg = Waveguide(**param)
-    wg.start([0, 0, 0]).spline_bridge(disp_x=dx, dy=dy, dz=dz)
-    assert pytest.approx(wg.x[-1]) == 2 * dx
+    wg.start([0, 0, 0]).bend(disp_x=dx, dy=dy, dz=dz, fx=spline_bridge)
+    assert pytest.approx(wg.x[-1]) == dx
     wg.end()
 
 
@@ -973,7 +965,7 @@ def test_spline_bridge_dy_dz(param) -> None:
     dx, dy, dz = (15, 0.789, 0.123)
 
     wg = Waveguide(**param)
-    wg.start([0, 0, 0]).spline_bridge(disp_x=dx, dy=dy, dz=dz)
+    wg.start([0, 0, 0]).bend(disp_x=dx, dy=dy, dz=dz, fx=spline_bridge)
     assert pytest.approx(wg.y[-1]) == dy
     assert pytest.approx(wg.z[-1] - wg.z[0], abs=1e-8) == 0.0
     assert pytest.approx(np.max(wg.z) - np.min(wg.z)) == dz
@@ -984,7 +976,7 @@ def test_spline_bridge_derivatives(param) -> None:
     dx, dy, dz = (19.45, 12.38, 3.56)
     wg = Waveguide(**param)
 
-    wg.start([0, 0, 0.5]).spline_bridge(disp_x=dx, dy=dy, dz=dz)
+    wg.start([0, 0, 0.5]).bend(disp_x=dx, dy=dy, dz=dz, fx=spline_bridge)
     x, y, z = wg.path3d
     assert pytest.approx((y[1] - y[0]) / (x[1] - x[0]), abs=1e-2) == 0.0
     assert pytest.approx((y[-2] - y[-1]) / (x[-2] - x[-1]), abs=1e-2) == 0.0

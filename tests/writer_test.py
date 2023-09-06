@@ -5,16 +5,19 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+from femto.curves import sin_bend
 from femto.helpers import dotdict
 from femto.helpers import flatten
 from femto.helpers import listcast
 from femto.marker import Marker
-from femto.trench import TrenchColumn, UTrenchColumn
+from femto.trench import TrenchColumn
+from femto.trench import UTrenchColumn
 from femto.waveguide import NasuWaveguide
 from femto.waveguide import Waveguide
-from femto.writer import MarkerWriter, UTrenchWriter
+from femto.writer import MarkerWriter
 from femto.writer import NasuWriter
 from femto.writer import TrenchWriter
+from femto.writer import UTrenchWriter
 from femto.writer import WaveguideWriter
 from femto.writer import Writer
 
@@ -40,8 +43,8 @@ def list_wg() -> list[Waveguide]:
     for i, wg in enumerate(coup):
         wg.start([-2, i * wg.pitch, 0.035])
         wg.linear([5, 0, 0])
-        wg.sin_coupler((-1) ** i * wg.dy_bend)
-        wg.sin_coupler((-1) ** i * wg.dy_bend)
+        wg.coupler(dy=(-1) ** i * wg.dy_bend, dz=0, fx=sin_bend)
+        wg.coupler(dy=(-1) ** i * wg.dy_bend, dz=0, fx=sin_bend)
         wg.linear([5, 0, 0])
         wg.end()
     return coup
@@ -55,8 +58,8 @@ def list_ng() -> list[NasuWaveguide]:
     for i, wg in enumerate(coup):
         wg.start([-2, i * wg.pitch, 0.035])
         wg.linear([5, 0, 0])
-        wg.sin_coupler((-1) ** i * wg.dy_bend)
-        wg.sin_coupler((-1) ** i * wg.dy_bend)
+        wg.coupler(dy=(-1) ** i * wg.dy_bend, dz=0, fx=sin_bend)
+        wg.coupler(dy=(-1) ** i * wg.dy_bend, dz=0, fx=sin_bend)
         wg.linear([5, 0, 0])
         wg.end()
     return coup

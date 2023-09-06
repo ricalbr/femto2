@@ -1,17 +1,19 @@
 from __future__ import annotations
-from femto import __file__ as fpath
+
+from contextlib import nullcontext as does_not_raise
+from itertools import product
+from pathlib import Path
 
 import numpy as np
+import openpyxl
 import pytest
+from femto import __file__ as fpath
+from femto.curves import sin_bend
 from femto.device import Device
 from femto.helpers import dotdict
 from femto.marker import Marker
 from femto.spreadsheet import Spreadsheet
-from itertools import product
 from femto.waveguide import Waveguide
-from pathlib import Path
-import openpyxl
-from contextlib import nullcontext as does_not_raise
 
 src_path = Path(fpath).parent
 dot_path = Path('.').cwd()
@@ -48,8 +50,8 @@ def list_wg() -> list[Waveguide]:
     for i, wg in enumerate(coup):
         wg.start([-2, i * wg.pitch, 0.035])
         wg.linear([5, 0, 0])
-        wg.sin_coupler((-1) ** i * wg.dy_bend)
-        wg.sin_coupler((-1) ** i * wg.dy_bend)
+        wg.coupler(dy=(-1) ** i * wg.dy_bend, dz=0, fx=sin_bend)
+        wg.coupler(dy=(-1) ** i * wg.dy_bend, dz=0, fx=sin_bend)
         wg.linear([5, 0, 0])
         wg.end()
     return coup
@@ -139,8 +141,6 @@ def device_redd_cols(redd_cols, non_redd_cols, gc_param):
 
     dev = Device(**gc_param)
     ints = iter(range(2, 500))
-
-    i_global = 0
 
     for i_guide in range(10):
 

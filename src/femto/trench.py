@@ -12,6 +12,7 @@ from typing import TypeVar
 import largestinteriorrectangle as lir
 import numpy as np
 import numpy.typing as npt
+from femto.curves import sin_bend
 from femto.helpers import almost_equal
 from femto.helpers import dotdict
 from femto.helpers import flatten
@@ -714,9 +715,9 @@ def main() -> None:
     coup = [Waveguide(**PARAM_WG) for _ in range(20)]
     for i, wg in enumerate(coup):
         wg.start([-2, i * wg.pitch, 0.035])
-        wg.sin_coupler((-1) ** i * wg.dy_bend)
+        wg.coupler(dy=(-1) ** i * wg.dy_bend, dz=0, fx=sin_bend)
         x_c = wg.x[-1]
-        wg.sin_coupler((-1) ** i * wg.dy_bend)
+        wg.coupler(dy=(-1) ** i * wg.dy_bend, dz=0, fx=sin_bend)
         wg.end()
 
     # Trench

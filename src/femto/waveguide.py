@@ -1,16 +1,12 @@
 from __future__ import annotations
 
 import dataclasses
-import functools
 from typing import Any
+from typing import Callable
 
 import numpy as np
 from femto.helpers import dotdict
 from femto.laserpath import LaserPath
-
-# import numpy.typing as npt
-
-# from scipy import interpolate
 
 
 @dataclasses.dataclass(repr=False)
@@ -31,8 +27,7 @@ class Waveguide(LaserPath):
         if self.z_init is None:
             self.z_init = self.depth
 
-        # Adjust the pitch for the glass shrinking. Only change the external pitch in case of Fan-IN and Fan-out
-        # segments.
+        # Adjust the pitch for the glass shrinking. Only change the external pitch in case of fan-in/out segments.
         if self.pitch == self.pitch_fa:
             self.pitch /= self.shrink_correction_factor
         self.pitch_fa /= self.shrink_correction_factor
@@ -181,67 +176,46 @@ class Waveguide(LaserPath):
         self.arc_coupler(dy, radius=radius, int_length=int_length, speed=speed, shutter=shutter)
         return self
 
-    # TODO: test disp_x
-    # TODO: togliere dz optional
-    def sin_bridge(
+    def bend(
         self,
         dy: float,
-        dz: float | None = None,
+        dz: float,
+        fx: Callable,
         disp_x: float | None = None,
-        flat_peaks: float = 0.0,
-        omega: tuple[float, float] = (1.0, 2.0),
         radius: float | None = None,
-        shutter: int = 1,
+        num_points: int | None = None,
         speed: float | None = None,
+        shutter: int = 1,
+        **kwargs,
     ) -> Waveguide:
-        """Add a sinusoidal curved path to the waveguide.
-
-        Combines sinusoidal bend curves in the `xy`- and `xz`-plane. The `x`-displacement between the initial and
-        final point is identical to the one of the (circular) S-bend computed with the same radius.
-
-        The sign of the `y`, `z` displacement encodes the direction of the sin-bend:
-
-        - `d` > 0, upward sin-bend
-        - `d` < 0, downward sin-bend
+        """Bend segment.
 
         Parameters
         ----------
         dy: float
-            `y` displacement of the sinusoidal-bend [mm].
-        dz: float, optional
-            `z` displacement of the sinusoidal-bend [mm]. The default values is `self.dz_bridge.
+            `y`-displacement of the waveguide of the S-bend [mm].
+        dz: float
+            `z`-displacement of the waveguide of the S-bend [mm].
+        fx: Callable
+            Custom function that returns a triple of (`x`, `y`, `z`) coordinates describing the profile of the S-bend.
         disp_x: float, optional
             `x`-displacement  for the sinusoidal bend. If the value is ``None`` (the default value),
             the `x`-displacement is computed with the formula for the circular `S`-bend.
-        flat_peaks: float
-            Parameter that regulates the flatness of the sine's peaks. The higher the parameter the more the sine
-            function resembles a square function. If ``flat_peaks == 0`` the sine function does not have flat peaks.
-            The default value is `0`.
-        omega: tuple(float, float)
-            Frequency of the Sin-bend oscillations for `y` and `z` coordinates, respectively.
-            The deafult values are `fy` = 1, `fz` = 1.
         radius: float, optional
             Curvature radius [mm]. The default value is `self.radius`.
-        shutter: int
-            State of the shutter during the transition (0: 'OFF', 1: 'ON'). The default value is 1.
+        num_points: int, optional
+            Number of points of the S-bend. The default value is computed using `self.speed` and `self.cmd_rate_max`.
         speed: float, optional
             Translation speed [mm/s]. The default value is `self.speed`.
+        shutter: int, optional
+            State of the shutter during the transition (0: 'OFF', 1: 'ON'). The default value is 1.
+        kwargs: optional
+            Additional arguments for the `fx` function.
 
         Returns
         -------
         The object itself.
-
-        Notes
-        -----
-            The radius is an *effective* radius. The given radius is used to compute the `x` displacement using the
-            `get_sbend_parameter` method. The radius of curvature of the overall curve will be lower (in general)
-            than the specified radius.
-
-        See Also
-        --------
-        get_sbend_parameter : Compute the rotation angle, and `x`-displacement for a circular S-bend.
         """
-
         if radius is None and self.radius is None:
             raise ValueError('Radius is None. Set Waveguide\'s "radius" attribute or give a radius as input.')
         if speed is None and self.speed is None:
@@ -251,66 +225,65 @@ class Waveguide(LaserPath):
         if dy is None:
             raise ValueError('dy is None. Give a valid dy as input.')
 
-        omega_y, omega_z = omega
         r = radius if radius is not None else self.radius
         f = speed if speed is not None else self.speed
         dzb = dz if dz is not None else self.dz_bridge
 
-        dx = disp_x if disp_x is not None else self.get_sbend_parameter(dy, r)[-1]
-        num = self.num_subdivisions(dx, f)
+        dx = disp_x if disp_x is not None else self.get_sbend_parameter(np.sqrt(dy**2 + dz**2), r)[-1]
+        num = num_points if num_points is not None else self.num_subdivisions(dx, f)
 
-        x_sin = np.linspace(self._x[-1], self._x[-1] + dx, num)
-        tmp_cos = np.cos(omega_y * np.pi / dx * (x_sin - self._x[-1]))
-        y_sin = self._y[-1] + 0.5 * dy * (
-            1 - np.sqrt((1 + flat_peaks**2) / (1 + flat_peaks**2 * tmp_cos**2)) * tmp_cos
-        )
-        z_sin = self._z[-1] + 0.5 * dzb * (1 - np.cos(omega_z * np.pi / dx * (x_sin - self._x[-1])))
-        f_sin = np.repeat(f, num)
-        s_sin = np.repeat(shutter, num)
+        x, y, z = fx(dx=dx, dy=dy, dz=dzb, num_points=num, **kwargs)
 
         # update coordinates
-        self.add_path(x_sin, y_sin, z_sin, f_sin, s_sin)
+        self.add_path(
+            x + self._x[-1], y + self._y[-1], z + self._z[-1], np.repeat(f, len(x)), np.repeat(shutter, len(x))
+        )
         return self
 
-    sin_bend = functools.partialmethod(sin_bridge, dz=0.0, omega=(1.0, 2.0))
-    sin_comp = functools.partialmethod(sin_bridge, dz=0.0, omega=(2.0, 2.0))
-
-    def sin_coupler(
+    def coupler(
         self,
         dy: float,
-        radius: float | None = None,
-        flat_peaks: float = 0.0,
+        dz: float,
+        fx: Callable,
         int_length: float | None = None,
-        shutter: int = 1,
+        disp_x: float | None = None,
+        radius: float | None = None,
+        num_points: int | None = None,
         speed: float | None = None,
+        shutter: int = 1,
+        **kwargs,
     ) -> Waveguide:
-        """Concatenates two sinusoidal S-bend to make a single mode of a circular Directional Coupler.
+        """Concatenate two bends to make a single mode of a Directional Coupler.
+
+        The ``fx`` function describing the profile of the bend is repeated twice, make sure the joints connect smoothly.
 
         Parameters
         ----------
         dy: float
-            Vertical displacement of the waveguide of the sinusoidal-bend [mm].
-        radius: float, optional
-            Curvature radius [mm]. The default value is `self.radius`.
-        flat_peaks: float
-            Parameter that regulates the flatness of the sine's peaks. The higher the parameter the more the sine
-            function resembles a square function. If ``flat_peaks == 0`` the sine function does not have flat peaks.
-            The default value is `0`.
+            `y`-displacement of the waveguide of the S-bend [mm].
+        dz: float
+            `z`-displacement of the waveguide of the S-bend [mm].
+        fx: Callable
+            Custom function that returns a triple of (`x`, `y`, `z`) coordinates describing the profile of the S-bend.
         int_length: float, optional
             Length of the Directional Coupler's straight interaction region [mm]. The default is `self.int_length`.
-        shutter: int
-            State of the shutter during the transition (0: 'OFF', 1: 'ON'). The default value is 1.
+        disp_x: float, optional
+            `x`-displacement  for the sinusoidal bend. If the value is ``None`` (the default value),
+            the `x`-displacement is computed with the formula for the circular `S`-bend.
+        radius: float, optional
+            Curvature radius [mm]. The default value is `self.radius`.
+        num_points: int, optional
+            Number of points of the S-bend. The default value is computed using `self.speed` and `self.cmd_rate_max`.
         speed: float, optional
             Translation speed [mm/s]. The default value is `self.speed`.
+        shutter: int
+            State of the shutter during the transition (0: 'OFF', 1: 'ON'). The default value is 1.
+        kwargs: optional
+            Additional arguments for the `fx` function.
 
         Returns
         -------
         The object itself.
-
-        See Also
-        --------
-        sin_bridge : Add a sinusoidal curved path to the waveguide.
-        sin_bend : Concatenate two circular arc to make a sinusoidal S-bend.
         """
 
         if int_length is None and self.int_length is None:
@@ -321,52 +294,56 @@ class Waveguide(LaserPath):
 
         int_length = int_length if int_length is not None else self.int_length
 
-        self.sin_bend(dy, radius=radius, flat_peaks=flat_peaks, speed=speed, shutter=shutter)
+        self.bend(dy=dy, dz=dz, fx=fx, disp_x=disp_x, radius=radius, num_points=num_points, speed=speed, **kwargs)
         self.linear([np.fabs(int_length), 0, 0], speed=speed, shutter=shutter)
-        self.sin_bend(-dy, radius=radius, flat_peaks=flat_peaks, speed=speed, shutter=shutter)
+        self.bend(dy=-dy, dz=dz, fx=fx, disp_x=disp_x, radius=radius, num_points=num_points, speed=speed, **kwargs)
         return self
 
-    def sin_mzi(
+    def mzi(
         self,
         dy: float,
-        radius: float | None = None,
-        flat_peaks: float = 0.0,
+        dz: float,
+        fx: Callable,
         int_length: float | None = None,
         arm_length: float | None = None,
-        shutter: int = 1,
+        disp_x: float | None = None,
+        radius: float | None = None,
+        num_points: int | None = None,
         speed: float | None = None,
+        shutter: int = 1,
+        **kwargs,
     ) -> Waveguide:
-        """Concatenates two sinusoidal Directional Couplers curves to make a single mode of a circular Mach-Zehnder
-        Interferometer.
+        """Concatenate two Directional Couplers segments to make a single mode of a Mach-Zehnder Interferometer.
 
         Parameters
         ----------
         dy: float
-            Vertical displacement of the waveguide of the sinusoidal-bend [mm].
-        radius: float, optional
-            Curvature radius [mm]. The default value is `self.radius`.
-        flat_peaks: float
-            Parameter that regulates the flatness of the sine's peaks. The higher the parameter the more the sine
-            function resembles a square function. If ``flat_peaks == 0`` the sine function does not have flat peaks.
-            The default value is `0`.
+            `y`-displacement of the waveguide of the S-bend [mm].
+        dz: float
+            `z`-displacement of the waveguide of the S-bend [mm].
+        fx: Callable
+            Custom function that returns a triple of (`x`, `y`, `z`) coordinates describing the profile of the S-bend.
         int_length: float, optional
             Length of the Directional Coupler's straight interaction region [mm]. The default is `self.int_length`.
         arm_length: float, optional
             Length of the Mach-Zehnder Interferometer's straight arm [mm]. The default is `self.arm_length`.
-        shutter: int, optional
-            State of the shutter during the transition (0: 'OFF', 1: 'ON'). The default value is 1.
+        disp_x: float, optional
+            `x`-displacement  for the sinusoidal bend. If the value is ``None`` (the default value),
+            the `x`-displacement is computed with the formula for the circular `S`-bend.
+        radius: float, optional
+            Curvature radius [mm]. The default value is `self.radius`.
+        num_points: int, optional
+            Number of points of the S-bend. The default value is computed using `self.speed` and `self.cmd_rate_max`.
         speed: float, optional
             Translation speed [mm/s]. The default value is `self.speed`.
+        shutter: int
+            State of the shutter during the transition (0: 'OFF', 1: 'ON'). The default value is 1.
+        kwargs: optional
+            Additional arguments for the `fx` function.
 
         Returns
         -------
         The object itself.
-
-        See Also
-        --------
-        sin_bridge : Add a sinusoidal curved path to the waveguide.
-        sin_bend : Concatenate two circular arc to make a sinusoidal S-bend.
-        sin_coupler : Concatenates two sinusoidal S-bend to make a single mode of a circular Directional Coupler.
         """
 
         if arm_length is None and self.arm_length is None:
@@ -376,180 +353,28 @@ class Waveguide(LaserPath):
 
         arm_length = arm_length if arm_length is not None else self.arm_length
 
-        self.sin_coupler(dy, radius=radius, flat_peaks=flat_peaks, int_length=int_length, shutter=shutter, speed=speed)
-        self.linear([np.fabs(arm_length), 0, 0], shutter=shutter, speed=speed)
-        self.sin_coupler(dy, radius=radius, flat_peaks=flat_peaks, int_length=int_length, shutter=shutter, speed=speed)
-        return self
-
-    def spline(
-        self,
-        dy: float,
-        dz: float = 0.0,
-        disp_x: float | None = None,
-        y_derivatives: tuple[tuple[float]] = ((0.0, 0.0), (0.0, 0.0)),
-        z_derivatives: tuple[tuple[float]] = ((0.0, 0.0), (0.0, 0.0)),
-        radius: float | None = None,
-        shutter: int = 1,
-        speed: float | None = None,
-    ) -> Waveguide:
-        """
-        The function construct a piecewise 3D polynomial in the Bernstein basis, compatible with the specified values
-        and derivatives at breakpoints.
-        The user can specify the `y` and `z` displacements as well as the values of the first and second derivatives
-        at the initial and final points (separaterly for the `y` and `z` coordinates).
-
-        Parameters
-        ----------
-        dy: float
-            `y`-displacement from initial position [mm].
-        dz: float, optional
-            `z`-displacement from initial position [mm]. The default value is 0.0.
-        disp_x: float, optional
-            The displacement along the x-axis. If not specified, it is calculated using the`get_sbend_parameter`
-            method of the `Waveguide` class.
-        y_derivatives   : tuple(tuple(float))
-            Tuple containing the derivates for the `y` coordinate for the initial and final point. The number of
-            derivatives is arbitrary. For example ``y_derivatives=((0.0, 1.0, 2.0), (0.0,-1.0,-0.2))`` generates a
-            polynomial spline curve `f(x)` such that `f'(x0) = 0.0`, `f''(x0) = 1.0`, `f'''(x0) = 2.0`, `f'(x0+dx) =
-            0.0`, `f''(x0+dx) = -1.0` and `f'''(x0+dx) = -0.2`. The default value is `((0.0, 0.0), (0.0, 0.0))`.
-        z_derivatives   : tuple(tuple(float))
-            Tuple containing the derivates for the `z` coordinate for the initial and final point. The number of
-            derivatives is arbitrary. For example ``z_derivatives=((0.0, 1.0, 2.0), (0.0,-1.0,-0.2))`` generates a
-            polynomial spline curve `f(x)` such that `f'(x0) = 0.0`, `f''(x0) = 1.0`, `f'''(x0) = 2.0`, `f'(x0+dx) =
-            0.0`, `f''(x0+dx) = -1.0` and `f'''(x0+dx) = -0.2`. The default value is `((0.0, 0.0), (0.0, 0.0))`.
-        radius: float, optional
-            Curvature radius [mm]. The default value is `self.radius`.
-        shutter: int
-            State of the shutter during the transition (0: 'OFF', 1: 'ON'). The default value is 1.
-        speed: float, optional
-            Translation speed [mm/s]. The default value is `self.speed`.
-
-        Returns
-        -------
-        The object itself.
-
-        See Also
-        --------
-        scipy.interpolate.BPoly.from_derivatives : Construct piecewise polymonial from derivatives at breakpoints.
-        """
-
-        if radius is None and self.radius is None:
-            raise ValueError('Radius is None. Set Waveguide\'s "radius" attribute or give a radius as input.')
-        if speed is None and self.speed is None:
-            raise ValueError('Speed is None. Set Waveguide\'s "speed" attribute or give a speed as input.')
-        if dy is None:
-            raise ValueError('dy is None. Give a valid dy as input.')
-        if dz is None:
-            raise ValueError('dz is None. Give a valid dz as input.')
-
-        r = radius if radius is not None else self.radius
-        f = speed if speed is not None else self.speed
-
-        dx = disp_x if disp_x is not None else self.get_sbend_parameter(np.sqrt(dy**2 + dz**2), r)[-1]
-        num = self.num_subdivisions(dx, f)
-
-        # Define initial and final point of the curve
-        x0, x1 = self._x[-1], self._x[-1] + dx
-        y0, y1 = self._y[-1], self._y[-1] + dy
-        z0, z1 = self._z[-1], self._z[-1] + dz
-
-        from scipy.interpolate import BPoly
-
-        y_poly = BPoly.from_derivatives([x0, x1], [[y0, *y_derivatives[0]], [y1, *y_derivatives[-1]]])
-        z_poly = BPoly.from_derivatives([x0, x1], [[z0, *z_derivatives[0]], [z1, *z_derivatives[-1]]])
-
-        x_poly = np.linspace(x0, x1, num)
-        y_poly = y_poly(x_poly)
-        z_poly = z_poly(x_poly)
-        f_poly = np.repeat(f, num)
-        s_poly = np.repeat(shutter, num)
-
-        # update coordinates
-        self.add_path(x_poly, y_poly, z_poly, f_poly, s_poly)
-        return self
-
-    poly_bend = functools.partialmethod(
-        spline,
-        y_derivatives=((0.0, 0.0), (0.0, 0.0)),
-        z_derivatives=((0.0, 0.0), (0.0, 0.0)),
-    )
-
-    def spline_bridge(
-        self,
-        dy: float,
-        dz: float,
-        disp_x: float | None = None,
-        radius: float | None = None,
-        shutter: int = 1,
-        speed: float | None = None,
-    ) -> Waveguide:
-        """Connect two points in the `xy` plane with a Bezier curve bridge.
-
-        It takes in an initial position (`x_0`, `y_0`, `z_0`) and linear displacements in the
-        `x`, `y`, and `z` directions. The final point of the curved is computed as
-        (`x_0 +d_x`, `y_0 +d_y`, `z_0 +d_z`). The points are connected with a sequence of two
-        spline segments.
-
-        The spline segments join at the peak of the bridge. In this point it is required to have a derivative
-        along the `z` direction of `df(x, z)/dz = 0` and a derivative along the `y` direction that is contiunous. This
-        latter value is fixed to be `df(x, y)/dx = disp_y/disp_y`.
-        The values of the first derivatives df(x, y)/dx, df(x, z)/dx are set to zero in the initial and final point
-        of the spline bridge.
-
-        Parameters
-        ----------
-        dy: float
-            `y`-displacement from initial position [mm].
-        dz: float
-            `z`-displacement from initial position [mm].
-        disp_x: float, optional
-            `x`-displacement from initial position [mm].
-        radius: float, optional
-            Curvature radius [mm]. The default value is `self.radius`.
-        shutter: int
-            State of the shutter during the transition (0: 'OFF', 1: 'ON'). The default value is 1.
-        speed: float, optional
-            Translation speed [mm/s]. The default value is `self.speed`.
-
-        Returns
-        -------
-        The object itself.
-
-        See Also
-        --------
-        CubicSpline : Cubic spline data interpolator.
-        InterpolatedUnivariateSpline : 1-D interpolating spline for a given set of data points.
-        spline : Connect the current position to a new point with a Bezier curve.
-        """
-        if dy is None:
-            raise ValueError('dy is None. Give a valid dy as input.')
-        if dz is None:
-            raise ValueError('dz is None. Give a valid dz as input.')
-
-        r = radius if radius is not None else self.radius
-        dx = disp_x if disp_x is not None else self.get_sbend_parameter(np.sqrt(dy**2 + dz**2), r)[-1]
-
-        # First half of the spline bridge
-        self.spline(
-            dy=dy / 2,
+        self.coupler(
+            dy=dy,
             dz=dz,
-            disp_x=dx,
-            y_derivatives=((0.0, 0.0), (dy / dx, 0.0)),
-            z_derivatives=((0.0, 0.0), (0.0, 0.0)),
+            fx=fx,
+            disp_x=disp_x,
             radius=radius,
-            shutter=shutter,
+            num_points=num_points,
+            int_length=int_length,
             speed=speed,
+            **kwargs,
         )
-        # Second half of the spline bridge
-        self.spline(
-            dy=dy / 2,
-            dz=-dz,
-            disp_x=dx,
-            y_derivatives=((dy / dx, 0.0), (0.0, 0.0)),
-            z_derivatives=((0.0, 0.0), (0.0, 0.0)),
+        self.linear([np.fabs(arm_length), 0, 0], shutter=shutter, speed=speed)
+        self.coupler(
+            dy=dy,
+            dz=dz,
+            fx=fx,
+            disp_x=disp_x,
             radius=radius,
-            shutter=shutter,
+            num_points=num_points,
+            int_length=int_length,
             speed=speed,
+            **kwargs,
         )
         return self
 
@@ -622,6 +447,8 @@ def coupler(param: dict[str, Any], nasu: bool = False) -> list[Waveguide | NasuW
         List of the two modes of the Directional Coupler.
     """
 
+    from femto.curves import sin_bend
+
     mode1 = NasuWaveguide(**param) if nasu else Waveguide(**param)
     mode2 = NasuWaveguide(**param) if nasu else Waveguide(**param)
 
@@ -629,14 +456,14 @@ def coupler(param: dict[str, Any], nasu: bool = False) -> list[Waveguide | NasuW
 
     mode1.start()
     mode1.linear([lx, None, None], mode='ABS')
-    mode1.sin_coupler(mode1.dy_bend)
+    mode1.coupler(dy=mode1.dy_bend, dz=0.0, fx=sin_bend)
     mode1.linear([mode1.x_end, None, None], mode='ABS')
     mode1.end()
 
     mode2.y_init = mode1.y_init + mode2.pitch
     mode2.start()
     mode2.linear([lx, None, None], mode='ABS')
-    mode2.sin_coupler(-mode2.dy_bend)
+    mode2.coupler(dy=-mode2.dy_bend, dz=0.0, fx=sin_bend)
     mode2.linear([mode2.x_end, None, None], mode='ABS')
     mode2.end()
 
@@ -646,6 +473,7 @@ def coupler(param: dict[str, Any], nasu: bool = False) -> list[Waveguide | NasuW
 def main() -> None:
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
+    from curves import sin_bend as sin
 
     # Data
     PARAM_WG = dotdict(scan=6, speed=20, radius=15, pitch=0.080, int_dist=0.007, lsafe=3, samplesize=(50, 3))
@@ -659,8 +487,7 @@ def main() -> None:
         wg.y_init = -wg.pitch / 2 + index * wg.pitch
         wg.start()
         wg.linear(increment)
-        # wg.poly_bend((-1) ** index * wg.dy_bend, flat_peaks=0)
-        wg.sin_bridge((-1) ** index * 0.08, (-1) ** index * 0.015)
+        wg.coupler(dy=(-1) ** index * 0.08, dz=0.0, fx=sin, flat_peaks=0)
         wg.arc_bend((-1) ** (index + 1) * wg.dy_bend)
         wg.linear(increment)
         wg.end()
