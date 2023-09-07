@@ -473,7 +473,7 @@ def coupler(param: dict[str, Any], nasu: bool = False) -> list[Waveguide | NasuW
 def main() -> None:
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
-    from curves import sin_bend as sin
+    from curves import sin_sbend as sin
 
     # Data
     PARAM_WG = dotdict(scan=6, speed=20, radius=15, pitch=0.080, int_dist=0.007, lsafe=3, samplesize=(50, 3))

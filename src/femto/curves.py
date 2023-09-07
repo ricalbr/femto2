@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-import math
-
 import numpy as np
+import scipy.integrate as integrate
 from scipy import special
 from scipy.interpolate import BPoly
 
 
-def euler_bend(radius, theta, num_points):
+def euler(radius, theta, num_points):
     L = 2 * abs(radius) * theta  # total length of the Euler bend
     f = np.sqrt(np.pi * abs(radius) * L)  # Fresnel integral function are defined as function of (pi*t^2/2)
 
@@ -17,7 +16,7 @@ def euler_bend(radius, theta, num_points):
     return f * x, f * y, z
 
 
-def sin_bend(dx, dy, dz, num_points, flat_peaks=0):
+def sin_sbend(dx, dy, dz, num_points, flat_peaks=0):
 
     x = np.linspace(0, dx, num_points)
     tmp_cos = np.cos(np.pi / dx * x)
@@ -65,32 +64,134 @@ def spline_bridge(
     return np.append(xi, xf + xi[-1]), np.append(yi, yf + yi[-1]), np.append(zi, zf + zi[-1])
 
 
+def tanh_sbend(dx, dy, dz, num_points, s: float = 1.0):
+    x = np.linspace(-dx / 2, dx / 2, num_points)
+    y = dy / 2 * np.tanh(x * s)
+    z = np.linspace(0, dz, num_points)
+    return x + dx / 2, y + dy / 2, z
+
+
+def erf_sbend(dx, dy, dz, num_points, s: float = 1.0):
+    x = np.linspace(-dx / 2, dx / 2, num_points)
+    y = dy / 2 * special.erf(x * s)
+    z = np.linspace(0, dz, num_points)
+    return x + dx / 2, y + dy / 2, z
+
+
+def arctan_sbend(dx, dy, dz, num_points, s: float = 1.0):
+    x = np.linspace(-dx / 2, dx / 2, num_points)
+    y = 2 / np.pi * np.arctan(np.pi * (x * s) / 2)
+    z = np.linspace(0, dz, num_points)
+    return x + dx / 2, y * dy / (y[-1] - y[0]) + dy / 2, z
+
+
+def rad_sbend(dx, dy, dz, num_points, s: float = 1.0):
+    x = np.linspace(-dx / 2, dx / 2, num_points)
+    y = x * s / (np.sqrt(1 + (x * s) ** 2))
+    z = np.linspace(0, dz, num_points)
+    return x + dx / 2, y * dy / (y[-1] - y[0]) + dy / 2, z
+
+
+def abs_sbend(dx, dy, dz, num_points, s: float = 1.0):
+    x = np.linspace(-dx / 2, dx / 2, num_points)
+    y = x * s * 1 / (1 + abs(x * s))
+    z = np.linspace(0, dz, num_points)
+    return x + dx / 2, y * dy / (y[-1] - y[0]) + dy / 2, z
+
+
+def euler_sbend_S2(dx, dy, dz, num_points, theta: float = np.pi / 24, radius: float = 15, n: int = 1):
+    k = 1 / (theta**n * radius ** (n + 1) * (n + 1) ** n)
+    s_f = (theta * (n + 1) / k) ** (1 / (n + 1))
+    s_vals = np.linspace(0, s_f, num_points // 2)
+
+    x1 = np.array([integrate.quad(lambda l: np.cos(k * l ** (n + 1) / (n + 1)), 0, s)[0] for s in s_vals])
+    y1 = np.array([integrate.quad(lambda l: np.sin(k * l ** (n + 1) / (n + 1)), 0, s)[0] for s in s_vals])
+
+    # first, rotate by the final angle
+    x2_data, y2_data = np.dot(-np.eye(2), np.stack([x1, y1], 0))
+    x2_data, y2_data = x2_data[::-1] + 2 * x1[-1], y2_data[::-1] + 2 * y1[-1]
+
+    x_data = np.concatenate([x1, x2_data], 0)
+    y_data = np.concatenate([y1, y2_data], 0)
+
+    x = x_data * dx / x_data[-1]
+    y = y_data * dy / y_data[-1]
+    z = np.linspace(0, dz, num_points)
+    return x, y, z
+
+
+def euler_sbend_S4(dx, dy, dz, num_points, theta: float = np.pi / 24, radius: float = 15, n: int = 1):
+    k = 1 / (theta**n * radius ** (n + 1) * (n + 1) ** n)
+    s_f = (theta * (n + 1) / k) ** (1 / (n + 1))
+    s_vals = np.linspace(0, s_f, num_points // 2)
+
+    x1 = np.array([integrate.quad(lambda l: np.cos(k * l ** (n + 1) / (n + 1)), 0, s)[0] for s in s_vals])
+    y1 = np.array([integrate.quad(lambda l: np.sin(k * l ** (n + 1) / (n + 1)), 0, s)[0] for s in s_vals])
+
+    x2, y2 = np.dot(
+        np.array([[np.cos(2 * theta), np.sin(2 * theta)], [-np.sin(2 * theta), np.cos(2 * theta)]]),
+        np.stack([x1, y1], 0),
+    )
+    x2, y2 = -x2[::-1] + x2[-1] + x1[-1], y2[::-1] - y2[-1] + y1[-1]
+    x21 = np.concatenate([x1, x2], 0)
+    y21 = np.concatenate([y1, y2], 0)
+
+    x2, y2 = np.dot(np.array([[-1, 0], [0, -1]]), np.stack([x21, y21], 0))
+    x2, y2 = x2[::-1] - x2[-1] + x21[-1], y2[::-1] - y2[-1] + y21[-1]
+    x_data, y_data = np.concatenate([x21, x2], 0), np.concatenate([y21, y2], 0)
+
+    x = x_data * dx / x_data[-1]
+    y = y_data * dy / y_data[-1]
+    z = np.linspace(0, dz, num_points)
+    return x, y, z
+
+
+def circ_sbend(dx, dy, dz, num_points, radius: float = 15):
+    thetaf = np.arccos(1 - dy / (2 * radius))
+    theta = 3 * np.pi / 2 + np.linspace(0, thetaf, num_points // 2)
+
+    x1, y1 = radius * np.cos(theta), (radius * np.sin(theta)) + radius
+
+    x2, y2 = np.dot(np.array([[-1, 0], [0, -1]]), np.stack([x1, y1], 0))
+    x2, y2 = x2[::-1] + 2 * x1[-1], y2[::-1] + 2 * y1[-1]
+
+    x = np.concatenate([x1, x2], 0)
+    y = np.concatenate([y1, y2], 0)
+    z = np.linspace(0, dz, num_points)
+    return x, y, z
+
+
+def series(curve, n):
+    x1, y1, z1 = curve
+    x, y, z = np.array([]), np.array([]), np.array([])
+
+    for i in range(0, n):
+        x2 = x1 + x1[-1] * i
+        y2 = ((-1) ** i) * y1 + y1[-1] * (1 - (-1) ** i) / 2
+        z2 = ((-1) ** i) * z1 + z1[-1] * (1 - (-1) ** i) / 2
+        x = np.append(x, x2)
+        y = np.append(y, y2)
+        z = np.append(z, z2)
+    return x, y, z
+
+
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
-    x, y, z = euler_bend(radius=15, theta=math.radians(30), num_points=100)
+    # x, y, z = spline(0.5, 0.3, dz=0.0, num_points=100)
+    # x, y, z = sin_sbend(dx=0.5, dy=0.6, dz=0.0, num_points=100, flat_peaks=1)
+    # x, y, z = spline_bridge(dx=5, dy=0.06, dz=0.03, num_points=100)
+    # x, y, z = tanh_sbend(dx=10, dy=0.08, dz=0, num_points=200)
+    # z, y, z = erf_sbend(dx=10, dy=0.08, dz=0, num_points=200)
+    # z, y, z = arctan_sbend(dx=10, dy=0.08, dz=0, num_points=200)
+    # z, y, z = rad_sbend(dx=10, dy=0.08, dz=0, num_points=200)
+    # z, y, z = abs_sbend(dx=10, dy=0.08, dz=0, num_points=200)
+    # x, y, z = euler_sbend_S2(theta=np.pi / 24, radius=15000, dx=5, dy=0.40, dz=0, n=1, num_points=1000)
+    # x, y, z = euler_sbend_S4(theta=np.pi / 24, radius=15000, dx=5, dy=0.40, dz=0, n=1, num_points=1000)
+    x, y, z = circ_sbend(dx=5, dy=0.40, dz=0, num_points=1000)
+    x, y, z = series(circ_sbend(dx=5, dy=0.40, dz=0.0, num_points=1000), 6)
+
     plt.figure(1)
     plt.clf()
     plt.plot(x, y)
-    # plt.show()
-
-    x, y, z = spline(0.5, 0.3, dz=0.0, num_points=100)
-    plt.figure(2)
-    plt.clf()
-    plt.plot(x, y)
-    # plt.show()
-
-    x, y, z = sin_bend(dx=0.5, dy=0.6, dz=0.0, num_points=100, flat_peaks=1)
-    plt.figure(3)
-    plt.clf()
-    plt.plot(x, y)
-    plt.show()
-
-    x, y, z = spline_bridge(dx=5, dy=0.06, dz=0.03, num_points=100)
-    plt.figure(3)
-
-    ax = plt.figure().add_subplot(projection='3d')
-    ax.plot(x, y, z, label='parametric curve')
-    ax.legend()
-
     plt.show()
