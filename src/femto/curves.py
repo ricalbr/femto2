@@ -16,7 +16,7 @@ def euler(radius, theta, num_points):
     return f * x, f * y, z
 
 
-def sin_sbend(dx, dy, dz, num_points, flat_peaks=0):
+def sin(dx, dy, dz, num_points, flat_peaks=0):
 
     x = np.linspace(0, dx, num_points)
     tmp_cos = np.cos(np.pi / dx * x)
@@ -64,42 +64,42 @@ def spline_bridge(
     return np.append(xi, xf + xi[-1]), np.append(yi, yf + yi[-1]), np.append(zi, zf + zi[-1])
 
 
-def tanh_sbend(dx, dy, dz, num_points, s: float = 1.0):
+def tanh(dx, dy, dz, num_points, s: float = 1.0):
     x = np.linspace(-dx / 2, dx / 2, num_points)
     y = dy / 2 * np.tanh(x * s)
     z = np.linspace(0, dz, num_points)
     return x + dx / 2, y + dy / 2, z
 
 
-def erf_sbend(dx, dy, dz, num_points, s: float = 1.0):
+def erf(dx, dy, dz, num_points, s: float = 1.0):
     x = np.linspace(-dx / 2, dx / 2, num_points)
-    y = dy / 2 * special.erf(x * s)
+    y = dy / 2 * (1 + special.erf(x * s))
     z = np.linspace(0, dz, num_points)
-    return x + dx / 2, y + dy / 2, z
+    return x + dx / 2, y, z
 
 
-def arctan_sbend(dx, dy, dz, num_points, s: float = 1.0):
+def arctan(dx, dy, dz, num_points, s: float = 1.0):
     x = np.linspace(-dx / 2, dx / 2, num_points)
     y = 2 / np.pi * np.arctan(np.pi * (x * s) / 2)
     z = np.linspace(0, dz, num_points)
     return x + dx / 2, y * dy / (y[-1] - y[0]) + dy / 2, z
 
 
-def rad_sbend(dx, dy, dz, num_points, s: float = 1.0):
+def rad(dx, dy, dz, num_points, s: float = 1.0):
     x = np.linspace(-dx / 2, dx / 2, num_points)
     y = x * s / (np.sqrt(1 + (x * s) ** 2))
     z = np.linspace(0, dz, num_points)
     return x + dx / 2, y * dy / (y[-1] - y[0]) + dy / 2, z
 
 
-def abs_sbend(dx, dy, dz, num_points, s: float = 1.0):
+def abv(dx, dy, dz, num_points, s: float = 1.0):
     x = np.linspace(-dx / 2, dx / 2, num_points)
     y = x * s * 1 / (1 + abs(x * s))
     z = np.linspace(0, dz, num_points)
     return x + dx / 2, y * dy / (y[-1] - y[0]) + dy / 2, z
 
 
-def euler_sbend_S2(dx, dy, dz, num_points, theta: float = np.pi / 24, radius: float = 15, n: int = 1):
+def euler_S2(dx, dy, dz, num_points, theta: float = np.pi / 24, radius: float = 15, n: int = 1):
     k = 1 / (theta**n * radius ** (n + 1) * (n + 1) ** n)
     s_f = (theta * (n + 1) / k) ** (1 / (n + 1))
     s_vals = np.linspace(0, s_f, num_points // 2)
@@ -120,7 +120,7 @@ def euler_sbend_S2(dx, dy, dz, num_points, theta: float = np.pi / 24, radius: fl
     return x, y, z
 
 
-def euler_sbend_S4(dx, dy, dz, num_points, theta: float = np.pi / 24, radius: float = 15, n: int = 1):
+def euler_S4(dx, dy, dz, num_points, theta: float = np.pi / 24, radius: float = 15, n: int = 1):
     k = 1 / (theta**n * radius ** (n + 1) * (n + 1) ** n)
     s_f = (theta * (n + 1) / k) ** (1 / (n + 1))
     s_vals = np.linspace(0, s_f, num_points // 2)
@@ -146,7 +146,7 @@ def euler_sbend_S4(dx, dy, dz, num_points, theta: float = np.pi / 24, radius: fl
     return x, y, z
 
 
-def circ_sbend(dx, dy, dz, num_points, radius: float = 15):
+def circ(dx, dy, dz, num_points, radius: float = 15):
     thetaf = np.arccos(1 - dy / (2 * radius))
     theta = 3 * np.pi / 2 + np.linspace(0, thetaf, num_points // 2)
 
@@ -179,17 +179,19 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
     # x, y, z = spline(0.5, 0.3, dz=0.0, num_points=100)
-    # x, y, z = sin_sbend(dx=0.5, dy=0.6, dz=0.0, num_points=100, flat_peaks=1)
+    # x, y, z = sin(dx=0.5, dy=0.6, dz=0.0, num_points=100, flat_peaks=1)
     # x, y, z = spline_bridge(dx=5, dy=0.06, dz=0.03, num_points=100)
-    # x, y, z = tanh_sbend(dx=10, dy=0.08, dz=0, num_points=200)
-    # z, y, z = erf_sbend(dx=10, dy=0.08, dz=0, num_points=200)
-    # z, y, z = arctan_sbend(dx=10, dy=0.08, dz=0, num_points=200)
-    # z, y, z = rad_sbend(dx=10, dy=0.08, dz=0, num_points=200)
-    # z, y, z = abs_sbend(dx=10, dy=0.08, dz=0, num_points=200)
-    # x, y, z = euler_sbend_S2(theta=np.pi / 24, radius=15000, dx=5, dy=0.40, dz=0, n=1, num_points=1000)
-    # x, y, z = euler_sbend_S4(theta=np.pi / 24, radius=15000, dx=5, dy=0.40, dz=0, n=1, num_points=1000)
-    x, y, z = circ_sbend(dx=5, dy=0.40, dz=0, num_points=1000)
-    x, y, z = series(circ_sbend(dx=5, dy=0.40, dz=0.0, num_points=1000), 6)
+    # x, y, z = tanh(dx=10, dy=0.08, dz=0, num_points=200)
+    # x, y, z = tanh(dx=1000, dy=0.04, dz=0, num_points=200, s=1/200)
+    # z, y, z = erf(dx=10, dy=0.08, dz=0, num_points=200)
+    # z, y, z = arctan(dx=10, dy=0.08, dz=0, num_points=200)
+    # z, y, z = rad(dx=10, dy=0.08, dz=0, num_points=200)
+    # z, y, z = abv(dx=10, dy=0.08, dz=0, num_points=200)
+    # x, y, z = euler_S2(theta=np.pi / 24, radius=15000, dx=5, dy=0.40, dz=0, n=1, num_points=1000)
+    # x, y, z = euler_S4(theta=np.pi / 24, radius=15000, dx=5, dy=0.40, dz=0, n=1, num_points=1000)
+    # x, y, z = circ(dx=5, dy=0.40, dz=0, num_points=1000)
+
+    x, y, _ = series(erf(s=1, dy=0.040, dx=5, dz=0, num_points=100), 6)
 
     plt.figure(1)
     plt.clf()
