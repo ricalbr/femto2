@@ -22,6 +22,9 @@ from femto.helpers import flatten
 from femto.helpers import listcast
 from femto.helpers import pad
 from scipy import interpolate
+from scipy.interpolate import CloughTocher2DInterpolator
+
+import warnings
 
 # Create a generic variable that can be 'PGMCompiler', or any subclass.
 GC = TypeVar('GC', bound='PGMCompiler')
@@ -909,6 +912,7 @@ class PGMCompiler:
 
         zwarp = np.array([float(self.fwarp(x, y)) for x, y in zip(x_comp, y_comp)])
         z_comp += zwarp / self.neff
+
         return x_comp, y_comp, z_comp
 
     @property
@@ -941,25 +945,27 @@ class PGMCompiler:
         )
         TM = np.matmul(SM, RM).T
         return np.array(TM)
-
-    def antiwarp_management(self, opt: bool, num: int = 16) -> interpolate.interp2d:
+    
+    
+    def antiwarp_management(self, opt: bool, grid: tuple[float, float] = (100,100)   ) -> interpolate.interp2d:
         """
-        It fetches an antiwarp function in the current working direcoty. If it doesn't exist, it lets you create a new
-        one. The number of sampling points can be specified.
-
+        Fetches a Pos.txt file containing a mapping of the surface of the sample.
+        
+        NOTE: take care to input a Pos.
+        
         Parameters
         ----------
         opt: bool
-            Flag to bypass the warp compensation.
-        num: int
-            Number of points for the interpolation of the sample's surface.
+            Flag to bypass the warp compensation
+        dim: Tuple(float, float)
+            Dimension of the grid for the interpolation (dim_x, dim_y)
 
         Returns
         -------
         interpolate.interp2d
-            Interpolating function S(x, y) of the surface of the sample.
+            interpolating function S(x, y) of the surface of the sample
         """
-
+        
         if not opt:
 
             def fwarp(_x: float, _y: float) -> float:
@@ -968,66 +974,62 @@ class PGMCompiler:
         else:
             if not all(self.samplesize):
                 raise ValueError(f'Wrong sample size dimensions. Given ({self.samplesize[0]}, {self.samplesize[1]}).')
+            
+            function_txt = self.CWD / 'Pos.txt'
             function_pickle = self.CWD / 'fwarp.pkl'
-
-            if function_pickle.is_file():
-                with open(function_pickle, 'rb') as f_read:
-                    fwarp = dill.load(f_read)
-            else:
-                fwarp = self.antiwarp_generation(self.samplesize, num)
-                with open(function_pickle, 'wb') as f_write:
-                    dill.dump(fwarp, f_write)
+            
+            # check for the existence of Pos.txt in CWD. If not present, return dummy fwarp
+            if not function_txt.is_file():
+                warnings.warn('Could not find surface mapping file. Returning dummy function.')
+                def fwarp(_x: float, _y: float) -> float:
+                    return 0.0
+            else: # if surface mapping is present, check for warp function. If not present, generate one
+                if function_pickle.is_file():
+                    with open(function_pickle, 'rb') as f_read:
+                        fwarp = dill.load(f_read)
+                else:
+                    fwarp = self.antiwarp_generation('Pos.txt', grid)
+                    with open(function_pickle, 'wb') as f_write:
+                        dill.dump(fwarp, f_write)
+            
         return fwarp
-
+    
     @staticmethod
-    def antiwarp_generation(samplesize: tuple[float, float], num: int, margin: float = 2) -> interpolate.interp2d:
+    def antiwarp_generation(surface_mapping_file: str, gridsize : tuple[float, float]) -> interpolate.interp2d:
         """
         Helper for the generation of antiwarp function.
-        The minimum number of data points required is (k+1)**2, with k=1 for linear, k=3 for cubic and k=5 for quintic
-        interpolation.
+        Starts from the surface mapping file given in input.
 
-        :param samplesize: glass substrate dimensions, (x-dim, y-dim)
-        :type samplesize: Tuple(float, float)
-        :param num: number of sampling points
-        :type num: int
-        :param margin: margin [mm] from the borders of the glass samples
-        :type margin: float
+        :param surface_mapping_file: file containing the warp coordinates of the sample
+        :type surface_mapping_file: str
+        :param gridsize: dimensions of the interpolation grid, (x-dim, y-dim)
+        :type gridsize: Tuple(float, float)
         :return: warp function, `f(x, y)`
         :rtype: scipy.interpolate.interp2d
         """
+        # get data from Pos.txt file
+        warp_matrix = np.loadtxt(surface_mapping_file, dtype='f', delimiter=' ')
 
-        if num is None or num < 4**2:
-            raise ValueError('I need more values to compute the interpolation.')
+        x, y, z = warp_matrix.T
+        f = CloughTocher2DInterpolator(list(zip(x, y)), z)
 
-        num_side = int(np.ceil(np.sqrt(num)))
-        xpos = np.linspace(margin, samplesize[0] - margin, num_side)
-        ypos = np.linspace(margin, samplesize[1] - margin, num_side)
-        xlist = []
-        ylist = []
-        zlist = []
 
-        print('Insert focus height [in µm!] at:')
-        for (x, y) in itertools.product(xpos, ypos):
-            z_temp = input(f'X={x:.3f} Y={y:.3f}: \t')
-            if z_temp == '':
-                raise ValueError('You missed the last value.')
-            else:
-                xlist.append(x)
-                ylist.append(y)
-                zlist.append(float(z_temp) * 1e-3)
+        ## DATA GENERATION for surface plotting
+        x_f = np.linspace(np.min(x), np.max(x), gridsize[0])
+        y_f = np.linspace(np.min(y), np.max(y), gridsize[1])
+        # z_warp = f(x_f, y_f)
 
-        # surface interpolation
-        func_antiwarp = interpolate.interp2d(xlist, ylist, zlist, kind='cubic')
-
+        # interpolate
+        X, Y = np.meshgrid(x_f, y_f)
+        func_antiwarp = f(X, Y)
+        
         # plot the surface
-        xprobe = np.linspace(-3, samplesize[0] + 3)
-        yprobe = np.linspace(-3, samplesize[1] + 3)
-        zprobe = func_antiwarp(xprobe, yprobe)
         ax = plt.axes(projection='3d')
-        ax.contour3D(xprobe, yprobe, zprobe, 200, cmap='viridis')
+        ax.contour3D(x_f, y_f, func_antiwarp, 200, cmap='viridis')
         ax.set_xlabel('X [mm]'), ax.set_ylabel('Y [mm]'), ax.set_zlabel('Z [mm]')
-        # plt.show()
-        return func_antiwarp
+        ax.set_aspect('equalxz')
+        
+        return f
 
     # Private interface
     def _format_args(
