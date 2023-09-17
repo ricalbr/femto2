@@ -7,6 +7,7 @@ import dataclasses
 import itertools
 import math
 import pathlib
+import warnings
 from types import TracebackType
 from typing import Any
 from typing import Callable
@@ -23,8 +24,6 @@ from femto.helpers import listcast
 from femto.helpers import pad
 from scipy import interpolate
 from scipy.interpolate import CloughTocher2DInterpolator
-
-import warnings
 
 # Create a generic variable that can be 'PGMCompiler', or any subclass.
 GC = TypeVar('GC', bound='PGMCompiler')
@@ -945,14 +944,13 @@ class PGMCompiler:
         )
         TM = np.matmul(SM, RM).T
         return np.array(TM)
-    
-    
-    def antiwarp_management(self, opt: bool, grid: tuple[float, float] = (100,100)   ) -> interpolate.interp2d:
+
+    def antiwarp_management(self, opt: bool, grid: tuple[float, float] = (100, 100)) -> interpolate.interp2d:
         """
         Fetches a Pos.txt file containing a mapping of the surface of the sample.
-        
+
         NOTE: take care to input a Pos.
-        
+
         Parameters
         ----------
         opt: bool
@@ -965,7 +963,7 @@ class PGMCompiler:
         interpolate.interp2d
             interpolating function S(x, y) of the surface of the sample
         """
-        
+
         if not opt:
 
             def fwarp(_x: float, _y: float) -> float:
@@ -974,16 +972,18 @@ class PGMCompiler:
         else:
             if not all(self.samplesize):
                 raise ValueError(f'Wrong sample size dimensions. Given ({self.samplesize[0]}, {self.samplesize[1]}).')
-            
+
             function_txt = self.CWD / 'Pos.txt'
             function_pickle = self.CWD / 'fwarp.pkl'
-            
+
             # check for the existence of Pos.txt in CWD. If not present, return dummy fwarp
             if not function_txt.is_file():
                 warnings.warn('Could not find surface mapping file. Returning dummy function.')
+
                 def fwarp(_x: float, _y: float) -> float:
                     return 0.0
-            else: # if surface mapping is present, check for warp function. If not present, generate one
+
+            else:  # if surface mapping is present, check for warp function. If not present, generate one
                 if function_pickle.is_file():
                     with open(function_pickle, 'rb') as f_read:
                         fwarp = dill.load(f_read)
@@ -991,11 +991,11 @@ class PGMCompiler:
                     fwarp = self.antiwarp_generation('Pos.txt', grid)
                     with open(function_pickle, 'wb') as f_write:
                         dill.dump(fwarp, f_write)
-            
+
         return fwarp
-    
+
     @staticmethod
-    def antiwarp_generation(surface_mapping_file: str, gridsize : tuple[float, float]) -> interpolate.interp2d:
+    def antiwarp_generation(surface_mapping_file: str, gridsize: tuple[float, float]) -> interpolate.interp2d:
         """
         Helper for the generation of antiwarp function.
         Starts from the surface mapping file given in input.
@@ -1013,8 +1013,7 @@ class PGMCompiler:
         x, y, z = warp_matrix.T
         f = CloughTocher2DInterpolator(list(zip(x, y)), z)
 
-
-        ## DATA GENERATION for surface plotting
+        # DATA GENERATION for surface plotting
         x_f = np.linspace(np.min(x), np.max(x), gridsize[0])
         y_f = np.linspace(np.min(y), np.max(y), gridsize[1])
         # z_warp = f(x_f, y_f)
@@ -1022,13 +1021,13 @@ class PGMCompiler:
         # interpolate
         X, Y = np.meshgrid(x_f, y_f)
         func_antiwarp = f(X, Y)
-        
+
         # plot the surface
         ax = plt.axes(projection='3d')
         ax.contour3D(x_f, y_f, func_antiwarp, 200, cmap='viridis')
         ax.set_xlabel('X [mm]'), ax.set_ylabel('Y [mm]'), ax.set_zlabel('Z [mm]')
         ax.set_aspect('equalxz')
-        
+
         return f
 
     # Private interface
@@ -1116,12 +1115,31 @@ class PGMCompiler:
         self.dwell(self.short_pause)
 
 
+def sample_warp(ptsX: float, ptsY: float, margin: float, PARAM_GC):
+    PARAM_GC['filename'] = 'SAMPLE_WARP.pgm'
+    G = PGMCompiler(**PARAM_GC)
+    if G.laser is None or G.laser.lower() not in ['ant', 'carbide', 'pharos', 'uwe']:
+        raise ValueError(f'Fabrication line should be PHAROS, CARBIDE or UWE. Given {G.laser}.')
+
+    header_name = f'header_{G.laser.lower()}.txt'
+    warp_name = 'WARP.txt'
+    sizeX, sizeY = G.samplesize
+    angle = G.aerotech_angle
+    with open(pathlib.Path(__file__).parent / 'utils' / warp_name) as f:
+        for line in f:
+            if line.startswith('<HEADER>'):
+                G.header()
+            else:
+                G.instruction(line.format_map(locals()))
+    G.close()
+
+
 def main() -> None:
     from femto.waveguide import Waveguide
     from femto.helpers import dotdict
 
     # Parameters
-    PARAM_WG = dotdict(scan=6, speed=20, radius=15, pitch=0.080, int_dist=0.007, lsafe=3, samplesize=(25, 3))
+    PARAM_WG = dotdict(scan=6, speed=20, radius=15, pitch=0.080, int_dist=0.007, lsafe=3, samplesize=(25, 25))
     PARAM_GC = dotdict(filename='testPGM.pgm', samplesize=PARAM_WG['samplesize'], rotation_angle=2.0, flip_x=True)
 
     # Build paths
@@ -1142,6 +1160,9 @@ def main() -> None:
                 G.write(wg.points)
         G.move_to([None, 0, 0.1])
         G.set_home([0, 0, 0])
+
+    # Test warp scritp
+    sample_warp(ptsX=9, ptsY=9, margin=2, PARAM_GC=PARAM_GC)
 
 
 if __name__ == '__main__':
