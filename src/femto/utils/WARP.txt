@@ -9,8 +9,8 @@ DVAR $iii $jjj
 
 ; +--- PROGRAM DATA ---+
 ; CREATE MESH FOR COMPENSATION OF CHIP WARP
-$sizeX = {sizeX:.6f}		; [mm] size in X of the chip
-$sizeY = {sizeY:.6f}		; [mm] size in Y of the chip
+$sizeX = {size_x:.6f}		; [mm] size in X of the chip
+$sizeY = {size_y:.6f}		; [mm] size in Y of the chip
 $margin = {margin:.6f}		; [mm] distance of the mesh from the chip border
 $pointsX = {ptsX}			; Number of points of the mesh per row on X
 $pointsY = {ptsY}			; Number of points of the mesh per column on Y
@@ -19,12 +19,10 @@ $angle = {angle:.6f}		; [deg] AeroTech rotation angle
 $meshSizeX = $sizeX - 2*$margin
 $meshSizeY = $sizeY - 2*$margin
 
-
 ; CLEAR ALL CONSOLE MESSAGES, CLOSE ALL OPEN FILE HANDLES AND ADD TEXT HEADER
 MSGCLEAR -1
 FILECLOSE
-FILEWRITE "POS.txt", "    X     ", "     Y     ", "     Z"
-
+FILEWRITE "POS.txt"
 
 ; +--- START SAMPLING SCRIPT ---+
 LINEAR X0.000000 Y0.000000 Z0.000000 F5.000000

@@ -955,7 +955,7 @@ class PGMCompiler:
         ----------
         opt: bool
             Flag to bypass the warp compensation
-        dim: Tuple(float, float)
+        grid: Tuple(float, float)
             Dimension of the grid for the interpolation (dim_x, dim_y)
 
         Returns
@@ -973,7 +973,7 @@ class PGMCompiler:
             if not all(self.samplesize):
                 raise ValueError(f'Wrong sample size dimensions. Given ({self.samplesize[0]}, {self.samplesize[1]}).')
 
-            function_txt = self.CWD / 'Pos.txt'
+            function_txt = self.CWD / 'POS.txt'
             function_pickle = self.CWD / 'fwarp.pkl'
 
             # check for the existence of Pos.txt in CWD. If not present, return dummy fwarp
@@ -988,7 +988,7 @@ class PGMCompiler:
                     with open(function_pickle, 'rb') as f_read:
                         fwarp = dill.load(f_read)
                 else:
-                    fwarp = self.antiwarp_generation('Pos.txt', grid)
+                    fwarp = self.antiwarp_generation(function_txt, grid)
                     with open(function_pickle, 'wb') as f_write:
                         dill.dump(fwarp, f_write)
 
@@ -1117,13 +1117,20 @@ class PGMCompiler:
 
 def sample_warp(ptsX: float, ptsY: float, margin: float, PARAM_GC):
     PARAM_GC['filename'] = 'SAMPLE_WARP.pgm'
+
     G = PGMCompiler(**PARAM_GC)
+
     if G.laser is None or G.laser.lower() not in ['ant', 'carbide', 'pharos', 'uwe']:
         raise ValueError(f'Fabrication line should be PHAROS, CARBIDE or UWE. Given {G.laser}.')
 
+    function_txt = G.CWD / 'POS.txt'
+    if pathlib.Path.is_file(function_txt):
+        pathlib.Path.unlink(function_txt)
+
     header_name = f'header_{G.laser.lower()}.txt'
     warp_name = 'WARP.txt'
-    sizeX, sizeY = G.samplesize
+
+    size_x, size_y = G.samplesize
     angle = G.aerotech_angle
     with open(pathlib.Path(__file__).parent / 'utils' / warp_name) as f:
         for line in f:
@@ -1161,7 +1168,7 @@ def main() -> None:
         G.move_to([None, 0, 0.1])
         G.set_home([0, 0, 0])
 
-    # Test warp scritp
+    # Test warp script
     sample_warp(ptsX=9, ptsY=9, margin=2, PARAM_GC=PARAM_GC)
 
 
