@@ -16,14 +16,12 @@ from typing import Generator
 from typing import TypeVar
 
 import dill
-import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
 from femto.helpers import flatten
 from femto.helpers import listcast
 from femto.helpers import pad
 from scipy import interpolate
-from scipy.interpolate import CloughTocher2DInterpolator
 
 # Create a generic variable that can be 'PGMCompiler', or any subclass.
 GC = TypeVar('GC', bound='PGMCompiler')
@@ -845,7 +843,7 @@ class PGMCompiler:
         point_matrix = np.stack((x, y, z), axis=-1)
         x_t, y_t, z_t = np.matmul(point_matrix, self.t_matrix).T
 
-        # compensate for warp
+        # compensate for glass warp
         if self.warp_flag:
             return self.compensate(x_t, y_t, z_t)
         return x_t, y_t, z_t
@@ -909,8 +907,9 @@ class PGMCompiler:
         y_comp = copy.deepcopy(np.array(y))
         z_comp = copy.deepcopy(np.array(z))
 
-        zwarp = np.array([float(self.fwarp(x, y)) for x, y in zip(x_comp, y_comp)])
-        z_comp += zwarp / self.neff
+        xy = np.column_stack([x_comp, y_comp])
+        zwarp = np.array(self.fwarp(xy), dtype=np.float32)
+        z_comp += zwarp
 
         return x_comp, y_comp, z_comp
 
@@ -995,7 +994,9 @@ class PGMCompiler:
         return fwarp
 
     @staticmethod
-    def antiwarp_generation(surface_mapping_file: str, gridsize: tuple[float, float]) -> interpolate.interp2d:
+    def antiwarp_generation(
+        surface_mapping_file: str | pathlib.Path, gridsize: tuple[float, float]
+    ) -> interpolate.RBFInterpolator:
         """
         Helper for the generation of antiwarp function.
         Starts from the surface mapping file given in input.
@@ -1011,22 +1012,25 @@ class PGMCompiler:
         warp_matrix = np.loadtxt(surface_mapping_file, dtype='f', delimiter=' ')
 
         x, y, z = warp_matrix.T
-        f = CloughTocher2DInterpolator(list(zip(x, y)), z)
+        f = interpolate.RBFInterpolator(np.column_stack([x, y]), z, kernel='cubic', smoothing=0)
 
-        # DATA GENERATION for surface plotting
+        # Data generation for surface plotting
         x_f = np.linspace(np.min(x), np.max(x), gridsize[0])
         y_f = np.linspace(np.min(y), np.max(y), gridsize[1])
-        # z_warp = f(x_f, y_f)
 
-        # interpolate
+        # Interpolate
         X, Y = np.meshgrid(x_f, y_f)
-        func_antiwarp = f(X, Y)
+        xy_points = np.stack([X.ravel(), Y.ravel()], -1)
+        Z = f.__call__(xy_points).reshape(X.shape)
 
-        # plot the surface
+        # Plot the surface
+        import matplotlib.pyplot as plt
+
         ax = plt.axes(projection='3d')
-        ax.contour3D(x_f, y_f, func_antiwarp, 200, cmap='viridis')
+        ax.contour3D(X, Y, Z, 200, cmap='viridis')
         ax.set_xlabel('X [mm]'), ax.set_ylabel('Y [mm]'), ax.set_zlabel('Z [mm]')
         ax.set_aspect('equalxz')
+        plt.show()
 
         return f
 
