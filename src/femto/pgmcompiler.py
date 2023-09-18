@@ -944,9 +944,9 @@ class PGMCompiler:
         TM = np.matmul(SM, RM).T
         return np.array(TM)
 
-    def antiwarp_management(self, opt: bool, grid: tuple[float, float] = (100, 100)) -> interpolate.interp2d:
+    def antiwarp_management(self, opt: bool, grid: tuple[float, float] = (100, 100)) -> interpolate.RBFInterpolator:
         """
-        Fetches a Pos.txt file containing a mapping of the surface of the sample.
+        Fetches a POS.txt file containing a mapping of the surface of the sample.
 
         NOTE: take care to input a Pos.
 
@@ -975,7 +975,7 @@ class PGMCompiler:
             function_txt = self.CWD / 'POS.txt'
             function_pickle = self.CWD / 'fwarp.pkl'
 
-            # check for the existence of Pos.txt in CWD. If not present, return dummy fwarp
+            # check for the existence of POS.txt in CWD. If not present, return dummy fwarp
             if not function_txt.is_file():
                 warnings.warn('Could not find surface mapping file. Returning dummy function.')
 
@@ -990,7 +990,6 @@ class PGMCompiler:
                     fwarp = self.antiwarp_generation(function_txt, grid)
                     with open(function_pickle, 'wb') as f_write:
                         dill.dump(fwarp, f_write)
-
         return fwarp
 
     @staticmethod
