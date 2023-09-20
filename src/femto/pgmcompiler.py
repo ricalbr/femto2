@@ -62,7 +62,7 @@ class PGMCompiler:
 
         self.fwarp: Callable[
             [npt.NDArray[np.float32], npt.NDArray[np.float32]], npt.NDArray[np.float32]
-        ] = self.antiwarp_management(self.warp_flag)
+        ] = self.warp_management(self.warp_flag)
 
         # Set rotation angle in radians for matrix rotations
         if self.rotation_angle:
@@ -944,7 +944,7 @@ class PGMCompiler:
         TM = np.matmul(SM, RM).T
         return np.array(TM)
 
-    def antiwarp_management(self, opt: bool, grid: tuple[float, float] = (100, 100)) -> interpolate.RBFInterpolator:
+    def warp_management(self, opt: bool, grid: tuple[float, float] = (100, 100)) -> interpolate.RBFInterpolator:
         """
         Fetches a POS.txt file containing a mapping of the surface of the sample.
 
@@ -975,26 +975,25 @@ class PGMCompiler:
             function_txt = self.CWD / 'POS.txt'
             function_pickle = self.CWD / 'fwarp.pkl'
 
-            # check for the existence of POS.txt in CWD. If not present, return dummy fwarp
-            if not function_txt.is_file():
-                warnings.warn('Could not find surface mapping file. Returning dummy function.')
-
-                def fwarp(_x: float, _y: float) -> float:
-                    return 0.0
-
-            else:  # if surface mapping is present, check for warp function. If not present, generate one
-                if function_pickle.is_file():
-                    with open(function_pickle, 'rb') as f_read:
-                        fwarp = dill.load(f_read)
-                else:
-                    fwarp = self.antiwarp_generation(function_txt, grid)
-                    with open(function_pickle, 'wb') as f_write:
-                        dill.dump(fwarp, f_write)
+            if function_pickle.is_file():
+                with open(function_pickle, 'rb') as f_read:
+                    fwarp = dill.load(f_read)
+            else:
+                # check for the existence of POS.txt in CWD. If not present, return dummy fwarp
+                if not function_txt.is_file():
+                    raise FileNotFoundError(
+                        'Could not find surface mapping file. Add it to the current working directory'
+                    )
+                fwarp = self.warp_generation(surface_mapping_file=function_txt, gridsize=grid, show=False)
+                with open(function_pickle, 'wb') as f_write:
+                    dill.dump(fwarp, f_write)
         return fwarp
 
     @staticmethod
-    def antiwarp_generation(
-        surface_mapping_file: str | pathlib.Path, gridsize: tuple[float, float]
+    def warp_generation(
+        surface_mapping_file: str | pathlib.Path = 'POS.txt',
+        gridsize: tuple[float, float] = (100, 100),
+        show: bool = False,
     ) -> interpolate.RBFInterpolator:
         """
         Helper for the generation of antiwarp function.
@@ -1007,29 +1006,30 @@ class PGMCompiler:
         :return: warp function, `f(x, y)`
         :rtype: scipy.interpolate.interp2d
         """
-        # get data from Pos.txt file
+        # Get data from POS.txt file
         warp_matrix = np.loadtxt(surface_mapping_file, dtype='f', delimiter=' ')
 
         x, y, z = warp_matrix.T
         f = interpolate.RBFInterpolator(np.column_stack([x, y]), z, kernel='cubic', smoothing=0)
 
-        # Data generation for surface plotting
-        x_f = np.linspace(np.min(x), np.max(x), gridsize[0])
-        y_f = np.linspace(np.min(y), np.max(y), gridsize[1])
+        if show:
+            # Plot the surface
+            import matplotlib.pyplot as plt
 
-        # Interpolate
-        X, Y = np.meshgrid(x_f, y_f)
-        xy_points = np.stack([X.ravel(), Y.ravel()], -1)
-        Z = f.__call__(xy_points).reshape(X.shape)
+            # Data generation for surface plotting
+            x_f = np.linspace(np.min(x), np.max(x), gridsize[0])
+            y_f = np.linspace(np.min(y), np.max(y), gridsize[1])
 
-        # Plot the surface
-        import matplotlib.pyplot as plt
+            # Interpolate
+            X, Y = np.meshgrid(x_f, y_f)
+            xy_points = np.stack([X.ravel(), Y.ravel()], -1)
+            Z = f.__call__(xy_points).reshape(X.shape)
 
-        ax = plt.axes(projection='3d')
-        ax.contour3D(X, Y, Z, 200, cmap='viridis')
-        ax.set_xlabel('X [mm]'), ax.set_ylabel('Y [mm]'), ax.set_zlabel('Z [mm]')
-        ax.set_aspect('equalxz')
-        plt.show()
+            ax = plt.axes(projection='3d')
+            ax.contour3D(X, Y, Z, 200, cmap='viridis')
+            ax.set_xlabel('X [mm]'), ax.set_ylabel('Y [mm]'), ax.set_zlabel('Z [mm]')
+            ax.set_aspect('equalxz')
+            plt.show()
 
         return f
 

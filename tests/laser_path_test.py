@@ -56,7 +56,8 @@ def test_default_values() -> None:
     assert lp.cmd_rate_max == int(1200)
     assert lp.acc_max == int(500)
     assert lp.samplesize == (100, 50)
-    assert lp.end_off_sample == True
+    assert lp.end_off_sample is True
+    assert lp.warp_flag is False
 
 
 def test_laserpath_values(laser_path) -> None:
@@ -71,7 +72,8 @@ def test_laserpath_values(laser_path) -> None:
     assert laser_path.cmd_rate_max == int(1200)
     assert laser_path.acc_max == int(500)
     assert laser_path.samplesize == (100, 15)
-    assert laser_path.end_off_sample == True
+    assert laser_path.end_off_sample is True
+    assert laser_path.warp_flag is False
 
 
 def test_from_dict(param) -> None:
@@ -88,7 +90,8 @@ def test_from_dict(param) -> None:
     assert lp.cmd_rate_max == int(1200)
     assert lp.acc_max == int(500)
     assert lp.samplesize == (100, 15)
-    assert lp.end_off_sample == True
+    assert lp.end_off_sample is True
+    assert lp.warp_flag is False
 
 
 def test_repr(param) -> None:
@@ -106,9 +109,12 @@ def test_init_point(laser_path) -> None:
 def test_lvelo(laser_path) -> None:
     assert pytest.approx(laser_path.lvelo) == 1.2
 
-
-def test_dl(laser_path) -> None:
-    assert pytest.approx(laser_path.dl) == (1 / 60)
+@pytest.mark.parametrize('s, cmd, exp', [(5, 500, 0.01), (0, 1000, 0.0), (100, 1000, 0.1), (100, 100, 1)])
+def test_dl(s, cmd, exp, param) -> None:
+    param['speed'] = s
+    param['cmd_rate_max'] = cmd
+    lp = LaserPath(**param)
+    assert pytest.approx(lp.dl) == exp
 
 
 def test_x_end(laser_path) -> None:

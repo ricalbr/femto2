@@ -124,6 +124,7 @@ class Marker(LaserPath):
         x_init = self.x_init if x_init is None else x_init
 
         # Add straight segments
+        self.start([x_init, y_ticks[0], self.depth])
         for xt, yt in zip(x_ticks, y_ticks):
             self.linear([x_init, yt, self.depth], mode='ABS', shutter=0)
             self.linear([None, None, None], mode='ABS')
@@ -238,6 +239,7 @@ class Marker(LaserPath):
             ]
 
         # Add linear segments
+        self.start([*pts[0]])
         for path in path_list:
             self.linear(path[0], mode='ABS', shutter=0)
             self.linear(path[0], mode='ABS', shutter=1)

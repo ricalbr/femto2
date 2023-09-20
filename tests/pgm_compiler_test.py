@@ -304,9 +304,14 @@ def test_dwell_time(param, p, t, expected) -> None:
     ],
 )
 def test_antiwarp_management(param, x, y, expected) -> None:
+    from pathlib import Path
+
+    function_pickle = Path.cwd() / 'fwarp.pkl'
     G = PGMCompiler(**param)
-    f = G.antiwarp_management(opt=False)
+    f = G.warp_management(opt=False)
     assert f(x, y) == expected
+    if function_pickle.is_file():
+        function_pickle.unlink()
 
 
 @pytest.mark.parametrize(
@@ -318,14 +323,20 @@ def test_antiwarp_management(param, x, y, expected) -> None:
     ],
 )
 def test_antiwarp_error(param, samplesize, expectation) -> None:
+    from pathlib import Path
+
+    function_pickle = Path.cwd() / 'fwarp.pkl'
     param['samplesize'] = samplesize
     G = PGMCompiler(**param)
     with expectation:
-        assert G.antiwarp_management(opt=True) is not None
+        assert G.warp_management(opt=True) is not None
+
+    if function_pickle.is_file():
+        function_pickle.unlink()
 
 
 @pytest.mark.parametrize('x, y', [(4, 5), (2, 4), (5, 2), (5, 0), (5, 3), (7, 7), (7, 0), (10, 5), (6, 10), (0, 5)])
-def test_antiwarp_load(param, x, y) -> None:
+def test_fwarp_load(param, x, y) -> None:
     G = PGMCompiler(**param)
 
     def fun(h, k):
@@ -337,79 +348,57 @@ def test_antiwarp_load(param, x, y) -> None:
             dill.dump(fun, f)
     assert file.is_file()
 
-    G_fun = G.antiwarp_management(opt=True)
+    G_fun = G.warp_management(opt=True)
     assert G_fun(x, y) == fun(x, y)
     file.unlink()
 
 
-def test_antiwarp_creation(monkeypatch, param) -> None:
+def test_antiwarp_creation(param) -> None:
     from pathlib import Path
 
-    z_in = iter(
-        [
-            '0.01',
-            '0.00',
-            '0.01',
-            '0.02',
-            '0.03',
-            '0.03',
-            '0.05',
-            '0.06',
-            '0.05',
-            '0.05',
-            '0.05',
-            '0.03',
-            '0.02',
-            '0.01',
-            '0.01',
-            '-0.01',
-        ]
-    )
-    monkeypatch.setattr('builtins.input', lambda _: next(z_in))
-
+    fn = 'POS.txt'
     funpath = Path.cwd() / 'fwarp.pkl'
+    pospath = Path.cwd() / fn
+
+    x_in = np.linspace(0, 100, 50)
+    y_in = np.linspace(0, 25, 10)
+    X, Y = np.meshgrid(x_in, y_in)
+    z_in = np.random.uniform(-0.030, 0.030, X.shape)
+
+    M = np.stack([X.ravel(), Y.ravel(), z_in.ravel()], axis=-1)
+    np.savetxt(fn, M, fmt='%.6f', delimiter=' ')
+
     G = PGMCompiler(**param)
-    G_fun = G.antiwarp_management(opt=True)
+    G_fun = G.warp_management(opt=True)
     assert callable(G_fun)
     assert funpath.is_file()
     funpath.unlink()
+    pospath.unlink()
 
 
-def test_antiwarp_creation_input_errors(monkeypatch, param) -> None:
-    z_in = iter(['0.01', '0.01', '0.01', ''])
-    monkeypatch.setattr('builtins.input', lambda _: next(z_in))
-
-    funpath = Path.cwd() / 'fwarp.pkl'
-    G = PGMCompiler(**param)
-    with pytest.raises(ValueError):
-        G.antiwarp_management(opt=True)
-    if funpath.is_file():
-        funpath.unlink()
-
-
-@pytest.mark.parametrize(
-    'num, expectation',
-    [
-        (None, pytest.raises(ValueError)),
-        (0, pytest.raises(ValueError)),
-        (2, pytest.raises(ValueError)),
-        (15, pytest.raises(ValueError)),
-        (17, does_not_raise()),
-        (23, does_not_raise()),
-    ],
-)
-def test_antiwarp_creation_points_error(monkeypatch, param, num, expectation) -> None:
-    if num is not None:
-        # change number of input values according to num
-        z_in = iter([random.uniform(-1, 1) * 1e-3 for _ in range(int(np.ceil(np.sqrt(num))) ** 2)])
-    monkeypatch.setattr('builtins.input', lambda _: next(z_in))
-
-    funpath = Path.cwd() / 'fwarp.pkl'
-    G = PGMCompiler(**param)
-    with expectation:
-        assert G.antiwarp_management(opt=True, num=num) is not None
-    if funpath.is_file():
-        funpath.unlink()
+# @pytest.mark.parametrize(
+#     'num, expectation',
+#     [
+#         (None, pytest.raises(ValueError)),
+#         (0, pytest.raises(ValueError)),
+#         (2, pytest.raises(ValueError)),
+#         (15, pytest.raises(ValueError)),
+#         (17, does_not_raise()),
+#         (23, does_not_raise()),
+#     ],
+# )
+# def test_antiwarp_creation_points_error(monkeypatch, param, num, expectation) -> None:
+#     if num is not None:
+#         # change number of input values according to num
+#         z_in = iter([random.uniform(-1, 1) * 1e-3 for _ in range(int(np.ceil(np.sqrt(num))) ** 2)])
+#     monkeypatch.setattr('builtins.input', lambda _: next(z_in))
+#
+#     funpath = Path.cwd() / 'fwarp.pkl'
+#     G = PGMCompiler(**param)
+#     with expectation:
+#         assert G.warp_management(opt=True, num=num) is not None
+#     if funpath.is_file():
+#         funpath.unlink()
 
 
 @pytest.mark.parametrize(
@@ -1036,34 +1025,31 @@ def test_flip_path(param, x, y, fp_x, fp_y, exp_x, exp_y) -> None:
             np.array([10]),
             np.array([-0.002]),
         ),
-        (
-            np.array([]),
-            np.array([]),
-            np.array([]),
-        ),
     ],
 )
 def test_compensate(param, x, y, z) -> None:
-    def fun(h, k):
-        return (h**2 * k) * 1e-3
+    from pathlib import Path
 
-    file = Path.cwd() / 'fwarp.pkl'
-    if not file.is_file():
-        with open(file, 'wb') as f:
-            dill.dump(fun, f)
+    def fun(h):
+        x, y = h.T
+        return (x**2 * y) * 1e-3
+
+    funpath = Path.cwd() / 'fwarp.pkl'
+    with open(funpath, 'wb') as f:
+        dill.dump(fun, f)
 
     param['warp_flag'] = True
     param['flip_x'] = False
-    G = PGMCompiler(**param)
 
+    G = PGMCompiler(**param)
     xc, yc, zc = G.compensate(x, y, z)
-    zfun = z + np.array([fun(xp, yp) for (xp, yp) in zip(x, y)]) / G.neff
+    zfun = z + np.array([fun(np.array([xp, yp]).T) for (xp, yp) in zip(x, y)])
 
     np.testing.assert_array_equal(xc, x)
     np.testing.assert_array_equal(yc, y)
     np.testing.assert_almost_equal(zc, zfun)
 
-    file.unlink()
+    funpath.unlink()
 
 
 @pytest.mark.parametrize(
@@ -1100,7 +1086,7 @@ def test_t_matrix_matrix(param, angle, res) -> None:
             np.array([0.0, 0.0, 0.0, 0.0]),
             np.array([2, -10, -10, -28]),
             np.array([5, 5, 16, 16]),
-            np.array([-0.001, -0.001, -0.001, -0.001]) * 1.33 / 1.5,
+            np.array([-0.001, -0.001, -0.001, -0.001]),
         ),
         (
             False,
@@ -1112,12 +1098,12 @@ def test_t_matrix_matrix(param, angle, res) -> None:
             np.array([0.0, 0.0, 0.0, 0.0]),
             np.array([-1.9124334, 10.085739, 13.1376393, 34.2740601]),
             np.array([-5.0341433, -4.8247144, -7.7719003, -15.4041813]),
-            np.array([-0.001, -0.001, -0.001, -0.001]) * 1.33 / 1.5,
+            np.array([-0.001, -0.001, -0.001, -0.001]),
         ),
     ],
 )
 def test_transform_points_(param, xflip, yflip, warpf, angle, xin, yin, zin, xo, yo, zo) -> None:
-    def fun(h, k):
+    def fun(h):
         return -1e-3
 
     file = Path.cwd() / 'fwarp.pkl'

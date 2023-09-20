@@ -30,7 +30,7 @@ class LaserPath:
     lsafe: float = 2.0  #: Safe margin length `[mm]`.
     speed_closed: float = 5  #: Closed shutter translation speed `[mm/s]`.
     speed_pos: float = 0.5  #: Positioning speed (shutter closed)`[mm/s]`.
-    cmd_rate_max: float = 900  #: Maximum command rate `[cmd/s]`.
+    cmd_rate_max: float = 1200  #: Maximum command rate `[cmd/s]`.
     acc_max: float = 500  #: Maximum acceleration/deceleration `[m/s^2]`.
     end_off_sample: bool = True  #: Flag to end laserpath off of the sample. (See `x_end`).
     warp_flag: bool = False  #: Flag to toggle the glass warp compensation.
@@ -546,7 +546,7 @@ class LaserPath:
 
         l_curve = np.sqrt((x_inc - self._x[-1]) ** 2 + (y_inc - self._y[-1]) ** 2 + (z_inc - self._z[-1]) ** 2)
         f_val = self.speed if speed is None else speed
-        if l_curve <= 1e-6:
+        if l_curve <= 1e-6 or self.warp_flag is False:
             x_arr = np.array([x_inc])
             y_arr = np.array([y_inc])
             z_arr = np.array([z_inc])
