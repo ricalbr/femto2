@@ -266,6 +266,34 @@ def test_linear_none(param) -> None:
     np.testing.assert_almost_equal(lp._s, np.array([0.0, 1.0, 1.0, 0.0, 0.0]))
 
 
+@pytest.mark.parametrize(
+    'increment, len',
+    [
+        ([1, 1, 1], np.sqrt(3)),
+        ([1, None, 4], np.sqrt(17)),
+        ([1, None, -2], np.sqrt(5)),
+        ([None, None, -2], 2),
+        ([-5, -5, -5], np.sqrt(75)),
+    ],
+)
+def test_linear_warp(param, increment, len) -> None:
+    lp = LaserPath(warp_flag=True, **param)
+    init_p = [0, 0, 0]
+    lp.start(init_p).linear(increment, mode='abs')
+    assert lp.x.size == lp.num_subdivisions(len, lp.speed) + 2
+    assert lp.y.size == lp.num_subdivisions(len, lp.speed) + 2
+    assert lp.z.size == lp.num_subdivisions(len, lp.speed) + 2
+
+
+def test_linear_warp_none(param) -> None:
+    lp = LaserPath(warp_flag=True, **param)
+    init_p = [0, 0, 0]
+    lp.start(init_p).linear([None, None, None], mode='abs')
+    assert lp.x.size == 3
+    assert lp.y.size == 3
+    assert lp.z.size == 3
+
+
 def test_add_path(laser_path) -> None:
     np.testing.assert_almost_equal(laser_path._x, np.array([0, 1, 1, 1, 1, 1, 2, 2, 2]))
     np.testing.assert_almost_equal(laser_path._y, np.array([0, 0, 1, 1, 1, 2, 3, 3, 3]))

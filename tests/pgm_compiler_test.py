@@ -12,6 +12,7 @@ import pytest
 from femto.helpers import flatten
 from femto.helpers import listcast
 from femto.pgmcompiler import PGMCompiler
+from femto.pgmcompiler import sample_warp
 
 
 @pytest.fixture
@@ -376,29 +377,93 @@ def test_antiwarp_creation(param) -> None:
     pospath.unlink()
 
 
-# @pytest.mark.parametrize(
-#     'num, expectation',
-#     [
-#         (None, pytest.raises(ValueError)),
-#         (0, pytest.raises(ValueError)),
-#         (2, pytest.raises(ValueError)),
-#         (15, pytest.raises(ValueError)),
-#         (17, does_not_raise()),
-#         (23, does_not_raise()),
-#     ],
-# )
-# def test_antiwarp_creation_points_error(monkeypatch, param, num, expectation) -> None:
-#     if num is not None:
-#         # change number of input values according to num
-#         z_in = iter([random.uniform(-1, 1) * 1e-3 for _ in range(int(np.ceil(np.sqrt(num))) ** 2)])
-#     monkeypatch.setattr('builtins.input', lambda _: next(z_in))
-#
-#     funpath = Path.cwd() / 'fwarp.pkl'
-#     G = PGMCompiler(**param)
-#     with expectation:
-#         assert G.warp_management(opt=True, num=num) is not None
-#     if funpath.is_file():
-#         funpath.unlink()
+@pytest.mark.parametrize(
+    'xp, yp, mm',
+    [
+        (4, 5, 3.2),
+        (6.7, 5.5, 3),
+        (22, 12, 2),
+    ],
+)
+def test_sample_warp(xp, yp, mm, param):
+    from pathlib import Path
+
+    param['aerotech_angle'] = 0.033
+
+    sample_warp(pts_x=xp, pts_y=yp, margin=mm, PARAM_GC=param)
+
+    sampling_script = Path(__file__).cwd() / param['export_dir'] / 'SAMPLE_WARP.pgm'
+    assert sampling_script.is_file()
+
+    with open(sampling_script) as f:
+        for line in f:
+            if line.startswith('$sizeX'):
+                var = line.split('=')[-1].split(';')[0].strip('\t')
+                var = float(var)
+                assert var == float(param['samplesize'][0])
+            elif line.startswith('$sizeY'):
+                var = line.split('=')[-1].split(';')[0].strip('\t')
+                var = float(var)
+                assert var == float(param['samplesize'][1])
+            elif line.startswith('$margin'):
+                var = line.split('=')[-1].split(';')[0].strip('\t')
+                var = float(var)
+                assert var == mm
+            elif line.startswith('$pointsX'):
+                var = line.split('=')[-1].split(';')[0].strip('\t')
+                var = int(float(var))
+                assert var == int(xp)
+            elif line.startswith('$pointsY'):
+                var = line.split('=')[-1].split(';')[0].strip('\t')
+                var = int(float(var))
+                assert var == int(yp)
+            elif line.startswith('$angle'):
+                var = line.split('=')[-1].split(';')[0].strip('\t')
+                var = float(var)
+                assert var == float(param['aerotech_angle'])
+            else:
+                pass
+
+    sampling_script.unlink()
+    Path(Path(__file__).cwd() / param['export_dir']).rmdir()
+
+
+def test_sample_warp_param_error(param):
+    param['aerotech_angle'] = 0.55
+
+    p1 = param
+    p1['laser'] = None
+    with pytest.raises(ValueError):
+        assert sample_warp(7, 7, 3, param) is not None
+
+    p2 = param
+    p2['aerotech_angle'] = None
+    with pytest.raises(ValueError):
+        assert sample_warp(7, 7, 3, param) is not None
+
+    p3 = param
+    p3['samplesize'] = (None, 4)
+    with pytest.raises(ValueError):
+        assert sample_warp(7, 7, 3, param) is not None
+
+    p4 = param
+    p4['samplesize'] = (None, None)
+    with pytest.raises(ValueError):
+        assert sample_warp(7, 7, 3, param) is not None
+
+
+def test_sample_warp_pos_file(param):
+    param['aerotech_angle'] = 0.55
+    x = np.linspace(0, 7, 15)
+    y = np.linspace(0, 7, 15)
+    z = np.random.uniform(-0.005, 0.005, x.size)
+    M = np.stack([x, y, z], axis=-1)
+    np.savetxt('POS.txt', M)
+
+    pos_file = Path(__file__).cwd() / 'POS.txt'
+    assert pos_file.is_file()
+    sample_warp(7, 7, 3, param)
+    assert not pos_file.is_file()
 
 
 @pytest.mark.parametrize(

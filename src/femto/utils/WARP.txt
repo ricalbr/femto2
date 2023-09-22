@@ -12,8 +12,8 @@ DVAR $iii $jjj
 $sizeX = {size_x:.6f}		; [mm] size in X of the chip
 $sizeY = {size_y:.6f}		; [mm] size in Y of the chip
 $margin = {margin:.6f}		; [mm] distance of the mesh from the chip border
-$pointsX = {ptsX}			; Number of points of the mesh per row on X
-$pointsY = {ptsY}			; Number of points of the mesh per column on Y
+$pointsX = {pts_x}			; Number of points of the mesh per row on X
+$pointsY = {pts_y}			; Number of points of the mesh per column on Y
 $angle = {angle:.6f}		; [deg] AeroTech rotation angle
 
 $meshSizeX = $sizeX - 2*$margin

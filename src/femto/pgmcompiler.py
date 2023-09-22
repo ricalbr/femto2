@@ -7,7 +7,6 @@ import dataclasses
 import itertools
 import math
 import pathlib
-import warnings
 from types import TracebackType
 from typing import Any
 from typing import Callable
@@ -1017,8 +1016,8 @@ class PGMCompiler:
             import matplotlib.pyplot as plt
 
             # Data generation for surface plotting
-            x_f = np.linspace(np.min(x), np.max(x), gridsize[0])
-            y_f = np.linspace(np.min(y), np.max(y), gridsize[1])
+            x_f = np.linspace(np.min(x), np.max(x), int(gridsize[0]))
+            y_f = np.linspace(np.min(y), np.max(y), int(gridsize[1]))
 
             # Interpolate
             X, Y = np.meshgrid(x_f, y_f)
@@ -1118,23 +1117,19 @@ class PGMCompiler:
         self.dwell(self.short_pause)
 
 
-def sample_warp(ptsX: float, ptsY: float, margin: float, PARAM_GC):
+def sample_warp(pts_x: int, pts_y: int, margin: float, PARAM_GC):
+
     PARAM_GC['filename'] = 'SAMPLE_WARP.pgm'
+    size_x, size_y = PARAM_GC['samplesize']
+    angle = PARAM_GC['aerotech_angle']
+    warp_name = 'WARP.txt'
 
     G = PGMCompiler(**PARAM_GC)
-
-    if G.laser is None or G.laser.lower() not in ['ant', 'carbide', 'pharos', 'uwe']:
-        raise ValueError(f'Fabrication line should be PHAROS, CARBIDE or UWE. Given {G.laser}.')
 
     function_txt = G.CWD / 'POS.txt'
     if pathlib.Path.is_file(function_txt):
         pathlib.Path.unlink(function_txt)
 
-    header_name = f'header_{G.laser.lower()}.txt'
-    warp_name = 'WARP.txt'
-
-    size_x, size_y = G.samplesize
-    angle = G.aerotech_angle
     with open(pathlib.Path(__file__).parent / 'utils' / warp_name) as f:
         for line in f:
             if line.startswith('<HEADER>'):
