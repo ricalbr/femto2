@@ -109,6 +109,7 @@ def test_init_point(laser_path) -> None:
 def test_lvelo(laser_path) -> None:
     assert pytest.approx(laser_path.lvelo) == 1.2
 
+
 @pytest.mark.parametrize('s, cmd, exp', [(5, 500, 0.01), (0, 1000, 0.0), (100, 1000, 0.1), (100, 100, 1)])
 def test_dl(s, cmd, exp, param) -> None:
     param['speed'] = s
