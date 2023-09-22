@@ -392,7 +392,7 @@ def test_sample_warp(xp, yp, mm, param):
 
     sample_warp(pts_x=xp, pts_y=yp, margin=mm, PARAM_GC=param)
 
-    sampling_script = Path(__file__).cwd() / param['export_dir'] / 'SAMPLE_WARP.pgm'
+    sampling_script = Path('.') / param['export_dir'] / 'SAMPLE_WARP.pgm'
     assert sampling_script.is_file()
 
     with open(sampling_script) as f:
@@ -425,35 +425,41 @@ def test_sample_warp(xp, yp, mm, param):
                 pass
 
     sampling_script.unlink()
-    Path(Path(__file__).cwd() / param['export_dir']).rmdir()
+    Path(Path('.') / param['export_dir']).rmdir()
 
 
 def test_sample_warp_param_error(param):
     param['aerotech_angle'] = 0.55
+    sampling_script = Path('.') / param['export_dir'] / 'SAMPLE_WARP.pgm'
 
     p1 = param
     p1['laser'] = None
     with pytest.raises(ValueError):
         assert sample_warp(7, 7, 3, param) is not None
+        assert not sampling_script.is_file()
 
     p2 = param
     p2['aerotech_angle'] = None
     with pytest.raises(ValueError):
         assert sample_warp(7, 7, 3, param) is not None
+        assert not sampling_script.is_file()
 
     p3 = param
     p3['samplesize'] = (None, 4)
     with pytest.raises(ValueError):
         assert sample_warp(7, 7, 3, param) is not None
+        assert not sampling_script.is_file()
 
     p4 = param
     p4['samplesize'] = (None, None)
     with pytest.raises(ValueError):
         assert sample_warp(7, 7, 3, param) is not None
+        assert not sampling_script.is_file()
 
 
 def test_sample_warp_pos_file(param):
     param['aerotech_angle'] = 0.55
+
     x = np.linspace(0, 7, 15)
     y = np.linspace(0, 7, 15)
     z = np.random.uniform(-0.005, 0.005, x.size)
@@ -461,9 +467,13 @@ def test_sample_warp_pos_file(param):
     np.savetxt('POS.txt', M)
 
     pos_file = Path(__file__).cwd() / 'POS.txt'
+    sampling_script = Path('.') / param['export_dir'] / 'SAMPLE_WARP.pgm'
+
     assert pos_file.is_file()
     sample_warp(7, 7, 3, param)
     assert not pos_file.is_file()
+    sampling_script.unlink()
+    Path(Path('.') / param['export_dir']).rmdir()
 
 
 @pytest.mark.parametrize(
