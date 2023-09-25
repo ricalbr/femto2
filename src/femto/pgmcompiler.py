@@ -29,23 +29,23 @@ GC = TypeVar('GC', bound='PGMCompiler')
 @dataclasses.dataclass(repr=False)
 class PGMCompiler:
 
-    filename: str
-    n_glass: float = 1.50
-    n_environment: float = 1.33
-    export_dir: str = ''
-    samplesize: tuple[float, float] = (100, 50)
-    laser: str = 'PHAROS'
-    home: bool = False
-    new_origin: tuple[float, float] = (0.0, 0.0)
-    warp_flag: bool = False
-    rotation_angle: float = 0.0
-    aerotech_angle: float = 0.0
-    long_pause: float = 0.5
-    short_pause: float = 0.05
-    output_digits: int = 6
-    speed_pos: float = 5.0
-    flip_x: bool = False
-    flip_y: bool = False
+    filename: str  #: File name of the PGM file.
+    laser: str = 'PHAROS'  #: Name of the laser source.
+    export_dir: str = ''  #: Directory in which the G-Code files will be exported.
+    n_glass: float = 1.50  #: Sample glass refractive index.
+    n_environment: float = 1.33  #: Environment refractive index. The defualt is for water immersion fabrications.
+    samplesize: tuple[float, float] = (100, 50)  #: (`x`, `y`) sizes of the fabrication sample, `[mm]`.
+    shift_origin: tuple[float, float] = (0.0, 0.0)  #: Shift the cooordinates of the origin to this new point.
+    rotation_angle: float = 0.0  #: Physical rotation angle, objects are geometrically rotated by this angle.
+    aerotech_angle: float = 0.0  #: Part rotation angle `(G84)`.
+    long_pause: float = 0.5  #: Long DWELL pause, `[s]`.
+    short_pause: float = 0.1  #: Short DWELL pause, `[s]`.
+    speed_pos: float = 5.0  #: Positioning speed `[mm/s]`.
+    output_digits: int = 6  #: Number of output digits for the PGM file.
+    home: bool = False  #: Flag to start and finish in the user defined axis shift_origin.
+    warp_flag: bool = False  #: Flag for triggering warp compensation.
+    flip_x: bool = False  #: Flag for the x-axis flipping.
+    flip_y: bool = False  #: Flag for the y-axis flipping.
 
     _total_dwell_time: float = 0.0
     _shutter_on: bool = False
@@ -832,8 +832,8 @@ class PGMCompiler:
         z = np.asarray(z, dtype=np.float32)
 
         # translate points to new origin
-        x -= self.new_origin[0]
-        y -= self.new_origin[1]
+        x -= self.shift_origin[0]
+        y -= self.shift_origin[1]
 
         # flip x, y coordinates
         x, y = self.flip(x, y)
@@ -869,7 +869,6 @@ class PGMCompiler:
             Flipped `x` and `y` arrays.
         """
 
-        # disp = np.array([self.new_origin[0], self.new_origin[1], 0])
         fx = int(self.flip_x) * 2 - 1
         fy = int(self.flip_y) * 2 - 1
         mirror_matrix = np.array([[-fx, 0], [0, -fy]])
@@ -943,23 +942,34 @@ class PGMCompiler:
         TM = np.matmul(SM, RM).T
         return np.array(TM)
 
-    def warp_management(self, opt: bool, grid: tuple[float, float] = (100, 100)) -> interpolate.RBFInterpolator:
-        """
-        Fetches a POS.txt file containing a mapping of the surface of the sample.
+    def warp_management(self, opt: bool) -> interpolate.RBFInterpolator:
+        """Warp Management
 
-        NOTE: take care to input a Pos.
+        Fetches warping function describing the surface of the sample.
+        If ``opt`` is ``False``, the method load a dummy function representing a flat sample (no warp will be
+        corrected).
+        If ``opt`` is ``True``, the method look will load a function given by the interpolation of the points
+        measured experimentally saved in a POS.txt file  containing a mapping of the surface of the sample. If a
+        compensating function is already present in the current working direcoty, the method will just load that
+        function without interpolating all the points from scratch.
+
+        Notes
+        -----
+        Take care to input a POS.txt file.
 
         Parameters
         ----------
         opt: bool
             Flag to bypass the warp compensation
-        grid: Tuple(float, float)
-            Dimension of the grid for the interpolation (dim_x, dim_y)
 
         Returns
         -------
-        interpolate.interp2d
+        interpolate.RBFInterpolator
             interpolating function S(x, y) of the surface of the sample
+
+        See Also
+        --------
+        femto.pgmcompiler.warp_generation: method that performs the surface interpolation given a POS.txt file
         """
 
         if not opt:
@@ -983,7 +993,7 @@ class PGMCompiler:
                     raise FileNotFoundError(
                         'Could not find surface mapping file. Add it to the current working directory'
                     )
-                fwarp = self.warp_generation(surface_mapping_file=function_txt, gridsize=grid, show=False)
+                fwarp = self.warp_generation(surface_mapping_file=function_txt, gridsize=(100, 100), show=False)
                 with open(function_pickle, 'wb') as f_write:
                     dill.dump(fwarp, f_write)
         return fwarp
@@ -991,19 +1001,33 @@ class PGMCompiler:
     @staticmethod
     def warp_generation(
         surface_mapping_file: str | pathlib.Path = 'POS.txt',
-        gridsize: tuple[float, float] = (100, 100),
+        gridsize: tuple[int, int] = (100, 100),
         show: bool = False,
     ) -> interpolate.RBFInterpolator:
-        """
-        Helper for the generation of antiwarp function.
-        Starts from the surface mapping file given in input.
+        """Warp Generation
 
-        :param surface_mapping_file: file containing the warp coordinates of the sample
-        :type surface_mapping_file: str
-        :param gridsize: dimensions of the interpolation grid, (x-dim, y-dim)
-        :type gridsize: Tuple(float, float)
-        :return: warp function, `f(x, y)`
-        :rtype: scipy.interpolate.interp2d
+        The method load the smapled points contained in the POS.txt file and finds a surface that interpolates them
+        using the RBF interpolator.
+        The ``show`` flag allows to plot the surface for debugging or inspection purposes.
+
+        Parameters
+        ----------
+        surface_mapping_file: str | pathlib.Path
+            File containing the warp coordinates of the sample.
+        gridsize: tuple(int, int)
+            Dimensions of the interpolation grid, (`x`-dim, `y`-dim). The default value is ``(100, 100)``.
+        show: bool
+            Flag to show the plot of the interpolated surface. The default value is ``False``.
+
+        Returns
+        -------
+        scipy.interpolate.RBFInterpolator
+            Warp function, `f(x, y)`
+
+        See Also
+        --------
+        scipy.interpolate.RBFInterpolator: 2D interpolator function.
+
         """
         # Get data from POS.txt file
         warp_matrix = np.loadtxt(surface_mapping_file, dtype='f', delimiter=' ')
@@ -1117,14 +1141,41 @@ class PGMCompiler:
         self.dwell(self.short_pause)
 
 
-def sample_warp(pts_x: int, pts_y: int, margin: float, PARAM_GC):
+def sample_warp(pts_x: int, pts_y: int, margin: float, parameters: dict(str, Any)) -> None:
+    """Generate sampling script
 
-    PARAM_GC['filename'] = 'SAMPLE_WARP.pgm'
-    size_x, size_y = PARAM_GC['samplesize']
-    angle = PARAM_GC['aerotech_angle']
+    The function compile a PGM file that automatically reads the G-Code parameters (namely, angle and sample size)
+    and some user-input parameters for measuring the z-coordinate of the focused laser beam on the sample surface.
+
+    The sampling points are part of a ``pts_x``x``pts_y`` grid. ``margin`` is the distance between the edges of the
+    grid and the side of the sample.
+
+    The G-Code script is intended to work for the bottom surface of the sample. The user must correct the
+    ``z``-coordinate for each point of the grid. At the end of the script a `POS.txt` file is generated with all the
+    coordinates of the points. It can be used to interpolate the surface of the sample.
+
+    Parameters
+    ----------
+    pts_x: int
+        Number of grid points along the `x`-direction
+    pts_y: int
+        Number of grid points along the `y`-direction
+    margin: float
+        Distance between the edge of the points-grid and the edges of the sample.
+    parameters: dict(str, Any)
+        Dictionary of the the parameters for a G-Code file.
+
+    Returns
+    -------
+    None
+    """
+
+    parameters['filename'] = 'SAMPLE_WARP.pgm'
+    size_x, size_y = parameters['samplesize']
+    angle = parameters['aerotech_angle']
     warp_name = 'WARP.txt'
 
-    G = PGMCompiler(**PARAM_GC)
+    G = PGMCompiler(**parameters)
 
     function_txt = G.CWD / 'POS.txt'
     if pathlib.Path.is_file(function_txt):

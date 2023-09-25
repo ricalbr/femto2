@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import math
-import random
 from collections import deque
 from contextlib import nullcontext as does_not_raise
 from pathlib import Path
@@ -38,20 +37,20 @@ def empty_mk(param) -> PGMCompiler:
 
 
 def test_default_values() -> None:
-    G = PGMCompiler('prova', 1.50, 1.33)
+    G = PGMCompiler(filename='prova', n_glass=1.50, n_environment=1.33)
     assert G.filename == 'prova'
     assert G.export_dir == ''
     assert G.samplesize == (100, 50)
     assert G.laser == 'PHAROS'
     assert G.home is False
-    assert G.new_origin == (0.0, 0.0)
+    assert G.shift_origin == (0.0, 0.0)
     assert G.warp_flag is False
     assert G.n_glass == float(1.50)
     assert G.n_environment == float(1.33)
     assert G.rotation_angle == float(0.0)
     assert G.aerotech_angle == float(0.0)
     assert G.long_pause == float(0.5)
-    assert G.short_pause == float(0.05)
+    assert G.short_pause == float(0.1)
     assert G.output_digits == int(6)
     assert G.speed_pos == float(5.0)
     assert G.flip_x is False
@@ -65,7 +64,7 @@ def test_gcode_values(param) -> None:
     assert G.samplesize == (25, 25)
     assert G.laser == 'PHAROS'
     assert G.home is False
-    assert G.new_origin == (0.0, 0.0)
+    assert G.shift_origin == (0.0, 0.0)
     assert G.warp_flag is False
     assert G.n_glass == float(1.50)
     assert G.n_environment == float(1.33)
@@ -86,7 +85,7 @@ def test_mk_from_dict(param) -> None:
     assert G.samplesize == (25, 25)
     assert G.laser == 'PHAROS'
     assert G.home is False
-    assert G.new_origin == (0.0, 0.0)
+    assert G.shift_origin == (0.0, 0.0)
     assert G.warp_flag is False
     assert G.n_glass == float(1.50)
     assert G.n_environment == float(1.33)
@@ -183,9 +182,9 @@ def test_enter_exit_method() -> None:
                 '\n; ACTIVATE AXIS ROTATION\n',
                 'G1 X0.000000 Y0.000000 Z0.000000 F5.000000\n',
                 'G84 X Y\n',
-                'DWELL 0.05\n',
+                'DWELL 0.1\n',
                 'G84 X Y F2.0\n\n',
-                'DWELL 0.05\n',
+                'DWELL 0.1\n',
             ]
         )
     assert G._instructions == deque([])
@@ -390,7 +389,7 @@ def test_sample_warp(xp, yp, mm, param):
 
     param['aerotech_angle'] = 0.033
 
-    sample_warp(pts_x=xp, pts_y=yp, margin=mm, PARAM_GC=param)
+    sample_warp(pts_x=xp, pts_y=yp, margin=mm, parameters=param)
 
     sampling_script = Path('.') / param['export_dir'] / 'SAMPLE_WARP.pgm'
     assert sampling_script.is_file()
