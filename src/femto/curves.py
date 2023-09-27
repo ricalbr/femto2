@@ -6,18 +6,17 @@ from scipy import special
 from scipy.interpolate import BPoly
 
 
-def euler(radius, theta, num_points):
+def euler(radius, theta, dz, num_points, **kwargs):
     L = 2 * abs(radius) * theta  # total length of the Euler bend
     f = np.sqrt(np.pi * abs(radius) * L)  # Fresnel integral function are defined as function of (pi*t^2/2)
 
     t = np.linspace(0, L, num_points // 2)
     y, x = special.fresnel(t / f)
-    z = np.zeros_like(x)
+    z = np.linspace(0, dz, x.size)
     return f * x, f * y, z
 
 
-def sin(dx, dy, dz, num_points, flat_peaks=0):
-
+def sin(dx, dy, dz, num_points, flat_peaks=0, **kwargs):
     x = np.linspace(0, dx, num_points)
     tmp_cos = np.cos(np.pi / dx * x)
     y = 0.5 * dy * (1 - np.sqrt((1 + flat_peaks**2) / (1 + flat_peaks**2 * tmp_cos**2)) * tmp_cos)
@@ -32,6 +31,7 @@ def spline(
     num_points,
     y_derivatives: tuple[tuple[float, float], tuple[float, float]] = ((0.0, 0.0), (0.0, 0.0)),
     z_derivatives: tuple[tuple[float, float], tuple[float, float]] = ((0.0, 0.0), (0.0, 0.0)),
+    **kwargs,
 ):
     x = np.linspace(0, dx, num_points)
     y = BPoly.from_derivatives([0, dx], [[0, *y_derivatives[0]], [dy, *y_derivatives[-1]]])(x)
@@ -39,12 +39,7 @@ def spline(
     return x, y, z
 
 
-def spline_bridge(
-    dx,
-    dy,
-    dz,
-    num_points,
-):
+def spline_bridge(dx, dy, dz, num_points, **kwargs):
     xi, yi, zi = spline(
         dx=dx / 2,
         dy=dy / 2,
@@ -64,42 +59,42 @@ def spline_bridge(
     return np.append(xi, xf + xi[-1]), np.append(yi, yf + yi[-1]), np.append(zi, zf + zi[-1])
 
 
-def tanh(dx, dy, dz, num_points, s: float = 1.0):
+def tanh(dx, dy, dz, num_points, s: float = 1.0, **kwargs):
     x = np.linspace(-dx / 2, dx / 2, num_points)
     y = dy / 2 * np.tanh(x * s)
-    z = np.linspace(0, dz, num_points)
+    z = np.linspace(0, dz, x.size)
     return x + dx / 2, y + dy / 2, z
 
 
-def erf(dx, dy, dz, num_points, s: float = 1.0):
+def erf(dx, dy, dz, num_points, s: float = 1.0, **kwargs):
     x = np.linspace(-dx / 2, dx / 2, num_points)
     y = dy / 2 * (1 + special.erf(x * s))
-    z = np.linspace(0, dz, num_points)
+    z = np.linspace(0, dz, x.size)
     return x + dx / 2, y, z
 
 
-def arctan(dx, dy, dz, num_points, s: float = 1.0):
+def arctan(dx, dy, dz, num_points, s: float = 1.0, **kwargs):
     x = np.linspace(-dx / 2, dx / 2, num_points)
     y = 2 / np.pi * np.arctan(np.pi * (x * s) / 2)
-    z = np.linspace(0, dz, num_points)
+    z = np.linspace(0, dz, x.size)
     return x + dx / 2, y * dy / (y[-1] - y[0]) + dy / 2, z
 
 
-def rad(dx, dy, dz, num_points, s: float = 1.0):
+def rad(dx, dy, dz, num_points, s: float = 1.0, **kwargs):
     x = np.linspace(-dx / 2, dx / 2, num_points)
     y = x * s / (np.sqrt(1 + (x * s) ** 2))
-    z = np.linspace(0, dz, num_points)
+    z = np.linspace(0, dz, x.size)
     return x + dx / 2, y * dy / (y[-1] - y[0]) + dy / 2, z
 
 
-def abv(dx, dy, dz, num_points, s: float = 1.0):
+def abv(dx, dy, dz, num_points, s: float = 1.0, **kwargs):
     x = np.linspace(-dx / 2, dx / 2, num_points)
     y = x * s * 1 / (1 + abs(x * s))
-    z = np.linspace(0, dz, num_points)
+    z = np.linspace(0, dz, x.size)
     return x + dx / 2, y * dy / (y[-1] - y[0]) + dy / 2, z
 
 
-def euler_S2(dx, dy, dz, num_points, theta: float = np.pi / 24, radius: float = 15, n: int = 1):
+def euler_S2(dx, dy, dz, radius: float, num_points, theta: float = np.pi / 24, n: int = 1, **kwargs):
     k = 1 / (theta**n * radius ** (n + 1) * (n + 1) ** n)
     s_f = (theta * (n + 1) / k) ** (1 / (n + 1))
     s_vals = np.linspace(0, s_f, num_points // 2)
@@ -116,11 +111,11 @@ def euler_S2(dx, dy, dz, num_points, theta: float = np.pi / 24, radius: float = 
 
     x = x_data * dx / x_data[-1]
     y = y_data * dy / y_data[-1]
-    z = np.linspace(0, dz, num_points)
+    z = np.linspace(0, dz, x.size)
     return x, y, z
 
 
-def euler_S4(dx, dy, dz, num_points, theta: float = np.pi / 24, radius: float = 15, n: int = 1):
+def euler_S4(dx, dy, dz, num_points, radius: float, theta: float = np.pi / 24, n: int = 1, **kwargs):
     k = 1 / (theta**n * radius ** (n + 1) * (n + 1) ** n)
     s_f = (theta * (n + 1) / k) ** (1 / (n + 1))
     s_vals = np.linspace(0, s_f, num_points // 2)
@@ -142,12 +137,12 @@ def euler_S4(dx, dy, dz, num_points, theta: float = np.pi / 24, radius: float = 
 
     x = x_data * dx / x_data[-1]
     y = y_data * dy / y_data[-1]
-    z = np.linspace(0, dz, num_points)
+    z = np.linspace(0, dz, x.size)
     return x, y, z
 
 
-def circ(dx, dy, dz, num_points, radius: float = 15):
-    thetaf = np.arccos(1 - dy / (2 * radius))
+def circ(dx, dy, dz, num_points, radius, **kwargs):
+    thetaf = np.arccos(1 - np.abs(dy) / (2 * radius))
     theta = 3 * np.pi / 2 + np.linspace(0, thetaf, num_points // 2)
 
     x1, y1 = radius * np.cos(theta), (radius * np.sin(theta)) + radius
@@ -157,8 +152,9 @@ def circ(dx, dy, dz, num_points, radius: float = 15):
 
     x = np.concatenate([x1, x2], 0)
     y = np.concatenate([y1, y2], 0)
-    z = np.linspace(0, dz, num_points)
-    return x, y, z
+    z = np.linspace(0, dz, x.size)
+
+    return x, np.sign(dy) * y, z
 
 
 def series(curve, n):
@@ -189,9 +185,9 @@ if __name__ == '__main__':
     # z, y, z = abv(dx=10, dy=0.08, dz=0, num_points=200)
     # x, y, z = euler_S2(theta=np.pi / 24, radius=15000, dx=5, dy=0.40, dz=0, n=1, num_points=1000)
     # x, y, z = euler_S4(theta=np.pi / 24, radius=15000, dx=5, dy=0.40, dz=0, n=1, num_points=1000)
-    # x, y, z = circ(dx=5, dy=0.40, dz=0, num_points=1000)
+    x, y, z = circ(dx=5, dy=0.40, dz=0, num_points=1000)
 
-    x, y, _ = series(erf(s=1, dy=0.040, dx=5, dz=0, num_points=100), 6)
+    # x, y, _ = series(erf(s=1, dy=0.040, dx=5, dz=0, num_points=100), 6)
 
     plt.figure(1)
     plt.clf()

@@ -8,7 +8,7 @@ import numpy as np
 import openpyxl
 import pytest
 from femto import __file__ as fpath
-from femto.curves import sin_bend
+from femto.curves import sin
 from femto.device import Device
 from femto.helpers import dotdict
 from femto.marker import Marker
@@ -50,8 +50,8 @@ def list_wg() -> list[Waveguide]:
     for i, wg in enumerate(coup):
         wg.start([-2, i * wg.pitch, 0.035])
         wg.linear([5, 0, 0])
-        wg.coupler(dy=(-1) ** i * wg.dy_bend, dz=0, fx=sin_bend)
-        wg.coupler(dy=(-1) ** i * wg.dy_bend, dz=0, fx=sin_bend)
+        wg.coupler(dy=(-1) ** i * wg.dy_bend, dz=0, fx=sin)
+        wg.coupler(dy=(-1) ** i * wg.dy_bend, dz=0, fx=sin)
         wg.linear([5, 0, 0])
         wg.end()
     return coup
