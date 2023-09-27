@@ -4,9 +4,12 @@ import numpy as np
 import scipy.integrate as integrate
 from scipy import special
 from scipy.interpolate import BPoly
+import numpy.typing as npt
 
 
-def euler(radius, theta, dz, num_points, **kwargs):
+def euler(
+    radius: float, theta: float, dz: float, num_points: int, **kwargs
+) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32], npt.NDArray[np.float32]]:
     L = 2 * abs(radius) * theta  # total length of the Euler bend
     f = np.sqrt(np.pi * abs(radius) * L)  # Fresnel integral function are defined as function of (pi*t^2/2)
 
@@ -16,30 +19,34 @@ def euler(radius, theta, dz, num_points, **kwargs):
     return f * x, f * y, z
 
 
-def sin(dx, dy, dz, num_points, flat_peaks=0, **kwargs):
+def sin(
+    dx: float, dy: float, dz: float, num_points: int, flat_peaks: float = 0, **kwargs
+) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32], npt.NDArray[np.float32]]:
     x = np.linspace(0, dx, num_points)
     tmp_cos = np.cos(np.pi / dx * x)
     y = 0.5 * dy * (1 - np.sqrt((1 + flat_peaks**2) / (1 + flat_peaks**2 * tmp_cos**2)) * tmp_cos)
     z = 0.5 * dz * (1 - np.cos(np.pi / dx * x))
-    return x, y, z
+    return x, y, z  # np.ndarray(), np.ndarray(), np.ndarray()
 
 
 def spline(
-    dx,
-    dy,
-    dz,
-    num_points,
+    dx: float,
+    dy: float,
+    dz: float,
+    num_points: int,
     y_derivatives: tuple[tuple[float, float], tuple[float, float]] = ((0.0, 0.0), (0.0, 0.0)),
     z_derivatives: tuple[tuple[float, float], tuple[float, float]] = ((0.0, 0.0), (0.0, 0.0)),
     **kwargs,
-):
+) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32], npt.NDArray[np.float32]]:
     x = np.linspace(0, dx, num_points)
     y = BPoly.from_derivatives([0, dx], [[0, *y_derivatives[0]], [dy, *y_derivatives[-1]]])(x)
     z = BPoly.from_derivatives([0, dx], [[0, *z_derivatives[0]], [dz, *z_derivatives[-1]]])(x)
     return x, y, z
 
 
-def spline_bridge(dx, dy, dz, num_points, **kwargs):
+def spline_bridge(
+    dx: float, dy: float, dz: float, num_points: int, **kwargs
+) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32], npt.NDArray[np.float32]]:
     xi, yi, zi = spline(
         dx=dx / 2,
         dy=dy / 2,
@@ -59,42 +66,54 @@ def spline_bridge(dx, dy, dz, num_points, **kwargs):
     return np.append(xi, xf + xi[-1]), np.append(yi, yf + yi[-1]), np.append(zi, zf + zi[-1])
 
 
-def tanh(dx, dy, dz, num_points, s: float = 1.0, **kwargs):
+def tanh(
+    dx: float, dy: float, dz: float, num_points: int, s: float = 1.0, **kwargs
+) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32], npt.NDArray[np.float32]]:
     x = np.linspace(-dx / 2, dx / 2, num_points)
     y = dy / 2 * np.tanh(x * s)
     z = np.linspace(0, dz, x.size)
     return x + dx / 2, y + dy / 2, z
 
 
-def erf(dx, dy, dz, num_points, s: float = 1.0, **kwargs):
+def erf(
+    dx: float, dy: float, dz: float, num_points: int, s: float = 1.0, **kwargs
+) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32], npt.NDArray[np.float32]]:
     x = np.linspace(-dx / 2, dx / 2, num_points)
     y = dy / 2 * (1 + special.erf(x * s))
     z = np.linspace(0, dz, x.size)
     return x + dx / 2, y, z
 
 
-def arctan(dx, dy, dz, num_points, s: float = 1.0, **kwargs):
+def arctan(
+    dx: float, dy: float, dz: float, num_points: int, s: float = 1.0, **kwargs
+) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32], npt.NDArray[np.float32]]:
     x = np.linspace(-dx / 2, dx / 2, num_points)
     y = 2 / np.pi * np.arctan(np.pi * (x * s) / 2)
     z = np.linspace(0, dz, x.size)
     return x + dx / 2, y * dy / (y[-1] - y[0]) + dy / 2, z
 
 
-def rad(dx, dy, dz, num_points, s: float = 1.0, **kwargs):
+def rad(
+    dx: float, dy: float, dz: float, num_points: int, s: float = 1.0, **kwargs
+) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32], npt.NDArray[np.float32]]:
     x = np.linspace(-dx / 2, dx / 2, num_points)
     y = x * s / (np.sqrt(1 + (x * s) ** 2))
     z = np.linspace(0, dz, x.size)
     return x + dx / 2, y * dy / (y[-1] - y[0]) + dy / 2, z
 
 
-def abv(dx, dy, dz, num_points, s: float = 1.0, **kwargs):
+def abv(
+    dx: float, dy: float, dz: float, num_points: int, s: float = 1.0, **kwargs
+) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32], npt.NDArray[np.float32]]:
     x = np.linspace(-dx / 2, dx / 2, num_points)
     y = x * s * 1 / (1 + abs(x * s))
     z = np.linspace(0, dz, x.size)
     return x + dx / 2, y * dy / (y[-1] - y[0]) + dy / 2, z
 
 
-def euler_S2(dx, dy, dz, radius: float, num_points, theta: float = np.pi / 24, n: int = 1, **kwargs):
+def euler_S2(
+    dx: float, dy: float, dz: float, radius: float, num_points: int, theta: float = np.pi / 24, n: int = 1, **kwargs
+) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32], npt.NDArray[np.float32]]:
     k = 1 / (theta**n * radius ** (n + 1) * (n + 1) ** n)
     s_f = (theta * (n + 1) / k) ** (1 / (n + 1))
     s_vals = np.linspace(0, s_f, num_points // 2)
@@ -115,7 +134,9 @@ def euler_S2(dx, dy, dz, radius: float, num_points, theta: float = np.pi / 24, n
     return x, y, z
 
 
-def euler_S4(dx, dy, dz, num_points, radius: float, theta: float = np.pi / 24, n: int = 1, **kwargs):
+def euler_S4(
+    dx: float, dy: float, dz: float, num_points: int, radius: float, theta: float = np.pi / 24, n: int = 1, **kwargs
+) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32], npt.NDArray[np.float32]]:
     k = 1 / (theta**n * radius ** (n + 1) * (n + 1) ** n)
     s_f = (theta * (n + 1) / k) ** (1 / (n + 1))
     s_vals = np.linspace(0, s_f, num_points // 2)
@@ -141,7 +162,9 @@ def euler_S4(dx, dy, dz, num_points, radius: float, theta: float = np.pi / 24, n
     return x, y, z
 
 
-def circ(dx, dy, dz, num_points, radius, **kwargs):
+def circ(
+    dy: float, dz: float, num_points: int, radius: float, **kwargs
+) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32], npt.NDArray[np.float32]]:
     thetaf = np.arccos(1 - np.abs(dy) / (2 * radius))
     theta = 3 * np.pi / 2 + np.linspace(0, thetaf, num_points // 2)
 
@@ -157,7 +180,9 @@ def circ(dx, dy, dz, num_points, radius, **kwargs):
     return x, np.sign(dy) * y, z
 
 
-def series(curve, n):
+def series(
+    curve: tuple[npt.NDArray[np.float32], npt.NDArray[np.float32], npt.NDArray[np.float32]], n: int
+) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32], npt.NDArray[np.float32]]:
     x1, y1, z1 = curve
     x, y, z = np.array([]), np.array([]), np.array([])
 
@@ -185,7 +210,7 @@ if __name__ == '__main__':
     # z, y, z = abv(dx=10, dy=0.08, dz=0, num_points=200)
     # x, y, z = euler_S2(theta=np.pi / 24, radius=15000, dx=5, dy=0.40, dz=0, n=1, num_points=1000)
     # x, y, z = euler_S4(theta=np.pi / 24, radius=15000, dx=5, dy=0.40, dz=0, n=1, num_points=1000)
-    x, y, z = circ(dx=5, dy=0.40, dz=0, num_points=1000)
+    x, y, z = circ(dx=5, dy=0.40, dz=0, num_points=1000, radius=10)
 
     # x, y, _ = series(erf(s=1, dy=0.040, dx=5, dz=0, num_points=100), 6)
 
