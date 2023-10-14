@@ -30,11 +30,11 @@ GC = TypeVar('GC', bound='PGMCompiler')
 
 @dataclasses.dataclass
 class Laser:
-    name: str
-    lab: str
-    axis: str
-    pin: int
-    mode: int
+    name: str  #: name of the laser source
+    lab: str  #: name of the fabrication line
+    axis: str  #: Axis of the PSO card
+    pin: int  #: Pin of the PSO card
+    mode: int  #: Mode od the PSo card
 
 
 @dataclasses.dataclass(repr=False)

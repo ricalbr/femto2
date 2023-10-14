@@ -19,7 +19,7 @@ LP = TypeVar('LP', bound='LaserPath')
 class LaserPath:
     """Class that computes and stores the coordinates of a laser path."""
 
-    name: str | None = None  # Name of the laser path.
+    name: str | None = None  #: Name of the laser path.
     radius: float = 15  #: Curvature radius
     scan: int = 1  #: Number of overlapped scans.
     speed: float = 1.0  #: Opened shutter translation speed `[mm/s]`.
