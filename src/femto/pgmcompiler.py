@@ -21,6 +21,7 @@ import numpy.typing as npt
 from femto.helpers import flatten
 from femto.helpers import listcast
 from femto.helpers import pad
+from femto.helpers import remove_repeated_coordinates
 from scipy import interpolate
 
 # Create a generic variable that can be 'PGMCompiler', or any subclass.
@@ -47,6 +48,7 @@ class PGMCompiler:
     speed_pos: float = 5.0
     flip_x: bool = False
     flip_y: bool = False
+    minimal_gcode: bool = False
 
     _total_dwell_time: float = 0.0
     _shutter_on: bool = False
@@ -181,8 +183,8 @@ class PGMCompiler:
         return self.n_glass / self.n_environment
 
     @property
-    def pso_label(self) -> str:
-        """PSO command lable.
+    def pso_axis(self) -> str:
+        """PSO command axis.
 
         If the laser is ANT, return Z, otherwise return X.
 
@@ -238,12 +240,20 @@ class PGMCompiler:
         None
         """
 
-        if self.laser is None or self.laser.lower() not in ['ant', 'carbide', 'pharos', 'uwe']:
-            raise ValueError(f'Fabrication line should be PHAROS, CARBIDE or UWE. Given {self.laser}.')
+        if self.laser.lower() == 'uwe':
+            par = {'laser': 'UWE', 'lab': 'FIRE', 'axis': 'X', 'pin': '0', 'mode': '0'}
+        elif self.laser.lower() == 'carbide':
+            par = {'laser': 'CARBIDE', 'lab': 'FIRE', 'axis': 'X', 'pin': '0', 'mode': '0'}
+        elif self.laser.lower() == 'pharos':
+            par = {'laser': 'PHAROS', 'lab': 'CAPABLE', 'axis': 'X', 'pin': '3', 'mode': '0'}
+        elif self.laser.lower() == 'ant':
+            par = {'laser': 'ANT', 'lab': 'DIAMOND', 'axis': 'X', 'pin': '0', 'mode': '1'}
+        else:
+            raise ValueError(f'Fabrication line should be ANT, PHAROS, CARBIDE or UWE. Given {self.laser}.')
 
-        header_name = f'header_{self.laser.lower()}.txt'
-        with open(pathlib.Path(__file__).parent / 'utils' / header_name) as f:
-            self._instructions.extend(f.readlines())
+        with open(pathlib.Path(__file__).parent / 'utils' / 'header.txt') as f:
+            for line in f:
+                self._instructions.extend(line.format(**par))
         self.instruction('\n')
 
     def dvar(self, variables: list[str]) -> None:
@@ -276,7 +286,8 @@ class PGMCompiler:
         Parameters
         ----------
         mode: str, optional
-            Operation mode of the movements commands. It can be ABSOLUTE or INCREMENTAL. The default value is ABSOLUTE.
+            Operation mode of the movements commands. It can be ABSOLUTE (G90) or INCREMENTAL (G91). The default
+            value is ABSOLUTE.
 
         Returns
         -------
@@ -286,10 +297,10 @@ class PGMCompiler:
             raise ValueError(f'Mode should be either ABSOLUTE (ABS) or INCREMENTAL (INC). {mode} was given.')
 
         if mode.lower() == 'abs':
-            self._instructions.append('ABSOLUTE\n')
+            self._instructions.append('G90 ; ABSOLUTE\n')
             self._mode_abs = True
         else:
-            self._instructions.append('INCREMENTAL\n')
+            self._instructions.append('G91 ; INCREMENTAL\n')
             self._mode_abs = False
 
     def comment(self, comstring: str) -> None:
@@ -334,10 +345,10 @@ class PGMCompiler:
 
         if state.lower() == 'on' and self._shutter_on is False:
             self._shutter_on = True
-            self._instructions.append(f'PSOCONTROL {self.pso_label} ON\n')
+            self._instructions.append(f'PSOCONTROL {self.pso_axis} ON\n')
         elif state.lower() == 'off' and self._shutter_on is True:
             self._shutter_on = False
-            self._instructions.append(f'PSOCONTROL {self.pso_label} OFF\n')
+            self._instructions.append(f'PSOCONTROL {self.pso_axis} OFF\n')
         else:
             pass
 
@@ -356,7 +367,7 @@ class PGMCompiler:
 
         if pause is None or pause == float(0.0):
             return None
-        self._instructions.append(f'DWELL {np.fabs(pause)}\n')
+        self._instructions.append(f'G4 P{np.fabs(pause)} ; DWELL\n')
         self._total_dwell_time += np.fabs(pause)
 
     def set_home(self, home_pos: list[float]) -> None:
@@ -744,6 +755,12 @@ class PGMCompiler:
         # Transform points (rotations, z-compensation and flipping)
         x_gc, y_gc, z_gc = self.transform_points(x, y, z)
 
+        if self.minimal_gcode:
+            x_gc = remove_repeated_coordinates(x_gc)
+            y_gc = remove_repeated_coordinates(y_gc)
+            z_gc = remove_repeated_coordinates(z_gc)
+            f_gc = remove_repeated_coordinates(f_gc)
+
         # Convert points if G-Code commands
         args = [self._format_args(x, y, z, f) for (x, y, z, f) in zip(x_gc, y_gc, z_gc, f_gc)]
         for (arg, s) in itertools.zip_longest(args, s_gc):
@@ -1120,14 +1137,17 @@ def main() -> None:
 
     # Parameters
     PARAM_WG = dotdict(scan=6, speed=20, radius=15, pitch=0.080, int_dist=0.007, lsafe=3, samplesize=(25, 3))
-    PARAM_GC = dotdict(filename='testPGM.pgm', samplesize=PARAM_WG['samplesize'], rotation_angle=2.0, flip_x=True)
+    PARAM_GC = dotdict(
+        filename='testPGM.pgm', samplesize=PARAM_WG['samplesize'], rotation_angle=2.0, flip_x=True, minimal_gcode=True
+    )
 
     # Build paths
     chip = [Waveguide(**PARAM_WG) for _ in range(2)]
     for i, wg in enumerate(chip):
         wg.start([-2, -wg.pitch / 2 + i * wg.pitch, 0.035])
         wg.linear([wg.lsafe, 0, 0])
-        wg.sin_mzi((-1) ** i * wg.dy_bend, arm_length=1.0)
+        wg.arc_bend((-1) ** i * wg.dy_bend)
+        wg.arc_bend((-1) ** (i + 1) * wg.dy_bend)
         wg.linear([wg.x_end, wg.lasty, wg.lastz], mode='ABS')
         wg.end()
 
