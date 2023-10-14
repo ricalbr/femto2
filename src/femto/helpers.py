@@ -161,6 +161,13 @@ def sign() -> Iterator[int]:
     return itertools.cycle([1, -1])
 
 
+def remove_repeated_coordinates(array: npt.NDArray[np.float32]) -> npt.NDArray[np.float32 | None]:
+
+    mask = np.diff(array).astype(bool)
+    mask = np.insert(mask, 0, True)
+    return np.where(~mask, None, array)
+
+
 # Filtering adjacent identical points from a list of arrays.
 def unique_filter(arrays: list[npt.NDArray[np.float32]]) -> npt.NDArray[np.float32]:
     """Remove duplicate subsequent points.
