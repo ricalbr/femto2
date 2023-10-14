@@ -215,7 +215,7 @@ class PGMCompiler:
         try:
             return self._lasers[self.laser.lower()].axis
         except (KeyError, AttributeError):
-            raise ValueError(f'Fabrication line should be ANT, PHAROS, CARBIDE or UWE. Given {self.laser}.')
+            raise ValueError(f'Laser can only be ANT, CARBIDE, PHAROS or UWE. Given {self.laser}.')
 
     @property
     def tshutter(self) -> float:
@@ -228,7 +228,7 @@ class PGMCompiler:
         Delay time [s].
         """
         if self.laser.lower() not in ['ant', 'carbide', 'pharos', 'uwe']:
-            raise ValueError(f'Laser can be only ANT, CARBIDE, PHAROS or UWE. Given {self.laser.upper()}.')
+            raise ValueError(f'Laser can be only ANT, CARBIDE, PHAROS or UWE. Given {self.laser}.')
         if self.laser.lower() == 'uwe':
             # mechanical shutter
             return 0.005
@@ -261,7 +261,7 @@ class PGMCompiler:
         try:
             par = self._lasers[self.laser.lower()].__dict__
         except (KeyError, AttributeError):
-            raise ValueError(f'Fabrication line should be ANT, PHAROS, CARBIDE or UWE. Given {self.laser}.')
+            raise ValueError(f'Laser can only be ANT, CARBIDE, PHAROS or UWE. Given {self.laser}.')
 
         with open(pathlib.Path(__file__).parent / 'utils' / 'header.txt') as f:
             for line in f:
