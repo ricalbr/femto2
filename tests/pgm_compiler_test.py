@@ -121,20 +121,21 @@ def test_enter_exit_method_default(param) -> None:
                 '; SETUP PHAROS - CAPABLE LAB\n',
                 '\n',
                 'ENABLE X Y Z\n',
-                'METRIC\n',
-                'SECONDS\n',
-                'G359\n',
-                'VELOCITY ON\n',
                 'PSOCONTROL X RESET\n',
                 'PSOOUTPUT X CONTROL 3 0\n',
                 'PSOCONTROL X OFF\n',
-                'ABSOLUTE\n',
-                'G17\n',
+                '\n',
+                'G71     ; DISTANCE UNITS: METRIC\n',
+                'G76     ; TIME UNITS: SECONDS\n',
+                'G90     ; ABSOLUTE MODE\n',
+                'G359    ; WAIT MODE NOWAIT\n',
+                'G108    ; VELOCITY ON\n',
+                'G17     ; ROTATIONS IN XY PLANE\n',
                 '\n',
                 '; NSCOPETRIG\n',
                 '; MSGCLEAR -1\n',
                 '\n',
-                'DWELL 1.0\n',
+                'G4 P1.0 ; DWELL\n',
                 '\n',
             ]
         )
@@ -164,27 +165,28 @@ def test_enter_exit_method() -> None:
                 '; SETUP ANT - DIAMOND LAB\n',
                 '\n',
                 'ENABLE X Y Z\n',
-                'METRIC\n',
-                'SECONDS\n',
-                'G359\n',
-                'VELOCITY ON\n',
                 'PSOCONTROL Z RESET\n',
                 'PSOOUTPUT Z CONTROL 0 1\n',
                 'PSOCONTROL Z OFF\n',
-                'ABSOLUTE\n',
-                'G17\n',
+                '\n',
+                'G71     ; DISTANCE UNITS: METRIC\n',
+                'G76     ; TIME UNITS: SECONDS\n',
+                'G90     ; ABSOLUTE MODE\n',
+                'G359    ; WAIT MODE NOWAIT\n',
+                'G108    ; VELOCITY ON\n',
+                'G17     ; ROTATIONS IN XY PLANE\n',
                 '\n',
                 '; NSCOPETRIG\n',
                 '; MSGCLEAR -1\n',
                 '\n',
-                'DWELL 1.0\n',
+                'G4 P1.0 ; DWELL\n',
                 '\n',
                 '\n; ACTIVATE AXIS ROTATION\n',
                 'G1 X0.000000 Y0.000000 Z0.000000 F5.000000\n',
                 'G84 X Y\n',
-                'DWELL 0.05\n',
+                'G4 P0.05 ; DWELL\n',
                 'G84 X Y F2.0\n\n',
-                'DWELL 0.05\n',
+                'G4 P0.05 ; DWELL\n',
             ]
         )
     assert G._instructions == deque([])
@@ -226,7 +228,7 @@ def test_neff(param, ng, ne, expected) -> None:
 def test_pso_label(param, laser, expected) -> None:
     param['laser'] = laser
     G = PGMCompiler(**param)
-    assert G.pso_label == expected
+    assert G.pso_axis == expected
 
 
 @pytest.mark.parametrize(
@@ -244,7 +246,7 @@ def test_pso_label_raise(param, laser, expectation) -> None:
     param['laser'] = laser
     G = PGMCompiler(**param)
     with expectation:
-        print(G.pso_label)
+        print(G.pso_axis)
 
 
 @pytest.mark.parametrize(
@@ -433,23 +435,22 @@ def test_header(param) -> None:
     param['laser'] = 'ant'
     G = PGMCompiler(**param)
     G.header()
-    assert G._instructions[8] == 'PSOOUTPUT Z CONTROL 0 1\n'
+    assert G._instructions[4] == 'PSOOUTPUT Z CONTROL 0 1\n'
 
     param['laser'] = 'carbide'
     G = PGMCompiler(**param)
     G.header()
-    assert G._instructions[8] == 'PSOOUTPUT X CONTROL 2 0\n'
+    assert G._instructions[4] == 'PSOOUTPUT X CONTROL 2 0\n'
 
     param['laser'] = 'pharos'
     G = PGMCompiler(**param)
     G.header()
-    assert G._instructions[8] == 'PSOOUTPUT X CONTROL 3 0\n'
-    del G
+    assert G._instructions[4] == 'PSOOUTPUT X CONTROL 3 0\n'
 
     param['laser'] = 'uwe'
     G = PGMCompiler(**param)
     G.header()
-    assert G._instructions[5] == 'WAIT MODE NOWAIT\n'
+    assert G._instructions[10] == 'G359    ; WAIT MODE NOWAIT\n'
 
 
 @pytest.mark.parametrize('v', [['V1'], ['V1', 'V2', 'V3'], [], 'VAR', ['V1', 'V2', ['V3', ['V4', 'V5']], 'V6']])
@@ -480,14 +481,14 @@ def test_mode(param, mode, expectation) -> None:
 def test_mode_abs(param) -> None:
     G = PGMCompiler(**param)
     G.mode(mode='abs')
-    assert G._instructions[-1] == 'ABSOLUTE\n'
+    assert G._instructions[-1] == 'G90 ; ABSOLUTE\n'
     assert G._mode_abs is True
 
 
 def test_mode_inc(param) -> None:
     G = PGMCompiler(**param)
     G.mode(mode='inc')
-    assert G._instructions[-1] == 'INCREMENTAL\n'
+    assert G._instructions[-1] == 'G91 ; INCREMENTAL\n'
     assert G._mode_abs is False
 
 
@@ -653,7 +654,7 @@ def test_move_to_values(param, speedp, pos, speed) -> None:
         args += f'Z{z:.6f} '
     args += f'F{speed_pos:.6f}'
 
-    assert G._instructions[-2] == f'DWELL {G.long_pause}\n'
+    assert G._instructions[-2] == f'G4 P{G.long_pause} ; DWELL\n'
     if all(coord is None for coord in pos):
         assert G._instructions[-3] == f'{args}\n'
     else:
@@ -1226,20 +1227,20 @@ def test_format_arguments_raise(param, x, y, z, f, expectation) -> None:
                 [
                     'G1 X1.998997 Y0.074899 Z0.031033 F0.500000\n',
                     '\n',
-                    'DWELL 0.025\n',
+                    'G4 P0.025 ; DWELL\n',
                     'PSOCONTROL X ON\n',
-                    'DWELL 1.0\n',
+                    'G4 P1.0 ; DWELL\n',
                     '\n',
                     'G1 X-1.000546 Y0.022542 Z0.031033 F20.000000\n',
                     'G1 X-4.000089 Y-0.029816 Z2.691033 F20.000000\n',
                     'G1 X-7.051989 Y2.917370 Z5.351033 F20.000000\n',
                     '\n',
-                    'DWELL 0.025\n',
+                    'G4 P0.025 ; DWELL\n',
                     'PSOCONTROL X OFF\n',
-                    'DWELL 1.0\n',
+                    'G4 P1.0 ; DWELL\n',
                     '\n',
                     'G1 X1.998997 Y0.074899 Z0.031033 F5.000000\n',
-                    'DWELL 1.0\n',
+                    'G4 P1.0 ; DWELL\n',
                     '\n',
                 ]
             ),
