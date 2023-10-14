@@ -28,6 +28,15 @@ from scipy import interpolate
 GC = TypeVar('GC', bound='PGMCompiler')
 
 
+@dataclasses.dataclass
+class Laser:
+    name: str
+    lab: str
+    axis: str
+    pin: int
+    mode: int
+
+
 @dataclasses.dataclass(repr=False)
 class PGMCompiler:
 
@@ -53,15 +62,26 @@ class PGMCompiler:
     _total_dwell_time: float = 0.0
     _shutter_on: bool = False
     _mode_abs: bool = True
+    _lasers: dict = dataclasses.field(default_factory=dict)
 
     def __post_init__(self) -> None:
+        # Basic parameters
+        self.CWD: pathlib.Path = pathlib.Path.cwd()
+        self._lasers = {
+            'ant': Laser(name='ANT', lab='DIAMOND', axis='Z', pin=0, mode=1),
+            'uwe': Laser(name='UWE', lab='FIRE', axis='X', pin=0, mode=0),
+            'carbide': Laser(name='CARBIDE', lab='FIRE', axis='X', pin=2, mode=0),
+            'pharos': Laser(name='PHAROS', lab='CAPABLE', axis='X', pin=3, mode=0),
+        }
+
+        # File initialization
         if self.filename is None:
             raise ValueError("Filename is None, set 'filename' attribute")
-        self.CWD: pathlib.Path = pathlib.Path.cwd()
         self._instructions: Deque[str] = collections.deque()
         self._loaded_files: list[str] = []
         self._dvars: list[str] = []
 
+        # Load warp function
         self.fwarp: Callable[
             [npt.NDArray[np.float32], npt.NDArray[np.float32]], npt.NDArray[np.float32]
         ] = self.antiwarp_management(self.warp_flag)
@@ -192,12 +212,10 @@ class PGMCompiler:
         -------
         Lable for the PSO commands.
         """
-        if self.laser.lower() not in ['ant', 'carbide', 'pharos', 'uwe']:
-            raise ValueError(f'Laser can be only ANT, CARBIDE, PHAROS or UWE. Given {self.laser.upper()}.')
-        if self.laser.lower() == 'ant':
-            return 'Z'
-        else:
-            return 'X'
+        try:
+            return self._lasers[self.laser.lower()].axis
+        except (KeyError, AttributeError):
+            raise ValueError(f'Fabrication line should be ANT, PHAROS, CARBIDE or UWE. Given {self.laser}.')
 
     @property
     def tshutter(self) -> float:
@@ -240,20 +258,14 @@ class PGMCompiler:
         None
         """
 
-        if self.laser.lower() == 'uwe':
-            par = {'laser': 'UWE', 'lab': 'FIRE', 'axis': 'X', 'pin': '0', 'mode': '0'}
-        elif self.laser.lower() == 'carbide':
-            par = {'laser': 'CARBIDE', 'lab': 'FIRE', 'axis': 'X', 'pin': '0', 'mode': '0'}
-        elif self.laser.lower() == 'pharos':
-            par = {'laser': 'PHAROS', 'lab': 'CAPABLE', 'axis': 'X', 'pin': '3', 'mode': '0'}
-        elif self.laser.lower() == 'ant':
-            par = {'laser': 'ANT', 'lab': 'DIAMOND', 'axis': 'X', 'pin': '0', 'mode': '1'}
-        else:
+        try:
+            par = self._lasers[self.laser.lower()].__dict__
+        except (KeyError, AttributeError):
             raise ValueError(f'Fabrication line should be ANT, PHAROS, CARBIDE or UWE. Given {self.laser}.')
 
         with open(pathlib.Path(__file__).parent / 'utils' / 'header.txt') as f:
             for line in f:
-                self._instructions.extend(line.format(**par))
+                self._instructions.append(line.format(**par))
         self.instruction('\n')
 
     def dvar(self, variables: list[str]) -> None:

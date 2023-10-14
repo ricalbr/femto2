@@ -1,4 +1,4 @@
-; SETUP {laser} - {lab} LAB
+; SETUP {name} - {lab} LAB
 
 ENABLE X Y Z
 PSOCONTROL {axis} RESET
