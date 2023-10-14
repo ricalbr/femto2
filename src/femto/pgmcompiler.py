@@ -5,6 +5,7 @@ import contextlib
 import copy
 import dataclasses
 import itertools
+import logging
 import math
 import pathlib
 from types import TracebackType
@@ -26,6 +27,10 @@ from scipy import interpolate
 
 # Create a generic variable that can be 'PGMCompiler', or any subclass.
 GC = TypeVar('GC', bound='PGMCompiler')
+
+# Start logging module.
+FORMAT = '%(levelname)s\t\t%(module)s: %(message)s'
+logging.basicConfig(level=logging.INFO, format=FORMAT)
 
 
 @dataclasses.dataclass
@@ -140,15 +145,15 @@ class PGMCompiler:
         self.instruction('\n')
 
         if self.rotation_angle:
-            print(' BEWARE, ANGLE MUST BE IN DEGREE! '.center(38, '*'))
-            print(f' Rotation angle is {self.rotation_angle:.3f} deg. '.center(38, '*'))
-            print()
+            logging.warning(
+                f' BEWARE, ANGLE MUST BE IN DEGREE! Rotation angle is {self.rotation_angle:.3f} deg. '.center(69, '*')
+            )
 
         if self.aerotech_angle:
-            print(' BEWARE, G84 COMMAND WILL BE USED!!! '.center(39, '*'))
-            print(' ANGLE MUST BE IN DEGREE! '.center(39, '*'))
-            print(f' Rotation angle is {self.aerotech_angle:.3f} deg. '.center(39, '*'))
-            print()
+            logging.warning(
+                f' BEWARE, ANGLE MUST BE IN DEGREE! G84 angle is {self.aerotech_angle:.3f} deg. '.center(69, '*')
+            )
+
             self._enter_axis_rotation(angle=self.aerotech_angle)
         return self
 
@@ -827,7 +832,7 @@ class PGMCompiler:
             f.write(''.join(self._instructions))
         self._instructions.clear()
         if verbose:
-            print('G-code compilation completed.')
+            logging.info('G-code compilation completed.')
 
     # Geometrical transformations
     def transform_points(

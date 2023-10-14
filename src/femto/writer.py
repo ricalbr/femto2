@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import abc
+import datetime
 import itertools
+import logging
 import pathlib
-import time
 from typing import Any
 
 import numpy as np
@@ -473,13 +474,10 @@ class TrenchWriter(Writer):
             for col in self.obj_list:
                 _tc_fab_time += col.fabrication_time + 10
 
-            print('=' * 79)
-            print('G-code compilation completed.')
-            print(
-                'Estimated fabrication time of the isolation trenches: \t',
-                time.strftime('%H:%M:%S', time.gmtime(_tc_fab_time)),
+            logging.info(
+                'Estimated isolation trenches fabrication time: \t' f'{datetime.timedelta(seconds=int(_tc_fab_time))}'
             )
-            print('=' * 79, '\n')
+            logging.info('G-code compilation completed.\n')
 
             self._fabtime = _tc_fab_time
 
@@ -1194,13 +1192,8 @@ class WaveguideWriter(Writer):
         del G
 
         if verbose:
-            print('=' * 79)
-            print('G-code compilation completed.')
-            print(
-                'Estimated fabrication time of the waveguides: \t',
-                time.strftime('%H:%M:%S', time.gmtime(_wg_fab_time)),
-            )
-            print('=' * 79, '\n')
+            logging.info(f'Estimated waveguides fabrication time:\t{datetime.timedelta(seconds=int(_wg_fab_time))}')
+            logging.info('G-code compilation completed.\n')
             self._fabtime = _wg_fab_time
         self._instructions.clear()
 
@@ -1505,13 +1498,10 @@ class NasuWriter(Writer):
         del G
 
         if verbose:
-            print('=' * 79)
-            print('G-code compilation completed.')
-            print(
-                'Estimated fabrication time for the Nasu waveguides: \t',
-                time.strftime('%H:%M:%S', time.gmtime(_nwg_fab_time)),
+            logging.info(
+                f'Estimated Nasu waveguides fabrication time: \t' f'{datetime.timedelta(seconds=int(_nwg_fab_time))}'
             )
-            print('=' * 79, '\n')
+            logging.info('G-code compilation completed.\n')
             self._fabtime = _nwg_fab_time
         self._instructions.clear()
 
@@ -1818,13 +1808,8 @@ class MarkerWriter(Writer):
         del G
 
         if verbose:
-            print('=' * 79)
-            print('G-code compilation completed.')
-            print(
-                'Estimated fabrication time of the markers: \t',
-                time.strftime('%H:%M:%S', time.gmtime(_mk_fab_time)),
-            )
-            print('=' * 79, '\n')
+            logging.info(f'Estimated markers fabrication time: \t{datetime.timedelta(seconds=int(_mk_fab_time))}')
+            logging.info('G-code compilation completed.\n')
         self._instructions.clear()
         self._total_dwell_time = 0.0
         self._fabtime = _mk_fab_time

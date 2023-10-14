@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import collections
 import copy
+import logging
 import pathlib
 from typing import Any
 from typing import cast
@@ -156,7 +157,7 @@ class Device:
                 self.fig = writer.plot3d(self.fig)
                 self.fig = writer.standard_3d_figure_update(self.fig)
             except NotImplementedError:
-                print(f'3D {key} plot not yet implemented.\n')
+                logging.critical(f'3D {key} plot not yet implemented.\n')
         if show:
             self.fig.show()
         if save:
@@ -179,14 +180,14 @@ class Device:
 
         for key, writer in self.writers.items():
             if verbose and writer.obj_list:
-                print(f'Exporting {key.__name__} objects...')
+                logging.info(f'Exporting {key.__name__} objects...')
 
             writer = cast(Union[WaveguideWriter, NasuWriter, TrenchWriter, UTrenchWriter, MarkerWriter], writer)
             writer.pgm(verbose=verbose)
 
             self.fabrication_time += writer._fabtime
         if verbose:
-            print('Export .pgm files complete.\n')
+            logging.info('Export .pgm files complete.\n')
 
     def xlsx(self, verbose: bool = True, **param) -> None:
         """Generate the spreadsheet.
@@ -196,10 +197,10 @@ class Device:
 
         with Spreadsheet(device=self, **param) as spsh:
             if verbose:
-                print('Generating spreadsheet...')
+                logging.info('Generating spreadsheet...')
             spsh.write_structures(verbose=verbose)
         if verbose:
-            print('Create .xlsx file complete.\n')
+            logging.info('Create .xlsx file complete.\n')
 
     def save(self, filename: str = 'scheme.html', opt: dict[str, Any] | None = None) -> None:
         """Save figure.
@@ -265,8 +266,8 @@ def main() -> None:
     dev.append(T)
 
     # Export
-    dev.plot2d()
-    dev.save('circuit_scheme.pdf')
+    # dev.plot2d()
+    # dev.save('circuit_scheme.pdf')
     dev.pgm()
 
 

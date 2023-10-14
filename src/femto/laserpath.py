@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import dataclasses
 import inspect
+import logging
 import pathlib
 from typing import Any
 from typing import Sequence
@@ -722,7 +723,7 @@ class LaserPath:
         dl = f / self.cmd_rate_max
         num = int(np.ceil(l_curve / dl))
         if num <= 1:
-            print('I had to add use an higher instruction rate.\n')
+            logging.critical('I had to add use an higher instruction rate.\n')
             return 3
         else:
             return num
@@ -750,7 +751,7 @@ class LaserPath:
                 dill.dump(self.__dict__, p)
             else:
                 dill.dump(self, p)
-            print(f'{self.__class__.__name__} exported to {fn}.')
+            logging.info(f'{self.__class__.__name__} exported to {fn}.')
 
 
 def main() -> None:
