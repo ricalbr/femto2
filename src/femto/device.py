@@ -44,6 +44,11 @@ class Device:
             Marker: MarkerWriter(mk_list=[], **param),
         }
 
+        try:
+            logging.info(f'Intantiate device {self._param["filename"].rsplit(".", 1)[0]}.')
+        except KeyError:
+            logging.error('Filename not given.')
+
     def append(self, obj: Any) -> None:
         """Append object to Device.
 

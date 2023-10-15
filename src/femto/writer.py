@@ -473,11 +473,11 @@ class TrenchWriter(Writer):
             _tc_fab_time = 0.0
             for col in self.obj_list:
                 _tc_fab_time += col.fabrication_time + 10
-
-            logging.info(
-                'Estimated isolation trenches fabrication time: \t' f'{datetime.timedelta(seconds=int(_tc_fab_time))}'
+            string = '{:48s} {}'.format(
+                'Estimated isolation trenches fabrication time:', datetime.timedelta(seconds=int(_tc_fab_time))
             )
-            logging.info('G-code compilation completed.\n')
+            logging.info(string)
+            logging.info('G-code compilation completed.')
 
             self._fabtime = _tc_fab_time
 
@@ -1192,8 +1192,11 @@ class WaveguideWriter(Writer):
         del G
 
         if verbose:
-            logging.info(f'Estimated waveguides fabrication time:\t{datetime.timedelta(seconds=int(_wg_fab_time))}')
-            logging.info('G-code compilation completed.\n')
+            string = '{:48s} {}'.format(
+                'Estimated waveguides fabrication time:', datetime.timedelta(seconds=int(_wg_fab_time))
+            )
+            logging.info(string)
+            logging.info('G-code compilation completed.')
             self._fabtime = _wg_fab_time
         self._instructions.clear()
 
@@ -1498,10 +1501,11 @@ class NasuWriter(Writer):
         del G
 
         if verbose:
-            logging.info(
-                f'Estimated Nasu waveguides fabrication time: \t' f'{datetime.timedelta(seconds=int(_nwg_fab_time))}'
+            string = '{:48s} {}'.format(
+                'Estimated Nasu waveguides fabrication time:', datetime.timedelta(seconds=int(_nwg_fab_time))
             )
-            logging.info('G-code compilation completed.\n')
+            logging.info(string)
+            logging.info('G-code compilation completed.')
             self._fabtime = _nwg_fab_time
         self._instructions.clear()
 
@@ -1808,8 +1812,11 @@ class MarkerWriter(Writer):
         del G
 
         if verbose:
-            logging.info(f'Estimated markers fabrication time: \t{datetime.timedelta(seconds=int(_mk_fab_time))}')
-            logging.info('G-code compilation completed.\n')
+            string = '{:48s} {}'.format(
+                'Estimated markers fabrication time:', datetime.timedelta(seconds=int(_mk_fab_time))
+            )
+            logging.info(string)
+            logging.info('G-code compilation completed.')
         self._instructions.clear()
         self._total_dwell_time = 0.0
         self._fabtime = _mk_fab_time

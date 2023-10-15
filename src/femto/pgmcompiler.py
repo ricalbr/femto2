@@ -29,7 +29,7 @@ from scipy import interpolate
 GC = TypeVar('GC', bound='PGMCompiler')
 
 # Start logging module.
-FORMAT = '%(levelname)s\t\t%(module)s: %(message)s'
+FORMAT = '%(module)-8s:  %(levelname)-12s %(message)s'
 logging.basicConfig(level=logging.INFO, format=FORMAT)
 
 
@@ -72,6 +72,7 @@ class PGMCompiler:
     def __post_init__(self) -> None:
         # Basic parameters
         self.CWD: pathlib.Path = pathlib.Path.cwd()
+        # TODO: check mode and pins for FIRE LINE1
         self._lasers = {
             'ant': Laser(name='ANT', lab='DIAMOND', axis='Z', pin=0, mode=1),
             'uwe': Laser(name='UWE', lab='FIRE', axis='X', pin=0, mode=0),
@@ -148,12 +149,10 @@ class PGMCompiler:
             logging.warning(
                 f' BEWARE, ANGLE MUST BE IN DEGREE! Rotation angle is {self.rotation_angle:.3f} deg. '.center(69, '*')
             )
-
         if self.aerotech_angle:
             logging.warning(
                 f' BEWARE, ANGLE MUST BE IN DEGREE! G84 angle is {self.aerotech_angle:.3f} deg. '.center(69, '*')
             )
-
             self._enter_axis_rotation(angle=self.aerotech_angle)
         return self
 
