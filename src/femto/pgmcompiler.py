@@ -5,7 +5,6 @@ import contextlib
 import copy
 import dataclasses
 import itertools
-import logging
 import math
 import pathlib
 from types import TracebackType
@@ -19,6 +18,7 @@ import dill
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
+from femto import logger
 from femto.helpers import flatten
 from femto.helpers import listcast
 from femto.helpers import pad
@@ -27,10 +27,6 @@ from scipy import interpolate
 
 # Create a generic variable that can be 'PGMCompiler', or any subclass.
 GC = TypeVar('GC', bound='PGMCompiler')
-
-# Start logging module.
-FORMAT = '%(module)-8s:  %(levelname)-12s %(message)s'
-logging.basicConfig(level=logging.INFO, format=FORMAT)
 
 
 @dataclasses.dataclass
@@ -146,11 +142,11 @@ class PGMCompiler:
         self.instruction('\n')
 
         if self.rotation_angle:
-            logging.warning(
+            logger.warning(
                 f' BEWARE, ANGLE MUST BE IN DEGREE! Rotation angle is {self.rotation_angle:.3f} deg. '.center(69, '*')
             )
         if self.aerotech_angle:
-            logging.warning(
+            logger.warning(
                 f' BEWARE, ANGLE MUST BE IN DEGREE! G84 angle is {self.aerotech_angle:.3f} deg. '.center(69, '*')
             )
             self._enter_axis_rotation(angle=self.aerotech_angle)
@@ -831,7 +827,7 @@ class PGMCompiler:
             f.write(''.join(self._instructions))
         self._instructions.clear()
         if verbose:
-            logging.info('G-code compilation completed.')
+            logger.info('G-code compilation completed.')
 
     # Geometrical transformations
     def transform_points(

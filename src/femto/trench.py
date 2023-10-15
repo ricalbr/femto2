@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import dataclasses
 import inspect
-import logging
 import math
 import pathlib
 from typing import Any
@@ -13,6 +12,7 @@ from typing import TypeVar
 import largestinteriorrectangle as lir
 import numpy as np
 import numpy.typing as npt
+from femto import logger
 from femto.curves import sin
 from femto.helpers import almost_equal
 from femto.helpers import dotdict
@@ -591,7 +591,7 @@ class TrenchColumn:
 
         # if coordinates are empty or coordinates do not intersect the trench column rectangle box
         if almost_equal(trench_blocks, self.rect, tol=1e-8):
-            logging.critical('No trench found intersecting waveguides with trench area.\n')
+            logger.critical('No trench found intersecting waveguides with trench area.\n')
             return None
 
         for block in listcast(sorted(trench_blocks.geoms, key=Trench)):
@@ -668,7 +668,7 @@ class UTrenchColumn(TrenchColumn):
         None
         """
         if not self._trench_list:
-            logging.critical('No trench is present. Trenchbed cannot be defined.')
+            logger.critical('No trench is present. Trenchbed cannot be defined.')
             return None
 
         # Define the trench bed shape as union of a rectangle and the first and last trench of the column.

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import dataclasses
 import inspect
-import logging
 import pathlib
 from typing import Any
 from typing import Sequence
@@ -11,6 +10,7 @@ from typing import TypeVar
 import dill
 import numpy as np
 import numpy.typing as npt
+from femto import logger
 from femto.helpers import unique_filter
 
 LP = TypeVar('LP', bound='LaserPath')
@@ -723,7 +723,7 @@ class LaserPath:
         dl = f / self.cmd_rate_max
         num = int(np.ceil(l_curve / dl))
         if num <= 1:
-            logging.critical('I had to add use an higher instruction rate.\n')
+            logger.critical('I had to add use an higher instruction rate.\n')
             return 3
         else:
             return num
@@ -751,7 +751,7 @@ class LaserPath:
                 dill.dump(self.__dict__, p)
             else:
                 dill.dump(self, p)
-            logging.info(f'{self.__class__.__name__} exported to {fn}.')
+            logger.info(f'{self.__class__.__name__} exported to {fn}.')
 
 
 def main() -> None:

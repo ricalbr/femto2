@@ -5,9 +5,9 @@ from typing import Any
 from typing import Callable
 
 import numpy as np
+import numpy.typing as npt
 from femto.helpers import dotdict
 from femto.laserpath import LaserPath
-import numpy.typing as npt
 
 
 @dataclasses.dataclass(repr=False)
@@ -364,8 +364,6 @@ def coupler(param: dict[str, Any], f_profile: Callable, nasu: bool = False) -> l
         List of the two modes of the Directional Coupler.
     """
 
-    from femto.curves import sin
-
     mode1 = NasuWaveguide(**param) if nasu else Waveguide(**param)
     mode2 = NasuWaveguide(**param) if nasu else Waveguide(**param)
 
@@ -389,8 +387,8 @@ def coupler(param: dict[str, Any], f_profile: Callable, nasu: bool = False) -> l
 
 def main() -> None:
     import matplotlib.pyplot as plt
+    from curves import circ, sin
     from mpl_toolkits.mplot3d import Axes3D
-    from curves import sin, circ
 
     # Data
     PARAM_WG = dotdict(scan=6, speed=20, radius=15, pitch=0.080, int_dist=0.007, lsafe=3, samplesize=(50, 3))
@@ -406,6 +404,7 @@ def main() -> None:
         wg.linear(increment)
         wg.coupler(dy=(-1) ** index * wg.dy_bend, dz=0.0, fx=sin, flat_peaks=0)
         wg.bend(dy=(-1) ** index * wg.dy_bend, dz=0.0, fx=circ)
+        wg.coupler(dy=(-1) ** index * wg.dy_bend, dz=0.0, fx=circ, flat_peaks=0)
         wg.linear(increment)
         wg.end()
         mzi.append(wg)

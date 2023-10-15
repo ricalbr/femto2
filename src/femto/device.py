@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import collections
 import copy
-import logging
 import pathlib
 from typing import Any
 from typing import cast
 from typing import Union
 
 import plotly.graph_objects as go
+from femto import logger
 from femto.curves import sin
 from femto.helpers import flatten
 from femto.marker import Marker
@@ -44,9 +44,9 @@ class Device:
             Marker: MarkerWriter(mk_list=[], **param),
         }
         try:
-            logging.info(f'Intantiate device {self._param["filename"].rsplit(".", 1)[0]}.')
+            logger.info(f'Intantiate device {self._param["filename"].rsplit(".", 1)[0]}.')
         except KeyError:
-            logging.error('Filename not given.')
+            logger.error('Filename not given.')
 
     def append(self, obj: Any) -> None:
         """Append object to Device.
@@ -128,7 +128,7 @@ class Device:
         None
         """
 
-        logging.info('Plotting 2D objects...')
+        logger.info('Plotting 2D objects...')
         self.fig = go.Figure()
         for writer in self.writers.values():
             # TODO: fix standard fig update
@@ -156,14 +156,14 @@ class Device:
         None
         """
 
-        logging.info('Plotting 3D objects...')
+        logger.info('Plotting 3D objects...')
         self.fig = go.Figure()
         for key, writer in self.writers.items():
             try:
                 self.fig = writer.plot3d(self.fig)
                 self.fig = writer.standard_3d_figure_update(self.fig)
             except NotImplementedError:
-                logging.error(f'3D plot for {key} not yet implemented.\n')
+                logger.error(f'3D plot for {key} not yet implemented.\n')
         if show:
             self.fig.show()
         if save:
@@ -186,14 +186,14 @@ class Device:
 
         for key, writer in self.writers.items():
             if verbose and writer.obj_list:
-                logging.info(f'Exporting {key.__name__} objects...')
+                logger.info(f'Exporting {key.__name__} objects...')
 
             writer = cast(Union[WaveguideWriter, NasuWriter, TrenchWriter, UTrenchWriter, MarkerWriter], writer)
             writer.pgm(verbose=verbose)
 
             self.fabrication_time += writer._fabtime
         if verbose:
-            logging.info('Export .pgm files complete.\n')
+            logger.info('Export .pgm files complete.\n')
 
     def xlsx(self, verbose: bool = True, **param) -> None:
         """Generate the spreadsheet.
@@ -203,10 +203,10 @@ class Device:
 
         with Spreadsheet(device=self, **param) as spsh:
             if verbose:
-                logging.info('Generating spreadsheet...')
+                logger.info('Generating spreadsheet...')
             spsh.write_structures(verbose=verbose)
         if verbose:
-            logging.info('Create .xlsx file complete.\n')
+            logger.info('Create .xlsx file complete.\n')
 
     def save(self, filename: str = 'scheme.html', opt: dict[str, Any] | None = None) -> None:
         """Save figure.
@@ -238,7 +238,7 @@ class Device:
             return None
 
         fn = pathlib.Path(filename)
-        logging.info(f'Saving plot to "{fn}".')
+        logger.info(f'Saving plot to "{fn}".')
 
         if fn.suffix.lower() in ['.html', '']:
             self.fig.write_html(str(fn.with_suffix('.html')))
