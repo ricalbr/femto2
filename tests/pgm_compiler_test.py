@@ -27,6 +27,7 @@ def param() -> dict:
         'short_pause': 0.025,
         'speed_pos': 10,
         'flip_x': True,
+        'minimal_gcode': True,
     }
     return p
 
@@ -55,6 +56,7 @@ def test_default_values() -> None:
     assert G.speed_pos == float(5.0)
     assert G.flip_x is False
     assert G.flip_y is False
+    assert G.minimal_gcode is False
 
 
 def test_gcode_values(param) -> None:
@@ -76,6 +78,7 @@ def test_gcode_values(param) -> None:
     assert G.speed_pos == float(10)
     assert G.flip_x is True
     assert G.flip_y is False
+    assert G.minimal_gcode is True
 
 
 def test_mk_from_dict(param) -> None:
@@ -97,6 +100,7 @@ def test_mk_from_dict(param) -> None:
     assert G.speed_pos == float(10)
     assert G.flip_x is True
     assert G.flip_y is False
+    assert G.minimal_gcode is True
 
 
 def test_repr(param) -> None:
@@ -1231,9 +1235,9 @@ def test_format_arguments_raise(param, x, y, z, f, expectation) -> None:
                     'PSOCONTROL X ON\n',
                     'G4 P1.0 ; DWELL\n',
                     '\n',
-                    'G1 X-1.000546 Y0.022542 Z0.031033 F20.000000\n',
-                    'G1 X-4.000089 Y-0.029816 Z2.691033 F20.000000\n',
-                    'G1 X-7.051989 Y2.917370 Z5.351033 F20.000000\n',
+                    'G1 X-1.000546 Y0.022542 F20.000000\n',
+                    'G1 X-4.000089 Y-0.029816 Z2.691033\n',
+                    'G1 X-7.051989 Y2.917370 Z5.351033\n',
                     '\n',
                     'G4 P0.025 ; DWELL\n',
                     'PSOCONTROL X OFF\n',

@@ -13,6 +13,7 @@ from femto.helpers import listcast
 from femto.helpers import load_parameters
 from femto.helpers import nest_level
 from femto.helpers import pairwise
+from femto.helpers import remove_repeated_coordinates
 from femto.helpers import sign
 from femto.helpers import split_mask
 from femto.helpers import swap
@@ -399,3 +400,19 @@ def test_load_param_empty():
 
     assert load_parameters(fp) == []
     pathlib.Path('test.yaml').unlink()
+
+
+@pytest.mark.parametrize(
+    'arr, exp',
+    [
+        ([], np.array([])),
+        (np.array([1, 2, 3]), np.array([1, 2, 3])),
+        (np.array([1, 2, 2]), np.array([1, 2, None])),
+        (np.array([1, 1, 1, 1, 1, 1, 1, 1, 1]), np.array([1, None, None, None, None, None, None, None, None])),
+        (np.array([1, 2, 2, 2, 3, 3, 4]), np.array([1, 2, None, None, 3, None, 4])),
+    ],
+)
+def test_remove_doubles(arr, exp):
+    a = remove_repeated_coordinates(arr)
+    assert len(a) == len(exp)
+    np.testing.assert_array_equal(a, exp)
