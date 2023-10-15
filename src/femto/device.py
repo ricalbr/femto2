@@ -43,7 +43,6 @@ class Device:
             UTrenchColumn: UTrenchWriter(utc_list=[], **param),
             Marker: MarkerWriter(mk_list=[], **param),
         }
-
         try:
             logging.info(f'Intantiate device {self._param["filename"].rsplit(".", 1)[0]}.')
         except KeyError:
@@ -129,6 +128,7 @@ class Device:
         None
         """
 
+        logging.info('Plotting 2D objects...')
         self.fig = go.Figure()
         for writer in self.writers.values():
             # TODO: fix standard fig update
@@ -156,13 +156,14 @@ class Device:
         None
         """
 
+        logging.info('Plotting 3D objects...')
         self.fig = go.Figure()
         for key, writer in self.writers.items():
             try:
                 self.fig = writer.plot3d(self.fig)
                 self.fig = writer.standard_3d_figure_update(self.fig)
             except NotImplementedError:
-                logging.critical(f'3D {key} plot not yet implemented.\n')
+                logging.error(f'3D plot for {key} not yet implemented.\n')
         if show:
             self.fig.show()
         if save:
@@ -237,6 +238,8 @@ class Device:
             return None
 
         fn = pathlib.Path(filename)
+        logging.info(f'Saving plot to "{fn}".')
+
         if fn.suffix.lower() in ['.html', '']:
             self.fig.write_html(str(fn.with_suffix('.html')))
         else:
