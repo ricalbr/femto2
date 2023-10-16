@@ -44,7 +44,7 @@ class Device:
             Marker: MarkerWriter(mk_list=[], **param),
         }
         try:
-            logger.info(f'Intantiate device {self._param["filename"].rsplit(".", 1)[0]}.')
+            logger.info(f'Instantiate device {self._param["filename"].rsplit(".", 1)[0]}.')
         except KeyError:
             logger.error('Filename not given.')
 
