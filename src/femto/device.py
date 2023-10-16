@@ -60,6 +60,7 @@ class Device:
         None
         """
 
+        logger.debug(f'Parsing {obj}.')
         self.parse_objects(unparsed_objects=copy.copy(flatten([obj])))
 
     def extend(self, obj: list[Any]) -> None:
@@ -76,6 +77,7 @@ class Device:
 
         if not isinstance(obj, list):
             raise TypeError(f'The object must be a list. {type(obj)} was given.')
+        logger.debug(f'Parsing {obj}.')
         self.parse_objects(unparsed_objects=copy.copy(obj))
 
     def parse_objects(self, unparsed_objects: Any | list[Any]) -> None:
@@ -107,8 +109,10 @@ class Device:
         # add each element to the type-matching writer
         for k, e in d.items():
             try:
+                logger.debug(f'Assign {e} to {self.writers[k]}.')
                 self.writers[k].extend(e)
             except KeyError as err:
+                logger.error(f'Found unexpected type {err.args}.')
                 raise TypeError(f'Found unexpected type {err.args}.')
 
     def plot2d(self, show: bool = True, save: bool = False) -> None:
@@ -132,9 +136,12 @@ class Device:
         self.fig = go.Figure()
         for writer in self.writers.values():
             # TODO: fix standard fig update
+            logger.debug(f'Plot 2D object from {writer}.')
             self.fig = writer.plot2d(self.fig)
+            logger.debug(f'Update 2D figure.')
             self.fig = writer.standard_2d_figure_update(self.fig)
         if show:
+            logger.debug(f'Show 2D plot.')
             self.fig.show()
         if save:
             self.save()
@@ -160,11 +167,14 @@ class Device:
         self.fig = go.Figure()
         for key, writer in self.writers.items():
             try:
+                logger.debug(f'Plot 3D object from {writer}.')
                 self.fig = writer.plot3d(self.fig)
+                logger.debug(f'Update 3D figure.')
                 self.fig = writer.standard_3d_figure_update(self.fig)
             except NotImplementedError:
                 logger.error(f'3D plot for {key} not yet implemented.\n')
         if show:
+            logger.debug(f'Show 3D plot.')
             self.fig.show()
         if save:
             self.save()
@@ -191,7 +201,7 @@ class Device:
             writer = cast(Union[WaveguideWriter, NasuWriter, TrenchWriter, UTrenchWriter, MarkerWriter], writer)
             writer.pgm(verbose=verbose)
 
-            self.fabrication_time += writer._fabtime
+            self.fabrication_time += writer.fab_time
         if verbose:
             logger.info('Export .pgm files complete.\n')
 
@@ -206,7 +216,7 @@ class Device:
                 logger.info('Generating spreadsheet...')
             spsh.write_structures(verbose=verbose)
         if verbose:
-            logger.info('Create .xlsx file complete.\n')
+            logger.info('Create .xlsx file complete.')
 
     def save(self, filename: str = 'scheme.html', opt: dict[str, Any] | None = None) -> None:
         """Save figure.
