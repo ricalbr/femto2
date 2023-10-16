@@ -31,6 +31,20 @@ class Writer(PGMCompiler, abc.ABC):
     etc.) and provides methods to append objects, plot and export them as .pgm files.
     """
 
+    @property
+    @abc.abstractmethod
+    def fab_time(self) -> float:
+        """Fabrication time.
+
+        Abstract property for returning the total fabrication time for objects in a given Writer.
+
+        Returns
+        -------
+        float
+           Total fabrication time [s].
+        """
+        pass
+
     @abc.abstractmethod
     def append(self, obj: Any) -> None:
         """Append objects.
@@ -329,6 +343,17 @@ class TrenchWriter(Writer):
         self._param: dict[str, Any] = dict(**param)
         self._export_path = self.CWD / (self.export_dir or '') / (self.dirname or '')
         self._fabtime: float = 0.0
+
+    @property
+    def fab_time(self) -> float:
+        """Trench fabrication time.
+
+        Returns
+        -------
+        float
+           Total trench fabrication time [s].
+        """
+        return self._fabtime
 
     def append(self, obj: TrenchColumn) -> None:
         """Append TrenchColumn objects.
@@ -761,6 +786,17 @@ class UTrenchWriter(TrenchWriter):
         super().__init__(tc_list=utc_list, dirname=dirname, **param)
         self.beds: list[Trench] = [ubed for col in utc_list for ubed in col.trenchbed]
 
+    @property
+    def fab_time(self) -> float:
+        """U-Trench fabrication time.
+
+        Returns
+        -------
+        float
+           Total U-trench fabrication time [s].
+        """
+        return self._fabtime
+
     def append(self, obj: UTrenchColumn) -> None:
         """Append UTrenchColumn objects.
 
@@ -1041,6 +1077,17 @@ class WaveguideWriter(Writer):
         self._param: dict[str, Any] = dict(**param)
         self._export_path = self.CWD / (self.export_dir or '')
         self._fabtime: float = 0.0
+
+    @property
+    def fab_time(self) -> float:
+        """Waveguide fabrication time.
+
+        Returns
+        -------
+        float
+           Total waveguide fabrication time [s].
+        """
+        return self._fabtime
 
     def append(self, obj: Waveguide) -> None:
         """Append Waveguide objects.
@@ -1354,6 +1401,17 @@ class NasuWriter(Writer):
         self._export_path = self.CWD / (self.export_dir or '')
         self._fabtime: float = 0.0
 
+    @property
+    def fab_time(self) -> float:
+        """Nasu waveguides fabrication time.
+
+        Returns
+        -------
+        float
+           Total Nasu waveguides fabrication time [s].
+        """
+        return self._fabtime
+
     def append(self, obj: NasuWaveguide) -> None:
         """Append NasuWaveguide objects.
 
@@ -1666,6 +1724,17 @@ class MarkerWriter(Writer):
         self._param: dict[str, Any] = dict(**param)
         self._export_path = self.CWD / (self.export_dir or '')
         self._fabtime: float = 0.0
+
+    @property
+    def fab_time(self) -> float:
+        """Marker fabrication time.
+
+        Returns
+        -------
+        float
+           Total marker fabrication time [s].
+        """
+        return self._fabtime
 
     def append(self, obj: Marker) -> None:
         """Append Marker objects.
