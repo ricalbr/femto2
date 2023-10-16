@@ -6,6 +6,7 @@ from typing import Callable
 
 import numpy as np
 import numpy.typing as npt
+from femto import logger
 from femto.helpers import dotdict
 from femto.laserpath import LaserPath
 
@@ -27,11 +28,14 @@ class Waveguide(LaserPath):
         super().__post_init__()
         if self.z_init is None:
             self.z_init = self.depth
+            logger.debug(f'Set z_init to {self.z_init} mm.')
 
         # Adjust the pitch for the glass shrinking. Only change the external pitch in case of fan-in/out segments.
         if self.pitch == self.pitch_fa:
+            logger.debug(f'Need to correct the pitch of the waveguides by a factor {self.shrink_correction_factor}.')
             self.pitch /= self.shrink_correction_factor
         self.pitch_fa /= self.shrink_correction_factor
+        logger.debug(f'Correct the pitch of the fan-in/fan-out sections by a factor {self.shrink_correction_factor}.')
 
     @property
     def dy_bend(self) -> float:
@@ -43,10 +47,14 @@ class Waveguide(LaserPath):
             The difference between the waveguide pitch and the interaction distance.
         """
         if self.pitch is None:
+            logger.error('Waveguide pitch is set to None.')
             raise ValueError('Waveguide pitch is set to None.')
         if self.int_dist is None:
+            logger.error('Interaction distance is set to None.')
             raise ValueError('Interaction distance is set to None.')
-        return 0.5 * (self.pitch - self.int_dist)
+        dy = 0.5 * (self.pitch - self.int_dist)
+        logger.debug(f'Return dy for a curve. {dy=}')
+        return dy
 
     @property
     # Defining a function that calculates the length of a sbend.
@@ -59,7 +67,9 @@ class Waveguide(LaserPath):
 
         """
 
-        return float(self.get_sbend_parameter(self.dy_bend, self.radius)[1])
+        dx = float(self.get_sbend_parameter(self.dy_bend, self.radius)[1])
+        logger.debug(f'Return dx for a curve. {dx=}')
+        return dx
 
     @property
     def dx_coupler(self) -> float:
@@ -70,7 +80,9 @@ class Waveguide(LaserPath):
         float
             Sum of two `x`-displacements S-bend segments and the interaction distance straight segment.
         """
-        return 2 * self.dx_bend + self.int_length
+        dx = 2 * self.dx_bend + self.int_length
+        logger.debug(f'Return dx for a coupler. {dx=}')
+        return dx
 
     @property
     def dx_mzi(self) -> float:
@@ -81,7 +93,9 @@ class Waveguide(LaserPath):
         float
             Sum of two `x`-displacements Directional Coupler segments and the ``arm_length`` distance straight segment.
         """
-        return 4 * self.dx_bend + 2 * self.int_length + self.arm_length
+        dx = 4 * self.dx_bend + 2 * self.int_length + self.arm_length
+        logger.debug(f'Return dx for a MZI. {dx=}')
+        return dx
 
     def bend(
         self,
@@ -128,22 +142,32 @@ class Waveguide(LaserPath):
         The object itself.
         """
         if radius is None and self.radius is None:
+            logger.error('Radius is None.')
             raise ValueError('Radius is None. Set Waveguide\'s "radius" attribute or give a radius as input.')
         if speed is None and self.speed is None:
+            logger.error('Speed is None.')
             raise ValueError('Speed is None. Set Waveguide\'s "speed" attribute or give a speed as input.')
         if dz is None and self.dz_bridge is None:
+            logger.error('dz bridge is None.')
             raise ValueError('dz bridge is None. Set Waveguide\'s "dz_bridge" attribute or give a valid dz as input.')
         if dy is None:
+            logger.error('dy is None.')
             raise ValueError('dy is None. Give a valid dy as input.')
 
         r = radius if radius is not None else self.radius
+        logger.debug(f'Radius set to {r=}.')
         f = speed if speed is not None else self.speed
+        logger.debug(f'Speed set to {f=}.')
         dzb = dz if dz is not None else self.dz_bridge
+        logger.debug(f'dz for the bridges set to {dzb=}.')
 
         dx = disp_x if disp_x is not None else self.get_sbend_parameter(np.sqrt(dy**2 + dz**2), r)[-1]
+        logger.debug(f'dx for the bend set to {dx=}.')
         num = num_points if num_points is not None else self.num_subdivisions(dx, f)
+        logger.debug(f'Total number of points is {num=}.')
 
         x, y, z = fx(dx=dx, dy=dy, dz=dzb, num_points=num, **dict(kwargs, radius=r))
+        logger.debug(f'Computed (x, y, z) using {fx}.')
 
         # update coordinates
         self.add_path(
@@ -198,12 +222,14 @@ class Waveguide(LaserPath):
         """
 
         if int_length is None and self.int_length is None:
+            logger.error('Interaction length is None.')
             raise ValueError(
                 'Interaction length is None.'
                 'Set Waveguide\'s "int_length" attribute or give a valid "int_length" as input.'
             )
 
         int_length = int_length if int_length is not None else self.int_length
+        logger.debug(f'Interaction lenght set to {int_length=}.')
 
         self.bend(dy=dy, dz=dz, fx=fx, disp_x=disp_x, radius=radius, num_points=num_points, speed=speed, **kwargs)
         self.linear([np.fabs(int_length), 0, 0], speed=speed, shutter=shutter)
@@ -258,11 +284,13 @@ class Waveguide(LaserPath):
         """
 
         if arm_length is None and self.arm_length is None:
+            logger.error('Arm length is None.')
             raise ValueError(
                 'Arm length is None. Set Waveguide\'s "arm_length" attribute or give a valid "arm_length" as input.'
             )
 
         arm_length = arm_length if arm_length is not None else self.arm_length
+        logger.debug(f'Arm length set to {arm_length=}.')
 
         self.coupler(
             dy=dy,
@@ -305,7 +333,8 @@ class NasuWaveguide(Waveguide):
     def __post_init__(self) -> None:
         super().__post_init__()
         if not isinstance(self.adj_scan, int):
-            raise ValueError(f'Number of adjacent scan must be of type int. Given type is {type(self.scan).__name__}.')
+            logger.error('Number of adjacent scans is of the wrong type.2')
+            raise ValueError(f'Number of adjacent scans must be of type int. Given type is {type(self.scan).__name__}.')
 
     @property
     def adj_scan_order(self) -> list[float]:
@@ -335,6 +364,7 @@ class NasuWaveguide(Waveguide):
         else:
             for i in range(0, self.adj_scan // 2):
                 adj_scan_list.extend([i + 0.5, -i - 0.5])
+        logger.debug(f'Computed adjacent scans, {adj_scan_list}.')
         return adj_scan_list
 
 
@@ -368,19 +398,24 @@ def coupler(param: dict[str, Any], f_profile: Callable, nasu: bool = False) -> l
     mode2 = NasuWaveguide(**param) if nasu else Waveguide(**param)
 
     lx = (mode1.samplesize[0] - mode1.dx_coupler) / 2
+    logger.debug(f'Linear segment {lx=}.')
 
+    logger.debug('Start mode 1.')
     mode1.start()
     mode1.linear([lx, None, None], mode='ABS')
     mode1.coupler(dy=mode1.dy_bend, dz=0.0, fx=f_profile)
     mode1.linear([mode1.x_end, None, None], mode='ABS')
     mode1.end()
+    logger.debug('End mode 1.')
 
+    logger.debug('Start mode 2.')
     mode2.y_init = mode1.y_init + mode2.pitch
     mode2.start()
     mode2.linear([lx, None, None], mode='ABS')
     mode2.coupler(dy=-mode2.dy_bend, dz=0.0, fx=f_profile)
     mode2.linear([mode2.x_end, None, None], mode='ABS')
     mode2.end()
+    logger.debug('End mode 2.')
 
     return [mode1, mode2]
 
