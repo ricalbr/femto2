@@ -3,6 +3,7 @@ from __future__ import annotations
 import dataclasses
 
 import numpy as np
+from femto import logger
 from femto.helpers import dotdict
 from femto.helpers import split_mask
 from femto.laserpath import LaserPath
@@ -31,8 +32,10 @@ class RasterImage(LaserPath):
             (`x`, `y`) size of the laser path [mm].
         """
         if not all(self.img_size):  # check if img_size is non-zero
+            logger.error('No image size given, unable to compute laserpath dimension.')
             raise ValueError('No image size given, unable to compute laserpath dimension.')
         else:
+            logger.debug('Return list of path_size.')
             return [self.px_to_mm * elem for elem in self.img_size]
 
     # Methods
@@ -55,9 +58,9 @@ class RasterImage(LaserPath):
         """
         # displaying image information
         self.img_size = img.size  # update of img_size property
-        print('Image opened. Displaying information..')
-        print(f'Extension:\t{img.format}\nImage size:\t{img.size}\nColor mode:\t{img.mode}\n', '-' * 40)
-        print(f'Laser path dimension {self.path_size[0]:.3f} by {self.path_size[1]:.3f} mm^2\n', '-' * 40)
+        logger.info('Image opened. Displaying information..')
+        logger.info(f'Extension:\t{img.format}\nImage size:\t{img.size}\nColor mode:\t{img.mode}\n', '-' * 40)
+        logger.info(f'Laser path dimension {self.path_size[0]:.3f} by {self.path_size[1]:.3f} mm^2\n', '-' * 40)
 
         if img.mode != '1':
             img = img.convert('1')
@@ -68,6 +71,7 @@ class RasterImage(LaserPath):
         z_val = self.z_init or 0.0
 
         # loop through all the rows of the image
+        logger.debug('Convert image to path...')
         for row, y_val in zip(img_matrix, y_scan):
             x_open_shutter = split_mask(x_scan, ~row)
 
@@ -86,6 +90,7 @@ class RasterImage(LaserPath):
                 s_row = np.array([0, 1, 1, 0, 0], dtype=int)
 
                 self.add_path(x_row, y_row, z_row, f_row, s_row)
+        logger.debug('Image converted.')
 
 
 def main() -> None:
