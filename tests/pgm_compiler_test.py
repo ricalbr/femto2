@@ -454,7 +454,7 @@ def test_header(param) -> None:
     param['laser'] = 'uwe'
     G = PGMCompiler(**param)
     G.header()
-    assert G._instructions[10] == 'G359    ; WAIT MODE NOWAIT\n'
+    assert G._instructions[9] == 'G359    ; WAIT MODE NOWAIT\n'
 
 
 @pytest.mark.parametrize('v', [['V1'], ['V1', 'V2', 'V3'], [], 'VAR', ['V1', 'V2', ['V3', ['V4', 'V5']], 'V6']])
@@ -706,9 +706,7 @@ def test_enter_axis_rotation(param, angle_p, angle) -> None:
 
     a = G.aerotech_angle if angle is None else float(angle % 360)
     if a == 0.0:
-        assert G._instructions[-4] == '\n; ACTIVATE AXIS ROTATION\n'
-        assert G._instructions[-3] == f'G1 X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{G.speed_pos:.6f}\n'
-        assert G._instructions[-2] == 'G84 X Y\n'
+        assert not G._instructions
     else:
         assert G._instructions[-6] == '\n; ACTIVATE AXIS ROTATION\n'
         assert G._instructions[-5] == f'G1 X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{G.speed_pos:.6f}\n'

@@ -699,7 +699,7 @@ class PGMCompiler:
         """
         file = self._get_filepath(filename=filename, extension='pgm')
         if file.stem not in self._loaded_files:
-            logger.error(f"The program {file} is not loaded.)
+            logger.error(f"The program {file} is not loaded.")
             raise FileNotFoundError(
                 f"The program {file} is not loaded. Load the file with 'load_program' before removing it."
             )
@@ -900,7 +900,6 @@ class PGMCompiler:
             logger.info('G-code compilation completed.')
         logger.debug('G-code compilation completed.')
 
-
     # Geometrical transformations
     def transform_points(
         self,
@@ -949,8 +948,8 @@ class PGMCompiler:
 
         # compensate for warp
         if self.warp_flag:
-            return self.compensate(x_t, y_t, z_t)
             logger.debug('Compensate for warp.')
+            return self.compensate(x_t, y_t, z_t)
         return x_t, y_t, z_t
 
     def flip(
