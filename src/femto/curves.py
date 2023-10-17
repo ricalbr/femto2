@@ -26,7 +26,7 @@ def sin(
     tmp_cos = np.cos(np.pi / dx * x)
     y = 0.5 * dy * (1 - np.sqrt((1 + flat_peaks**2) / (1 + flat_peaks**2 * tmp_cos**2)) * tmp_cos)
     z = 0.5 * dz * (1 - np.cos(np.pi / dx * x))
-    return x, y, z  # np.ndarray(), np.ndarray(), np.ndarray()
+    return x, y, z
 
 
 def spline(
