@@ -34,8 +34,8 @@ class Laser:
     name: str  #: name of the laser source
     lab: str  #: name of the fabrication line
     axis: str  #: Axis of the PSO card
-    pin: int  #: Pin of the PSO card
-    mode: int  #: Mode od the PSo card
+    pin: int | None  #: Pin of the PSO card
+    mode: int | None  #: Mode od the PSO card
 
 
 @dataclasses.dataclass(repr=False)
@@ -68,16 +68,19 @@ class PGMCompiler:
     def __post_init__(self) -> None:
         # Basic parameters
         self.CWD: pathlib.Path = pathlib.Path.cwd()
+        logger.debug(f'Set the current working directory to {self.CWD}.')
+
         # TODO: check mode and pins for FIRE LINE1
         self._lasers = {
             'ant': Laser(name='ANT', lab='DIAMOND', axis='Z', pin=0, mode=1),
-            'uwe': Laser(name='UWE', lab='FIRE', axis='X', pin=0, mode=0),
+            'uwe': Laser(name='UWE', lab='FIRE', axis='X', pin=None, mode=None),
             'carbide': Laser(name='CARBIDE', lab='FIRE', axis='X', pin=2, mode=0),
             'pharos': Laser(name='PHAROS', lab='CAPABLE', axis='X', pin=3, mode=0),
         }
 
         # File initialization
         if self.filename is None:
+            logger.error("Filename is None.")
             raise ValueError("Filename is None, set 'filename' attribute")
         self._instructions: Deque[str] = collections.deque()
         self._loaded_files: list[str] = []
@@ -93,12 +96,14 @@ class PGMCompiler:
             self.rotation_angle = math.radians(self.rotation_angle % 360)
         else:
             self.rotation_angle = float(0.0)
+        logger.debug(f'Rotation angle is set to {self.rotation_angle}.')
 
         # Set AeroTech angle between 0 and 359 for G84 command
         if self.aerotech_angle:
             self.aerotech_angle = self.aerotech_angle % 360
         else:
             self.aerotech_angle = float(0.0)
+        logger.debug(f'Axis rotation (G84) angle is set to {self.aerotech_angle}.')
 
     @classmethod
     def from_dict(cls: type[GC], param: dict[str, Any]) -> GC:
@@ -116,6 +121,7 @@ class PGMCompiler:
         -------
         Instance of class
         """
+        logger.debug(f'Create {cls.__name__} object from dictionary.')
         return cls(**param)
 
     def __repr__(self) -> str:
@@ -171,6 +177,7 @@ class PGMCompiler:
         if self.home:
             self.go_init()
         self.close()
+        logger.debug('Close PGM file.')
 
     @property
     def xsample(self) -> float:
@@ -180,7 +187,9 @@ class PGMCompiler:
         -------
         The absolute value of the `x` element of the samplesize array.
         """
-        return float(abs(self.samplesize[0]))
+        xsample = float(abs(self.samplesize[0]))
+        logger.debug(f'Return {xsample=}')
+        return xsample
 
     @property
     def ysample(self) -> float:
@@ -190,7 +199,9 @@ class PGMCompiler:
         -------
         The absolute value of the `y` element of the samplesize array.
         """
-        return float(abs(self.samplesize[1]))
+        ysample = float(abs(self.samplesize[1]))
+        logger.debug(f'Return {ysample=}')
+        return ysample
 
     @property
     def neff(self) -> float:
@@ -200,6 +211,7 @@ class PGMCompiler:
         -------
         Effective refractive index of the waveguide.
         """
+        logger.debug(f'Effective refractive index is {self.n_glass / self.n_environment}')
         return self.n_glass / self.n_environment
 
     @property
@@ -213,8 +225,11 @@ class PGMCompiler:
         Lable for the PSO commands.
         """
         try:
-            return self._lasers[self.laser.lower()].axis
+            ax = self._lasers[self.laser.lower()].axis
+            logger.debug(f'Return the PSO axis {ax}.')
+            return ax
         except (KeyError, AttributeError):
+            logger.error(f'Laser can only be ANT, CARBIDE, PHAROS or UWE. Given {self.laser}.')
             raise ValueError(f'Laser can only be ANT, CARBIDE, PHAROS or UWE. Given {self.laser}.')
 
     @property
@@ -228,12 +243,15 @@ class PGMCompiler:
         Delay time [s].
         """
         if self.laser.lower() not in ['ant', 'carbide', 'pharos', 'uwe']:
+            logger.error(f'Laser can be only ANT, CARBIDE, PHAROS or UWE. Given {self.laser}.')
             raise ValueError(f'Laser can be only ANT, CARBIDE, PHAROS or UWE. Given {self.laser}.')
         if self.laser.lower() == 'uwe':
             # mechanical shutter
+            logger.debug(f'Shuttering time for mechanical shutter: 0.005.')
             return 0.005
         else:
             # pockels cell
+            logger.debug(f'Shuttering time for pockels cell: 0.000.')
             return 0.000
 
     @property
@@ -244,6 +262,7 @@ class PGMCompiler:
         -------
         Total pausing times in the G-code script.
         """
+        logger.debug(f'Return total dwell time {self._total_dwell_time}.')
         return self._total_dwell_time
 
     def header(self) -> None:
@@ -260,12 +279,20 @@ class PGMCompiler:
 
         try:
             par = self._lasers[self.laser.lower()].__dict__
+            logger.debug(f'Load header for laser {self.laser.lower()}.')
         except (KeyError, AttributeError):
+            logger.error(f'Laser can only be ANT, CARBIDE, PHAROS or UWE. Given {self.laser}.')
             raise ValueError(f'Laser can only be ANT, CARBIDE, PHAROS or UWE. Given {self.laser}.')
 
         with open(pathlib.Path(__file__).parent / 'utils' / 'header.txt') as f:
             for line in f:
                 self._instructions.append(line.format(**par))
+        if self.laser.lower() == 'uwe':
+            for idx, instr in enumerate(self._instructions):
+                if instr.startswith('PSOOUTPUT'):
+                    # TODO: test questa cosa!!
+                    del self._instructions[idx]
+                    break
         self.instruction('\n')
 
     def dvar(self, variables: list[str]) -> None:
@@ -284,6 +311,7 @@ class PGMCompiler:
         """
         variables = listcast(flatten(variables))
         args = ' '.join(['${}'] * len(variables)).format(*variables)
+        logger.debug(f'Add variables {variables}.')
         self._instructions.appendleft(f'DVAR {args}\n\n')
 
         # keep track of all variables
@@ -306,14 +334,17 @@ class PGMCompiler:
         None
         """
         if mode is None or mode.lower() not in ['abs', 'inc']:
+            logger.error(f'Mode should be either ABSOLUTE (ABS) or INCREMENTAL (INC). {mode} was given.')
             raise ValueError(f'Mode should be either ABSOLUTE (ABS) or INCREMENTAL (INC). {mode} was given.')
 
         if mode.lower() == 'abs':
             self._instructions.append('G90 ; ABSOLUTE\n')
             self._mode_abs = True
+            logger.debug('Switch to ABSOLUTE mode.')
         else:
             self._instructions.append('G91 ; INCREMENTAL\n')
             self._mode_abs = False
+            logger.debug('Switch to INCREMENTAL mode.')
 
     def comment(self, comstring: str) -> None:
         """Add a comment.
@@ -334,6 +365,7 @@ class PGMCompiler:
             self._instructions.append(f'\n; {comstring}\n')
         else:
             self._instructions.append('\n')
+        logger.debug('Add a comment.')
 
     def shutter(self, state: str) -> None:
         """Open and close shutter.
@@ -353,14 +385,17 @@ class PGMCompiler:
         """
 
         if state is None or state.lower() not in ['on', 'off']:
+            logger.error(f'Shutter state should be ON or OFF. Given {state}.')
             raise ValueError(f'Shutter state should be ON or OFF. Given {state}.')
 
         if state.lower() == 'on' and self._shutter_on is False:
             self._shutter_on = True
             self._instructions.append(f'PSOCONTROL {self.pso_axis} ON\n')
+            logger.debug('Open the shutter.')
         elif state.lower() == 'off' and self._shutter_on is True:
             self._shutter_on = False
             self._instructions.append(f'PSOCONTROL {self.pso_axis} OFF\n')
+            logger.debug('Close the shutter.')
         else:
             pass
 
@@ -380,6 +415,7 @@ class PGMCompiler:
         if pause is None or pause == float(0.0):
             return None
         self._instructions.append(f'G4 P{np.fabs(pause)} ; DWELL\n')
+        logger.debug(f'Add pause {np.fabs(pause)}')
         self._total_dwell_time += np.fabs(pause)
 
     def set_home(self, home_pos: list[float]) -> None:
@@ -399,13 +435,16 @@ class PGMCompiler:
         """
 
         if np.size(home_pos) != 3:
+            logger.error(f'Given final position is not valid. 3 values required, given {np.size(home_pos)}.')
             raise ValueError(f'Given final position is not valid. 3 values required, given {np.size(home_pos)}.')
 
         if all(coord is None for coord in home_pos):
+            logger.error('Given home position is (None, None, None). Give a valid home position.')
             raise ValueError('Given home position is (None, None, None). Give a valid home position.')
 
         args = self._format_args(*home_pos)
         self._instructions.append(f'G92 {args}\n')
+        logger.debug(f'Soft-reset of coordinates (G92) to {args}.')
 
     def move_to(self, position: list[float | None], speed_pos: float | None = None) -> None:
         """Move to target.
@@ -425,9 +464,11 @@ class PGMCompiler:
         None
         """
         if len(position) != 3:
+            logger.error(f'Given final position is not valid.')
             raise ValueError(f'Given final position is not valid. 3 values required, given {len(position)}.')
 
         if speed_pos is None and self.speed_pos is None:
+            logger.error('The positioning speed is None.')
             raise ValueError('The positioning speed is None. Set the "speed_pos" attribute or give a valid value.')
         speed_pos = self.speed_pos if speed_pos is None else speed_pos
 
@@ -441,6 +482,7 @@ class PGMCompiler:
             self._instructions.append(f'{args}\n')
         else:
             self._instructions.append(f'G1 {args}\n')
+            logger.debug(f'Move to {args}')
         self.dwell(self.long_pause)
         self.instruction('\n')
 
@@ -506,21 +548,27 @@ class PGMCompiler:
         Current PGMCompiler instance
         """
         if num is None:
+            logger.error("Number of iterations is None. Give a valid 'scan' attribute value.")
             raise ValueError("Number of iterations is None. Give a valid 'scan' attribute value.")
         if num <= 0:
+            logger.error("Number of iterations is 0. Set 'scan'>= 1.")
             raise ValueError("Number of iterations is 0. Set 'scan'>= 1.")
 
         if var is None:
+            logger.error('Given variable is None. Give a valid varible.')
             raise ValueError('Given variable is None. Give a valid varible.')
         if var.lower() not in self._dvars:
+            logger.error(f'Given variable has not beed declared. Use dvar() method to declare ${var} variable.')
             raise ValueError(f'Given variable has not beed declared. Use dvar() method to declare ${var} variable.')
 
         self._instructions.append(f'FOR ${var} = 0 TO {int(num) - 1}\n')
+        logger.debug(f'Init FOR loop with {num} iterations.')
         _temp_dt = self._total_dwell_time
         try:
             yield self
         finally:
             self._instructions.append(f'NEXT ${var}\n\n')
+            logger.debug(f'End FOR loop.')
 
             # pauses should be multiplied by number of cycles as well
             self._total_dwell_time += int(num - 1) * (self._total_dwell_time - _temp_dt)
@@ -541,16 +589,20 @@ class PGMCompiler:
         Current PGMCompiler instance
         """
         if num is None:
+            logger.error("Number of iterations is None. Give a valid 'scan' attribute value.")
             raise ValueError("Number of iterations is None. Give a valid 'scan' attribute value.")
         if num <= 0:
+            logger.error("Number of iterations is 0. Set 'scan'>= 1.")
             raise ValueError("Number of iterations is 0. Set 'scan'>= 1.")
 
         self._instructions.append(f'REPEAT {int(num)}\n')
+        logger.debug(f'Init REPEAT loop with {num} iterations.')
         _temp_dt = self._total_dwell_time
         try:
             yield self
         finally:
             self._instructions.append('ENDREPEAT\n\n')
+            logger.debug(f'End REPEAT loop.')
 
             # pauses should be multiplied by number of cycles as well
             self._total_dwell_time += int(num - 1) * (self._total_dwell_time - _temp_dt)
@@ -566,6 +618,7 @@ class PGMCompiler:
         None
         """
         self._instructions.append('MSGDISPLAY 1, "START #TS"\n\n')
+        logger.debug('Add starting time string.')
 
     def toc(self) -> None:
         """Stop time measure.
@@ -580,6 +633,7 @@ class PGMCompiler:
         self._instructions.append('MSGDISPLAY 1, "END   #TS"\n')
         self._instructions.append('MSGDISPLAY 1, "---------------------"\n')
         self._instructions.append('MSGDISPLAY 1, " "\n\n')
+        logger.debug('Add ending time string.')
 
     def instruction(self, instr: str) -> None:
         """Add G-Code instruction.
@@ -599,6 +653,7 @@ class PGMCompiler:
             self._instructions.append(instr)
         else:
             self._instructions.append(instr + '\n')
+        logger.debug(f'Add instruction: {instr.strip()}')
 
     def load_program(self, filename: str, task_id: int = 2) -> None:
         """Load G-code script.
@@ -618,10 +673,12 @@ class PGMCompiler:
         None
         """
         if task_id is None:
+            logger.debug(f'Set task ID to 2.')
             task_id = 2
 
         file = self._get_filepath(filename=filename, extension='pgm')
         self._instructions.append(f'PROGRAM {int(task_id)} LOAD "{file}"\n')
+        logger.debug(f'Load file {file}.')
         self._loaded_files.append(file.stem)
 
     def remove_program(self, filename: str, task_id: int = 2) -> None:
@@ -642,11 +699,13 @@ class PGMCompiler:
         """
         file = self._get_filepath(filename=filename, extension='pgm')
         if file.stem not in self._loaded_files:
+            logger.error(f"The program {file} is not loaded.)
             raise FileNotFoundError(
                 f"The program {file} is not loaded. Load the file with 'load_program' before removing it."
             )
         self.programstop(task_id)
         self._instructions.append(f'REMOVEPROGRAM "{file.name}"\n')
+        logger.debug(f'Remove file {file}.')
         self._loaded_files.remove(file.stem)
 
     def programstop(self, task_id: int = 2) -> None:
@@ -683,11 +742,13 @@ class PGMCompiler:
         """
         file = self._get_filepath(filename=filename, extension='.pgm')
         if file.stem not in self._loaded_files:
+            logger.error(f"The program {file} is not loaded. Load the file with 'load_program' before the call.")
             raise FileNotFoundError(
                 f"The program {file} is not loaded. Load the file with 'load_program' before the call."
             )
         self.dwell(self.short_pause)
         self._instructions.append(f'FARCALL "{file}"\n')
+        logger.debug(f'Call file {file}.')
 
     def bufferedcall(self, filename: str, task_id: int = 2) -> None:
         """BUFFEREDCALL instruction.
@@ -707,12 +768,14 @@ class PGMCompiler:
         """
         file = self._get_filepath(filename=filename, extension='.pgm')
         if file.stem not in self._loaded_files:
+            logger.error(f"The program {file} is not loaded. Load the file with 'load_program' before the call.")
             raise FileNotFoundError(
                 f"The program {file} is not loaded. Load the file with 'load_program' before the call."
             )
         self.dwell(self.short_pause)
         self.instruction('\n')
         self._instructions.append(f'PROGRAM {task_id} BUFFEREDRUN "{file}"\n')
+        logger.debug(f'Call buffered file {file}.')
 
     def farcall_list(self, filenames: list[str], task_id: list[int] | int = 2) -> None:
         """Chiamatutto.
@@ -762,16 +825,21 @@ class PGMCompiler:
         :type points: numpy.ndarray
         :return: None
         """
+
+        logger.debug('Start writing points to file...')
         x, y, z, f_gc, s_gc = points
+        logger.debug('Fetch points.')
 
         # Transform points (rotations, z-compensation and flipping)
         x_gc, y_gc, z_gc = self.transform_points(x, y, z)
+        logger.debug('Transform points (rotations, z-compensation and flipping).')
 
         if self.minimal_gcode:
             x_gc = remove_repeated_coordinates(x_gc)
             y_gc = remove_repeated_coordinates(y_gc)
             z_gc = remove_repeated_coordinates(z_gc)
             f_gc = remove_repeated_coordinates(f_gc)
+            logger.debug('Reduce the G-Code commands.')
 
         # Convert points if G-Code commands
         args = [self._format_args(x, y, z, f) for (x, y, z, f) in zip(x_gc, y_gc, z_gc, f_gc)]
@@ -814,12 +882,14 @@ class PGMCompiler:
         # get filename and add the proper file extension
         pgm_filename = pathlib.Path(self.filename) if filename is None else pathlib.Path(filename)
         pgm_filename = pgm_filename.with_suffix('.pgm')
+        logger.debug(f'Export to {pgm_filename}.')
 
         # create export directory (mimicking the POSIX mkdir -p command)
         if self.export_dir:
             exp_dir = pathlib.Path(self.export_dir)
             if not exp_dir.is_dir():
                 exp_dir.mkdir(parents=True, exist_ok=True)
+                logger.debug(f'Created {exp_dir} directory.')
             pgm_filename = exp_dir / pgm_filename
 
         # write instructions to file
@@ -828,6 +898,8 @@ class PGMCompiler:
         self._instructions.clear()
         if verbose:
             logger.info('G-code compilation completed.')
+        logger.debug('G-code compilation completed.')
+
 
     # Geometrical transformations
     def transform_points(
@@ -860,10 +932,12 @@ class PGMCompiler:
         x = np.asarray(x, dtype=np.float32)
         y = np.asarray(y, dtype=np.float32)
         z = np.asarray(z, dtype=np.float32)
+        logger.debug('Normalize x-, y-, z-arrays to numpy.ndarrys.')
 
         # translate points to new origin
         x -= self.new_origin[0]
         y -= self.new_origin[1]
+        logger.debug('Shift x-, y-arrays to new origin.')
 
         # flip x, y coordinates
         x, y = self.flip(x, y)
@@ -871,10 +945,12 @@ class PGMCompiler:
         # rotate points
         point_matrix = np.stack((x, y, z), axis=-1)
         x_t, y_t, z_t = np.matmul(point_matrix, self.t_matrix).T
+        logger.debug('Applied 3D rotation matrix.')
 
         # compensate for warp
         if self.warp_flag:
             return self.compensate(x_t, y_t, z_t)
+            logger.debug('Compensate for warp.')
         return x_t, y_t, z_t
 
     def flip(
@@ -1089,6 +1165,7 @@ class PGMCompiler:
             args.append(f'Z{z:.{self.output_digits}f}')
         if f is not None:
             if f < 10 ** (-self.output_digits):
+                logger.error(f'Try to move with F <= 0.0 mm/s. speed = {f}.')
                 raise ValueError('Try to move with F <= 0.0 mm/s. Check speed parameter.')
             args.append(f'F{f:.{self.output_digits}f}')
         joined_args = ' '.join(args)
@@ -1112,35 +1189,41 @@ class PGMCompiler:
         """
 
         if filename is None:
+            logger.error('Given filename is None. Give a valid filename.')
             raise ValueError('Given filename is None. Give a valid filename.')
 
         path = pathlib.Path(filename) if filepath is None else pathlib.Path(filepath) / filename
         if extension is None:
+            logger.debug('Extension is None. Return Path without extension.')
             return path
 
         ext = '.' + extension.split('.')[-1].lower()
         if path.suffix != ext:
+            logger.error(f'Given filename has wrong extension. Given {filename}, required {ext}.')
             raise ValueError(f'Given filename has wrong extension. Given {filename}, required {ext}.')
+        logger.debug(f'Return {path=}.')
         return path
 
     def _enter_axis_rotation(self, angle: float | None = None) -> None:
+
+        if angle is None and self.aerotech_angle == 0.0:
+            return
+        angle = self.aerotech_angle if angle is None else float(angle % 360)
+
         self.comment('ACTIVATE AXIS ROTATION')
         self._instructions.append(f'G1 X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{self.speed_pos:.6f}\n')
         self._instructions.append('G84 X Y\n')
         self.dwell(self.short_pause)
-
-        if angle is None and self.aerotech_angle == 0.0:
-            return
-
-        angle = self.aerotech_angle if angle is None else float(angle % 360)
         self._instructions.append(f'G84 X Y F{angle}\n\n')
         self.dwell(self.short_pause)
+        logger.debug(f'Activate axis rotation with {angle=}.')
 
     def _exit_axis_rotation(self) -> None:
         self.comment('DEACTIVATE AXIS ROTATION')
         self._instructions.append(f'G1 X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{self.speed_pos:.6f}\n')
         self._instructions.append('G84 X Y\n')
         self.dwell(self.short_pause)
+        logger.debug('Deactivate axis rotation.')
 
 
 def main() -> None:
