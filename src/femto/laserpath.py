@@ -353,7 +353,7 @@ class LaserPath:
 
         x, y, z = self.path3d
         l = float(np.sum(np.sqrt(np.diff(x) ** 2 + np.diff(y) ** 2 + np.diff(z) ** 2)))
-        logger.debug(f'Return total length, {l=}.')
+        logger.debug(f'Return total length, l = {l}.')
         return l
 
     @property
@@ -377,7 +377,7 @@ class LaserPath:
 
         dists = np.sqrt(np.diff(x) ** 2 + np.diff(y) ** 2 + np.diff(z) ** 2)
         time = float(sum(dists / f[1:]))
-        logger.debug(f'Return total fabrication time, {time=}.')
+        logger.debug(f'Return total fabrication time, {time} s.')
         return time
 
     @property

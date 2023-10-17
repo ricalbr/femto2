@@ -188,7 +188,7 @@ class PGMCompiler:
         The absolute value of the `x` element of the samplesize array.
         """
         xsample = float(abs(self.samplesize[0]))
-        logger.debug(f'Return {xsample=}')
+        logger.debug(f'Return xsample = {xsample}')
         return xsample
 
     @property
@@ -200,7 +200,7 @@ class PGMCompiler:
         The absolute value of the `y` element of the samplesize array.
         """
         ysample = float(abs(self.samplesize[1]))
-        logger.debug(f'Return {ysample=}')
+        logger.debug(f'Return ysample = {ysample}')
         return ysample
 
     @property
@@ -1200,7 +1200,7 @@ class PGMCompiler:
         if path.suffix != ext:
             logger.error(f'Given filename has wrong extension. Given {filename}, required {ext}.')
             raise ValueError(f'Given filename has wrong extension. Given {filename}, required {ext}.')
-        logger.debug(f'Return {path=}.')
+        logger.debug(f'Return path: {path}.')
         return path
 
     def _enter_axis_rotation(self, angle: float | None = None) -> None:
@@ -1215,7 +1215,7 @@ class PGMCompiler:
         self.dwell(self.short_pause)
         self._instructions.append(f'G84 X Y F{angle}\n\n')
         self.dwell(self.short_pause)
-        logger.debug(f'Activate axis rotation with {angle=}.')
+        logger.debug(f'Activate axis rotation with angle = {angle}.')
 
     def _exit_axis_rotation(self) -> None:
         self.comment('DEACTIVATE AXIS ROTATION')

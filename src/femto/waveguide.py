@@ -53,7 +53,7 @@ class Waveguide(LaserPath):
             logger.error('Interaction distance is set to None.')
             raise ValueError('Interaction distance is set to None.')
         dy = 0.5 * (self.pitch - self.int_dist)
-        logger.debug(f'Return dy for a curve. {dy=}')
+        logger.debug(f'Return dy for a curve. dy = {dy}')
         return dy
 
     @property
@@ -68,7 +68,7 @@ class Waveguide(LaserPath):
         """
 
         dx = float(self.get_sbend_parameter(self.dy_bend, self.radius)[1])
-        logger.debug(f'Return dx for a curve. {dx=}')
+        logger.debug(f'Return dx for a curve. dx = {dx}')
         return dx
 
     @property
@@ -81,7 +81,7 @@ class Waveguide(LaserPath):
             Sum of two `x`-displacements S-bend segments and the interaction distance straight segment.
         """
         dx = 2 * self.dx_bend + self.int_length
-        logger.debug(f'Return dx for a coupler. {dx=}')
+        logger.debug(f'Return dx for a coupler. dx = {dx}')
         return dx
 
     @property
@@ -94,7 +94,7 @@ class Waveguide(LaserPath):
             Sum of two `x`-displacements Directional Coupler segments and the ``arm_length`` distance straight segment.
         """
         dx = 4 * self.dx_bend + 2 * self.int_length + self.arm_length
-        logger.debug(f'Return dx for a MZI. {dx=}')
+        logger.debug(f'Return dx for a MZI. dx = {dx}')
         return dx
 
     def bend(
@@ -155,19 +155,19 @@ class Waveguide(LaserPath):
             raise ValueError('dy is None. Give a valid dy as input.')
 
         r = radius if radius is not None else self.radius
-        logger.debug(f'Radius set to {r=}.')
+        logger.debug(f'Radius set to r = {r}.')
         f = speed if speed is not None else self.speed
-        logger.debug(f'Speed set to {f=}.')
+        logger.debug(f'Speed set to f = {f}.')
         dzb = dz if dz is not None else self.dz_bridge
-        logger.debug(f'dz for the bridges set to {dzb=}.')
+        logger.debug(f'dz for the bridges set to dzb = {dzb}.')
 
         dx = disp_x if disp_x is not None else self.get_sbend_parameter(np.sqrt(dy**2 + dz**2), r)[-1]
-        logger.debug(f'dx for the bend set to {dx=}.')
+        logger.debug(f'dx for the bend set to dx = {dx}.')
         num = num_points if num_points is not None else self.num_subdivisions(dx, f)
-        logger.debug(f'Total number of points is {num=}.')
+        logger.debug(f'Total number of points is num = {num}.')
 
         x, y, z = fx(dx=dx, dy=dy, dz=dzb, num_points=num, **dict(kwargs, radius=r))
-        logger.debug(f'Computed (x, y, z) using {fx}.')
+        logger.debug(f'Computed (x, y, z) using {fx} function.')
 
         # update coordinates
         self.add_path(
@@ -229,7 +229,7 @@ class Waveguide(LaserPath):
             )
 
         int_length = int_length if int_length is not None else self.int_length
-        logger.debug(f'Interaction lenght set to {int_length=}.')
+        logger.debug(f'Interaction lenght set to int_length = {int_length}.')
 
         self.bend(dy=dy, dz=dz, fx=fx, disp_x=disp_x, radius=radius, num_points=num_points, speed=speed, **kwargs)
         self.linear([np.fabs(int_length), 0, 0], speed=speed, shutter=shutter)
@@ -290,7 +290,7 @@ class Waveguide(LaserPath):
             )
 
         arm_length = arm_length if arm_length is not None else self.arm_length
-        logger.debug(f'Arm length set to {arm_length=}.')
+        logger.debug(f'Arm length set to arm_length = {arm_length}.')
 
         self.coupler(
             dy=dy,
@@ -398,7 +398,7 @@ def coupler(param: dict[str, Any], f_profile: Callable, nasu: bool = False) -> l
     mode2 = NasuWaveguide(**param) if nasu else Waveguide(**param)
 
     lx = (mode1.samplesize[0] - mode1.dx_coupler) / 2
-    logger.debug(f'Linear segment {lx=}.')
+    logger.debug(f'Linear segment lx = {lx}.')
 
     logger.debug('Start mode 1.')
     mode1.start()
