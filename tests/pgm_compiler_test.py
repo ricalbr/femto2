@@ -960,7 +960,7 @@ def test_farcall_list(param, fns, tid, id_exp, expectation) -> None:
     T = PGMCompiler(**param)
     for fpath, t_id in zip(fns, id_exp):
         fpath = Path(fpath)
-        T.load_program(str(fpath.resolve()), t_id)
+        T.load_program(str(fpath), t_id)
         T.farcall(fpath.name)
         T.dwell(T.short_pause)
         T.remove_program(fpath.name, t_id)

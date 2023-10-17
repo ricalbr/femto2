@@ -804,7 +804,7 @@ class PGMCompiler:
 
         for fpath, t_id in zip(filenames, task_id):
             file = pathlib.Path(fpath)
-            self.load_program(str(file.resolve()), t_id)
+            self.load_program(str(file), t_id)
             self.farcall(file.name)
             self.dwell(self.short_pause)
             self.remove_program(file.name, t_id)

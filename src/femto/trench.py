@@ -4,6 +4,7 @@ import dataclasses
 import inspect
 import math
 import pathlib
+from functools import cached_property
 from typing import Any
 from typing import Generator
 from typing import Iterator
@@ -172,31 +173,39 @@ class Trench:
         """Length of a single layer of the wall path."""
         return self._wall_length
 
-    @property
+    @cached_property
     def orientation(self) -> str:
         """Orientation of the trench block."""
-        (xmin, ymin, xmax, ymax) = self.block.minimum_rotated_rectangle.bounds
+        (xmin, ymin, xmax, ymax) = self.block.bounds
         return 'v' if (xmax - xmin) <= (ymax - ymin) else 'h'
 
-    @property
+    @cached_property
     def num_insets(self) -> int:
         """Number of spiral turns."""
         if self.block.contains(self.block.convex_hull.buffer(-0.01 * self.delta_floor)):
             return self.safe_inner_turns
         else:
             # External rectangle
-            (xmin, ymin, xmax, ymax) = self.block.minimum_rotated_rectangle.bounds
-            d_ext = min(xmax - xmin, ymax - ymin)
+            (xmin_ext, ymin_ext, xmax_ext, ymax_ext) = self.block.bounds
 
             # Internal rectangle
-            p = (
-                np.array([[[x, y] for (x, y) in self.block.buffer(-2 * self.delta_floor).exterior.coords]], np.float32)
-                * 1e3
-            )
-            _, _, dx_int, dy_int = lir.lir(p.astype(np.int32), np.int32) / 1e3
-            d_int = min(dx_int, dy_int)
+            buffer_length = 2 * self.delta_floor
+            p = np.array([[[x, y] for (x, y) in self.block.buffer(-buffer_length).exterior.coords]], np.float32) * 1e3
+            xmin_int, ymin_int, dx_int, dy_int = lir.lir(p.astype(np.int32), np.int32) / 1e3
+            xmax_int, ymax_int = xmin_int + dx_int, ymin_int + dy_int
 
-            return int((d_ext - d_int) / (2 * self.delta_floor)) + self.safe_inner_turns
+            if self.orientation == 'h':
+                d_upper = np.abs(ymax_ext - ymax_int)
+                d_lower = np.abs(ymin_ext - ymin_int)
+            else:
+                d_upper = np.abs(xmax_ext - xmax_int)
+                d_lower = np.abs(xmin_ext - xmin_int)
+
+            # Distinguish concave / biconcave
+            if d_upper <= buffer_length or d_lower <= buffer_length:
+                return int((d_upper + d_lower) / self.delta_floor) + self.safe_inner_turns
+            else:
+                return int((d_upper + d_lower) / (2 * self.delta_floor)) + self.safe_inner_turns
 
     def zigzag_mask(self) -> geometry.MultiLineString:
         """Zig-zag mask.
@@ -212,13 +221,9 @@ class Trench:
         shapely.MultiLineString | shapely.GeometryCollection
             Collection of hatch lines (in case a hatch line intersects with the corner of the clipping
             rectangle, which produces a point along with the usual lines).
-
-        See Also
-        --------
-        shapely.minimum_rotated_rectangle : oriented rectangular envelope that encloses an input geometry.
         """
 
-        (xmin, ymin, xmax, ymax) = self.block.minimum_rotated_rectangle.bounds
+        (xmin, ymin, xmax, ymax) = self.block.bounds
         number_of_lines = 2 + int((xmax - xmin) / self.delta_floor)
 
         coords = []
@@ -254,6 +259,7 @@ class Trench:
         path_collection = poly.intersection(mask)
         coords = []
         for line in path_collection.geoms:
+            self._floor_length += line.length + self.delta_floor
             coords.extend(line.coords)
         return np.array(coords).T
 
@@ -362,7 +368,7 @@ class TrenchColumn:
     safe_inner_turns: int = 5  #: Number of spiral turns befor zig-zag filling
     u: list[float] | None = None  #: List of U coordinate to change irradiation power automatically [deg].
     speed_wall: float = 4.0  #: Translation speed of the wall section [mm/s].
-    speed_floor: float = 2.0  #: Translation speed of the floor section [mm/s].
+    speed_floor: float | None = None  #: Translation speed of the floor section [mm/s].
     speed_closed: float = 5.0  #: Translation speed with closed shutter [mm/s].
     speed_pos: float = 2.0  #: Positioning speed with closed shutter [mm/s].
     base_folder: str = ''  #: Location where PGM files are stored in lab PC. If empty, load files with relative path.
@@ -373,6 +379,8 @@ class TrenchColumn:
 
     def __post_init__(self):
         self.CWD: pathlib.Path = pathlib.Path.cwd()  #: Current working directory
+        if self.speed_floor is None:
+            self.speed_floor = self.speed_wall
 
     def __iter__(self) -> Iterator[Trench]:
         """Iterator that yields single trench blocks of the column.
