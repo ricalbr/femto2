@@ -680,6 +680,7 @@ class UTrenchColumn(TrenchColumn):
         """
         adj_p = self.pillar_width / 2 + self.beam_waist
         logger.debug(f'The adjusted pillar size is {adj_p} mm.')
+        return adj_p
 
     @property
     def fabrication_time(self) -> float:
