@@ -249,6 +249,26 @@ def test_trench_writer_pgm(gc_param, list_tcol) -> None:
     twr._export_path.rmdir()
 
 
+def test_trench_writer_pgm_single_col(gc_param, list_tcol) -> None:
+    list_cols = [list_tcol[0]]
+    twr = TrenchWriter(tc_list=list_cols, **gc_param)
+    twr.pgm()
+
+    assert twr._export_path.is_dir()
+    for i_col, col in enumerate(list_cols):
+        assert (twr._export_path / f'trenchCol{i_col + 1:03}').is_dir()
+        assert (twr._export_path / f'FARCALL{i_col + 1:03}.pgm').is_file()
+        for i_tr, tr in enumerate(col):
+            assert (twr._export_path / f'trenchCol{i_col + 1:03}' / f'trench{i_tr + 1:03}_WALL.pgm').is_file()
+            (twr._export_path / f'trenchCol{i_col + 1:03}' / f'trench{i_tr + 1:03}_WALL.pgm').unlink()
+            assert (twr._export_path / f'trenchCol{i_col + 1:03}' / f'trench{i_tr + 1:03}_FLOOR.pgm').is_file()
+            (twr._export_path / f'trenchCol{i_col + 1:03}' / f'trench{i_tr + 1:03}_FLOOR.pgm').unlink()
+        (twr._export_path / f'trenchCol{i_col + 1:03}').rmdir()
+        (twr._export_path / f'FARCALL{i_col + 1:03}.pgm').unlink()
+    assert not (twr._export_path / 'MAIN.pgm').is_file()
+    twr._export_path.rmdir()
+
+
 def test_trench_writer_export_array2d_raise(gc_param, list_tcol) -> None:
     twr = TrenchWriter(tc_list=list_tcol, **gc_param)
     with pytest.raises(ValueError):
