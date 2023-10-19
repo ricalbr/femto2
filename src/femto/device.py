@@ -138,10 +138,10 @@ class Device:
             # TODO: fix standard fig update
             logger.debug(f'Plot 2D object from {writer}.')
             self.fig = writer.plot2d(self.fig)
-            logger.debug(f'Update 2D figure.')
+            logger.debug('Update 2D figure.')
             self.fig = writer.standard_2d_figure_update(self.fig)
         if show:
-            logger.debug(f'Show 2D plot.')
+            logger.debug('Show 2D plot.')
             self.fig.show()
         if save:
             self.save()
@@ -169,17 +169,17 @@ class Device:
             try:
                 logger.debug(f'Plot 3D object from {writer}.')
                 self.fig = writer.plot3d(self.fig)
-                logger.debug(f'Update 3D figure.')
+                logger.debug('Update 3D figure.')
                 self.fig = writer.standard_3d_figure_update(self.fig)
             except NotImplementedError:
                 logger.error(f'3D plot for {key} not yet implemented.\n')
         if show:
-            logger.debug(f'Show 3D plot.')
+            logger.debug('Show 3D plot.')
             self.fig.show()
         if save:
             self.save()
 
-    def pgm(self, verbose: bool = True) -> None:
+    def pgm(self, verbose: bool = False) -> None:
         """Export to PGM.
 
         Export all the objects stored in ``Device`` class as a `PGM` file.
@@ -187,7 +187,7 @@ class Device:
         Parameters
         ----------
         verbose : bool, optional
-            Boolean flag to print informations during the export operation.
+            Boolean flag to print informations during the export operation. The default value is ``False``.
 
         Returns
         -------
