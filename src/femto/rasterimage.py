@@ -59,8 +59,8 @@ class RasterImage(LaserPath):
         # displaying image information
         self.img_size = img.size  # update of img_size property
         logger.info('Image opened. Displaying information..')
-        logger.info(f'Extension:\t{img.format}\nImage size:\t{img.size}\nColor mode:\t{img.mode}\n', '-' * 40)
-        logger.info(f'Laser path dimension {self.path_size[0]:.3f} by {self.path_size[1]:.3f} mm^2\n', '-' * 40)
+        logger.info(f'Extension:\t{img.format}\nImage size:\t{img.size}\nColor mode:\t{img.mode}\n')
+        logger.info(f'Laser path dimension {self.path_size[0]:.3f} by {self.path_size[1]:.3f} mm^2\n')
 
         if img.mode != '1':
             img = img.convert('1')
