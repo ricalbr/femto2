@@ -2096,9 +2096,9 @@ def main() -> None:
         wg.y_init = -wg.pitch / 2 + index * wg.pitch
         wg.start()
         wg.linear(increment)
-        wg.bend(dy=(-1) ** index * wg.dy_bend, dz=0, fx=sin)
         wg.bend(dy=(-1) ** index * 0.08, dz=(-1) ** index * 0.015, fx=spline_bridge)
         wg.bend(dy=(-1) ** (index + 1) * wg.dy_bend, dz=0, fx=circ)
+        wg.bend(dy=(-1) ** index * wg.dy_bend, dz=0, fx=sin)
         wg.linear(increment)
         wg.end()
         mzi.append(wg)

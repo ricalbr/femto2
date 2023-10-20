@@ -80,7 +80,7 @@ class PGMCompiler:
 
         # File initialization
         if self.filename is None:
-            logger.error("Filename is None.")
+            logger.error('Filename is None.')
             raise ValueError("Filename is None, set 'filename' attribute")
         self._instructions: Deque[str] = collections.deque()
         self._loaded_files: list[str] = []
@@ -247,11 +247,11 @@ class PGMCompiler:
             raise ValueError(f'Laser can be only ANT, CARBIDE, PHAROS or UWE. Given {self.laser}.')
         if self.laser.lower() == 'uwe':
             # mechanical shutter
-            logger.debug(f'Shuttering time for mechanical shutter: 0.005.')
+            logger.debug('Shuttering time for mechanical shutter: 0.005.')
             return 0.005
         else:
             # pockels cell
-            logger.debug(f'Shuttering time for pockels cell: 0.000.')
+            logger.debug('Shuttering time for pockels cell: 0.000.')
             return 0.000
 
     @property
@@ -464,7 +464,7 @@ class PGMCompiler:
         None
         """
         if len(position) != 3:
-            logger.error(f'Given final position is not valid.')
+            logger.error('Given final position is not valid.')
             raise ValueError(f'Given final position is not valid. 3 values required, given {len(position)}.')
 
         if speed_pos is None and self.speed_pos is None:
@@ -568,7 +568,7 @@ class PGMCompiler:
             yield self
         finally:
             self._instructions.append(f'NEXT ${var}\n\n')
-            logger.debug(f'End FOR loop.')
+            logger.debug('End FOR loop.')
 
             # pauses should be multiplied by number of cycles as well
             self._total_dwell_time += int(num - 1) * (self._total_dwell_time - _temp_dt)
@@ -602,7 +602,7 @@ class PGMCompiler:
             yield self
         finally:
             self._instructions.append('ENDREPEAT\n\n')
-            logger.debug(f'End REPEAT loop.')
+            logger.debug('End REPEAT loop.')
 
             # pauses should be multiplied by number of cycles as well
             self._total_dwell_time += int(num - 1) * (self._total_dwell_time - _temp_dt)
@@ -673,7 +673,7 @@ class PGMCompiler:
         None
         """
         if task_id is None:
-            logger.debug(f'Set task ID to 2.')
+            logger.debug('Set task ID to 2.')
             task_id = 2
 
         file = self._get_filepath(filename=filename, extension='pgm')
@@ -699,7 +699,7 @@ class PGMCompiler:
         """
         file = self._get_filepath(filename=filename, extension='pgm')
         if file.stem not in self._loaded_files:
-            logger.error(f"The program {file} is not loaded.")
+            logger.error(f'The program {file} is not loaded.')
             raise FileNotFoundError(
                 f"The program {file} is not loaded. Load the file with 'load_program' before removing it."
             )
@@ -1227,6 +1227,7 @@ class PGMCompiler:
 
 def main() -> None:
     from femto.waveguide import Waveguide
+    from femto.curves import sin
     from femto.helpers import dotdict
 
     # Parameters
@@ -1240,8 +1241,8 @@ def main() -> None:
     for i, wg in enumerate(chip):
         wg.start([-2, -wg.pitch / 2 + i * wg.pitch, 0.035])
         wg.linear([wg.lsafe, 0, 0])
-        wg.arc_bend((-1) ** i * wg.dy_bend)
-        wg.arc_bend((-1) ** (i + 1) * wg.dy_bend)
+        wg.bend(dy=(-1) ** i * wg.dy_bend, dz=0, fx=sin)
+        wg.bend(dy=(-1) ** (i + 1) * wg.dy_bend, dz=0, fx=sin)
         wg.linear([wg.x_end, wg.lasty, wg.lastz], mode='ABS')
         wg.end()
 

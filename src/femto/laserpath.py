@@ -155,7 +155,7 @@ class LaserPath:
         numpy.ndarray
             `[X, Y, Z, F, S]` points of the laser trajectory.
         """
-        logger.debug(f'Return matrix with filtered coordinate. See femto.helpers.unique_filter().')
+        logger.debug('Return matrix with filtered coordinate. See femto.helpers.unique_filter().')
         return np.array(unique_filter([self._x, self._y, self._z, self._f, self._s]))
 
     @property
@@ -352,9 +352,9 @@ class LaserPath:
         """
 
         x, y, z = self.path3d
-        l = float(np.sum(np.sqrt(np.diff(x) ** 2 + np.diff(y) ** 2 + np.diff(z) ** 2)))
-        logger.debug(f'Return total length, l = {l}.')
-        return l
+        length = float(np.sum(np.sqrt(np.diff(x) ** 2 + np.diff(y) ** 2 + np.diff(z) ** 2)))
+        logger.debug(f'Return total length, l = {length}.')
+        return length
 
     @property
     def fabrication_time(self) -> float:
