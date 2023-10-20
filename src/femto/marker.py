@@ -14,9 +14,9 @@ from femto.laserpath import LaserPath
 class Marker(LaserPath):
     """Class that computes and stores the coordinates of a superficial abletion marker."""
 
-    depth: float = 0.0
-    lx: float = 1.0
-    ly: float = 0.060
+    depth: float = 0.0  #: Distance for sample's bottom facet, `[mm]`.
+    lx: float = 1.000  #: Dimension of cross x-arm, `[mm]`.
+    ly: float = 0.060  #: Dimension of cross y-arm, `[mm]`.
 
     def __post_init__(self) -> None:
         super().__post_init__()

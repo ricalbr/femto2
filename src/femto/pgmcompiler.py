@@ -41,24 +41,24 @@ class Laser:
 @dataclasses.dataclass(repr=False)
 class PGMCompiler:
 
-    filename: str
-    n_glass: float = 1.50
-    n_environment: float = 1.33
-    export_dir: str = ''
-    samplesize: tuple[float, float] = (100, 50)
-    laser: str = 'PHAROS'
-    home: bool = False
-    new_origin: tuple[float, float] = (0.0, 0.0)
-    warp_flag: bool = False
-    rotation_angle: float = 0.0
-    aerotech_angle: float = 0.0
-    long_pause: float = 0.5
-    short_pause: float = 0.05
-    output_digits: int = 6
-    speed_pos: float = 5.0
-    flip_x: bool = False
-    flip_y: bool = False
-    minimal_gcode: bool = False
+    filename: str  #: Filename of the .pgm file.
+    n_glass: float = 1.50  #: Glass refractive index.
+    n_environment: float = 1.33  #: Environment refrative index.
+    export_dir: str = ''  #: Name of the directory onto which .pgm files will be exported. Default is current directoru.
+    laser: str = 'PHAROS'  #: Name of the laser source.
+    new_origin: tuple[float, float] = (0.0, 0.0)  #: Set this point as new (0, 0) origin by shifting coordinates `[mm]`.
+    samplesize: tuple[float, float] = (100, 50)  #: `(x, y)`-size of the substrate `[mm]`.
+    rotation_angle: float = 0.0  #: Apply a rotation matrix of this angle to all the points `[deg]`.
+    aerotech_angle: float = 0.0  #: Apply part rotation (G84) with this angle as parameter `[deg]`.
+    long_pause: float = 0.5  #: Long pause value `[s]`.
+    short_pause: float = 0.05  #: Short pause value `[s]`.
+    speed_pos: float = 5.0  #: Positioning speed `[mm/s]`.
+    output_digits: int = 6  #: Number of output digits for formatting G-Code instructinos.
+    home: bool = False  #: Flag, if True the fabrication will finish in `(0,0,0)`.
+    warp_flag: bool = False  #: Flag, toggle the warp compensation.
+    flip_x: bool = False  #: Flag, if True the x-coordinates will be flipped
+    flip_y: bool = False  #: Flag, if True the y-coordinates will be flipped
+    minimal_gcode: bool = False  #: Flag, if True redundant movements are suppressed.
 
     _total_dwell_time: float = 0.0
     _shutter_on: bool = False

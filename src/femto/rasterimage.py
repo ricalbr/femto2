@@ -14,8 +14,8 @@ from PIL import Image
 class RasterImage(LaserPath):
     """Class representing a laser path in the xy-plane of a b/w rastered image."""
 
-    px_to_mm: float = 0.01  # pixel to millimeter scale convertion
-    img_size: tuple[int, int] = (0, 0)
+    px_to_mm: float = 0.010  #: Pixel to millimeter scale convertion.
+    img_size: tuple[int, int] = (0, 0)  #: Number of pixels in x and y direction of the image.
 
     def __post_init__(self) -> None:
         super().__post_init__()
