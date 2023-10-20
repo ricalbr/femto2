@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import numpy as np
+import numpy.typing as npt
 import scipy.integrate as integrate
 from scipy import special
 from scipy.interpolate import BPoly
-import numpy.typing as npt
 
 
 def euler(
@@ -162,16 +162,26 @@ def euler_S4(
     return x, y, z
 
 
+def arc(
+    dy: float, dz: float, num_points: int, radius: float, theta_offset: float = 0, **kwargs
+) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32], npt.NDArray[np.float32]]:
+
+    thetaf = np.arccos(1 - np.abs(dy) / (2 * radius))
+    theta = theta_offset + 3 * np.pi / 2 + np.linspace(0, thetaf, num_points)
+    x, y = radius * np.cos(theta), (radius * np.sin(theta)) + radius
+    z = np.linspace(0, dz, x.size)
+    return x, y, z
+
+
 def circ(
     dy: float, dz: float, num_points: int, radius: float, **kwargs
 ) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32], npt.NDArray[np.float32]]:
-    thetaf = np.arccos(1 - np.abs(dy) / (2 * radius))
-    theta = 3 * np.pi / 2 + np.linspace(0, thetaf, num_points // 2)
+    x1, y1, _ = arc(dy=dy, dz=dz / 2, num_points=num_points, radius=radius, theta_offset=0)
+    x2, y2, _ = arc(dy=dy, dz=dz / 2, num_points=num_points, radius=radius, theta_offset=np.pi)
 
-    x1, y1 = radius * np.cos(theta), (radius * np.sin(theta)) + radius
-
-    x2, y2 = np.dot(np.array([[-1, 0], [0, -1]]), np.stack([x1, y1], 0))
-    x2, y2 = x2[::-1] + 2 * x1[-1], y2[::-1] + 2 * y1[-1]
+    # Normalize the x2, y2 arrays, flip them and add the last point of x1, y1
+    x2 = np.flip(x2 - x2[-1]) + x1[-1]
+    y2 = np.flip(y2 - y2[-1]) + y1[-1]
 
     x = np.concatenate([x1, x2], 0)
     y = np.concatenate([y1, y2], 0)
@@ -210,7 +220,7 @@ if __name__ == '__main__':
     # z, y, z = abv(dx=10, dy=0.08, dz=0, num_points=200)
     # x, y, z = euler_S2(theta=np.pi / 24, radius=15000, dx=5, dy=0.40, dz=0, n=1, num_points=1000)
     # x, y, z = euler_S4(theta=np.pi / 24, radius=15000, dx=5, dy=0.40, dz=0, n=1, num_points=1000)
-    x, y, z = circ(dx=5, dy=0.40, dz=0, num_points=1000, radius=10)
+    x, y, z = circ(dx=5, dy=-0.40, dz=0, num_points=1000, radius=10)
 
     # x, y, _ = series(erf(s=1, dy=0.040, dx=5, dz=0, num_points=100), 6)
 

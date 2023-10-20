@@ -161,9 +161,11 @@ class Waveguide(LaserPath):
         dzb = dz if dz is not None else self.dz_bridge
         logger.debug(f'dz for the bridges set to dzb = {dzb}.')
 
-        dx = disp_x if disp_x is not None else self.get_sbend_parameter(np.sqrt(dy**2 + dz**2), r)[-1]
+        ang, tmp_x = self.get_sbend_parameter(np.sqrt(dy**2 + dz**2), r)
+        dx = disp_x if disp_x is not None else tmp_x
         logger.debug(f'dx for the bend set to dx = {dx}.')
-        num = num_points if num_points is not None else self.num_subdivisions(dx, f)
+
+        num = num_points if num_points is not None else self.num_subdivisions(r * ang, f)
         logger.debug(f'Total number of points is num = {num}.')
 
         x, y, z = fx(dx=dx, dy=dy, dz=dzb, num_points=num, **dict(kwargs, radius=r))
