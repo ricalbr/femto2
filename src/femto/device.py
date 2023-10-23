@@ -10,7 +10,8 @@ from typing import Union
 import plotly.graph_objects as go
 from femto.helpers import flatten
 from femto.marker import Marker
-from femto.spreadsheet import Spreadsheet
+
+# from femto.spreadsheet import Spreadsheet
 from femto.trench import TrenchColumn
 from femto.trench import UTrenchColumn
 from femto.waveguide import NasuWaveguide
@@ -187,6 +188,30 @@ class Device:
         if verbose:
             print('Export .pgm files complete.\n')
 
+    def export(self, verbose: bool = False, **kwargs) -> None:
+        """Export objects to pickle files.
+
+        Export all the objects stored in ``Device`` class as a `pickle` file.
+
+        Parameters
+        ----------
+        verbose : bool, optional
+            Boolean flag to print informations during the export operation.
+
+        Returns
+        -------
+        None
+        """
+
+        for key, writer in self.writers.items():
+            if verbose and writer.obj_list:
+                print(f'Exporting {key.__name__} objects...')
+
+            writer = cast(Union[WaveguideWriter, NasuWriter, TrenchWriter, UTrenchWriter, MarkerWriter], writer)
+            writer.export()
+        if verbose:
+            print('Export objects complete.\n')
+
     def xlsx(self, verbose: bool = True, **param) -> None:
         """Generate the spreadsheet.
 
@@ -265,8 +290,9 @@ def main() -> None:
 
     # Export
     dev.plot2d()
-    dev.save('circuit_scheme.pdf')
+    # dev.save('circuit_scheme.pdf')
     dev.pgm()
+    dev.export()
 
 
 if __name__ == '__main__':

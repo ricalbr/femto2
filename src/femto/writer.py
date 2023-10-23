@@ -4,10 +4,13 @@ import abc
 import itertools
 import pathlib
 import time
+import dill
 from typing import Any
 
 import numpy as np
 import numpy.typing as npt
+
+import femto.waveguide
 from femto.helpers import flatten
 from femto.helpers import listcast
 from femto.helpers import nest_level
@@ -314,6 +317,22 @@ class Writer(PGMCompiler, abc.ABC):
         )
         return fig
 
+    def _export(
+        self,
+        obj: list[Any],
+        name_id: str,
+        filename: str | pathlib.Path,
+        export_path: str | pathlib.Path,
+        export_dir: str | pathlib.Path = 'EXPORT',
+    ):
+        filepath = pathlib.Path(export_path / export_dir / pathlib.Path(filename).stem)
+        filepath.mkdir(exist_ok=True, parents=True)
+
+        for i, wg in enumerate(obj):
+            objpath = filepath / f"{name_id.upper()}_{i + 1:02}.pkl"
+            with open(objpath, "wb") as f:
+                dill.dump(wg.__dict__, f)
+
 
 class TrenchWriter(Writer):
     """Trench Writer class."""
@@ -416,6 +435,11 @@ class TrenchWriter(Writer):
         fig = self._plot3d_trench(fig=fig, style=style)
         fig = super().standard_2d_figure_update(fig)  # Add glass, origin and axis elements
         return fig
+
+    def export(self) -> None:
+        super()._export(
+            obj=self.obj_list, name_id='TC', filename=self._param['filename'], export_path=self.CWD, export_dir='EXPORT'
+        )
 
     def pgm(self, verbose: bool = True) -> None:
         """Export to PGM file.
@@ -783,6 +807,15 @@ class UTrenchWriter(TrenchWriter):
         self.obj_list.append(obj)
         self.trenches.extend(obj._trench_list)
         self.beds.extend(obj.trenchbed)
+
+    def export(self) -> None:
+        super()._export(
+            obj=self.obj_list,
+            name_id='UTC',
+            filename=self._param['filename'],
+            export_path=self.CWD,
+            export_dir='EXPORT',
+        )
 
     # Private interface
     def _export_trench_column(self, column: UTrenchColumn, column_path: pathlib.Path) -> None:
@@ -1160,6 +1193,11 @@ class WaveguideWriter(Writer):
         fig = super().standard_3d_figure_update(fig)  # Add glass, origin and axis elements
         return fig
 
+    def export(self) -> None:
+        super()._export(
+            obj=self.obj_list, name_id='WG', filename=self._param['filename'], export_path=self.CWD, export_dir='EXPORT'
+        )
+
     def pgm(self, verbose: bool = True) -> None:
         """Export to PGM file.
 
@@ -1469,6 +1507,15 @@ class NasuWriter(Writer):
         fig = self._plot3d_nwg(fig=fig, show_shutter_close=show_shutter_close, style=style)
         fig = super().standard_3d_figure_update(fig)  # Add glass, origin and axis elements
         return fig
+
+    def export(self) -> None:
+        super()._export(
+            obj=self.obj_list,
+            name_id='NWG',
+            filename=self._param['filename'],
+            export_path=self.CWD,
+            export_dir='EXPORT',
+        )
 
     def pgm(self, verbose: bool = True) -> None:
         """Export to PGM file.
@@ -1782,6 +1829,11 @@ class MarkerWriter(Writer):
         fig = self._plot3d_mk(fig=fig, style=style)
         fig = super().standard_3d_figure_update(fig)  # Add glass, origin and axis elements
         return fig
+
+    def export(self) -> None:
+        super()._export(
+            obj=self.obj_list, name_id='MK', filename=self._param['filename'], export_path=self.CWD, export_dir='EXPORT'
+        )
 
     def pgm(self, verbose: bool = True) -> None:
         """Export to PGM file.
