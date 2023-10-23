@@ -11,7 +11,7 @@ import plotly.graph_objects as go
 from femto.helpers import flatten
 from femto.marker import Marker
 
-# from femto.spreadsheet import Spreadsheet
+from femto.spreadsheet import Spreadsheet
 from femto.trench import TrenchColumn
 from femto.trench import UTrenchColumn
 from femto.waveguide import NasuWaveguide
