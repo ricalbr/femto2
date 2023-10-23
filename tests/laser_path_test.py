@@ -267,92 +267,92 @@ def test_linear_none(param) -> None:
     np.testing.assert_almost_equal(lp._s, np.array([0.0, 1.0, 1.0, 0.0, 0.0]))
 
 
-def test_circ_input_validation(param) -> None:
-    a_i, a_f = 0, np.pi / 2
-
-    param['radius'] = None
-    lp = LaserPath(**param)
-    with pytest.raises(ValueError):
-        lp.start([0, 0, 0]).circ(a_i, a_f)
-
-    lp = LaserPath(**param)
-    with pytest.raises(ValueError):
-        lp.start([0, 0, 0]).circ(a_i, a_f, radius=None)
-
-    param['radius'] = 20
-    lp = LaserPath(**param)
-    lp.radius = None
-    with pytest.raises(ValueError):
-        lp.start([0, 0, 0]).circ(a_i, a_f)
-
-    param['speed'] = None
-    lp = LaserPath(**param)
-    with pytest.raises(ValueError):
-        lp.start([0, 0, 0]).circ(a_i, a_f)
-
-    lp = LaserPath(**param)
-    with pytest.raises(ValueError):
-        lp.start([0, 0, 0]).circ(a_i, a_f, speed=None)
-
-    param['speed'] = 15
-    lp = LaserPath(**param)
-    lp.speed = None
-    with pytest.raises(ValueError):
-        lp.start([0, 0, 0]).circ(a_i, a_f)
-
-
-def test_circ_length(param) -> None:
-    a_i, a_f = 0, np.pi / 2
-
-    # DEFAULT VALUES FROM PARAM
-    lp = LaserPath(**param)
-    lp.start([0, 0, 0]).circ(a_i, a_f)
-    lc = np.abs(a_f - a_i) * lp.radius
-    # add two points from the start method
-    assert lp._x.size == int(np.ceil(lc * lp.cmd_rate_max / lp.speed)) + 2
-
-    # CUSTOM RADIUS
-    lp = LaserPath(**param)
-    custom_r = 5
-    lp.start([0, 0, 0]).circ(a_i, a_f, radius=custom_r)
-    lc = np.abs(a_f - a_i) * custom_r
-    assert lp._x.size == int(np.ceil(lc * lp.cmd_rate_max / lp.speed)) + 2
-
-    # CUSTOM SPEED
-    lp = LaserPath(**param)
-    custom_f = 5
-    lp.start([0, 0, 0]).circ(a_i, a_f, speed=custom_f)
-    lc = np.abs(a_f - a_i) * lp.radius
-    assert lp._x.size == int(np.ceil(lc * lp.cmd_rate_max / custom_f)) + 2
+# def test_circ_input_validation(param) -> None:
+#     a_i, a_f = 0, np.pi / 2
+#
+#     param['radius'] = None
+#     lp = LaserPath(**param)
+#     with pytest.raises(ValueError):
+#         lp.start([0, 0, 0]).circ(a_i, a_f)
+#
+#     lp = LaserPath(**param)
+#     with pytest.raises(ValueError):
+#         lp.start([0, 0, 0]).circ(a_i, a_f, radius=None)
+#
+#     param['radius'] = 20
+#     lp = LaserPath(**param)
+#     lp.radius = None
+#     with pytest.raises(ValueError):
+#         lp.start([0, 0, 0]).circ(a_i, a_f)
+#
+#     param['speed'] = None
+#     lp = LaserPath(**param)
+#     with pytest.raises(ValueError):
+#         lp.start([0, 0, 0]).circ(a_i, a_f)
+#
+#     lp = LaserPath(**param)
+#     with pytest.raises(ValueError):
+#         lp.start([0, 0, 0]).circ(a_i, a_f, speed=None)
+#
+#     param['speed'] = 15
+#     lp = LaserPath(**param)
+#     lp.speed = None
+#     with pytest.raises(ValueError):
+#         lp.start([0, 0, 0]).circ(a_i, a_f)
 
 
-def test_circ_coordinates(param) -> None:
-    a_i, a_f = 1.5 * np.pi, 0
-
-    lp = LaserPath(**param)
-    lp.start([0, 0, 0]).circ(a_i, a_f)
-    assert pytest.approx(lp._x[-1]) == lp.radius
-    assert pytest.approx(lp._y[-1]) == lp.radius
-    assert lp._z[-1] == lp._z[0]
-    lp.end()
-
-    a_i, a_f = 1.5 * np.pi, 1.75 * np.pi
-
-    lp = LaserPath(**param)
-    lp.start([0, 0, 0]).circ(a_i, a_f)
-    assert pytest.approx(lp._x[-1]) == lp.radius / np.sqrt(2)
-    assert pytest.approx(lp._y[-1]) == lp.radius * (1 - 1 / np.sqrt(2))
-    assert lp._z[-1] == lp._z[0]
-    lp.end()
-
-
-def test_circ_negative_radius(param) -> None:
-    a_i, a_f = 1.5 * np.pi, 0
-
-    lp = LaserPath(**param)
-    lp.radius = -60
-    with pytest.raises(ValueError):
-        lp.start([0, 0, 0]).circ(a_i, a_f).end()
+# def test_circ_length(param) -> None:
+#     a_i, a_f = 0, np.pi / 2
+#
+#     # DEFAULT VALUES FROM PARAM
+#     lp = LaserPath(**param)
+#     lp.start([0, 0, 0]).circ(a_i, a_f)
+#     lc = np.abs(a_f - a_i) * lp.radius
+#     # add two points from the start method
+#     assert lp._x.size == int(np.ceil(lc * lp.cmd_rate_max / lp.speed)) + 2
+#
+#     # CUSTOM RADIUS
+#     lp = LaserPath(**param)
+#     custom_r = 5
+#     lp.start([0, 0, 0]).circ(a_i, a_f, radius=custom_r)
+#     lc = np.abs(a_f - a_i) * custom_r
+#     assert lp._x.size == int(np.ceil(lc * lp.cmd_rate_max / lp.speed)) + 2
+#
+#     # CUSTOM SPEED
+#     lp = LaserPath(**param)
+#     custom_f = 5
+#     lp.start([0, 0, 0]).circ(a_i, a_f, speed=custom_f)
+#     lc = np.abs(a_f - a_i) * lp.radius
+#     assert lp._x.size == int(np.ceil(lc * lp.cmd_rate_max / custom_f)) + 2
+#
+#
+# def test_circ_coordinates(param) -> None:
+#     a_i, a_f = 1.5 * np.pi, 0
+#
+#     lp = LaserPath(**param)
+#     lp.start([0, 0, 0]).circ(a_i, a_f)
+#     assert pytest.approx(lp._x[-1]) == lp.radius
+#     assert pytest.approx(lp._y[-1]) == lp.radius
+#     assert lp._z[-1] == lp._z[0]
+#     lp.end()
+#
+#     a_i, a_f = 1.5 * np.pi, 1.75 * np.pi
+#
+#     lp = LaserPath(**param)
+#     lp.start([0, 0, 0]).circ(a_i, a_f)
+#     assert pytest.approx(lp._x[-1]) == lp.radius / np.sqrt(2)
+#     assert pytest.approx(lp._y[-1]) == lp.radius * (1 - 1 / np.sqrt(2))
+#     assert lp._z[-1] == lp._z[0]
+#     lp.end()
+#
+#
+# def test_circ_negative_radius(param) -> None:
+#     a_i, a_f = 1.5 * np.pi, 0
+#
+#     lp = LaserPath(**param)
+#     lp.radius = -60
+#     with pytest.raises(ValueError):
+#         lp.start([0, 0, 0]).circ(a_i, a_f).end()
 
 
 def test_add_path(laser_path) -> None:

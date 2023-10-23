@@ -7,6 +7,7 @@ import pytest
 from femto.curves import sin, circ, euler_S4
 from femto.curves import spline
 from femto.curves import spline_bridge
+from femto.curves import arc
 from femto.waveguide import coupler
 from femto.waveguide import NasuWaveguide
 from femto.waveguide import Waveguide
@@ -260,77 +261,77 @@ def test_repr(param) -> None:
     assert cname == 'Waveguide'
 
 
-def test_arc_bend_dy(param):
-    dy = 0.09
-    wg = Waveguide(**param)
-    wg.start([0, 0, 0]).arc_bend(dy).end()
-
-    x, y, z, *_ = wg.points
-    assert pytest.approx(np.max(z) - np.min(z)) == 0
-    assert pytest.approx(np.max(y) - np.min(y)) == dy
-
-
-def test_arc_bend_dy_default(param):
-    wg = Waveguide(**param)
-    wg.start([0, 0, 0]).arc_bend(wg.dy_bend).end()
-
-    y = wg.y
-    assert pytest.approx(np.max(y) - np.min(y)) == wg.dy_bend
+# def test_arc_bend_dy(param):
+#     dy = 0.09
+#     wg = Waveguide(**param)
+#     wg.start([0, 0, 0]).arc_bend(dy).end()
+#
+#     x, y, z, *_ = wg.points
+#     assert pytest.approx(np.max(z) - np.min(z)) == 0
+#     assert pytest.approx(np.max(y) - np.min(y)) == dy
 
 
-def test_arc_bend_sign(param):
-    dy = 0.03
-    wg = Waveguide(**param)
-    wg.start([0, 0, 0]).arc_bend(dy)
-    y = wg.y
-    assert y[-1] > y[0]
-    wg.end()
-
-    dy = -0.04
-    wg = Waveguide(**param)
-    wg.start([0, 0, 0]).arc_bend(dy)
-    y = wg.y
-    assert y[-1] < y[0]
-    wg.end()
+# def test_arc_bend_dy_default(param):
+#     wg = Waveguide(**param)
+#     wg.start([0, 0, 0]).arc_bend(wg.dy_bend).end()
+#
+#     y = wg.y
+#     assert pytest.approx(np.max(y) - np.min(y)) == wg.dy_bend
 
 
-def test_arc_bend_none(param):
-    dy = None
-    wg = Waveguide(**param)
-    with pytest.raises(ValueError):
-        wg.start([0, 0, 0]).arc_bend(dy).end()
+# def test_arc_bend_sign(param):
+#     dy = 0.03
+#     wg = Waveguide(**param)
+#     wg.start([0, 0, 0]).arc_bend(dy)
+#     y = wg.y
+#     assert y[-1] > y[0]
+#     wg.end()
+#
+#     dy = -0.04
+#     wg = Waveguide(**param)
+#     wg.start([0, 0, 0]).arc_bend(dy)
+#     y = wg.y
+#     assert y[-1] < y[0]
+#     wg.end()
 
 
-def test_arc_bend_xlength(param):
-    dy = 0.03
-
-    wg = Waveguide(**param)
-    wg.start([0, 0, 0]).arc_bend(dy)
-    x = wg.x
-    assert pytest.approx(x[-1] - x[0]) == wg.get_sbend_parameter(dy, wg.radius)[1]
-    wg.end()
-
-    dy = 0.03
-    r = 19
-    wg = Waveguide(**param)
-    wg.start([0, 0, 0]).arc_bend(dy=dy, radius=r)
-    x = wg.x
-    assert pytest.approx(x[-1] - x[0]) == wg.get_sbend_parameter(dy, r)[1]
-    wg.end()
+# def test_arc_bend_none(param):
+#     dy = None
+#     wg = Waveguide(**param)
+#     with pytest.raises(ValueError):
+#         wg.start([0, 0, 0]).arc_bend(dy).end()
 
 
-def test_arc_bend_shutter(param):
-    wg = Waveguide(**param)
-    wg.start([0, 0, 0]).arc_bend(wg.dy_bend)
-    *_, s = wg.points
-    assert s[-1] == 1
-    wg.end()
+# def test_arc_bend_xlength(param):
+#     dy = 0.03
+#
+#     wg = Waveguide(**param)
+#     wg.start([0, 0, 0]).arc_bend(dy)
+#     x = wg.x
+#     assert pytest.approx(x[-1] - x[0]) == wg.get_sbend_parameter(dy, wg.radius)[1]
+#     wg.end()
+#
+#     dy = 0.03
+#     r = 19
+#     wg = Waveguide(**param)
+#     wg.start([0, 0, 0]).arc_bend(dy=dy, radius=r)
+#     x = wg.x
+#     assert pytest.approx(x[-1] - x[0]) == wg.get_sbend_parameter(dy, r)[1]
+#     wg.end()
 
-    wg = Waveguide(**param)
-    wg.start([0, 0, 0]).arc_bend(wg.dy_bend, shutter=0)
-    *_, s = wg.points
-    assert s[-1] == 0
-    wg.end()
+
+# def test_arc_bend_shutter(param):
+#     wg = Waveguide(**param)
+#     wg.start([0, 0, 0]).arc_bend(wg.dy_bend)
+#     *_, s = wg.points
+#     assert s[-1] == 1
+#     wg.end()
+#
+#     wg = Waveguide(**param)
+#     wg.start([0, 0, 0]).arc_bend(wg.dy_bend, shutter=0)
+#     *_, s = wg.points
+#     assert s[-1] == 0
+#     wg.end()
 
 
 def test_arc_acc_len(param):
@@ -894,11 +895,12 @@ def test_spline_z_derivative(param, ddz):
 
 @pytest.mark.parametrize('r_input', [5, 10, 15, 20, 25, 30, 35, 40, 50, 60])
 def test_curvature_radius(param, r_input) -> None:
+
     # mean curvature radius is within 5% of the original radius
     r = r_input
     x = 0.05
     wg = Waveguide(**param)
-    wg.start().circ(0, 3 * np.pi / 2, radius=r)
+    wg.start().bend(2 * r, dz=0, radius=r, fx=arc)
 
     assert np.mean(wg.curvature_radius) <= (1 + x) * r
     assert np.mean(wg.curvature_radius) >= (1 - x) * r
@@ -908,7 +910,7 @@ def test_curvature_radius_default(param) -> None:
     # mean curvature radius is within 5% of the default radius
     x = 0.05
     wg = Waveguide(**param)
-    wg.start().circ(0, 3 * np.pi / 2)
+    wg.start().bend(2 * wg.radius, dz=0, fx=arc)
 
     assert np.mean(wg.curvature_radius) <= (1 + x) * wg.radius
     assert np.mean(wg.curvature_radius) >= (1 - x) * wg.radius
