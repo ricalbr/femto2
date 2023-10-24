@@ -8,6 +8,8 @@ from typing import cast
 from typing import Union
 
 import plotly.graph_objects as go
+from femto import logger
+from femto.curves import sin
 from femto.helpers import flatten
 from femto.marker import Marker
 from femto.spreadsheet import Spreadsheet
@@ -41,6 +43,10 @@ class Device:
             UTrenchColumn: UTrenchWriter(utc_list=[], **param),
             Marker: MarkerWriter(mk_list=[], **param),
         }
+        try:
+            logger.info(f'Instantiate device {self._param["filename"].rsplit(".", 1)[0]}.')
+        except KeyError:
+            logger.error('Filename not given.')
 
     def append(self, obj: Any) -> None:
         """Append object to Device.
@@ -54,6 +60,7 @@ class Device:
         None
         """
 
+        logger.debug(f'Parsing {obj}.')
         self.parse_objects(unparsed_objects=copy.copy(flatten([obj])))
 
     def extend(self, obj: list[Any]) -> None:
@@ -70,6 +77,7 @@ class Device:
 
         if not isinstance(obj, list):
             raise TypeError(f'The object must be a list. {type(obj)} was given.')
+        logger.debug(f'Parsing {obj}.')
         self.parse_objects(unparsed_objects=copy.copy(obj))
 
     def parse_objects(self, unparsed_objects: Any | list[Any]) -> None:
@@ -101,8 +109,10 @@ class Device:
         # add each element to the type-matching writer
         for k, e in d.items():
             try:
+                logger.debug(f'Assign {e} to {self.writers[k]}.')
                 self.writers[k].extend(e)
             except KeyError as err:
+                logger.error(f'Found unexpected type {err.args}.')
                 raise TypeError(f'Found unexpected type {err.args}.')
 
     def plot2d(self, show: bool = True, save: bool = False) -> None:
@@ -122,12 +132,16 @@ class Device:
         None
         """
 
+        logger.info('Plotting 2D objects...')
         self.fig = go.Figure()
         for writer in self.writers.values():
             # TODO: fix standard fig update
+            logger.debug(f'Plot 2D object from {writer}.')
             self.fig = writer.plot2d(self.fig)
+            logger.debug('Update 2D figure.')
             self.fig = writer.standard_2d_figure_update(self.fig)
         if show:
+            logger.debug('Show 2D plot.')
             self.fig.show()
         if save:
             self.save()
@@ -149,19 +163,23 @@ class Device:
         None
         """
 
+        logger.info('Plotting 3D objects...')
         self.fig = go.Figure()
         for key, writer in self.writers.items():
             try:
+                logger.debug(f'Plot 3D object from {writer}.')
                 self.fig = writer.plot3d(self.fig)
+                logger.debug('Update 3D figure.')
                 self.fig = writer.standard_3d_figure_update(self.fig)
             except NotImplementedError:
-                print(f'3D {key} plot not yet implemented.\n')
+                logger.error(f'3D plot for {key} not yet implemented.\n')
         if show:
+            logger.debug('Show 3D plot.')
             self.fig.show()
         if save:
             self.save()
 
-    def pgm(self, verbose: bool = True) -> None:
+    def pgm(self, verbose: bool = False) -> None:
         """Export to PGM.
 
         Export all the objects stored in ``Device`` class as a `PGM` file.
@@ -169,7 +187,7 @@ class Device:
         Parameters
         ----------
         verbose : bool, optional
-            Boolean flag to print informations during the export operation.
+            Boolean flag to print informations during the export operation. The default value is ``False``.
 
         Returns
         -------
@@ -178,14 +196,14 @@ class Device:
 
         for key, writer in self.writers.items():
             if verbose and writer.obj_list:
-                print(f'Exporting {key.__name__} objects...')
+                logger.info(f'Exporting {key.__name__} objects...')
 
             writer = cast(Union[WaveguideWriter, NasuWriter, TrenchWriter, UTrenchWriter, MarkerWriter], writer)
             writer.pgm(verbose=verbose)
 
-            self.fabrication_time += writer._fabtime
+            self.fabrication_time += writer.fab_time
         if verbose:
-            print('Export .pgm files complete.\n')
+            logger.info('Export .pgm files complete.\n')
 
     def export(self, verbose: bool = False, **kwargs) -> None:
         """Export objects to pickle files.
@@ -219,10 +237,10 @@ class Device:
 
         with Spreadsheet(device=self, **param) as spsh:
             if verbose:
-                print('Generating spreadsheet...')
+                logger.info('Generating spreadsheet...')
             spsh.write_structures(verbose=verbose)
         if verbose:
-            print('Create .xlsx file complete.\n')
+            logger.info('Create .xlsx file complete.')
 
     def save(self, filename: str = 'scheme.html', opt: dict[str, Any] | None = None) -> None:
         """Save figure.
@@ -254,6 +272,8 @@ class Device:
             return None
 
         fn = pathlib.Path(filename)
+        logger.info(f'Saving plot to "{fn}".')
+
         if fn.suffix.lower() in ['.html', '']:
             self.fig.write_html(str(fn.with_suffix('.html')))
         else:
@@ -276,9 +296,9 @@ def main() -> None:
     coup = [Waveguide(**PARAM_WG) for _ in range(5)]
     for i, wg in enumerate(coup):
         wg.start([-2, i * wg.pitch, 0.035])
-        wg.sin_coupler((-1) ** i * wg.dy_bend)
+        wg.coupler(dy=(-1) ** i * wg.dy_bend, dz=0, fx=sin)
         x_center = wg.x[-1]
-        wg.sin_coupler((-1) ** i * wg.dy_bend)
+        wg.coupler(dy=(-1) ** i * wg.dy_bend, dz=0, fx=sin)
         wg.end()
         dev.append(wg)
 
@@ -288,7 +308,7 @@ def main() -> None:
     dev.append(T)
 
     # Export
-    dev.plot2d()
+    # dev.plot2d()
     # dev.save('circuit_scheme.pdf')
     dev.pgm()
     dev.export()

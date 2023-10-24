@@ -10,6 +10,7 @@ from typing import TypeVar
 import dill
 import numpy as np
 import numpy.typing as npt
+from femto import logger
 from femto.helpers import unique_filter
 
 LP = TypeVar('LP', bound='LaserPath')
@@ -19,7 +20,8 @@ LP = TypeVar('LP', bound='LaserPath')
 class LaserPath:
     """Class that computes and stores the coordinates of a laser path."""
 
-    name: str | None = None  # Name of the laser path.
+    name: str | None = None  #: Name of the laser path.
+    radius: float = 15  #: Curvature radius
     scan: int = 1  #: Number of overlapped scans.
     speed: float = 1.0  #: Opened shutter translation speed `[mm/s]`.
     samplesize: tuple[float, float] = (100, 50)  #: Dimensions of the sample (x `[mm]`, y `[mm]`).
@@ -39,12 +41,15 @@ class LaserPath:
     _z: npt.NDArray[np.float32] = dataclasses.field(default_factory=lambda: np.array([], dtype=np.float32))
     _f: npt.NDArray[np.float32] = dataclasses.field(default_factory=lambda: np.array([], dtype=np.float32))
     _s: npt.NDArray[np.float32] = dataclasses.field(default_factory=lambda: np.array([], dtype=np.float32))
+    logger.debug('Initialized all the coordinates arrays.')
 
     def __post_init__(self) -> None:
         if not isinstance(self.scan, int):
+            logger.error(f'Number of scan must be integer. Given {self.scan}.')
             raise ValueError(f'Number of scan must be integer. Given {self.scan}.')
 
         if self.name is None:
+            logger.debug(f'Assign name to {type(self).__name__}.')
             self.name = type(self).__name__
 
     def __repr__(self) -> str:
@@ -66,6 +71,7 @@ class LaserPath:
         -------
         Instance of class
         """
+        logger.debug(f'Create {cls.__name__} object from dictionary.')
         return cls(**{k: v for k, v in param.items() if k in inspect.signature(cls).parameters})
 
     @property
@@ -79,6 +85,7 @@ class LaserPath:
         """
 
         z0 = self.z_init if self.z_init is not None else 0.0
+        logger.debug(f'Return init point: ({self.x_init}, {self.y_init}, {z0}).')
         return self.x_init, self.y_init, z0
 
     @property
@@ -94,6 +101,7 @@ class LaserPath:
             Length needed to accelerate to translation speed [mm].
         """
 
+        logger.debug(f'Return translation lvelo = {3 * (0.5 * self.speed**2 / self.acc_max)}.')
         return 3 * (0.5 * self.speed**2 / self.acc_max)
 
     @property
@@ -108,6 +116,7 @@ class LaserPath:
             The minimum separation between two points [mm]
         """
 
+        logger.debug(f'Return minimum spatial separation between two points dl = {self.speed / self.cmd_rate_max}.')
         return self.speed / self.cmd_rate_max
 
     @property
@@ -121,10 +130,13 @@ class LaserPath:
         """
 
         if self.samplesize[0] is None:
+            logger.debug('Return None, check samplesize.')
             return None
         if self.end_off_sample:
+            logger.debug(f'Return x_end = {self.samplesize[0] + self.lsafe}.')
             return self.samplesize[0] + self.lsafe
         else:
+            logger.debug(f'Return x_end = {self.samplesize[0] - self.lsafe}.')
             return self.samplesize[0] - self.lsafe
 
     @property
@@ -143,7 +155,7 @@ class LaserPath:
         numpy.ndarray
             `[X, Y, Z, F, S]` points of the laser trajectory.
         """
-
+        logger.debug('Return matrix with filtered coordinate. See femto.helpers.unique_filter().')
         return np.array(unique_filter([self._x, self._y, self._z, self._f, self._s]))
 
     @property
@@ -164,7 +176,9 @@ class LaserPath:
 
         coords = unique_filter([self._x, self._y, self._z, self._f, self._s])
         if coords.ndim == 2:
+            logger.debug('Return x-coordinates.')
             return np.array(coords[0])
+        logger.debug('x-coordinate array is empty. Return empty array.')
         return np.array([])
 
     @property
@@ -179,7 +193,9 @@ class LaserPath:
 
         arrx = self.x
         if arrx.size:
+            logger.debug(f'Return x-coordinate of last point: {float(arrx[-1])}.')
             return float(arrx[-1])
+        logger.debug('x-coordinate array is empty. Return None.')
         return None
 
     @property
@@ -200,7 +216,9 @@ class LaserPath:
 
         coords = unique_filter([self._x, self._y, self._z, self._f, self._s])
         if coords.ndim == 2:
+            logger.debug('Return y-coordinates.')
             return np.array(coords[1])
+        logger.debug('y-coordinate array is empty. Return empty array.')
         return np.array([])
 
     @property
@@ -215,7 +233,9 @@ class LaserPath:
 
         arry = self.y
         if arry.size:
+            logger.debug(f'Return y-coordinate of last point: {float(arry[-1])}.')
             return float(arry[-1])
+        logger.debug('y-coordinate array is empty. Return None.')
         return None
 
     @property
@@ -236,7 +256,9 @@ class LaserPath:
 
         coords = unique_filter([self._x, self._y, self._z, self._f, self._s])
         if coords.ndim == 2:
+            logger.debug('Return z-coordinates.')
             return np.array(coords[2])
+        logger.debug('z-coordinate array is empty. Return empty array.')
         return np.array([])
 
     @property
@@ -251,7 +273,9 @@ class LaserPath:
 
         arrz = self.z
         if arrz.size:
+            logger.debug(f'Return z-coordinate of last point: {float(arrz[-1])}.')
             return float(arrz[-1])
+        logger.debug('z-coordinate array is empty. Return None.')
         return None
 
     @property
@@ -265,7 +289,9 @@ class LaserPath:
         """
 
         if self._x.size > 0:
+            logger.debug(f'Return last point ({self._x[-1]}, {self._y[-1]}, {self._z[-1]}).')
             return np.array([self._x[-1], self._y[-1], self._z[-1]])
+        logger.debug('No points present, return empty array.')
         return np.array([])
 
     @property
@@ -282,6 +308,7 @@ class LaserPath:
         path3d: List of `x`, `y` and `z`-coordinates of the laser path written with open shutter.
         """
 
+        logger.debug('Return 2D path with shutter = ON.')
         x, y, _ = self.path3d
         return x, y
 
@@ -309,7 +336,9 @@ class LaserPath:
             x = np.delete(x, np.where(np.invert(s.astype(bool))))
             y = np.delete(y, np.where(np.invert(s.astype(bool))))
             z = np.delete(z, np.where(np.invert(s.astype(bool))))
+            logger.debug('Return 3D path with shutter = ON.')
             return x, y, z
+        logger.debug('No points present, return empty arrays.')
         return np.array([]), np.array([]), np.array([])
 
     @property
@@ -323,7 +352,9 @@ class LaserPath:
         """
 
         x, y, z = self.path3d
-        return float(np.sum(np.sqrt(np.diff(x) ** 2 + np.diff(y) ** 2 + np.diff(z) ** 2)))
+        length = float(np.sum(np.sqrt(np.diff(x) ** 2 + np.diff(y) ** 2 + np.diff(z) ** 2)))
+        logger.debug(f'Return total length, l = {length}.')
+        return length
 
     @property
     def fabrication_time(self) -> float:
@@ -345,8 +376,9 @@ class LaserPath:
         f = np.tile(self._f, self.scan)
 
         dists = np.sqrt(np.diff(x) ** 2 + np.diff(y) ** 2 + np.diff(z) ** 2)
-        times = dists / f[1:]
-        return float(sum(times))
+        time = float(sum(dists / f[1:]))
+        logger.debug(f'Return total fabrication time, {time} s.')
+        return time
 
     @property
     def curvature_radius(self) -> npt.NDArray[np.float32]:
@@ -373,9 +405,11 @@ class LaserPath:
         norm_r1 = np.linalg.norm(r1, axis=1)
 
         # Return the local curvature radius, where cannot divide by 0 return inf
-        return np.divide(
+        curv_rad = np.divide(
             norm_r1**3, norm_cross, out=np.full_like(norm_r1, fill_value=np.inf), where=~(norm_cross == 0)
         )
+        logger.debug(f'Return curvature radius, avg_curvature_radius = {np.mean(curv_rad)}.')
+        return curv_rad
 
     @property
     def cmd_rate(self) -> npt.NDArray[np.float32]:
@@ -397,8 +431,35 @@ class LaserPath:
 
         # only divide nonzeros else Inf
         default_zero = np.zeros(np.size(dt))
-        cmd_rate = np.divide(f, dt, out=default_zero, where=(dt != 0))
-        return np.array(cmd_rate, dtype=np.float32)
+        cmd_rate = np.divide(f, dt, out=default_zero, where=(dt != 0)).astype(np.float32)
+        logger.debug(f'Return point-to-point command rate values, avg_cmd_rate = {np.mean(cmd_rate)}.')
+        return cmd_rate
+
+    @staticmethod
+    def get_sbend_parameter(dy: float, radius: float) -> tuple[float, float]:
+        """Compute the rotation angle, and `x`-displacement for a circular S-bend.
+
+        Parameters
+        ----------
+        dy: float, optional
+            Displacement along `y`-direction [mm].
+        radius: float, optional
+            Curvature radius of the S-bend [mm]. The default value is `self.radius`
+
+        Returns
+        -------
+        tuple(float, float)
+            Rotation angle [rad], `x`-displacement [mm].
+        """
+
+        if radius is None or radius <= 0:
+            raise ValueError(f'Radius should be a positive value. Given {radius}.')
+        if dy is None:
+            raise ValueError('dy is None. Give a valid input valid.')
+
+        a = np.arccos(1 - (np.abs(dy / 2) / radius))
+        dx = 2 * radius * np.sin(a)
+        return a, dx
 
     # Methods
     def start(self, init_pos: list[float] | None = None, speed_pos: float | None = None) -> LaserPath:
@@ -572,7 +633,7 @@ class LaserPath:
         dl = f / self.cmd_rate_max
         num = int(np.ceil(l_curve / dl))
         if num <= 1:
-            print('I had to add use an higher instruction rate.\n')
+            logger.critical('I had to add use an higher instruction rate.\n')
             return 3
         else:
             return num
@@ -600,7 +661,7 @@ class LaserPath:
                 dill.dump(self.__dict__, p)
             else:
                 dill.dump(self, p)
-            print(f'{self.__class__.__name__} exported to {fn}.')
+            logger.info(f'{self.__class__.__name__} exported to {fn}.')
 
 
 def main() -> None:

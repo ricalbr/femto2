@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import pathlib
+
 import numpy as np
 import pytest
 import yaml
-import pathlib
 from femto.helpers import almost_equal
 from femto.helpers import dotdict
 from femto.helpers import flatten
@@ -12,6 +13,7 @@ from femto.helpers import listcast
 from femto.helpers import load_parameters
 from femto.helpers import nest_level
 from femto.helpers import pairwise
+from femto.helpers import remove_repeated_coordinates
 from femto.helpers import sign
 from femto.helpers import split_mask
 from femto.helpers import swap
@@ -296,7 +298,7 @@ def test_load_param_empty_default():
     PARAM_GC = dict(filename='UPP8.pgm', laser='PHAROS', aerotech_angle=0.0, rotation_angle=0.0)
     p_dicts = {'DEFAULT': {}, 'wg': PARAM_WG, 'mk': PARAM_MK, 'gc': PARAM_GC}
 
-    with open('test.yaml', "w") as f:
+    with open('test.yaml', 'w') as f:
         yaml.dump(p_dicts, f, sort_keys=False)
 
     pw, pm, pg = load_parameters('test.yaml')
@@ -340,7 +342,7 @@ def test_load_param_no_default():
     )
     p_dicts = {'wg': PARAM_WG, 'mk': PARAM_MK, 'gc': PARAM_GC}
 
-    with open('test.yaml', "w") as f:
+    with open('test.yaml', 'w') as f:
         yaml.dump(p_dicts, f, sort_keys=False)
 
     pw, pm, pg = load_parameters('test.yaml')
@@ -380,7 +382,7 @@ def test_load_param_pathlib():
     p_dicts = {'wg': PARAM_WG, 'mk': PARAM_MK, 'gc': PARAM_GC}
 
     fp = pathlib.Path('test.yaml')
-    with open(fp, "w") as f:
+    with open(fp, 'w') as f:
         yaml.dump(p_dicts, f, sort_keys=False)
 
     pw, pm, pg = load_parameters(fp)
@@ -393,8 +395,24 @@ def test_load_param_pathlib():
 def test_load_param_empty():
     p_dicts = {}
     fp = pathlib.Path('test.yaml')
-    with open(fp, "w") as f:
+    with open(fp, 'w') as f:
         yaml.dump(p_dicts, f, sort_keys=False)
 
     assert load_parameters(fp) == []
     pathlib.Path('test.yaml').unlink()
+
+
+@pytest.mark.parametrize(
+    'arr, exp',
+    [
+        ([], np.array([])),
+        (np.array([1, 2, 3]), np.array([1, 2, 3])),
+        (np.array([1, 2, 2]), np.array([1, 2, None])),
+        (np.array([1, 1, 1, 1, 1, 1, 1, 1, 1]), np.array([1, None, None, None, None, None, None, None, None])),
+        (np.array([1, 2, 2, 2, 3, 3, 4]), np.array([1, 2, None, None, 3, None, 4])),
+    ],
+)
+def test_remove_doubles(arr, exp):
+    a = remove_repeated_coordinates(arr)
+    assert len(a) == len(exp)
+    np.testing.assert_array_equal(a, exp)

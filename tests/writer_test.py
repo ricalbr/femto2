@@ -5,16 +5,19 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+from femto.curves import sin
 from femto.helpers import dotdict
 from femto.helpers import flatten
 from femto.helpers import listcast
 from femto.marker import Marker
-from femto.trench import TrenchColumn, UTrenchColumn
+from femto.trench import TrenchColumn
+from femto.trench import UTrenchColumn
 from femto.waveguide import NasuWaveguide
 from femto.waveguide import Waveguide
-from femto.writer import MarkerWriter, UTrenchWriter
+from femto.writer import MarkerWriter
 from femto.writer import NasuWriter
 from femto.writer import TrenchWriter
+from femto.writer import UTrenchWriter
 from femto.writer import WaveguideWriter
 from femto.writer import Writer
 
@@ -40,8 +43,8 @@ def list_wg() -> list[Waveguide]:
     for i, wg in enumerate(coup):
         wg.start([-2, i * wg.pitch, 0.035])
         wg.linear([5, 0, 0])
-        wg.sin_coupler((-1) ** i * wg.dy_bend)
-        wg.sin_coupler((-1) ** i * wg.dy_bend)
+        wg.coupler(dy=(-1) ** i * wg.dy_bend, dz=0, fx=sin)
+        wg.coupler(dy=(-1) ** i * wg.dy_bend, dz=0, fx=sin)
         wg.linear([5, 0, 0])
         wg.end()
     return coup
@@ -55,8 +58,8 @@ def list_ng() -> list[NasuWaveguide]:
     for i, wg in enumerate(coup):
         wg.start([-2, i * wg.pitch, 0.035])
         wg.linear([5, 0, 0])
-        wg.sin_coupler((-1) ** i * wg.dy_bend)
-        wg.sin_coupler((-1) ** i * wg.dy_bend)
+        wg.coupler(dy=(-1) ** i * wg.dy_bend, dz=0, fx=sin)
+        wg.coupler(dy=(-1) ** i * wg.dy_bend, dz=0, fx=sin)
         wg.linear([5, 0, 0])
         wg.end()
     return coup
@@ -243,6 +246,26 @@ def test_trench_writer_pgm(gc_param, list_tcol) -> None:
         (twr._export_path / f'FARCALL{i_col + 1:03}.pgm').unlink()
     assert (twr._export_path / 'MAIN.pgm').is_file()
     (twr._export_path / 'MAIN.pgm').unlink()
+    twr._export_path.rmdir()
+
+
+def test_trench_writer_pgm_single_col(gc_param, list_tcol) -> None:
+    list_cols = [list_tcol[0]]
+    twr = TrenchWriter(tc_list=list_cols, **gc_param)
+    twr.pgm()
+
+    assert twr._export_path.is_dir()
+    for i_col, col in enumerate(list_cols):
+        assert (twr._export_path / f'trenchCol{i_col + 1:03}').is_dir()
+        assert (twr._export_path / f'FARCALL{i_col + 1:03}.pgm').is_file()
+        for i_tr, tr in enumerate(col):
+            assert (twr._export_path / f'trenchCol{i_col + 1:03}' / f'trench{i_tr + 1:03}_WALL.pgm').is_file()
+            (twr._export_path / f'trenchCol{i_col + 1:03}' / f'trench{i_tr + 1:03}_WALL.pgm').unlink()
+            assert (twr._export_path / f'trenchCol{i_col + 1:03}' / f'trench{i_tr + 1:03}_FLOOR.pgm').is_file()
+            (twr._export_path / f'trenchCol{i_col + 1:03}' / f'trench{i_tr + 1:03}_FLOOR.pgm').unlink()
+        (twr._export_path / f'trenchCol{i_col + 1:03}').rmdir()
+        (twr._export_path / f'FARCALL{i_col + 1:03}.pgm').unlink()
+    assert not (twr._export_path / 'MAIN.pgm').is_file()
     twr._export_path.rmdir()
 
 

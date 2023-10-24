@@ -5,6 +5,7 @@ import math
 
 import numpy as np
 import numpy.typing as npt
+from femto import logger
 from femto.helpers import sign
 from femto.laserpath import LaserPath
 
@@ -13,14 +14,15 @@ from femto.laserpath import LaserPath
 class Marker(LaserPath):
     """Class that computes and stores the coordinates of a superficial abletion marker."""
 
-    depth: float = 0.0
-    lx: float = 1.0
-    ly: float = 0.060
+    depth: float = 0.0  #: Distance for sample's bottom facet, `[mm]`.
+    lx: float = 1.000  #: Dimension of cross x-arm, `[mm]`.
+    ly: float = 0.060  #: Dimension of cross y-arm, `[mm]`.
 
     def __post_init__(self) -> None:
         super().__post_init__()
         if self.z_init is None:
             self.z_init = self.depth
+            logger.debug(f'z_init set to {self.z_init}.')
 
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}@{id(self) & 0xFFFFFF:x}'
@@ -48,17 +50,20 @@ class Marker(LaserPath):
             position.append(self.depth)
 
         if len(position) != 3:
+            logger.error(f'The cross position is not valid. The given position has {len(position)} elements.')
             raise ValueError(
                 'The cross position is not valid. The valid number of elements are 2 or 3. The given '
                 f'position has {len(position)} elements.'
             )
 
         if lx is None and self.lx is None:
+            logger.debug('The x-length of the cross is None.')
             raise ValueError(
                 "The x-length of the cross is None. Set the Marker's 'lx' attribute or give a valid number as " 'input.'
             )
         lx = self.lx if lx is None else lx
         if ly is None and self.ly is None:
+            logger.error('The y-length of the cross is None.')
             raise ValueError(
                 "The y-length of the cross is None. Set the Marker's 'ly' attribute or give a valid number as " 'input.'
             )
@@ -66,6 +71,7 @@ class Marker(LaserPath):
 
         # start_pos = np.add(position, [-lx / 2, 0, 0])
         xi, yi, zi = position
+        logger.debug(f'Make cross at ({xi}, {yi}, {zi})')
         self.start([xi - lx / 2, yi, zi])
         self.linear([lx, None, None], mode='INC')
         self.linear([None, None, None], mode='INC', shutter=0)
@@ -102,6 +108,7 @@ class Marker(LaserPath):
         """
 
         if y_ticks is None or len(y_ticks) == 0:
+            logger.debug('y_ticks is not valid. Ruler cannot be written.')
             return None
 
         # Sort the y-ticks and takes unique points
@@ -109,21 +116,26 @@ class Marker(LaserPath):
 
         # Ticks x-length
         if lx is None and self.lx is None:
+            logger.error('The tick length is None.')
             raise ValueError('The tick length is None. Set the "lx" attribute or give a valid number as input.')
         lx = self.lx if lx is None else lx
         lx2 = 0.75 * self.lx if lx2 is None else lx2
+        logger.debug(f'Set lx = {lx}.')
+        logger.debug(f'Set lx2 = {lx2}.')
 
         x_ticks = np.repeat(lx2, len(y_ticks))
         x_ticks[0] = lx
 
         # Set x_init
         if x_init is None and self.x_init is None:
+            logger.error('The x-init value of the ruler is None.')
             raise ValueError(
                 'The x-init value of the ruler is None. Set the "x_init" attribute or give a valid number as input.'
             )
         x_init = self.x_init if x_init is None else x_init
 
         # Add straight segments
+        logger.debug(f'Start ruler at ({x_ticks}, {y_ticks[0]}, {self.depth})')
         for xt, yt in zip(x_ticks, y_ticks):
             self.linear([x_init, yt, self.depth], mode='ABS', shutter=0)
             self.linear([None, None, None], mode='ABS')
@@ -162,6 +174,10 @@ class Marker(LaserPath):
         """
 
         if len(init_pos) not in [2, 3]:
+            logger.error(
+                'Initial position must be a list of 2 (x,y) or 3 (x,y,z) values.'
+                f'init_pos has {len(init_pos)} elements.'
+            )
             raise ValueError(
                 'Initial position must be a list of 2 (x,y) or 3 (x,y,z) values.'
                 f"init_pos has {len(init_pos)} elements. Give a valid 'init_pos' list."
@@ -169,6 +185,10 @@ class Marker(LaserPath):
         xi, yi, *_ = init_pos
 
         if len(final_pos) not in [2, 3]:
+            logger.error(
+                'Final position must be a list of 2 (x,y) or 3 (x,y,z) values.'
+                f'final_pos has {len(final_pos)} elements. Give a valid "final_pos" list.'
+            )
             raise ValueError(
                 'Final position must be a list of 2 (x,y) or 3 (x,y,z) values.'
                 f'final_pos has {len(final_pos)} elements. Give a valid "final_pos" list.'
@@ -176,6 +196,9 @@ class Marker(LaserPath):
         xf, yf, *_ = final_pos
 
         if orientation.lower() not in ['x', 'y']:
+            logger.debug(
+                f'Orientation must be either "x" (parallel to x axis) or "y" (parallel to y axis). Given {orientation}.'
+            )
             raise ValueError(
                 f'Orientation must be either "x" (parallel to x axis) or "y" (parallel to y axis). Given {orientation}.'
             )
@@ -184,6 +207,8 @@ class Marker(LaserPath):
         if orientation.lower() == 'x':
             num_passes = math.floor(np.abs(yf - yi) / delta)
             delta = np.sign(yf - yi) * delta
+            logger.debug('Start meander along x.')
+            logger.debug(f'Number of passes = {num_passes}.')
 
             self.start(init_pos)
             for _ in range(num_passes):
@@ -195,6 +220,8 @@ class Marker(LaserPath):
         else:
             num_passes = math.floor(np.abs(xf - xi) / delta)
             delta = np.sign(xf - xi) * delta
+            logger.debug('Start meander along y.')
+            logger.debug(f'Number of passes = {num_passes}.')
 
             self.start(init_pos)
             for _ in range(num_passes):
@@ -228,7 +255,9 @@ class Marker(LaserPath):
         pts = np.asarray(points)
         if shift is None:
             path_list = [pts]
+            logger.debug('No shift applied to ablation line.')
         else:
+            logger.debug(f'Apply shift of {shift} um to ablation line.')
             path_list = [
                 np.add(pts, [0, 0, 0]),
                 np.add(pts, [shift, 0, 0]),
@@ -238,6 +267,7 @@ class Marker(LaserPath):
             ]
 
         # Add linear segments
+        logger.debug('Start ablation line.')
         for path in path_list:
             self.linear(path[0], mode='ABS', shutter=0)
             self.linear(path[0], mode='ABS', shutter=1)
@@ -263,6 +293,7 @@ class Marker(LaserPath):
         """
 
         if not lower_left_corner:
+            logger.error('No lower_left_corner was given.')
             return
         lower_left_corner = np.array(lower_left_corner)
 
@@ -273,6 +304,7 @@ class Marker(LaserPath):
             lower_left_corner + np.array([0, abs(height), 0]),
             lower_left_corner,
         ]
+        logger.debug('Start box as ablation line.')
         self.ablation(points=pts, shift=None)
 
 

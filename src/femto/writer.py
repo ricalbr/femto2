@@ -1,14 +1,15 @@
 from __future__ import annotations
 
 import abc
+import datetime
 import itertools
 import pathlib
-import time
 from typing import Any
 
 import dill
 import numpy as np
 import numpy.typing as npt
+from femto import logger
 from femto.helpers import flatten
 from femto.helpers import listcast
 from femto.helpers import nest_level
@@ -29,6 +30,20 @@ class Writer(PGMCompiler, abc.ABC):
     A Writer class is a super-object that can store homogeneous objects (Waveguides, Markers, Trenches,
     etc.) and provides methods to append objects, plot and export them as .pgm files.
     """
+
+    @property
+    @abc.abstractmethod
+    def fab_time(self) -> float:
+        """Fabrication time.
+
+        Abstract property for returning the total fabrication time for objects in a given Writer.
+
+        Returns
+        -------
+        float
+           Total fabrication time [s].
+        """
+        pass
 
     @abc.abstractmethod
     def append(self, obj: Any) -> None:
@@ -131,7 +146,7 @@ class Writer(PGMCompiler, abc.ABC):
         pass
 
     @abc.abstractmethod
-    def pgm(self, verbose: bool = True) -> None:
+    def pgm(self, verbose: bool = False) -> None:
         """Export to PGM file.
 
         Abstract method for exporting the objects stored in Writer object as PGM file.
@@ -170,6 +185,7 @@ class Writer(PGMCompiler, abc.ABC):
         """
 
         # GLASS
+        logger.debug('Add glass shape.')
         fig.add_shape(
             type='rect',
             x0=self.new_origin[0] if self.flip_x else 0 - self.new_origin[0],
@@ -183,6 +199,7 @@ class Writer(PGMCompiler, abc.ABC):
         )
 
         # ORIGIN
+        logger.debug('Add origin reference.')
         fig.add_trace(
             go.Scattergl(
                 x=[0],
@@ -193,6 +210,7 @@ class Writer(PGMCompiler, abc.ABC):
             )
         )
 
+        logger.debug('Add axis labels.')
         fig.update_layout(
             paper_bgcolor='rgba(0,0,0,0)',
             plot_bgcolor='rgba(0,0,0,0)',
@@ -264,6 +282,7 @@ class Writer(PGMCompiler, abc.ABC):
             Input figure updated with sample glass shape, origin point and axis.
         """
         # ORIGIN
+        logger.debug('Add origin reference.')
         fig.add_trace(
             go.Scatter3d(
                 x=[0],
@@ -275,6 +294,7 @@ class Writer(PGMCompiler, abc.ABC):
             )
         )
 
+        logger.debug('Add axis labels and fix camera angle.')
         fig.update_layout(
             scene_camera=dict(up=dict(x=0, y=np.cos(45), z=np.sin(45)), eye=dict(x=0.0, y=0.0, z=-2.5)),
             scene=dict(
@@ -345,6 +365,18 @@ class TrenchWriter(Writer):
         self._export_path = self.CWD / (self.export_dir or '') / (self.dirname or '')
         self._fabtime: float = 0.0
 
+    @property
+    def fab_time(self) -> float:
+        """Trench fabrication time.
+
+        Returns
+        -------
+        float
+           Total trench fabrication time [s].
+        """
+        logger.debug(f'Return fabrication time = {self._fabtime}.')
+        return self._fabtime
+
     def append(self, obj: TrenchColumn) -> None:
         """Append TrenchColumn objects.
 
@@ -359,9 +391,11 @@ class TrenchWriter(Writer):
         """
 
         if not isinstance(obj, TrenchColumn):
+            logger.error(f'The object must be a TrenchColumn. {type(obj).__name__} was given.')
             raise TypeError(f'The object must be a TrenchColumn. {type(obj).__name__} was given.')
         self.obj_list.append(obj)
         self.trenches.extend(obj._trench_list)
+        logger.debug('Append Trench to obj_list.')
 
     def extend(self, obj: list[TrenchColumn]) -> None:
         """Extend trench list.
@@ -379,6 +413,7 @@ class TrenchWriter(Writer):
         """
 
         if not isinstance(obj, list):
+            logger.error(f'The object must be a list. {type(obj).__name__} was given.')
             raise TypeError(f'The object must be a list. {type(obj).__name__} was given.')
         for tr_col in flatten(obj):
             self.append(tr_col)
@@ -409,10 +444,13 @@ class TrenchWriter(Writer):
 
         # If existing figure is given as input parameter append to the figure and return it
         if fig is not None:
+            logger.debug('Update figure.')
             return self._plot2d_trench(fig=fig, style=style)
 
         # If fig is None create a new figure from scratch
+        logger.debug('Create figure.')
         fig = go.Figure()
+        logger.debug('Update figure.')
         fig = self._plot2d_trench(fig=fig, style=style)
         fig = super().standard_2d_figure_update(fig)  # Add glass, origin and axis elements
         return fig
@@ -426,10 +464,13 @@ class TrenchWriter(Writer):
         """Plot 3D - Not implemented."""
         # raise NotImplementedError()
         if fig is not None:
+            logger.debug('Update figure.')
             return self._plot3d_trench(fig=fig, style=style)
 
         # If fig is None create a new figure from scratch
+        logger.debug('Create figure.')
         fig = go.Figure()
+        logger.debug('Update figure.')
         fig = self._plot3d_trench(fig=fig, style=style)
         fig = super().standard_2d_figure_update(fig)  # Add glass, origin and axis elements
         return fig
@@ -439,7 +480,7 @@ class TrenchWriter(Writer):
             obj=self.obj_list, name_id='TC', filename=self._param['filename'], export_path=self.CWD, export_dir='EXPORT'
         )
 
-    def pgm(self, verbose: bool = True) -> None:
+    def pgm(self, verbose: bool = False) -> None:
         """Export to PGM file.
 
         Function for the compilation of TrenchColumn objects.
@@ -463,6 +504,7 @@ class TrenchWriter(Writer):
         """
 
         if not self.obj_list:
+            logger.debug('No object in current writer, no PGM file created.')
             return None
 
         # Export each Trench for each TrenchColumn
@@ -470,6 +512,7 @@ class TrenchWriter(Writer):
             # Prepare PGM files export directory
             col_dir = self._export_path / f'trenchCol{i_col + 1:03}'
             col_dir.mkdir(parents=True, exist_ok=True)
+            logger.debug(f'Export trench column to "{col_dir}".')
 
             # Export walls and floors as .pgm files
             self._export_trench_column(column=col, column_path=col_dir)
@@ -477,32 +520,30 @@ class TrenchWriter(Writer):
             # Create FARCALL.pgm file for all trenches in current column
             self._farcall_trench_column(column=col, index=i_col)
 
-        # Create a MAIN farcall file, calls all columns .pgm scripts
-        main_param = dict(self._param.copy())
-        main_param['filename'] = self._export_path / 'MAIN.pgm'
-        main_param['aerotech_angle'] = None
-        main_param['rotation_angle'] = None
+        if len(self.obj_list) > 1:
+            logger.debug('Generate MAIN.pgm file.')
+            # Create a MAIN farcall file, calls all columns .pgm scripts
+            main_param = dict(self._param.copy())
+            main_param['filename'] = self._export_path / 'MAIN.pgm'
+            main_param['aerotech_angle'] = None
+            main_param['rotation_angle'] = None
 
-        farcall_list = [
-            str(pathlib.Path(col.base_folder) / f'FARCALL{i + 1:03}.pgm') for i, col in enumerate(self.obj_list)
-        ]
-        with PGMCompiler(**main_param) as G:
-            G.farcall_list(farcall_list)
+            farcall_list = [
+                str(pathlib.Path(col.base_folder) / f'FARCALL{i + 1:03}.pgm') for i, col in enumerate(self.obj_list)
+            ]
+            with PGMCompiler(**main_param) as G:
+                G.farcall_list(farcall_list)
 
+        _tc_fab_time = self._fabtime
+        for col in self.obj_list:
+            _tc_fab_time += col.fabrication_time + 10
+        self._fabtime = _tc_fab_time
+        string = '{:.<49} {}'.format(
+            'Estimated isolation trenches fabrication time: ', datetime.timedelta(seconds=int(self._fabtime))
+        )
+        logger.info(string)
         if verbose:
-            _tc_fab_time = 0.0
-            for col in self.obj_list:
-                _tc_fab_time += col.fabrication_time + 10
-
-            print('=' * 79)
-            print('G-code compilation completed.')
-            print(
-                'Estimated fabrication time of the isolation trenches: \t',
-                time.strftime('%H:%M:%S', time.gmtime(_tc_fab_time)),
-            )
-            print('=' * 79, '\n')
-
-            self._fabtime = _tc_fab_time
+            logger.info('G-code compilation completed.')
 
     def export_array2d(
         self,
@@ -544,6 +585,7 @@ class TrenchWriter(Writer):
         """
 
         if filename is None:
+            logger.error('No filename given.')
             raise ValueError('No filename given.')
 
         # Transform points
@@ -563,6 +605,7 @@ class TrenchWriter(Writer):
             else:
                 gcode_instr.append(f'G1 {line}\n')
 
+        logger.debug('Export 2D path.')
         with open(filename, 'w') as file:
             file.write(''.join(gcode_instr))
 
@@ -591,6 +634,7 @@ class TrenchWriter(Writer):
         for i, trench in enumerate(column):
             # Wall script
             x_wall, y_wall = trench.border
+            logger.debug(f'Export trench wall (border) for trench {trench}.')
             self.export_array2d(
                 filename=column_path / f'trench{i + 1:03}_WALL.pgm',
                 x=x_wall,
@@ -614,6 +658,7 @@ class TrenchWriter(Writer):
                 y_floor = np.append(y_floor, y_temp)
                 f_decel = np.append(f_decel, f_temp)
 
+            logger.debug(f'Export trench floor for trench {trench}.')
             self.export_array2d(
                 filename=column_path / f'trench{i + 1:03}_FLOOR.pgm',
                 x=x_floor,
@@ -641,6 +686,7 @@ class TrenchWriter(Writer):
         None
         """
 
+        logger.debug('Generate Trench columns FARCALL.pgm file.')
         column_param = dict(self._param.copy())
         column_param['filename'] = self._export_path / f'FARCALL{index + 1:03}.pgm'
         with PGMCompiler(**column_param) as G:
@@ -671,7 +717,7 @@ class TrenchWriter(Writer):
                 G.move_to([float(x0), float(y0), float(z0)], speed_pos=column.speed_closed)
 
                 G.instruction(f'$ZCURR = {z0:.6f}')
-                G.shutter('ON')
+                G.shutter(state='ON')
                 with G.repeat(column.n_repeat):
                     G.farcall(wall_filename)
                     G.instruction(f'$ZCURR = $ZCURR + {column.deltaz / super().neff:.6f}')
@@ -687,7 +733,7 @@ class TrenchWriter(Writer):
                     G.dwell(self.long_pause)
                 G.shutter(state='ON')
                 G.farcall(floor_filename)
-                G.shutter('OFF')
+                G.shutter(state='OFF')
                 if column.u:
                     G.instruction(f'G1 U{column.u[0]:.6f}')
                 G.remove_program(floor_filename)
@@ -722,6 +768,7 @@ class TrenchWriter(Writer):
         default_tcargs = {'fillcolor': '#7E7E7E', 'mode': 'none', 'hoverinfo': 'none'}
         tcargs = {**default_tcargs, **style}
 
+        logger.debug('Add trenches shapes to figure.')
         for tr in self.trenches:
             # get points and transform them
             xt, yt = tr.border
@@ -745,6 +792,7 @@ class TrenchWriter(Writer):
         default_tcargs = {'dash': 'solid', 'color': '#000000', 'width': 1.5}
         tcargs = {**default_tcargs, **style}
 
+        logger.debug('Add trenches 3D profile to figure.')
         for tr in self.trenches:
             # get points and transform them
             xt, yt = tr.border
@@ -787,6 +835,18 @@ class UTrenchWriter(TrenchWriter):
         super().__init__(tc_list=utc_list, dirname=dirname, **param)
         self.beds: list[Trench] = [ubed for col in utc_list for ubed in col.trenchbed]
 
+    @property
+    def fab_time(self) -> float:
+        """U-Trench fabrication time.
+
+        Returns
+        -------
+        float
+           Total U-trench fabrication time [s].
+        """
+        logger.debug(f'Return fabrication time = {self._fabtime}.')
+        return self._fabtime
+
     def append(self, obj: UTrenchColumn) -> None:
         """Append UTrenchColumn objects.
 
@@ -801,10 +861,13 @@ class UTrenchWriter(TrenchWriter):
         """
 
         if not isinstance(obj, UTrenchColumn):
+            logger.error(f'The object must be a UTrenchColumn. {type(obj).__name__} was given.')
             raise TypeError(f'The object must be a UTrenchColumn. {type(obj).__name__} was given.')
         self.obj_list.append(obj)
         self.trenches.extend(obj._trench_list)
+        logger.debug('Append U-Trench to obj_list.')
         self.beds.extend(obj.trenchbed)
+        logger.debug('Append Trench bed to trenchbed.')
 
     def export(self) -> None:
         super()._export(
@@ -841,6 +904,7 @@ class UTrenchWriter(TrenchWriter):
 
         # Bed script
         for i, bed_block in enumerate(column.trenchbed):
+            logger.debug(f'Export trench bed for {bed_block}.')
 
             x_bed_block = np.array([])
             y_bed_block = np.array([])
@@ -884,6 +948,7 @@ class UTrenchWriter(TrenchWriter):
         None
         """
 
+        logger.debug('Generate U-Trench columns FARCALL.pgm file.')
         column_param = dict(self._param.copy())
         column_param['filename'] = self._export_path / f'FARCALL{index + 1:03}.pgm'
         with PGMCompiler(**column_param) as G:
@@ -907,14 +972,14 @@ class UTrenchWriter(TrenchWriter):
                 # WALL
                 G.load_program(str(wall_path))
                 G.instruction(f'MSGDISPLAY 1, "COL {index + 1:03}, TR {i_trc + 1:03}, LV {nbox + 1:03}, W"\n')
-                G.shutter('OFF')
+                G.shutter(state='OFF')
                 if column.u:
                     G.instruction(f'G1 U{column.u[0]:.6f}')
                     G.dwell(self.long_pause)
                 G.move_to([float(x0), float(y0), float(z0)], speed_pos=column.speed_closed)
 
                 G.instruction(f'$ZCURR = {z0:.6f}')
-                G.shutter('ON')
+                G.shutter(state='ON')
                 with G.repeat(column.n_repeat):
                     G.farcall(wall_filename)
                     G.instruction(f'$ZCURR = $ZCURR + {column.deltaz / super().neff:.6f}')
@@ -930,7 +995,7 @@ class UTrenchWriter(TrenchWriter):
                     G.dwell(self.long_pause)
                 G.shutter(state='ON')
                 G.farcall(floor_filename)
-                G.shutter('OFF')
+                G.shutter(state='OFF')
                 if column.u:
                     G.instruction(f'G1 U{column.u[0]:.6f}')
                 G.remove_program(floor_filename)
@@ -957,7 +1022,7 @@ class UTrenchWriter(TrenchWriter):
                 G.move_to([float(x0), float(y0), None], speed_pos=column.speed_closed)
                 G.shutter(state='ON')
                 G.farcall(bed_filename)
-                G.shutter('OFF')
+                G.shutter(state='OFF')
                 if column.u:
                     G.instruction(f'G1 U{column.u[0]:.6f}')
                 G.remove_program(bed_filename)
@@ -992,6 +1057,8 @@ class UTrenchWriter(TrenchWriter):
             style = dict()
         default_utcargs = {'fillcolor': '#BEBEBE', 'mode': 'none', 'hoverinfo': 'none'}
         utcargs = {**default_utcargs, **style}
+
+        logger.debug('Add trenches beds shapes to figure.')
         for bd in self.beds:
             xt, yt = bd.border
             xt, yt, *_ = self.transform_points(xt, yt, np.zeros_like(xt, dtype=np.float32))
@@ -1047,6 +1114,8 @@ class UTrenchWriter(TrenchWriter):
                         hovertemplate='(%{x:.4f}, %{y:.4f})<extra>TR</extra>',
                     )
                 )
+
+        logger.debug('Add trenches beds 3D shapes to figure.')
         for bd in self.beds:
             xt, yt = bd.border
             xt, yt, *_ = self.transform_points(xt, yt, np.zeros_like(xt, dtype=np.float32))
@@ -1080,6 +1149,18 @@ class WaveguideWriter(Writer):
         self._export_path = self.CWD / (self.export_dir or '')
         self._fabtime: float = 0.0
 
+    @property
+    def fab_time(self) -> float:
+        """Waveguide fabrication time.
+
+        Returns
+        -------
+        float
+           Total waveguide fabrication time [s].
+        """
+        logger.debug(f'Return fabrication time = {self._fabtime}.')
+        return self._fabtime
+
     def append(self, obj: Waveguide) -> None:
         """Append Waveguide objects.
 
@@ -1094,8 +1175,10 @@ class WaveguideWriter(Writer):
         """
 
         if not isinstance(obj, Waveguide):
+            logger.error(f'The object must be a Waveguide. {type(obj).__name__} was given.')
             raise TypeError(f'The object must be a Waveguide. {type(obj).__name__} was given.')
         self.obj_list.append(obj)
+        logger.debug('Append Waveguide to obj_list.')
 
     def extend(self, obj: list[Waveguide] | list[list[Waveguide]]) -> None:
         """Extend waveguide list.
@@ -1113,14 +1196,17 @@ class WaveguideWriter(Writer):
         """
 
         if not isinstance(obj, list):
+            logger.debug(f'The object must be a list. {type(obj).__name__} was given.')
             raise TypeError(f'The object must be a list. {type(obj).__name__} was given.')
         if nest_level(obj) > 2:
+            logger.error(f'The waveguide list has too many nested levels ({nest_level(obj)}).')
             raise ValueError(
                 f'The waveguide list has too many nested levels ({nest_level(obj)}). The maximum value is 2.'
             )
         if all(isinstance(wg, Waveguide) for wg in flatten(obj)):
             self.obj_list.extend(obj)
         else:
+            logger.error('Not all the objects in the list are type Waveguides.')
             raise TypeError('All the objects must be of type Waveguide.')
 
     def plot2d(
@@ -1149,10 +1235,13 @@ class WaveguideWriter(Writer):
 
         # If existing figure is given as input parameter append to the figure and return it
         if fig is not None:
+            logger.debug('Update figure.')
             return self._plot2d_wg(fig=fig, show_shutter_close=show_shutter_close, style=style)
 
         # If fig is None create a new figure from scratch
+        logger.debug('Update figure.')
         fig = go.Figure()
+        logger.debug('Update figure.')
         fig = self._plot2d_wg(fig=fig, show_shutter_close=show_shutter_close, style=style)
         fig = super().standard_2d_figure_update(fig)  # Add glass, origin and axis elements
         return fig
@@ -1183,10 +1272,13 @@ class WaveguideWriter(Writer):
 
         # If existing figure is given as input parameter append to the figure and return it
         if fig is not None:
+            logger.debug('Update figure.')
             return self._plot3d_wg(fig=fig, show_shutter_close=show_shutter_close, style=style)
 
         # If fig is None create a new figure from scratch
+        logger.debug('Update figure.')
         fig = go.Figure()
+        logger.debug('Update figure.')
         fig = self._plot3d_wg(fig=fig, show_shutter_close=show_shutter_close, style=style)
         fig = super().standard_3d_figure_update(fig)  # Add glass, origin and axis elements
         return fig
@@ -1196,7 +1288,7 @@ class WaveguideWriter(Writer):
             obj=self.obj_list, name_id='WG', filename=self._param['filename'], export_path=self.CWD, export_dir='EXPORT'
         )
 
-    def pgm(self, verbose: bool = True) -> None:
+    def pgm(self, verbose: bool = False) -> None:
         """Export to PGM file.
 
         Function for the compilation of Waveguide objects. The function produces a *single file* containing all the
@@ -1218,6 +1310,7 @@ class WaveguideWriter(Writer):
         """
 
         if not self.obj_list:
+            logger.debug('No object in current writer, no PGM file created.')
             return
 
         _wg_fab_time = 0.0
@@ -1229,20 +1322,19 @@ class WaveguideWriter(Writer):
                 with G.repeat(listcast(bunch)[0].scan):
                     for wg in listcast(bunch):
                         _wg_fab_time += wg.fabrication_time
+                        logger.debug(f'Export {wg}.')
                         G.write(wg.points)
             G.go_init()
             _wg_fab_time += G._total_dwell_time
         del G
 
+        self._fabtime = _wg_fab_time
+        string = '{:.<49} {}'.format(
+            'Estimated waveguides fabrication time: ', datetime.timedelta(seconds=int(self._fabtime))
+        )
+        logger.info(string)
         if verbose:
-            print('=' * 79)
-            print('G-code compilation completed.')
-            print(
-                'Estimated fabrication time of the waveguides: \t',
-                time.strftime('%H:%M:%S', time.gmtime(_wg_fab_time)),
-            )
-            print('=' * 79, '\n')
-            self._fabtime = _wg_fab_time
+            logger.info('G-code compilation completed.')
         self._instructions.clear()
 
     def _plot2d_wg(
@@ -1277,7 +1369,9 @@ class WaveguideWriter(Writer):
         wg_args = {**default_wgargs, **style}
         sc_args = {'dash': 'dot', 'color': '#0000ff', 'width': 0.5}
 
+        logger.debug('Add waveguides to figure.')
         for wg in listcast(flatten(self.obj_list)):
+            logger.debug('Add shutter open trace to figure.')
             x_wg, y_wg, z_wg, _, s = wg.points
             x, y, z = self.transform_points(x_wg, y_wg, z_wg)
             xo = split_mask(x, s.astype(bool))
@@ -1297,6 +1391,7 @@ class WaveguideWriter(Writer):
                 )
                 for xoo, yoo, zoo in zip(xo, yo, zo)
             ]
+            logger.debug('Add shutter close trace to figure.')
             if show_shutter_close:
                 xc = split_mask(x, ~s.astype(bool))
                 yc = split_mask(y, ~s.astype(bool))
@@ -1347,12 +1442,14 @@ class WaveguideWriter(Writer):
         wg_args = {**default_wgargs, **style}
         sc_args = {'dash': 'dot', 'color': '#0000ff', 'width': 0.5}
 
+        logger.debug('Add waveguides to figure.')
         for wg in listcast(flatten(self.obj_list)):
             x_wg, y_wg, z_wg, _, s = wg.points
             x, y, z = self.transform_points(x_wg, y_wg, z_wg)
             xo = split_mask(x, s.astype(bool))
             yo = split_mask(y, s.astype(bool))
             zo = split_mask(z, s.astype(bool))
+            logger.debug('Add shutter open trace.')
             [
                 fig.add_trace(
                     go.Scatter3d(
@@ -1368,6 +1465,7 @@ class WaveguideWriter(Writer):
                 for x, y, z in zip(xo, yo, zo)
             ]
             if show_shutter_close:
+                logger.debug('Add shutter close trace.')
                 xc = split_mask(x, ~s.astype(bool))
                 yc = split_mask(y, ~s.astype(bool))
                 zc = split_mask(z, ~s.astype(bool))
@@ -1399,6 +1497,18 @@ class NasuWriter(Writer):
         self._export_path = self.CWD / (self.export_dir or '')
         self._fabtime: float = 0.0
 
+    @property
+    def fab_time(self) -> float:
+        """Nasu waveguides fabrication time.
+
+        Returns
+        -------
+        float
+           Total Nasu waveguides fabrication time [s].
+        """
+        logger.debug(f'Return fabrication time = {self._fabtime}.')
+        return self._fabtime
+
     def append(self, obj: NasuWaveguide) -> None:
         """Append NasuWaveguide objects.
 
@@ -1413,8 +1523,10 @@ class NasuWriter(Writer):
         """
 
         if not isinstance(obj, NasuWaveguide):
+            logger.error(f'The object must be a NasuWaveguide. {type(obj).__name__} was given.')
             raise TypeError(f'The object must be a NasuWaveguide. {type(obj).__name__} was given.')
         self.obj_list.append(obj)
+        logger.debug('Append Nasu Waveguide to obj_list.')
 
     def extend(self, obj: list[NasuWaveguide]) -> None:
         """Extend Nasu waveguide list.
@@ -1432,10 +1544,12 @@ class NasuWriter(Writer):
         """
 
         if not isinstance(obj, list):
+            logger.error(f'The object must be a list. {type(obj).__name__} was given.')
             raise TypeError(f'The object must be a list. {type(obj).__name__} was given.')
         if all(isinstance(wg, NasuWaveguide) for wg in flatten(obj)):
             self.obj_list.extend(obj)
         else:
+            logger.error('Not all the objects of the list are type NasuWaveguide.')
             raise TypeError('All the objects must be of type NasuWaveguide.')
 
     def plot2d(
@@ -1464,10 +1578,13 @@ class NasuWriter(Writer):
 
         # If existing figure is given as input parameter append to the figure and return it
         if fig is not None:
+            logger.debug('Update figure.')
             return self._plot2d_nwg(fig=fig, show_shutter_close=show_shutter_close, style=style)
 
         # If fig is None create a new figure from scratch
+        logger.debug('Create figure.')
         fig = go.Figure()
+        logger.debug('Update figure.')
         fig = self._plot2d_nwg(fig=fig, show_shutter_close=show_shutter_close, style=style)
         fig = super().standard_2d_figure_update(fig)  # Add glass, origin and axis elements
         return fig
@@ -1498,10 +1615,13 @@ class NasuWriter(Writer):
 
         # If existing figure is given as input parameter append to the figure and return it
         if fig is not None:
+            logger.debug('Update figure.')
             return self._plot3d_nwg(fig=fig, show_shutter_close=show_shutter_close, style=style)
 
         # If fig is None create a new figure from scratch
+        logger.debug('Create figure.')
         fig = go.Figure()
+        logger.debug('Update figure.')
         fig = self._plot3d_nwg(fig=fig, show_shutter_close=show_shutter_close, style=style)
         fig = super().standard_3d_figure_update(fig)  # Add glass, origin and axis elements
         return fig
@@ -1515,7 +1635,7 @@ class NasuWriter(Writer):
             export_dir='EXPORT',
         )
 
-    def pgm(self, verbose: bool = True) -> None:
+    def pgm(self, verbose: bool = False) -> None:
         """Export to PGM file.
 
         Function for the compilation of NasuWaveguide objects. The function produces a *single file* containing all the
@@ -1537,6 +1657,7 @@ class NasuWriter(Writer):
         """
 
         if not self.obj_list:
+            logger.debug('No object in current writer, no PGM file created.')
             return
 
         _nwg_fab_time = 0.0
@@ -1549,20 +1670,19 @@ class NasuWriter(Writer):
                     _nwg_fab_time += nwg.fabrication_time
                     dx, dy, dz = nwg.adj_scan_shift
                     coord_shift = np.array([dx, dy, dz, 0, 0]).reshape(-1, 1)
+                    logger.debug(f'Export {nwg}.')
                     G.write(nwg.points + shift * coord_shift)
             G.go_init()
             _nwg_fab_time += G._total_dwell_time
         del G
 
+        self._fabtime = _nwg_fab_time
+        string = '{:.<49} {}'.format(
+            'Estimated Nasu waveguides fabrication time: ', datetime.timedelta(seconds=int(self._fabtime))
+        )
+        logger.info(string)
         if verbose:
-            print('=' * 79)
-            print('G-code compilation completed.')
-            print(
-                'Estimated fabrication time for the Nasu waveguides: \t',
-                time.strftime('%H:%M:%S', time.gmtime(_nwg_fab_time)),
-            )
-            print('=' * 79, '\n')
-            self._fabtime = _nwg_fab_time
+            logger.info('G-code compilation completed.')
         self._instructions.clear()
 
     def _plot2d_nwg(
@@ -1597,6 +1717,7 @@ class NasuWriter(Writer):
         wg_args = {**default_wgargs, **style}
         sc_args = {'dash': 'dot', 'color': '#0000ff', 'width': 0.5}
 
+        logger.debug('Add Nasu waveguides to figure.')
         for nwg in listcast(flatten(self.obj_list)):
             for shift in nwg.adj_scan_order:
                 dx, dy, dz = nwg.adj_scan_shift
@@ -1668,6 +1789,7 @@ class NasuWriter(Writer):
         wg_args = {**default_wgargs, **style}
         sc_args = {'dash': 'dot', 'color': '#0000ff', 'width': 0.5}
 
+        logger.debug('Add waveguides to figure.')
         for nwg in listcast(flatten(self.obj_list)):
             for shift in nwg.adj_scan_order:
                 dx, dy, dz = nwg.adj_scan_shift
@@ -1723,6 +1845,18 @@ class MarkerWriter(Writer):
         self._export_path = self.CWD / (self.export_dir or '')
         self._fabtime: float = 0.0
 
+    @property
+    def fab_time(self) -> float:
+        """Marker fabrication time.
+
+        Returns
+        -------
+        float
+           Total marker fabrication time [s].
+        """
+        logger.debug(f'Return fabrication time = {self._fabtime}.')
+        return self._fabtime
+
     def append(self, obj: Marker) -> None:
         """Append Marker objects.
 
@@ -1737,8 +1871,10 @@ class MarkerWriter(Writer):
         """
 
         if not isinstance(obj, Marker):
+            logger.error(f'The object must be a Marker. {type(obj).__name__} was given.')
             raise TypeError(f'The object must be a Marker. {type(obj).__name__} was given.')
         self.obj_list.append(obj)
+        logger.debug('Append Marker to obj_list.')
 
     def extend(self, obj: list[Marker]) -> None:
         """Extend Marker list.
@@ -1756,6 +1892,7 @@ class MarkerWriter(Writer):
         """
 
         if not isinstance(obj, list):
+            logger.error(f'The object must be a list. {type(obj).__name__} was given.')
             raise TypeError(f'The object must be a list. {type(obj).__name__} was given.')
         for mk in flatten(obj):
             self.append(mk)
@@ -1786,10 +1923,13 @@ class MarkerWriter(Writer):
 
         # If existing figure is given as input parameter append to the figure and return it
         if fig is not None:
+            logger.debug('Update figure.')
             return self._plot2d_mk(fig=fig, style=style)
 
         # If fig is None create a new figure from scratch
+        logger.debug('Create figure.')
         fig = go.Figure()
+        logger.debug('Update figure.')
         fig = self._plot2d_mk(fig=fig, style=style)
         fig = super().standard_2d_figure_update(fig)  # Add glass, origin and axis elements
         return fig
@@ -1820,10 +1960,13 @@ class MarkerWriter(Writer):
 
         # If existing figure is given as input parameter append to the figure and return it
         if fig is not None:
+            logger.debug('Update figure.')
             return self._plot3d_mk(fig=fig, style=style)
 
         # If fig is None create a new figure from scratch
+        logger.debug('Create figure.')
         fig = go.Figure()
+        logger.debug('Update figure.')
         fig = self._plot3d_mk(fig=fig, style=style)
         fig = super().standard_3d_figure_update(fig)  # Add glass, origin and axis elements
         return fig
@@ -1833,7 +1976,7 @@ class MarkerWriter(Writer):
             obj=self.obj_list, name_id='MK', filename=self._param['filename'], export_path=self.CWD, export_dir='EXPORT'
         )
 
-    def pgm(self, verbose: bool = True) -> None:
+    def pgm(self, verbose: bool = False) -> None:
         """Export to PGM file.
 
         Function for the compilation of Marker objects. The function produces a *single file* containing all the
@@ -1855,6 +1998,7 @@ class MarkerWriter(Writer):
         """
 
         if not self.obj_list:
+            logger.debug('No object in current writer, no PGM file created.')
             return
 
         _mk_fab_time = 0.0
@@ -1863,6 +2007,7 @@ class MarkerWriter(Writer):
 
         with PGMCompiler(**_mk_param) as G:
             for idx, mk in enumerate(flatten(self.obj_list)):
+                logger.debug(f'Export {mk}.')
                 with G.repeat(mk.scan):
                     _mk_fab_time += mk.fabrication_time
                     G.comment(f'MARKER {idx + 1}')
@@ -1872,17 +2017,14 @@ class MarkerWriter(Writer):
             _mk_fab_time += G._total_dwell_time
         del G
 
-        if verbose:
-            print('=' * 79)
-            print('G-code compilation completed.')
-            print(
-                'Estimated fabrication time of the markers: \t',
-                time.strftime('%H:%M:%S', time.gmtime(_mk_fab_time)),
-            )
-            print('=' * 79, '\n')
-        self._instructions.clear()
-        self._total_dwell_time = 0.0
         self._fabtime = _mk_fab_time
+        string = '{:.<49} {}'.format(
+            'Estimated markers fabrication time: ', datetime.timedelta(seconds=int(self._fabtime))
+        )
+        logger.info(string)
+        if verbose:
+            logger.info('G-code compilation completed.')
+        self._instructions.clear()
 
     def _plot2d_mk(self, fig: go.Figure, style: dict[str, Any] | None = None) -> go.Figure:
         """2D plot helper.
@@ -1913,6 +2055,7 @@ class MarkerWriter(Writer):
         default_mkargs = {'dash': 'solid', 'color': '#000000', 'width': 2.0}
         mk_args = {**default_mkargs, **style}
 
+        logger.debug('Add marker trace to figure.')
         for mk in listcast(flatten(self.obj_list)):
             x_wg, y_wg, z_wg, _, s = mk.points
             x, y, z = self.transform_points(x_wg, y_wg, z_wg)
@@ -1962,6 +2105,7 @@ class MarkerWriter(Writer):
         default_mkargs = {'dash': 'solid', 'color': '#000000', 'width': 2.0}
         mk_args = {**default_mkargs, **style}
 
+        logger.debug('Add marker trace to figure.')
         for mk in listcast(flatten(self.obj_list)):
             x_wg, y_wg, z_wg, _, s = mk.points
             x, y, z = self.transform_points(x_wg, y_wg, z_wg)
@@ -1986,6 +2130,7 @@ class MarkerWriter(Writer):
 
 
 def main() -> None:
+    from femto.curves import sin, circ, spline_bridge
     from femto.waveguide import NasuWaveguide
 
     # Data
@@ -2001,9 +2146,9 @@ def main() -> None:
         wg.y_init = -wg.pitch / 2 + index * wg.pitch
         wg.start()
         wg.linear(increment)
-        wg.sin_mzi((-1) ** index * wg.dy_bend)
-        wg.sin_bridge((-1) ** index * 0.08, (-1) ** index * 0.015)
-        wg.arc_bend((-1) ** (index + 1) * wg.dy_bend)
+        wg.bend(dy=(-1) ** index * 0.08, dz=(-1) ** index * 0.015, fx=spline_bridge)
+        wg.bend(dy=(-1) ** (index + 1) * wg.dy_bend, dz=0, fx=circ)
+        wg.bend(dy=(-1) ** index * wg.dy_bend, dz=0, fx=sin)
         wg.linear(increment)
         wg.end()
         mzi.append(wg)

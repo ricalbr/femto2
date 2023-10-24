@@ -13,6 +13,8 @@ from typing import TypeVar
 import largestinteriorrectangle as lir
 import numpy as np
 import numpy.typing as npt
+from femto import logger
+from femto.curves import sin
 from femto.helpers import almost_equal
 from femto.helpers import dotdict
 from femto.helpers import flatten
@@ -44,26 +46,31 @@ class Trench:
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Trench):
+            logger.error(f'Trying comparing Trench with {other.__class__.__name__}')
             raise TypeError(f'Trying comparing Trench with {other.__class__.__name__}')
         return almost_equal(self.block, other.block)
 
     def __lt__(self, other: object) -> bool:
         if not isinstance(other, Trench):
+            logger.error(f'Trying comparing Trench with {other.__class__.__name__}')
             raise TypeError(f'Trying comparing Trench with {other.__class__.__name__}')
         return bool(self.yborder[0] < other.yborder[0])
 
     def __le__(self, other: object) -> bool:
         if not isinstance(other, Trench):
+            logger.error(f'Trying comparing Trench with {other.__class__.__name__}')
             raise TypeError(f'Trying comparing Trench with {other.__class__.__name__}')
         return bool(self.yborder[0] <= other.yborder[0])
 
     def __gt__(self, other: object) -> bool:
         if not isinstance(other, Trench):
+            logger.error(f'Trying comparing Trench with {other.__class__.__name__}')
             raise TypeError(f'Trying comparing Trench with {other.__class__.__name__}')
         return bool(self.yborder[0] > other.yborder[0])
 
     def __ge__(self, other: object) -> bool:
         if not isinstance(other, Trench):
+            logger.error(f'Trying comparing Trench with {other.__class__.__name__}')
             raise TypeError(f'Trying comparing Trench with {other.__class__.__name__}')
         return bool(self.yborder[0] >= other.yborder[0])
 
@@ -80,6 +87,7 @@ class Trench:
             `x` and `y`-coordinates arrays of the trench border.
         """
         xx, yy = self.block.exterior.coords.xy
+        logger.debug('Extracting (x,y) from trench block.')
         return np.asarray(xx, dtype=np.float32), np.asarray(yy, dtype=np.float32)
 
     @property
@@ -92,6 +100,7 @@ class Trench:
             `x`-coordinates arrays of the trench border.
         """
         x, _ = self.border
+        logger.debug('Return x-coordinate of the border.')
         return x
 
     @property
@@ -104,6 +113,7 @@ class Trench:
             `y`-coordinates arrays of the trench border.
         """
         _, y = self.border
+        logger.debug('Return y-coordinate of the border.')
         return y
 
     @property
@@ -115,6 +125,7 @@ class Trench:
         float
             Minimum `x` value of the block border.
         """
+        logger.debug('Return minimum x-value for trench block.')
         return float(self.block.bounds[0])
 
     @property
@@ -126,6 +137,7 @@ class Trench:
         float
             Minimum `y` value of the block border.
         """
+        logger.debug('Return minimum y-value for trench block.')
         return float(self.block.bounds[1])
 
     @property
@@ -137,6 +149,7 @@ class Trench:
         float
             Maximum `x` value of the block border.
         """
+        logger.debug('Return maximun x-value for trench block.')
         return float(self.block.bounds[2])
 
     @property
@@ -148,6 +161,7 @@ class Trench:
         float
             Maximum `y` value of the block border.
         """
+        logger.debug('Return maximun y-value for trench block.')
         return float(self.block.bounds[3])
 
     @property
@@ -159,28 +173,37 @@ class Trench:
         tuple(float, float)
             `x` and `y` coordinates of the centroid of the block.
         """
+        logger.debug('Return block center point.')
         return self.block.centroid.x, self.block.centroid.y
 
     @property
     def floor_length(self) -> float:
         """Total length of the floor path."""
+        logger.debug(f'Total length of the floor path {self._floor_length} mm.')
         return self._floor_length
 
     @property
     def wall_length(self) -> float:
         """Length of a single layer of the wall path."""
+        logger.debug(f'Total length of the wall path {self._wall_length} mm.')
         return self._wall_length
 
     @cached_property
     def orientation(self) -> str:
         """Orientation of the trench block."""
         (xmin, ymin, xmax, ymax) = self.block.bounds
-        return 'v' if (xmax - xmin) <= (ymax - ymin) else 'h'
+        if (xmax - xmin) <= (ymax - ymin):
+            logger.debug('The block orientation is vertical.')
+            return 'v'
+        else:
+            logger.debug('The block orientation is horizontal.')
+            return 'h'
 
     @cached_property
     def num_insets(self) -> int:
         """Number of spiral turns."""
         if self.block.contains(self.block.convex_hull.buffer(-0.01 * self.delta_floor)):
+            logger.debug(f'The number of spiral turns is {self.safe_inner_turns}.')
             return self.safe_inner_turns
         else:
             # External rectangle
@@ -201,9 +224,11 @@ class Trench:
 
             # Distinguish concave / biconcave
             if d_upper <= buffer_length or d_lower <= buffer_length:
-                return int((d_upper + d_lower) / self.delta_floor) + self.safe_inner_turns
+                n_turns = int((d_upper + d_lower) / self.delta_floor) + self.safe_inner_turns
             else:
-                return int((d_upper + d_lower) / (2 * self.delta_floor)) + self.safe_inner_turns
+                n_turns = int((d_upper + d_lower) / (2 * self.delta_floor)) + self.safe_inner_turns
+            logger.debug(f'The number of spiral turns is {n_turns}.')
+            return n_turns
 
     def zigzag_mask(self) -> geometry.MultiLineString:
         """Zig-zag mask.
@@ -225,6 +250,7 @@ class Trench:
         number_of_lines = 2 + int((xmax - xmin) / self.delta_floor)
 
         coords = []
+        logger.debug('Create rectangular zig-zag MultiString line pattern.')
         if self.orientation == 'v':
             # Vertical hatching
             for i in range(0, number_of_lines, 2):
@@ -255,6 +281,8 @@ class Trench:
         """
         mask = self.zigzag_mask()
         path_collection = poly.intersection(mask)
+        logger.debug('Intersect rectangular zig-zag line pattern with trench block.')
+
         coords = []
         for line in path_collection.geoms:
             self._floor_length += line.length + self.delta_floor
@@ -297,9 +325,11 @@ class Trench:
             if not current_poly.is_empty:
                 polygon_list.extend(self.buffer_polygon(current_poly, offset=-np.fabs(self.delta_floor)))
                 self._floor_length += current_poly.length
+                logger.debug('Yield buffered contour path.')
                 yield np.array(current_poly.exterior.coords).T
 
         for poly in polygon_list:
+            logger.debug('Yield inner zig-zag path.')
             yield self.zigzag(poly.buffer(1.05 * self.delta_floor))
 
     @staticmethod
@@ -379,6 +409,7 @@ class TrenchColumn:
         self.CWD: pathlib.Path = pathlib.Path.cwd()  #: Current working directory
         if self.speed_floor is None:
             self.speed_floor = self.speed_wall
+            logger.debug(f'Floor speed is set to {self.speed_floor} mm/s.')
 
     def __iter__(self) -> Iterator[Trench]:
         """Iterator that yields single trench blocks of the column.
@@ -420,7 +451,9 @@ class TrenchColumn:
         float
             Adjustted bridge size considering the size of the laser focus [mm].
         """
-        return self.bridge / 2 + self.beam_waist + self.round_corner
+        adj_b = self.bridge / 2 + self.beam_waist + self.round_corner
+        logger.debug(f'The beidge size adjusted for the beam size is {adj_b} mm.')
+        return adj_b
 
     @property
     def n_repeat(self) -> int:
@@ -431,7 +464,9 @@ class TrenchColumn:
         int
             The number of times the border path is repeated in the `z` direction.
         """
-        return int(abs(math.ceil((self.h_box - self.z_off) / self.deltaz)))
+        n_repeat = int(abs(math.ceil((self.h_box - self.z_off) / self.deltaz)))
+        logger.debug(f'The number of laser vertical trench layers is {n_repeat}.')
+        return n_repeat
 
     @property
     def fabrication_time(self) -> float:
@@ -445,12 +480,14 @@ class TrenchColumn:
         float
             Total fabrication time [s].
         """
-        return sum(
+        fab_time = sum(
             [
                 self.nboxz * (self.n_repeat * t.wall_length / self.speed_wall + t.floor_length / self.speed_floor)
                 for t in self._trench_list
             ]
         )
+        logger.debug(f'The total fabrication time for the trench column is {fab_time} s.')
+        return fab_time
 
     @property
     def total_height(self) -> float:
@@ -461,7 +498,9 @@ class TrenchColumn:
         float
             Total trench height [um].
         """
-        return float(self.nboxz * self.h_box)
+        h_tot = float(self.nboxz * self.h_box)
+        logger.debug(f'The total height of the trench block is {h_tot} mm.')
+        return h_tot
 
     @property
     def rect(self) -> geometry.Polygon:
@@ -485,7 +524,9 @@ class TrenchColumn:
         """
 
         if self.length is None:
+            logger.debug('The length is None. Area is empty.')
             return geometry.Polygon()
+        logger.debug(f'Return rectangle of sides {self.y_max - self.y_min} mm and {self.length} mm.')
         return geometry.box(self.x_center - self.length / 2, self.y_min, self.x_center + self.length / 2, self.y_max)
 
     def dig_from_waveguide(
@@ -515,6 +556,7 @@ class TrenchColumn:
         """
 
         if not all(isinstance(wg, Waveguide) for wg in waveguides):
+            logger.debug(f'All the input objects must be of type Waveguide.\nGiven {[type(wg) for wg in waveguides]}')
             raise ValueError(
                 f'All the input objects must be of type Waveguide.\nGiven {[type(wg) for wg in waveguides]}'
             )
@@ -551,6 +593,7 @@ class TrenchColumn:
         None
         """
         if not all(isinstance(wg, np.ndarray) for wg in waveguides):
+            logger.debug(f'All the input objects must be numpy arrays. Given {[type(wg) for wg in waveguides]}')
             raise ValueError(f'All the input objects must be numpy arrays. Given {[type(wg) for wg in waveguides]}')
 
         coords = []
@@ -597,9 +640,10 @@ class TrenchColumn:
 
         # if coordinates are empty or coordinates do not intersect the trench column rectangle box
         if almost_equal(trench_blocks, self.rect, tol=1e-8):
-            print('No trench found intersecting waveguides with trench area.\n')
+            logger.critical('No trench found intersecting waveguides with trench area.\n')
             return None
 
+        logger.debug('Trenches found.')
         for block in listcast(sorted(trench_blocks.geoms, key=Trench)):
             # buffer to round corners
             block = block.buffer(self.round_corner, resolution=256, cap_style=1)
@@ -608,6 +652,7 @@ class TrenchColumn:
             self._trench_list.append(
                 Trench(normalize_polygon(block), delta_floor=self.delta_floor, safe_inner_turns=self.safe_inner_turns)
             )
+        logger.debug('Finished append trenches.')
 
         for index in sorted(listcast(remove), reverse=True):
             del self._trench_list[index]
@@ -626,14 +671,16 @@ class UTrenchColumn(TrenchColumn):
 
     @property
     def adj_pillar_width(self) -> float:
-        """Pillar length adjusted for the laser beam waist.
+        """Pillar size adjusted for the laser beam waist.
 
         Returns
         -------
         float
             Adjustted pillar size considering the size of the laser focus [mm].
         """
-        return self.pillar_width / 2 + self.beam_waist
+        adj_p = self.pillar_width / 2 + self.beam_waist
+        logger.debug(f'The adjusted pillar size is {adj_p} mm.')
+        return adj_p
 
     @property
     def fabrication_time(self) -> float:
@@ -654,7 +701,9 @@ class UTrenchColumn(TrenchColumn):
             ]
         )
         t_bed = sum([b.floor_length / self.speed_floor for b in self.trenchbed])
-        return t_box + t_bed
+        fab_time = t_box + t_bed
+        logger.debug(f'The total fabrication time for the trench column is {fab_time} s.')
+        return fab_time
 
     def trenchbed_shape(self) -> None:
         """Trenchbed shape.
@@ -674,12 +723,13 @@ class UTrenchColumn(TrenchColumn):
         None
         """
         if not self._trench_list:
-            print('No trench is present. Trenchbed cannot be defined.')
+            logger.critical('No trench is present. Trenchbed cannot be defined.')
             return None
 
         # Define the trench bed shape as union of a rectangle and the first and last trench of the column.
         # Automatically convert the bed polygon to a MultiPolygon to keep the code flexible to word with the
         # no-pillar case.
+        logger.debug(f'Divide bed in {self.n_pillars +1} parts.')
         t1, t2 = self._trench_list[0], self._trench_list[-1]
         tmp_rect = geometry.box(t1.xmin, t1.center[1], t2.xmax, t2.center[1])
         tmp_bed = geometry.MultiPolygon([unary_union([t1.block, t2.block, tmp_rect])])
@@ -692,6 +742,7 @@ class UTrenchColumn(TrenchColumn):
             tmp_bed = tmp_bed.difference(tmp_pillar)
 
         # Add bed blocks
+        logger.debug('Add trench beds as trench objects with height = 0.015 mm.')
         self.trenchbed = [
             Trench(
                 block=normalize_polygon(p.buffer(-self.round_corner).buffer(self.round_corner)),
@@ -722,9 +773,9 @@ def main() -> None:
     coup = [Waveguide(**PARAM_WG) for _ in range(20)]
     for i, wg in enumerate(coup):
         wg.start([-2, i * wg.pitch, 0.035])
-        wg.sin_coupler((-1) ** i * wg.dy_bend)
+        wg.coupler(dy=(-1) ** i * wg.dy_bend, dz=0, fx=sin)
         x_c = wg.x[-1]
-        wg.sin_coupler((-1) ** i * wg.dy_bend)
+        wg.coupler(dy=(-1) ** i * wg.dy_bend, dz=0, fx=sin)
         wg.end()
 
     # Trench
