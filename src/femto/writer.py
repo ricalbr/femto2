@@ -4,13 +4,11 @@ import abc
 import itertools
 import pathlib
 import time
-import dill
 from typing import Any
 
+import dill
 import numpy as np
 import numpy.typing as npt
-
-import femto.waveguide
 from femto.helpers import flatten
 from femto.helpers import listcast
 from femto.helpers import nest_level
@@ -329,8 +327,8 @@ class Writer(PGMCompiler, abc.ABC):
         filepath.mkdir(exist_ok=True, parents=True)
 
         for i, wg in enumerate(obj):
-            objpath = filepath / f"{name_id.upper()}_{i + 1:02}.pkl"
-            with open(objpath, "wb") as f:
+            objpath = filepath / f'{name_id.upper()}_{i + 1:02}.pkl'
+            with open(objpath, 'wb') as f:
                 dill.dump(wg.__dict__, f)
 
 
