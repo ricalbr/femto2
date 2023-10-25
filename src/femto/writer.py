@@ -335,10 +335,9 @@ class Writer(PGMCompiler, abc.ABC):
         )
         return fig
 
+    @staticmethod
     def _export(
-        self,
         obj: list[Any],
-        name_id: str,
         filename: str | pathlib.Path,
         export_path: str | pathlib.Path,
         export_dir: str | pathlib.Path = 'EXPORT',
@@ -346,10 +345,10 @@ class Writer(PGMCompiler, abc.ABC):
         filepath = pathlib.Path(export_path / export_dir / pathlib.Path(filename).stem)
         filepath.mkdir(exist_ok=True, parents=True)
 
-        for i, wg in enumerate(obj):
-            objpath = filepath / f'{name_id.upper()}_{i + 1:02}.pkl'
+        for i, el in enumerate(obj):
+            objpath = filepath / f'{el._id}_{i + 1:02}.pkl'
             with open(objpath, 'wb') as f:
-                dill.dump(wg.__dict__, f)
+                dill.dump(el.__dict__, f)
 
 
 class TrenchWriter(Writer):
@@ -476,9 +475,7 @@ class TrenchWriter(Writer):
         return fig
 
     def export(self) -> None:
-        super()._export(
-            obj=self.obj_list, name_id='TC', filename=self._param['filename'], export_path=self.CWD, export_dir='EXPORT'
-        )
+        super()._export(obj=self.obj_list, filename=self._param['filename'], export_path=self.CWD, export_dir='EXPORT')
 
     def pgm(self, verbose: bool = False) -> None:
         """Export to PGM file.
@@ -872,7 +869,6 @@ class UTrenchWriter(TrenchWriter):
     def export(self) -> None:
         super()._export(
             obj=self.obj_list,
-            name_id='UTC',
             filename=self._param['filename'],
             export_path=self.CWD,
             export_dir='EXPORT',
@@ -1284,9 +1280,7 @@ class WaveguideWriter(Writer):
         return fig
 
     def export(self) -> None:
-        super()._export(
-            obj=self.obj_list, name_id='WG', filename=self._param['filename'], export_path=self.CWD, export_dir='EXPORT'
-        )
+        super()._export(obj=self.obj_list, filename=self._param['filename'], export_path=self.CWD, export_dir='EXPORT')
 
     def pgm(self, verbose: bool = False) -> None:
         """Export to PGM file.
@@ -1629,7 +1623,6 @@ class NasuWriter(Writer):
     def export(self) -> None:
         super()._export(
             obj=self.obj_list,
-            name_id='NWG',
             filename=self._param['filename'],
             export_path=self.CWD,
             export_dir='EXPORT',
@@ -1972,9 +1965,7 @@ class MarkerWriter(Writer):
         return fig
 
     def export(self) -> None:
-        super()._export(
-            obj=self.obj_list, name_id='MK', filename=self._param['filename'], export_path=self.CWD, export_dir='EXPORT'
-        )
+        super()._export(obj=self.obj_list, filename=self._param['filename'], export_path=self.CWD, export_dir='EXPORT')
 
     def pgm(self, verbose: bool = False) -> None:
         """Export to PGM file.

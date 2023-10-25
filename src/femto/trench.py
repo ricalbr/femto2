@@ -41,7 +41,7 @@ class Trench:
         self._floor_length: float = 0.0  #: Length of the floor path.
         self._wall_length: float = 0.0  #: Length of the wall path.
 
-        self.__id: str = 'TR'  #: Trench identifier.
+        self._id: str = 'TR'  #: Trench identifier.
 
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}@{id(self) & 0xFFFFFF:x}'
@@ -408,7 +408,7 @@ class TrenchColumn:
     _trench_list: list[Trench] = dataclasses.field(default_factory=list)  #: List of trench objects
 
     def __post_init__(self):
-        self.__id = 'TC'  #: TrenchColumn identifier.
+        self._id = 'TC'  #: TrenchColumn identifier.
         self.CWD: pathlib.Path = pathlib.Path.cwd()  #: Current working directory
         if self.speed_floor is None:
             self.speed_floor = self.speed_wall
@@ -671,6 +671,7 @@ class UTrenchColumn(TrenchColumn):
 
     def __post_init__(self) -> None:
         super().__post_init__()
+        self._id = 'UTC'  #: U-TrenchColumn identifier.
 
     @property
     def adj_pillar_width(self) -> float:
