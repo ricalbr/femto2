@@ -78,6 +78,10 @@ class Trench:
         return bool(self.yborder[0] >= other.yborder[0])
 
     @property
+    def id(self) -> str:
+        return self._id
+
+    @property
     def border(self) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]:
         """Border of the trench.
 
@@ -468,6 +472,10 @@ class TrenchColumn:
             tmp = dill.load(f)
             logger.debug(f'{f} file loaded.')
         return cls.from_dict(tmp)
+
+    @property
+    def id(self) -> str:
+        return self._id
 
     @property
     def adj_bridge(self) -> float:

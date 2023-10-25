@@ -112,6 +112,10 @@ class LaserPath:
         return self.x_init, self.y_init, z0
 
     @property
+    def id(self) -> str:
+        return self._id
+
+    @property
     def lvelo(self) -> float:
         """Compute the length needed to reach the translation speed.
 
