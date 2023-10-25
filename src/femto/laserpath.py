@@ -75,6 +75,28 @@ class LaserPath:
         logger.debug(f'Create {cls.__name__} object from dictionary.')
         return cls(**{k: v for k, v in param.items() if k in inspect.signature(cls).parameters})
 
+    @classmethod
+    def load(cls: type[LP], pickle_file: str) -> LP:
+        """Create an instance of the class from a pickle file.
+
+        It takes a class and a pickle file name, and returns an instance of the class with the dictionary's keys as the
+        instance's attributes.
+
+        Parameters
+        ----------
+        pickle_file, str
+            Filename of the pickle_file.
+
+        Returns
+        -------
+        Instance of class
+        """
+        logger.info(f'Load {cls.__name__} object from pickle file.')
+        with open(pickle_file, 'rb') as f:
+            tmp = dill.load(f)
+            logger.debug(f'Load {f} file.')
+        return cls.from_dict(tmp)
+
     @property
     def init_point(self) -> tuple[float, float, float]:
         """Initial point of the trajectory.
