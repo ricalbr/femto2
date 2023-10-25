@@ -18,6 +18,7 @@ class RasterImage(LaserPath):
     img_size: tuple[int, int] = (0, 0)  #: Number of pixels in x and y direction of the image.
 
     def __post_init__(self) -> None:
+        self.__id = 'RI'  #: RasterImage identifier.
         super().__post_init__()
         if self.z_init is None:
             self.z_init = 0.0

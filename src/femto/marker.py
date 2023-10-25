@@ -19,6 +19,7 @@ class Marker(LaserPath):
     ly: float = 0.060  #: Dimension of cross y-arm, `[mm]`.
 
     def __post_init__(self) -> None:
+        self.__id = 'MK'  #: Marker identifier.
         super().__post_init__()
         if self.z_init is None:
             self.z_init = self.depth

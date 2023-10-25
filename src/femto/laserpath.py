@@ -44,6 +44,7 @@ class LaserPath:
     logger.debug('Initialized all the coordinates arrays.')
 
     def __post_init__(self) -> None:
+        self.__id = 'LP'  #: LaserPath identifier.
         if not isinstance(self.scan, int):
             logger.error(f'Number of scan must be integer. Given {self.scan}.')
             raise ValueError(f'Number of scan must be integer. Given {self.scan}.')

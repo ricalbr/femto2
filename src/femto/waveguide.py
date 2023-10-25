@@ -25,6 +25,7 @@ class Waveguide(LaserPath):
     ltrench: float = 0.0  #: Length of straight segment to accomodate trenches, `[mm]`.
 
     def __post_init__(self) -> None:
+        self.__id = 'WG'  #: Waveguide identifier.
         super().__post_init__()
         if self.z_init is None:
             self.z_init = self.depth
@@ -333,6 +334,7 @@ class NasuWaveguide(Waveguide):
     adj_scan: int = 5  #: Number of adjacent scans
 
     def __post_init__(self) -> None:
+        self.__id = 'NG'  #: NasuWaveguide identifier.
         super().__post_init__()
         if not isinstance(self.adj_scan, int):
             logger.error('Number of adjacent scans is of the wrong type.2')
