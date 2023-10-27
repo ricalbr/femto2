@@ -3,6 +3,8 @@ from __future__ import annotations
 import collections
 import copy
 import pathlib
+import os
+import dill
 from typing import Any
 from typing import cast
 from typing import Union
@@ -13,15 +15,19 @@ from femto.curves import sin
 from femto.helpers import flatten
 from femto.marker import Marker
 from femto.spreadsheet import Spreadsheet
-from femto.trench import TrenchColumn
+from femto.trench import TrenchColumn, Trench
 from femto.trench import UTrenchColumn
 from femto.waveguide import NasuWaveguide
 from femto.waveguide import Waveguide
+from femto.laserpath import LaserPath
 from femto.writer import MarkerWriter
 from femto.writer import NasuWriter
 from femto.writer import TrenchWriter
 from femto.writer import UTrenchWriter
 from femto.writer import WaveguideWriter
+
+
+types = dict(WG=Waveguide, NWG=NasuWaveguide, MK=Marker, LP=LaserPath, TR=Trench, TC=TrenchColumn, UTC=UTrenchColumn)
 
 
 class Device:
@@ -203,7 +209,7 @@ class Device:
 
             self.fabrication_time += writer.fab_time
         if verbose:
-            logger.info('Export .pgm files complete.\n')
+            logger.info('Export .pgm files completed.\n')
 
     def export(self, verbose: bool = False, **kwargs) -> None:
         """Export objects to pickle files.
@@ -222,12 +228,12 @@ class Device:
 
         for key, writer in self.writers.items():
             if verbose and writer.obj_list:
-                print(f'Exporting {key.__name__} objects...')
+                logger.info(f'Exporting {key.__name__} objects...')
 
             writer = cast(Union[WaveguideWriter, NasuWriter, TrenchWriter, UTrenchWriter, MarkerWriter], writer)
             writer.export()
         if verbose:
-            print('Export objects complete.\n')
+            logger.info('Export objects completed.\n')
 
     def xlsx(self, verbose: bool = True, **param) -> None:
         """Generate the spreadsheet.
@@ -240,7 +246,7 @@ class Device:
                 logger.info('Generating spreadsheet...')
             spsh.write_structures(verbose=verbose)
         if verbose:
-            logger.info('Create .xlsx file complete.')
+            logger.info('Create .xlsx file completed.')
 
     def save(self, filename: str = 'scheme.html', opt: dict[str, Any] | None = None) -> None:
         """Save figure.
@@ -279,6 +285,32 @@ class Device:
         else:
             self.fig.write_image(str(fn), **opt)
 
+    @staticmethod
+    def load_objects(folder: str | pathlib.Path, param: dict, verbose: bool = False):
+        dev = Device(**param)
+        objs = []
+
+        for root, dirs, files in os.walk(folder):
+            files.sort()
+            if not files:
+                raise ValueError(f'No file is present in the given directory {folder}.')
+            for file in files:
+                if verbose and file:
+                    logger.info(f'Loading {file} object...')
+
+                filename = pathlib.Path(root) / file
+                with open(filename, 'rb') as f:
+                    tmp = dill.load(f)
+                try:
+                    typ = types[tmp['_id']]
+                except KeyError:
+                    raise KeyError(f'Cannot load {file} file without ID.')
+                objs.append(typ.from_dict(tmp))
+        dev.append(objs)
+        if verbose:
+            logger.info('Loading objects completed.\n')
+        return dev
+
 
 def main() -> None:
     from femto.trench import TrenchColumn
@@ -287,7 +319,9 @@ def main() -> None:
     # Parameters
     PARAM_WG: dict[str, Any] = dict(speed=20, radius=25, pitch=0.080, int_dist=0.007, samplesize=(25, 3))
     PARAM_TC: dict[str, Any] = dict(length=1.0, base_folder='', y_min=-0.1, y_max=4 * 0.080 + 0.1, u=[30.0, 32.0])
-    PARAM_GC: dict[str, Any] = dict(filename='testCell.pgm', laser='PHAROS', new_origin=(0.5, 0.5), samplesize=(25, 1))
+    PARAM_GC: dict[str, Any] = dict(
+        filename='testCell.pgm', laser='PHAROS', new_origin=(0.5, 0.5), samplesize=(25, 1), aerotech_angle=-1.023
+    )
 
     dev = Device(**PARAM_GC)
 
