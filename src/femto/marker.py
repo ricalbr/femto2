@@ -233,7 +233,7 @@ class Marker(LaserPath):
 
     def ablation(
         self,
-        points: list[list[float]],
+        points: list[list[float]] | list[np.ndarray[float]],
         shift: float | None = None,
     ) -> None:
         """Ablation line.
@@ -310,14 +310,15 @@ class Marker(LaserPath):
 
 
 def main() -> None:
+    """The main function of the script."""
     import matplotlib.pyplot as plt
 
     from femto.helpers import dotdict, split_mask
 
-    PARAMETERS_MK = dotdict(scan=1, speed=2, speed_pos=5, speed_closed=5, depth=0.000, lx=1, ly=1)
-    PARAMETERS_GC = dotdict(filename='testPGM.pgm', laser='PHAROS', samplesize=(10, 10), flip_x=True, new_origin=[1, 1])
+    parameters_mk = dotdict(scan=1, speed=2, speed_pos=5, speed_closed=5, depth=0.000, lx=1, ly=1)
+    parameters_gc = dotdict(filename='testPGM.pgm', laser='PHAROS', samplesize=(10, 10), flip_x=True, new_origin=[1, 1])
 
-    c = Marker(**PARAMETERS_MK)
+    c = Marker(**parameters_mk)
     # c.cross([2.5, 1], 5, 2)
     # c.ablation([[0, 0, 0], [5, 0, 0], [5, 1, 0], [2, 2, 0]])
     c.box([1, 2, 3], width=5.0, height=0.01)
@@ -325,7 +326,7 @@ def main() -> None:
 
     from femto.pgmcompiler import PGMCompiler
 
-    with PGMCompiler(**PARAMETERS_GC) as gc:
+    with PGMCompiler(**parameters_gc) as gc:
         gc.write(c.points)
 
     # Plot

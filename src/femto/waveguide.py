@@ -425,19 +425,20 @@ def coupler(param: dict[str, Any], f_profile: Callable, nasu: bool = False) -> l
 
 
 def main() -> None:
+    """The main function of the script."""
     import matplotlib.pyplot as plt
     from curves import circ, sin
     from mpl_toolkits.mplot3d import Axes3D
 
     # Data
-    PARAM_WG = dotdict(scan=6, speed=20, radius=15, pitch=0.080, int_dist=0.007, lsafe=3, samplesize=(50, 3))
+    param_wg = dotdict(scan=6, speed=20, radius=15, pitch=0.080, int_dist=0.007, lsafe=3, samplesize=(50, 3))
 
     increment = [5.0, 0, 0]
 
     # Calculations
     mzi = []
     for index in range(2):
-        wg = Waveguide(**PARAM_WG)
+        wg = Waveguide(**param_wg)
         wg.y_init = -wg.pitch / 2 + index * wg.pitch
         wg.start()
         wg.linear(increment)

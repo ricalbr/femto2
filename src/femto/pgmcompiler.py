@@ -31,6 +31,12 @@ GC = TypeVar('GC', bound='PGMCompiler')
 
 @dataclasses.dataclass
 class Laser:
+    """Class representing a Laser.
+
+    The class contains all the info (``name``, ``lab``) and configuration (``axis``, ``pin``, ``mode``) of the given
+    laser for G-Code files.
+    """
+
     name: str  #: name of the laser source
     lab: str  #: name of the fabrication line
     axis: str  #: Axis of the PSO card
@@ -40,6 +46,10 @@ class Laser:
 
 @dataclasses.dataclass(repr=False)
 class PGMCompiler:
+    """Class representing a PGMCompiler.
+
+    The class contains all the parameters and all the method for translating a series of 3D points to G-Code files.
+    """
 
     filename: str  #: Filename of the .pgm file.
     n_glass: float = 1.50  #: Glass refractive index.
@@ -1029,22 +1039,22 @@ class PGMCompiler:
             and glass interface.
         """
 
-        RM = np.array(
+        rm = np.array(
             [
                 [np.cos(self.rotation_angle), -np.sin(self.rotation_angle), 0],
                 [np.sin(self.rotation_angle), np.cos(self.rotation_angle), 0],
                 [0, 0, 1],
             ]
         )
-        SM = np.array(
+        sm = np.array(
             [
                 [1, 0, 0],
                 [0, 1, 0],
                 [0, 0, 1 / self.neff],
             ]
         )
-        TM = np.matmul(SM, RM).T
-        return np.array(TM)
+        tm = np.matmul(sm, rm).T
+        return np.array(tm)
 
     def antiwarp_management(self, opt: bool, num: int = 16) -> interpolate.interp2d:
         """
@@ -1067,6 +1077,7 @@ class PGMCompiler:
         if not opt:
 
             def fwarp(_x: float, _y: float) -> float:
+                """Dummy warp function."""
                 return 0.0
 
         else:
@@ -1226,18 +1237,19 @@ class PGMCompiler:
 
 
 def main() -> None:
+    """The main function of the script."""
     from femto.waveguide import Waveguide
     from femto.curves import sin
     from femto.helpers import dotdict
 
     # Parameters
-    PARAM_WG = dotdict(scan=6, speed=20, radius=15, pitch=0.080, int_dist=0.007, lsafe=3, samplesize=(25, 3))
-    PARAM_GC = dotdict(
-        filename='testPGM.pgm', samplesize=PARAM_WG['samplesize'], rotation_angle=2.0, flip_x=True, minimal_gcode=True
+    param_wg = dotdict(scan=6, speed=20, radius=15, pitch=0.080, int_dist=0.007, lsafe=3, samplesize=(25, 3))
+    param_gc = dotdict(
+        filename='testPGM.pgm', samplesize=param_wg['samplesize'], rotation_angle=2.0, flip_x=True, minimal_gcode=True
     )
 
     # Build paths
-    chip = [Waveguide(**PARAM_WG) for _ in range(2)]
+    chip = [Waveguide(**param_wg) for _ in range(2)]
     for i, wg in enumerate(chip):
         wg.start([-2, -wg.pitch / 2 + i * wg.pitch, 0.035])
         wg.linear([wg.lsafe, 0, 0])
@@ -1247,9 +1259,9 @@ def main() -> None:
         wg.end()
 
     # Compilation
-    with PGMCompiler(**PARAM_GC) as G:
+    with PGMCompiler(**param_gc) as G:
         G.set_home([0, 0, 0])
-        with G.repeat(PARAM_WG['scan']):
+        with G.repeat(param_wg['scan']):
             for i, wg in enumerate(chip):
                 G.comment(f'Modo: {i}')
                 G.write(wg.points)

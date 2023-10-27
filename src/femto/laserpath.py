@@ -84,7 +84,7 @@ class LaserPath:
 
         Parameters
         ----------
-        pickle_file, str
+        pickle_file: str
             Filename of the pickle_file.
 
         Returns
@@ -113,6 +113,15 @@ class LaserPath:
 
     @property
     def id(self) -> str:
+        """Object ID.
+
+        The property returns the ID of a given object.
+
+        Returns
+        -------
+        str
+            The id of the object
+        """
         return self._id
 
     @property
@@ -692,15 +701,16 @@ class LaserPath:
 
 
 def main() -> None:
+    """The main function of the script."""
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
 
     from femto.helpers import dotdict
 
     # Data
-    PARAMETERS_LP = dotdict(scan=6, speed=20, lsafe=3)
+    parameters_lp = dotdict(scan=6, speed=20, lsafe=3)
 
-    lpath = LaserPath(**PARAMETERS_LP)
+    lpath = LaserPath(**parameters_lp)
     path_x = np.array([0, 1, 1, 2, 4, 4, 4, 4, 4, 6, 4, 4, 4, 4, 4])
     path_y = np.array([0, 0, 2, 3, 4, 4, 4, 4, 4, 7, 4, 4, 4, 4, 4])
     path_z = np.array([0, 0, 0, 3, 4, 4, 4, 4, 4, 6, 4, 4, 4, 4, 4])

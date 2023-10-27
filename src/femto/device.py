@@ -5,7 +5,7 @@ import copy
 import pathlib
 import os
 import dill
-from typing import Any
+from typing import Any, TypeVar
 from typing import cast
 from typing import Union
 
@@ -26,6 +26,8 @@ from femto.writer import TrenchWriter
 from femto.writer import UTrenchWriter
 from femto.writer import WaveguideWriter
 
+# Create a generic variable that can be 'Device', or any subclass.
+DV = TypeVar('DV', bound='Device')
 
 types = dict(WG=Waveguide, NWG=NasuWaveguide, MK=Marker, LP=LaserPath, TR=Trench, TC=TrenchColumn, UTC=UTrenchColumn)
 
@@ -204,7 +206,7 @@ class Device:
             if verbose and writer.obj_list:
                 logger.info(f'Exporting {key.__name__} objects...')
 
-            writer = cast(Union[WaveguideWriter, NasuWriter, TrenchWriter, UTrenchWriter, MarkerWriter], writer)
+            # writer = cast(Union[WaveguideWriter, NasuWriter, TrenchWriter, UTrenchWriter, MarkerWriter], writer)
             writer.pgm(verbose=verbose)
 
             self.fabrication_time += writer.fab_time
@@ -286,7 +288,25 @@ class Device:
             self.fig.write_image(str(fn), **opt)
 
     @staticmethod
-    def load_objects(folder: str | pathlib.Path, param: dict, verbose: bool = False):
+    def load_objects(folder: str | pathlib.Path, param: dict, verbose: bool = False) -> Device:
+        """
+        The load_objects method loads the objects from a folder.
+
+        Parameters
+        ----------
+            folder: str | pathlib.Path
+                Specify the folder where the objects are stored
+            param: dict
+                Pass a dictionary of parameters to the load_objects function
+            verbose: bool
+                Print the progress of the function
+
+        Returns
+        -------
+
+            A list of objects that have been loaded from the given folder
+        """
+
         dev = Device(**param)
         objs = []
 
@@ -313,21 +333,23 @@ class Device:
 
 
 def main() -> None:
+    """The main function of the script."""
+
     from femto.trench import TrenchColumn
     from femto.waveguide import Waveguide
 
     # Parameters
-    PARAM_WG: dict[str, Any] = dict(speed=20, radius=25, pitch=0.080, int_dist=0.007, samplesize=(25, 3))
-    PARAM_TC: dict[str, Any] = dict(length=1.0, base_folder='', y_min=-0.1, y_max=4 * 0.080 + 0.1, u=[30.0, 32.0])
-    PARAM_GC: dict[str, Any] = dict(
+    param_wg: dict[str, Any] = dict(speed=20, radius=25, pitch=0.080, int_dist=0.007, samplesize=(25, 3))
+    param_tc: dict[str, Any] = dict(length=1.0, base_folder='', y_min=-0.1, y_max=4 * 0.080 + 0.1, u=[30.0, 32.0])
+    param_gc: dict[str, Any] = dict(
         filename='testCell.pgm', laser='PHAROS', new_origin=(0.5, 0.5), samplesize=(25, 1), aerotech_angle=-1.023
     )
 
-    dev = Device(**PARAM_GC)
+    dev = Device(**param_gc)
 
     # Waveguides
     x_center = 0
-    coup = [Waveguide(**PARAM_WG) for _ in range(5)]
+    coup = [Waveguide(**param_wg) for _ in range(5)]
     for i, wg in enumerate(coup):
         wg.start([-2, i * wg.pitch, 0.035])
         wg.coupler(dy=(-1) ** i * wg.dy_bend, dz=0, fx=sin)
@@ -337,9 +359,9 @@ def main() -> None:
         dev.append(wg)
 
     # Trench
-    T = TrenchColumn(x_center=x_center, **PARAM_TC)
-    T.dig_from_waveguide(coup, remove=[0, 1])
-    dev.append(T)
+    tcol = TrenchColumn(x_center=x_center, **param_tc)
+    tcol.dig_from_waveguide(coup, remove=[0, 1])
+    dev.append(tcol)
 
     # Export
     # dev.plot2d()

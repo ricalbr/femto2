@@ -79,6 +79,15 @@ class Trench:
 
     @property
     def id(self) -> str:
+        """Object ID.
+
+        The property returns the ID of a given object.
+
+        Returns
+        -------
+        str
+            The id of the object
+        """
         return self._id
 
     @property
@@ -455,18 +464,19 @@ class TrenchColumn:
     def load(cls: type[TC], pickle_file: str) -> TC:
         """Create an instance of the class from a pickle file.
 
-        It takes a class and a pickle file name, and returns an instance of the class with the dictionary's keys as the
-        instance's attributes.
+        The load function takes a class and a pickle file name, and returns an instance of the class with the
+        dictionary's keys as the instance's attributes.
 
         Parameters
         ----------
-        pickle_file, str
+        pickle_file: str
             Filename of the pickle_file.
 
         Returns
         -------
         Instance of class
         """
+
         logger.info(f'Load {cls.__name__} object from pickle file.')
         with open(pickle_file, 'rb') as f:
             tmp = dill.load(f)
@@ -475,7 +485,27 @@ class TrenchColumn:
 
     @property
     def id(self) -> str:
+        """Object ID.
+
+        The property returns the ID of a given object.
+
+        Returns
+        -------
+        str
+            The id of the object
+        """
         return self._id
+
+    @property
+    def trench_list(self) -> list[Trench]:
+        """List of Trench objects.
+
+        Returns
+        -------
+        list[Trench]
+            A list of trenches.
+        """
+        return self._trench_list
 
     @property
     def adj_bridge(self) -> float:
@@ -800,13 +830,14 @@ class UTrenchColumn(TrenchColumn):
 
 
 def main() -> None:
+    """The main function of the script."""
     # Data
-    PARAM_WG = dotdict(speed=20, radius=25, pitch=0.080, int_dist=0.007, samplesize=(25, 3))
-    PARAM_TC = dotdict(length=1.0, base_folder='', y_min=-0.1, y_max=19 * PARAM_WG['pitch'] + 0.1, u=[30.339, 32.825])
+    param_wg = dotdict(speed=20, radius=25, pitch=0.080, int_dist=0.007, samplesize=(25, 3))
+    param_tc = dotdict(length=1.0, base_folder='', y_min=-0.1, y_max=19 * param_wg['pitch'] + 0.1, u=[30.339, 32.825])
 
     # Calculations
     x_c = 0
-    coup = [Waveguide(**PARAM_WG) for _ in range(20)]
+    coup = [Waveguide(**param_wg) for _ in range(20)]
     for i, wg in enumerate(coup):
         wg.start([-2, i * wg.pitch, 0.035])
         wg.coupler(dy=(-1) ** i * wg.dy_bend, dz=0, fx=sin)
@@ -815,14 +846,14 @@ def main() -> None:
         wg.end()
 
     # Trench
-    T = UTrenchColumn(x_center=x_c, n_pillars=3, **PARAM_TC)
-    T.dig_from_waveguide(flatten([coup]))
+    utc = UTrenchColumn(x_center=x_c, n_pillars=3, **param_tc)
+    utc.dig_from_waveguide(flatten([coup]))
 
     import matplotlib.pyplot as plt
 
     # b = T._trench_list[0]
     # b = T.trenchbed[0]
-    for tr in T._trench_list:
+    for tr in utc.trench_list:
         for (x, y) in tr.toolpath():
             plt.plot(x, y)
 

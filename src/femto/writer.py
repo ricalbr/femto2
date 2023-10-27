@@ -346,7 +346,7 @@ class Writer(PGMCompiler, abc.ABC):
         filepath.mkdir(exist_ok=True, parents=True)
 
         for i, el in enumerate(obj):
-            objpath = filepath / f'{el._id}_{i + 1:02}.pkl'
+            objpath = filepath / f'{el.id}_{i + 1:02}.pkl'
             with open(objpath, 'wb') as f:
                 dill.dump(el.__dict__, f)
 
@@ -393,7 +393,7 @@ class TrenchWriter(Writer):
             logger.error(f'The object must be a TrenchColumn. {type(obj).__name__} was given.')
             raise TypeError(f'The object must be a TrenchColumn. {type(obj).__name__} was given.')
         self.obj_list.append(obj)
-        self.trenches.extend(obj._trench_list)
+        self.trenches.extend(obj.trench_list)
         logger.debug('Append Trench to obj_list.')
 
     def extend(self, obj: list[TrenchColumn]) -> None:
@@ -475,6 +475,14 @@ class TrenchWriter(Writer):
         return fig
 
     def export(self) -> None:
+        """Export Trench objects.
+
+        The export the list of Trench objects into a pickle file. The objects are exported in an ``EXPORT`` directory.
+
+        Returns
+        -------
+            None
+        """
         super()._export(obj=self.obj_list, filename=self._param['filename'], export_path=self.CWD, export_dir='EXPORT')
 
     def pgm(self, verbose: bool = False) -> None:
@@ -548,7 +556,7 @@ class TrenchWriter(Writer):
         x: npt.NDArray[np.float32],
         y: npt.NDArray[np.float32],
         speed: float | list[float],
-        forced_deceleration: bool | list[bool] | npt.NDArray[np.bool] = False,
+        forced_deceleration: bool | list[bool] | npt.NDArray[bool] = False,
     ) -> None:
         """Export 2D path to PGM file.
 
@@ -861,7 +869,7 @@ class UTrenchWriter(TrenchWriter):
             logger.error(f'The object must be a UTrenchColumn. {type(obj).__name__} was given.')
             raise TypeError(f'The object must be a UTrenchColumn. {type(obj).__name__} was given.')
         self.obj_list.append(obj)
-        self.trenches.extend(obj._trench_list)
+        self.trenches.extend(obj.trench_list)
         logger.debug('Append U-Trench to obj_list.')
         self.beds.extend(obj.trenchbed)
         logger.debug('Append Trench bed to trenchbed.')
@@ -1280,6 +1288,15 @@ class WaveguideWriter(Writer):
         return fig
 
     def export(self) -> None:
+        """Export Waveguide objects.
+
+        The export the list of Waveguide objects into a pickle file. The objects are exported in an ``EXPORT``
+        directory.
+
+        Returns
+        -------
+            None
+        """
         super()._export(obj=self.obj_list, filename=self._param['filename'], export_path=self.CWD, export_dir='EXPORT')
 
     def pgm(self, verbose: bool = False) -> None:
@@ -1621,6 +1638,15 @@ class NasuWriter(Writer):
         return fig
 
     def export(self) -> None:
+        """Export Nasu Waveguide objects.
+
+        The export the list of Nasu Waveguide objects into a pickle file. The objects are exported in an ``EXPORT``
+        directory.
+
+        Returns
+        -------
+            None
+        """
         super()._export(
             obj=self.obj_list,
             filename=self._param['filename'],
@@ -1965,6 +1991,14 @@ class MarkerWriter(Writer):
         return fig
 
     def export(self) -> None:
+        """Export Marker objects.
+
+        The export the list of Marker objects into a pickle file. The objects are exported in an ``EXPORT`` directory.
+
+        Returns
+        -------
+            None
+        """
         super()._export(obj=self.obj_list, filename=self._param['filename'], export_path=self.CWD, export_dir='EXPORT')
 
     def pgm(self, verbose: bool = False) -> None:
@@ -2121,19 +2155,20 @@ class MarkerWriter(Writer):
 
 
 def main() -> None:
+    """The main function of the script."""
     from femto.curves import sin, circ, spline_bridge
     from femto.waveguide import NasuWaveguide
 
     # Data
-    PARAM_WG: dict[str, Any] = dict(scan=6, speed=20, radius=15, pitch=0.080, int_dist=0.007, samplesize=(10, 3))
-    PARAM_GC: dict[str, Any] = dict(filename='testPGM.pgm', samplesize=PARAM_WG['samplesize'])
+    param_wg: dict[str, Any] = dict(scan=6, speed=20, radius=15, pitch=0.080, int_dist=0.007, samplesize=(10, 3))
+    param_gc: dict[str, Any] = dict(filename='testPGM.pgm', samplesize=param_wg['samplesize'])
 
     increment = [5.0, 0, 0]
 
     # Calculations
     mzi = []
     for index in range(2):
-        wg = NasuWaveguide(adj_scan_shift=(0, 0.004, 0), **PARAM_WG)
+        wg = NasuWaveguide(adj_scan_shift=(0, 0.004, 0), **param_wg)
         wg.y_init = -wg.pitch / 2 + index * wg.pitch
         wg.start()
         wg.linear(increment)
@@ -2144,7 +2179,7 @@ def main() -> None:
         wg.end()
         mzi.append(wg)
 
-    nwr = NasuWriter(mzi, **PARAM_GC)
+    nwr = NasuWriter(mzi, **param_gc)
     fig = nwr.plot3d()
     fig.show()
 
