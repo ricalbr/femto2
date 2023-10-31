@@ -92,6 +92,11 @@ def test_scan(param) -> None:
         Marker(**param)
 
 
+def test_id(param) -> None:
+    mk = Marker(**param)
+    assert mk.id == 'MK'
+
+
 def test_repr(param) -> None:
     r = Marker(**param).__repr__()
     cname, _ = r.split('@')

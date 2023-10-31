@@ -334,6 +334,16 @@ def test_trenchcol_param(param) -> None:
     assert tcol._trench_list == []
 
 
+def test_id(param) -> None:
+    tc = TrenchColumn(**param)
+    assert tc.id == 'TC'
+
+
+def test_id(param) -> None:
+    utc = UTrenchColumn(**param)
+    assert utc.id == 'UTC'
+
+
 def test_trenchcol_adj_bridge(tc, param) -> None:
     assert tc.adj_bridge == param['bridge'] / 2 + param['beam_waist'] + param['round_corner']
 

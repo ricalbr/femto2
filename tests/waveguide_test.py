@@ -111,6 +111,11 @@ def test_wg_from_dict(param) -> None:
     assert wg.dz_bridge == float(0.006)
 
 
+def test_id(param) -> None:
+    w = Waveguide(**param)
+    assert w.id == 'WG'
+
+
 def test_z_init(param) -> None:
     param['z_init'] = None
     param['depth'] = 0.05
@@ -1036,6 +1041,11 @@ def test_nasu_values(param) -> None:
     assert ng.dz_bridge == float(0.006)
     assert ng.adj_scan_shift == (0.1, 0.2, 0.003)
     assert ng.adj_scan == int(3)
+
+
+def test_id(param) -> None:
+    nw = NasuWaveguide(**param)
+    assert nw.id == 'NWG'
 
 
 @pytest.mark.parametrize(

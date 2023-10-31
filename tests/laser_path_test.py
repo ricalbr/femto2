@@ -99,10 +99,13 @@ def test_from_dict(param) -> None:
     assert lp.end_off_sample is True
 
 
+def test_id(param) -> None:
+    lp = LaserPath(**param)
+    assert lp.id == 'LP'
+
+
 def test_repr(param) -> None:
     r = LaserPath(**param).__repr__()
-    print()
-    print(r)
     cname, _ = r.split('@')
     assert cname == 'LaserPath'
 
