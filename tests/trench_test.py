@@ -3,6 +3,7 @@ from __future__ import annotations
 from copy import deepcopy
 from pathlib import Path
 
+import dill
 import numpy as np
 import pytest
 from femto.helpers import almost_equal
@@ -110,6 +111,11 @@ def test_repr(poly) -> None:
     r = Trench(poly).__repr__()
     cname, _ = r.split('@')
     assert cname == 'Trench'
+
+
+def test_id_trench(poly) -> None:
+    t = Trench(poly)
+    assert t.id == 'TR'
 
 
 def test_repr_trenchcol(param) -> None:
@@ -334,14 +340,57 @@ def test_trenchcol_param(param) -> None:
     assert tcol._trench_list == []
 
 
-def test_id(param) -> None:
+def test_trenchcol_from_dict(param) -> None:
+    tcol = TrenchColumn.from_dict(param)
+
+    assert tcol.x_center == float(6)
+    assert tcol.y_min == float(1)
+    assert tcol.y_max == float(2)
+    assert tcol.bridge == float(0.050)
+    assert tcol.length == float(3)
+    assert tcol.nboxz == int(4)
+    assert tcol.z_off == float(-0.020)
+    assert tcol.h_box == float(0.080)
+    assert tcol.base_folder == ''
+    assert tcol.deltaz == float(0.002)
+    assert tcol.delta_floor == float(0.0015)
+    assert tcol.safe_inner_turns == int(8)
+    assert tcol.beam_waist == float(0.002)
+    assert tcol.round_corner == float(0.010)
+    assert tcol.u == [28, 29.47]
+    assert tcol.speed_wall == float(5.0)
+    assert tcol.speed_floor == float(3.0)
+    assert tcol.speed_closed == float(5.0)
+    assert tcol.speed_pos == float(0.5)
+
+    assert tcol.CWD == Path.cwd()
+    assert tcol._trench_list == []
+
+
+def test_load(param) -> None:
+    tc1 = TrenchColumn(**param)
+    fn = Path('obj.pkl')
+    with open(fn, 'wb') as f:
+        dill.dump(tc1.__dict__, f)
+
+    tc2 = TrenchColumn.load(fn)
+    assert type(tc1) == type(tc2)
+    assert sorted(tc1.__dict__) == sorted(tc2.__dict__)
+    fn.unlink()
+
+
+def test_id_TCol(param) -> None:
     tc = TrenchColumn(**param)
     assert tc.id == 'TC'
 
 
-def test_id(param) -> None:
+def test_id_UTCol(param) -> None:
     utc = UTrenchColumn(**param)
     assert utc.id == 'UTC'
+
+
+def test_trench_list_empty(tc) -> None:
+    assert tc.trench_list == []
 
 
 def test_trenchcol_adj_bridge(tc, param) -> None:
@@ -449,7 +498,7 @@ def test_trenchcol_dig() -> None:
 
     tc._dig(coords)
 
-    for (t, c) in zip(tc._trench_list, comp_box):
+    for (t, c) in zip(tc.trench_list, comp_box):
         assert normalize_polygon(c).equals_exact(t.block, tolerance=1e-8)
         assert almost_equal(normalize_polygon(c), t.block)
 
