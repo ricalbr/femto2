@@ -80,6 +80,12 @@ def test_laserpath_values(laser_path) -> None:
     assert laser_path.end_off_sample is True
 
 
+def test_scan_float_err(param) -> None:
+    param['scan'] = 1.2
+    with pytest.raises(ValueError):
+        LaserPath(**param)
+
+
 def test_from_dict(param) -> None:
     lp = LaserPath.from_dict(param)
 
@@ -97,6 +103,18 @@ def test_from_dict(param) -> None:
     assert lp.acc_max == int(500)
     assert lp.samplesize == (100, 15)
     assert lp.end_off_sample is True
+
+
+def test_load(param) -> None:
+    lp1 = LaserPath(**param)
+    fn = Path('obj.pkl')
+    with open(fn, 'wb') as f:
+        dill.dump(lp1.__dict__, f)
+
+    lp2 = LaserPath.load(fn)
+    assert type(lp1) == type(lp2)
+    assert sorted(lp1.__dict__) == sorted(lp2.__dict__)
+    fn.unlink()
 
 
 def test_id(param) -> None:
@@ -420,6 +438,15 @@ def test_last_point(laser_path) -> None:
 
 def test_last_point_empty(empty_path) -> None:
     np.testing.assert_array_equal(empty_path.lastpt, np.array([]))
+
+
+def test_laserpath_points(laser_path) -> None:
+    x, y, z, f, s = laser_path.points
+    np.testing.assert_almost_equal(x, np.array([0.0, 1.0, 1.0, 1.0, 2.0]))
+    np.testing.assert_almost_equal(y, np.array([0.0, 0.0, 1.0, 2.0, 3.0]))
+    np.testing.assert_almost_equal(z, np.array([0.0, 0.0, 1.0, 0.0, 3.0]))
+    np.testing.assert_almost_equal(f, np.array([1.0, 2.0, 1.0, 3.0, 4.0]))
+    np.testing.assert_almost_equal(s, np.array([1.0, 1.0, 1.0, 1.0, 1.0]))
 
 
 def test_path3d(laser_path) -> None:

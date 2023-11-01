@@ -76,7 +76,7 @@ class LaserPath:
         return cls(**{k: v for k, v in param.items() if k in inspect.signature(cls).parameters})
 
     @classmethod
-    def load(cls: type[LP], pickle_file: str) -> LP:
+    def load(cls: type[LP], pickle_file: str | pathlib.Path) -> LP:
         """Create an instance of the class from a pickle file.
 
         It takes a class and a pickle file name, and returns an instance of the class with the dictionary's keys as the
@@ -84,7 +84,7 @@ class LaserPath:
 
         Parameters
         ----------
-        pickle_file: str
+        pickle_file: str or pathlib.Path
             Filename of the pickle_file.
 
         Returns
