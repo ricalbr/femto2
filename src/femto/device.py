@@ -45,11 +45,11 @@ class Device:
         self.fig: go.Figure | None = None
         self.fabrication_time: float = 0.0
         self.writers = {
-            Waveguide: WaveguideWriter(wg_list=[], **param),
-            NasuWaveguide: NasuWriter(nw_list=[], **param),
             TrenchColumn: TrenchWriter(tc_list=[], **param),
             UTrenchColumn: UTrenchWriter(utc_list=[], **param),
             Marker: MarkerWriter(mk_list=[], **param),
+            Waveguide: WaveguideWriter(wg_list=[], **param),
+            NasuWaveguide: NasuWriter(nw_list=[], **param),
         }
         logger.info(f'Instantiate device {self._param["filename"].rsplit(".", 1)[0]}.')
 
@@ -120,7 +120,7 @@ class Device:
                 logger.error(f'Found unexpected type {err.args}.')
                 raise TypeError(f'Found unexpected type {err.args}.')
 
-    def plot2d(self, show: bool = True, save: bool = False) -> None:
+    def plot2d(self, show: bool = True, save: bool = False, show_shutter_close: bool = True) -> None:
         """Plot 2D.
 
         2D plot of all the objects stored in the ``Device`` class.
@@ -131,6 +131,8 @@ class Device:
             Boolean flag to automatically show the plot. The default value is True.
         save : bool, optional
             Boolean flag to automatically save the plot. The default value is False.
+        show_shutter_close : bool, optional
+            Boolean flag to show the lines with closed shutter. The default value is True.
 
         Returns
         -------
@@ -142,7 +144,7 @@ class Device:
         for writer in self.writers.values():
             # TODO: fix standard fig update
             logger.debug(f'Plot 2D object from {writer}.')
-            self.fig = writer.plot2d(self.fig)
+            self.fig = writer.plot2d(self.fig, show_shutter_close=show_shutter_close)
             logger.debug('Update 2D figure.')
             self.fig = writer.standard_2d_figure_update(self.fig)
         if show:
@@ -151,7 +153,7 @@ class Device:
         if save:
             self.save()
 
-    def plot3d(self, show: bool = True, save: bool = False) -> None:
+    def plot3d(self, show: bool = True, save: bool = False, show_shutter_close: bool = True) -> None:
         """Plot 3D.
 
         3D plot of all the objects stored in the ``Device`` class.
@@ -162,6 +164,8 @@ class Device:
             Boolean flag to automatically show the plot. The default value is True.
         save : bool, optional
             Boolean flag to automatically save the plot. The default value is False.
+        show_shutter_close : bool, optional
+            Boolean flag to show the lines with closed shutter. The default value is True.
 
         Returns
         -------
@@ -172,7 +176,7 @@ class Device:
         self.fig = go.Figure()
         for key, writer in self.writers.items():
             logger.debug(f'Plot 3D object from {writer}.')
-            self.fig = writer.plot3d(self.fig)
+            self.fig = writer.plot3d(self.fig, show_shutter_close=show_shutter_close)
             logger.debug('Update 3D figure.')
             self.fig = writer.standard_3d_figure_update(self.fig)
         if show:
