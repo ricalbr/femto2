@@ -120,7 +120,7 @@ class LaserPath:
         Returns
         -------
         str
-            The id of the object
+            The ID of the object.
         """
         return self._id
 
