@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import pathlib
 from contextlib import nullcontext as does_not_raise
 from pathlib import Path
 
@@ -13,6 +14,7 @@ from femto.trench import Trench
 from femto.trench import TrenchColumn
 from femto.waveguide import Waveguide
 from shapely.geometry import Polygon
+import os
 
 
 @pytest.fixture
@@ -303,6 +305,17 @@ def test_device_pgm(device, list_wg, list_mk) -> None:
     (Path().cwd() / 'testCell_MK.pgm').unlink()
 
 
+def test_device_pgm_verbose(device, list_wg, list_mk) -> None:
+
+    device.extend(list_wg)
+    device.extend(list_mk)
+    device.pgm(verbose=True)
+    assert (Path().cwd() / 'testCell_WG.pgm').is_file()
+    assert (Path().cwd() / 'testCell_MK.pgm').is_file()
+    (Path().cwd() / 'testCell_WG.pgm').unlink()
+    (Path().cwd() / 'testCell_MK.pgm').unlink()
+
+
 def test_device_xlsx(device, list_wg, list_mk, ss_param) -> None:
     device.extend(list_wg)
     device.extend(list_mk)
@@ -334,3 +347,72 @@ def test_device_save(device, fn, expected) -> None:
     assert device.save(fn, opt) is None
     assert (Path('.').cwd() / expected).is_file()
     (Path('.').cwd() / expected).unlink()
+
+
+def test_device_export(device, list_wg, list_mk) -> None:
+    device.extend(list_wg)
+    device.extend(list_mk)
+    device.export()
+    for i, _ in enumerate(list_wg):
+        fn = Path().cwd() / 'EXPORT' / 'testCell' / f'WG_{i + 1:02}.pkl'
+        assert fn.is_file()
+        fn.unlink()
+    for i, _ in enumerate(list_mk):
+        fn = Path().cwd() / 'EXPORT' / 'testCell' / f'MK_{i + 1:02}.pkl'
+        assert fn.is_file()
+        fn.unlink()
+
+    (Path().cwd() / 'EXPORT' / 'testCell').rmdir()
+    (Path().cwd() / 'EXPORT').rmdir()
+
+
+def test_device_export_verbose(device, list_wg, list_mk) -> None:
+    device.extend(list_wg)
+    device.extend(list_mk)
+    device.export(verbose=True)
+    for i, _ in enumerate(list_wg):
+        fn = Path().cwd() / 'EXPORT' / 'testCell' / f'WG_{i + 1:02}.pkl'
+        assert fn.is_file()
+        fn.unlink()
+    for i, _ in enumerate(list_mk):
+        fn = Path().cwd() / 'EXPORT' / 'testCell' / f'MK_{i + 1:02}.pkl'
+        assert fn.is_file()
+        fn.unlink()
+
+    (Path().cwd() / 'EXPORT' / 'testCell').rmdir()
+    (Path().cwd() / 'EXPORT').rmdir()
+
+
+def test_device_load_verbose(device, list_wg, list_mk, gc_param) -> None:
+    device.extend(list_wg)
+    device.extend(list_mk)
+    device.export(verbose=True)
+
+    fn = Path().cwd() / 'EXPORT' / 'testCell'
+
+    d2 = Device.load_objects(fn, gc_param, verbose=True)
+
+    objs = []
+    objs.extend(list_wg)
+    objs.extend(list_mk)
+    for root, dirs, files in os.walk(fn):
+        for file in files:
+            (pathlib.Path(root) / file).unlink()
+
+    (Path().cwd() / 'EXPORT' / 'testCell').rmdir()
+    (Path().cwd() / 'EXPORT').rmdir()
+
+
+def test_device_load_empty(device, gc_param) -> None:
+    device.export(verbose=True)
+
+    fn = Path().cwd() / 'EXPORT' / 'testCell'
+
+    d2 = Device.load_objects(fn, gc_param, verbose=True)
+
+    for root, dirs, files in os.walk(fn):
+        for file in files:
+            (pathlib.Path(root) / file).unlink()
+
+    (Path().cwd() / 'EXPORT' / 'testCell').rmdir()
+    (Path().cwd() / 'EXPORT').rmdir()

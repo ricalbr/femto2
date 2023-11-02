@@ -33,6 +33,20 @@ class Writer(PGMCompiler, abc.ABC):
 
     @property
     @abc.abstractmethod
+    def objs(self) -> list[Any]:
+        """Objects.
+
+        Abstract property for returning the objects contained inside a given Writer.
+
+        Returns
+        -------
+        list
+           List of objects contained in the current Writer.
+        """
+        pass
+
+    @property
+    @abc.abstractmethod
     def fab_time(self) -> float:
         """Fabrication time.
 
@@ -335,20 +349,35 @@ class Writer(PGMCompiler, abc.ABC):
         )
         return fig
 
-    @staticmethod
-    def _export(
-        obj: list[Any],
-        filename: str | pathlib.Path,
-        export_path: str | pathlib.Path,
+    def export(
+        self,
+        filename: str | pathlib.Path = None,
+        export_path: str | pathlib.Path = None,
         export_dir: str | pathlib.Path = 'EXPORT',
     ):
-        filepath = pathlib.Path(export_path / export_dir / pathlib.Path(filename).stem)
+        """Export Nasu Waveguide objects.
+
+        The export the list of Nasu Waveguide objects into a pickle file. The objects are exported in an ``EXPORT``
+        directory.
+
+        export_dir: str, optional
+            Name of the directory inside which export objects.
+
+        Returns
+        -------
+            None
+        """
+
+        fn = filename if filename is not None else self.filename
+        exp_p = self.CWD if export_path is None else export_dir
+
+        filepath = pathlib.Path(exp_p / export_dir / pathlib.Path(fn).stem)
         filepath.mkdir(exist_ok=True, parents=True)
 
-        for i, el in enumerate(obj):
+        for i, el in enumerate(self.objs):
             objpath = filepath / f'{el.id}_{i + 1:02}.pkl'
             with open(objpath, 'wb') as f:
-                dill.dump(el.__dict__, f)
+                dill.dump(el, f)
 
 
 class TrenchWriter(Writer):
@@ -363,6 +392,19 @@ class TrenchWriter(Writer):
         self._param: dict[str, Any] = dict(**param)
         self._export_path = self.CWD / (self.export_dir or '') / (self.dirname or '')
         self._fabtime: float = 0.0
+
+    @property
+    def objs(self) -> list[Any]:
+        """TrenchColumn objects.
+
+        Property for returning the TrenchColumn objects contained inside a TrenchWriter.
+
+        Returns
+        -------
+        list
+           List of TrenchColumn objects.
+        """
+        return self.obj_list
 
     @property
     def fab_time(self) -> float:
@@ -473,17 +515,6 @@ class TrenchWriter(Writer):
         fig = self._plot3d_trench(fig=fig, style=style)
         fig = super().standard_2d_figure_update(fig)  # Add glass, origin and axis elements
         return fig
-
-    def export(self) -> None:
-        """Export Trench objects.
-
-        The export the list of Trench objects into a pickle file. The objects are exported in an ``EXPORT`` directory.
-
-        Returns
-        -------
-            None
-        """
-        super()._export(obj=self.obj_list, filename=self._param['filename'], export_path=self.CWD, export_dir='EXPORT')
 
     def pgm(self, verbose: bool = False) -> None:
         """Export to PGM file.
@@ -841,6 +872,19 @@ class UTrenchWriter(TrenchWriter):
         self.beds: list[Trench] = [ubed for col in utc_list for ubed in col.trenchbed]
 
     @property
+    def objs(self) -> list[Any]:
+        """UTrenchColumn objects.
+
+        Property for returning the UTrenchColumn objects contained inside a UTrenchWriter.
+
+        Returns
+        -------
+        list
+           List of UTrenchColumn objects.
+        """
+        return self.obj_list
+
+    @property
     def fab_time(self) -> float:
         """U-Trench fabrication time.
 
@@ -873,14 +917,6 @@ class UTrenchWriter(TrenchWriter):
         logger.debug('Append U-Trench to obj_list.')
         self.beds.extend(obj.trenchbed)
         logger.debug('Append Trench bed to trenchbed.')
-
-    def export(self) -> None:
-        super()._export(
-            obj=self.obj_list,
-            filename=self._param['filename'],
-            export_path=self.CWD,
-            export_dir='EXPORT',
-        )
 
     # Private interface
     def _export_trench_column(self, column: UTrenchColumn, column_path: pathlib.Path) -> None:
@@ -1154,6 +1190,19 @@ class WaveguideWriter(Writer):
         self._fabtime: float = 0.0
 
     @property
+    def objs(self) -> list[Any]:
+        """Waveguide objects.
+
+        Property for returning the Waveguide objects contained inside a WaveguideWriter.
+
+        Returns
+        -------
+        list
+           List of Waveguide objects.
+        """
+        return self.obj_list
+
+    @property
     def fab_time(self) -> float:
         """Waveguide fabrication time.
 
@@ -1286,18 +1335,6 @@ class WaveguideWriter(Writer):
         fig = self._plot3d_wg(fig=fig, show_shutter_close=show_shutter_close, style=style)
         fig = super().standard_3d_figure_update(fig)  # Add glass, origin and axis elements
         return fig
-
-    def export(self) -> None:
-        """Export Waveguide objects.
-
-        The export the list of Waveguide objects into a pickle file. The objects are exported in an ``EXPORT``
-        directory.
-
-        Returns
-        -------
-            None
-        """
-        super()._export(obj=self.obj_list, filename=self._param['filename'], export_path=self.CWD, export_dir='EXPORT')
 
     def pgm(self, verbose: bool = False) -> None:
         """Export to PGM file.
@@ -1509,6 +1546,19 @@ class NasuWriter(Writer):
         self._fabtime: float = 0.0
 
     @property
+    def objs(self) -> list[Any]:
+        """NasuWaveguide objects.
+
+        Property for returning the NasuWaveguide objects contained inside a NasuWaveguideWriter.
+
+        Returns
+        -------
+        list
+           List of NasuWaveguide objects.
+        """
+        return self.obj_list
+
+    @property
     def fab_time(self) -> float:
         """Nasu waveguides fabrication time.
 
@@ -1636,23 +1686,6 @@ class NasuWriter(Writer):
         fig = self._plot3d_nwg(fig=fig, show_shutter_close=show_shutter_close, style=style)
         fig = super().standard_3d_figure_update(fig)  # Add glass, origin and axis elements
         return fig
-
-    def export(self) -> None:
-        """Export Nasu Waveguide objects.
-
-        The export the list of Nasu Waveguide objects into a pickle file. The objects are exported in an ``EXPORT``
-        directory.
-
-        Returns
-        -------
-            None
-        """
-        super()._export(
-            obj=self.obj_list,
-            filename=self._param['filename'],
-            export_path=self.CWD,
-            export_dir='EXPORT',
-        )
 
     def pgm(self, verbose: bool = False) -> None:
         """Export to PGM file.
@@ -1865,6 +1898,19 @@ class MarkerWriter(Writer):
         self._fabtime: float = 0.0
 
     @property
+    def objs(self) -> list[Any]:
+        """Marker objects.
+
+        Property for returning the Marker objects contained inside a MarkerWriter.
+
+        Returns
+        -------
+        list
+           List of Marker objects.
+        """
+        return self.obj_list
+
+    @property
     def fab_time(self) -> float:
         """Marker fabrication time.
 
@@ -1989,17 +2035,6 @@ class MarkerWriter(Writer):
         fig = self._plot3d_mk(fig=fig, style=style)
         fig = super().standard_3d_figure_update(fig)  # Add glass, origin and axis elements
         return fig
-
-    def export(self) -> None:
-        """Export Marker objects.
-
-        The export the list of Marker objects into a pickle file. The objects are exported in an ``EXPORT`` directory.
-
-        Returns
-        -------
-            None
-        """
-        super()._export(obj=self.obj_list, filename=self._param['filename'], export_path=self.CWD, export_dir='EXPORT')
 
     def pgm(self, verbose: bool = False) -> None:
         """Export to PGM file.

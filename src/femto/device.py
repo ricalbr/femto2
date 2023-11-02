@@ -51,10 +51,7 @@ class Device:
             UTrenchColumn: UTrenchWriter(utc_list=[], **param),
             Marker: MarkerWriter(mk_list=[], **param),
         }
-        try:
-            logger.info(f'Instantiate device {self._param["filename"].rsplit(".", 1)[0]}.')
-        except KeyError:
-            logger.error('Filename not given.')
+        logger.info(f'Instantiate device {self._param["filename"].rsplit(".", 1)[0]}.')
 
     def append(self, obj: Any) -> None:
         """Append object to Device.
@@ -174,13 +171,10 @@ class Device:
         logger.info('Plotting 3D objects...')
         self.fig = go.Figure()
         for key, writer in self.writers.items():
-            try:
-                logger.debug(f'Plot 3D object from {writer}.')
-                self.fig = writer.plot3d(self.fig)
-                logger.debug('Update 3D figure.')
-                self.fig = writer.standard_3d_figure_update(self.fig)
-            except NotImplementedError:
-                logger.error(f'3D plot for {key} not yet implemented.\n')
+            logger.debug(f'Plot 3D object from {writer}.')
+            self.fig = writer.plot3d(self.fig)
+            logger.debug('Update 3D figure.')
+            self.fig = writer.standard_3d_figure_update(self.fig)
         if show:
             logger.debug('Show 3D plot.')
             self.fig.show()
@@ -213,7 +207,7 @@ class Device:
         if verbose:
             logger.info('Export .pgm files completed.\n')
 
-    def export(self, verbose: bool = False, **kwargs) -> None:
+    def export(self, verbose: bool = False, export_dir: str = 'EXPORT', **kwargs) -> None:
         """Export objects to pickle files.
 
         Export all the objects stored in ``Device`` class as a `pickle` file.
@@ -222,6 +216,8 @@ class Device:
         ----------
         verbose : bool, optional
             Boolean flag to print informations during the export operation.
+        export_dir: str, optional
+            Name of the directory inside which export objects.
 
         Returns
         -------
@@ -233,7 +229,7 @@ class Device:
                 logger.info(f'Exporting {key.__name__} objects...')
 
             writer = cast(Union[WaveguideWriter, NasuWriter, TrenchWriter, UTrenchWriter, MarkerWriter], writer)
-            writer.export()
+            writer.export(export_dir=export_dir)
         if verbose:
             logger.info('Export objects completed.\n')
 
@@ -311,21 +307,15 @@ class Device:
         objs = []
 
         for root, dirs, files in os.walk(folder):
-            files.sort()
             if not files:
-                raise ValueError(f'No file is present in the given directory {folder}.')
+                logger.warning(f'No file is present in the given directory {folder}.')
             for file in files:
                 if verbose and file:
                     logger.info(f'Loading {file} object...')
-
                 filename = pathlib.Path(root) / file
                 with open(filename, 'rb') as f:
-                    tmp = dill.load(f)
-                try:
-                    typ = types[tmp['_id']]
-                except KeyError:
-                    raise KeyError(f'Cannot load {file} file without ID.')
-                objs.append(typ.from_dict(tmp))
+                    objs.append(dill.load(f))
+
         dev.append(objs)
         if verbose:
             logger.info('Loading objects completed.\n')
