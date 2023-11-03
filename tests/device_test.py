@@ -4,6 +4,7 @@ import pathlib
 from contextlib import nullcontext as does_not_raise
 from pathlib import Path
 
+import dill
 import pytest
 from femto.curves import sin
 from femto.device import Device
@@ -403,12 +404,21 @@ def test_device_load_verbose(device, list_wg, list_mk, gc_param) -> None:
     (Path().cwd() / 'EXPORT').rmdir()
 
 
-def test_device_load_empty(device, gc_param) -> None:
+def test_device_load_empty(list_wg, list_mk, list_tcol, gc_param) -> None:
+
+    device = Device(**gc_param)
+    device.extend(list_tcol)
+    device.extend(list_wg)
+    device.extend(list_mk)
     device.export(verbose=True)
+    del device
 
     fn = Path().cwd() / 'EXPORT' / 'testCell'
 
     d2 = Device.load_objects(fn, gc_param, verbose=True)
+    # assert d2.writers[Waveguide].obj_list == list_wg
+    # assert d2.writers[TrenchColumn].obj_list == list_tcol
+    # assert d2.writers[Marker].obj_list == list_mk
 
     for root, dirs, files in os.walk(fn):
         for file in files:
