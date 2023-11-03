@@ -112,7 +112,7 @@ def test_load(param) -> None:
         dill.dump(lp1.__dict__, f)
 
     lp2 = LaserPath.load(fn)
-    assert type(lp1) == type(lp2)
+    assert isinstance(lp1, type(lp2))
     assert sorted(lp1.__dict__) == sorted(lp2.__dict__)
     fn.unlink()
 
@@ -531,7 +531,7 @@ def test_pickle(laser_path) -> None:
 
     with open(filename, 'rb') as f:
         lp = dill.load(f)
-    assert type(lp) == type(laser_path)
+    assert isinstance(lp, type(laser_path))
     filename.unlink()
 
 
@@ -542,5 +542,5 @@ def test_pickle_as_dict(laser_path) -> None:
 
     with open(filename, 'rb') as f:
         lp = dill.load(f)
-    assert type(lp) == dict
+    assert isinstance(lp, dict)
     filename.unlink()
