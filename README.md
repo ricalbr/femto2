@@ -48,6 +48,7 @@ Here a brief example on how to use the library.
 First, import all the required modules
 
 ```python
+from femto.curves import sin
 from femto.device import Device
 from femto.pgmcompiler import PGMCompiler
 from femto.waveguide import Waveguide
@@ -85,7 +86,7 @@ for i in range(6):
     wg = Waveguide(**PARAM_WG)
     wg.start([-2, 5+i*0.080, 0.500])
     wg.linear([10, 0, 0], mode='INC')
-    wg.arc_mzi((-1)**i * 0.037)
+    wg.mzi(dy=(-1)**i * 0.037, dz=0, fx=sin)
     wg.linear([27, 5+i*0.080, 0.500], mode='ABS')
     wg.end()
     wgs.append(wg)
