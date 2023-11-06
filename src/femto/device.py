@@ -40,7 +40,6 @@ class Device:
     """
 
     def __init__(self, **param) -> None:
-        self._param: dict[str, Any] = dict(**param)
         self.unparsed_objects: list[Any] = []
         self.fig: go.Figure | None = None
         self.fabrication_time: float = 0.0
@@ -51,6 +50,8 @@ class Device:
             Waveguide: WaveguideWriter(wg_list=[], **param),
             NasuWaveguide: NasuWriter(nw_list=[], **param),
         }
+
+        self._param: dict[str, Any] = dict(**param)
         logger.info(f'Instantiate device {self._param["filename"].rsplit(".", 1)[0]}.')
 
     def append(self, obj: Any) -> None:
@@ -211,17 +212,17 @@ class Device:
         if verbose:
             logger.info('Export .pgm files completed.\n')
 
-    def export(self, verbose: bool = False, export_dir: str = 'EXPORT', **kwargs) -> None:
+    def export(self, export_dir: str = 'EXPORT', verbose: bool = False, **kwargs) -> None:
         """Export objects to pickle files.
 
         Export all the objects stored in ``Device`` class as a `pickle` file.
 
         Parameters
         ----------
-        verbose : bool, optional
-            Boolean flag to print informations during the export operation.
         export_dir: str, optional
             Name of the directory inside which export objects.
+        verbose : bool, optional
+            Boolean flag to print informations during the export operation.
 
         Returns
         -------
