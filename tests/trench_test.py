@@ -650,8 +650,8 @@ def test_utrenchcol_default() -> None:
     assert tcol.speed_pos == float(2.0)
     assert tcol.n_pillars == int(0)
     assert tcol.pillar_width == float(0.040)
-    assert tcol.trenchbed == []
 
+    assert tcol._trenchbed == []
     assert tcol.CWD == Path.cwd()
     assert tcol._trench_list == []
 
@@ -680,8 +680,8 @@ def test_utrenchcol_param(uparam) -> None:
     assert tcol.speed_pos == float(0.5)
     assert tcol.n_pillars == int(4)
     assert tcol.pillar_width == float(0.044)
-    assert tcol.trenchbed == []
 
+    assert tcol._trenchbed == []
     assert tcol.CWD == Path.cwd()
     assert tcol._trench_list == []
 
@@ -711,9 +711,9 @@ def test_u_dig() -> None:
     for (t, c) in zip(utc._trench_list, comp_box):
         assert normalize_polygon(c).equals_exact(t.block, tolerance=1e-8)
         assert almost_equal(normalize_polygon(c), t.block)
-    assert utc.trenchbed is not []
+    assert utc.trench_bed is not []
 
-    assert len(utc.trenchbed) == utc.n_pillars + 1
+    assert len(utc.trench_bed) == utc.n_pillars + 1
 
 
 def test_u_dig_no_pillars() -> None:
@@ -737,9 +737,9 @@ def test_u_dig_no_pillars() -> None:
     for (t, c) in zip(utc._trench_list, comp_box):
         assert normalize_polygon(c).equals_exact(t.block, tolerance=1e-8)
         assert almost_equal(normalize_polygon(c), t.block)
-    assert utc.trenchbed is not []
+    assert utc.trench_bed is not []
 
-    assert len(utc.trenchbed) == utc.n_pillars + 1
+    assert len(utc.trench_bed) == utc.n_pillars + 1
 
 
 def test_u_dig_no_trench() -> None:
@@ -754,8 +754,8 @@ def test_u_dig_no_trench() -> None:
         'n_pillars': 0,
     }
     utc = UTrenchColumn(**p)
-    assert utc.trenchbed_shape() is None
-    assert utc.trenchbed == []
+    assert utc.define_trench_bed() is None
+    assert utc.trench_bed == []
 
 
 @pytest.mark.parametrize(

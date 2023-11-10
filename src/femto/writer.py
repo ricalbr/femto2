@@ -869,7 +869,7 @@ class UTrenchWriter(TrenchWriter):
 
     def __init__(self, utc_list: UTrenchColumn | list[UTrenchColumn], dirname: str = 'U-TRENCH', **param) -> None:
         super().__init__(tc_list=utc_list, dirname=dirname, **param)
-        self.beds: list[Trench] = [ubed for col in utc_list for ubed in col.trenchbed]
+        self.beds: list[Trench] = [ubed for col in utc_list for ubed in col._trenchbed]
 
     @property
     def objs(self) -> list[Any]:
@@ -915,8 +915,8 @@ class UTrenchWriter(TrenchWriter):
         self.obj_list.append(obj)
         self.trenches.extend(obj.trench_list)
         logger.debug('Append U-Trench to obj_list.')
-        self.beds.extend(obj.trenchbed)
-        logger.debug('Append Trench bed to trenchbed.')
+        self.beds.extend(obj._trenchbed)
+        logger.debug('Append Trench bed to _trenchbed.')
 
     # Private interface
     def _export_trench_column(self, column: UTrenchColumn, column_path: pathlib.Path) -> None:
@@ -943,7 +943,7 @@ class UTrenchWriter(TrenchWriter):
         super()._export_trench_column(column=column, column_path=column_path)
 
         # Bed script
-        for i, bed_block in enumerate(column.trenchbed):
+        for i, bed_block in enumerate(column._trenchbed):
             logger.debug(f'Export trench bed for {bed_block}.')
 
             x_bed_block = np.array([])
@@ -1041,7 +1041,7 @@ class UTrenchWriter(TrenchWriter):
                 G.remove_program(floor_filename)
 
             # BED
-            for i_bed, bed_block in enumerate(column.trenchbed):
+            for i_bed, bed_block in enumerate(column._trenchbed):
                 x0, y0, z0 = self.transform_points(
                     np.array(bed_block.block.exterior.coords.xy[0])[0],
                     np.array(bed_block.block.exterior.coords.xy[1])[0],

@@ -285,7 +285,7 @@ def test_utrench_writer_init(gc_param, list_utcol) -> None:
     for col in list_utcol:
         for tr in col:
             tcs.append(tr)
-        bds.extend(col.trenchbed)
+        bds.extend(col._trenchbed)
 
     assert twr.obj_list == list_utcol
     assert twr.trenches == tcs
@@ -316,7 +316,7 @@ def test_utrench_writer_append(gc_param, list_utcol) -> None:
         twr.append(col)
     assert twr.obj_list == list_utcol
     assert twr.trenches == flatten([tr for col in listcast(list_utcol) for tr in col])
-    assert twr.beds == flatten([bd for col in listcast(list_utcol) for bd in col.trenchbed])
+    assert twr.beds == flatten([bd for col in listcast(list_utcol) for bd in col._trenchbed])
 
 
 def test_utrench_writer_append_raise(gc_param, list_utcol) -> None:
@@ -330,7 +330,7 @@ def test_utrench_writer_extend(gc_param, list_utcol) -> None:
     twr.extend(list_utcol)
     assert twr.obj_list == list_utcol
     assert twr.trenches == flatten([tr for col in listcast(list_utcol) for tr in col])
-    assert twr.beds == flatten([bd for col in listcast(list_utcol) for bd in col.trenchbed])
+    assert twr.beds == flatten([bd for col in listcast(list_utcol) for bd in col._trenchbed])
     del twr
 
     twr = UTrenchWriter([], **gc_param)
@@ -338,7 +338,7 @@ def test_utrench_writer_extend(gc_param, list_utcol) -> None:
     twr.extend(new_list)
     assert twr.obj_list == list_utcol
     assert twr.trenches == flatten([tr for col in listcast(list_utcol) for tr in col])
-    assert twr.beds == flatten([bd for col in listcast(list_utcol) for bd in col.trenchbed])
+    assert twr.beds == flatten([bd for col in listcast(list_utcol) for bd in col._trenchbed])
     del twr
 
     twr = UTrenchWriter([], **gc_param)
@@ -349,7 +349,7 @@ def test_utrench_writer_extend(gc_param, list_utcol) -> None:
         [tr for col in flatten([list_utcol, list_utcol, list_utcol, list_utcol]) for tr in col]
     )
     assert twr.beds == flatten(
-        [bd for col in flatten([list_utcol, list_utcol, list_utcol, list_utcol]) for bd in col.trenchbed]
+        [bd for col in flatten([list_utcol, list_utcol, list_utcol, list_utcol]) for bd in col._trenchbed]
     )
     del twr
 
@@ -409,7 +409,7 @@ def test_utrench_writer_pgm(gc_param, list_utcol) -> None:
             assert (twr._export_path / f'trenchCol{i_col + 1:03}' / f'trench{i_tr + 1:03}_FLOOR.pgm').is_file()
             (twr._export_path / f'trenchCol{i_col + 1:03}' / f'trench{i_tr + 1:03}_FLOOR.pgm').unlink()
 
-        for i_bed, _ in enumerate(col.trenchbed):
+        for i_bed, _ in enumerate(col._trenchbed):
             assert (twr._export_path / f'trenchCol{i_col + 1:03}' / f'trench_BED_{i_bed + 1:03}.pgm').is_file()
             (twr._export_path / f'trenchCol{i_col + 1:03}' / f'trench_BED_{i_bed + 1:03}.pgm').unlink()
 
