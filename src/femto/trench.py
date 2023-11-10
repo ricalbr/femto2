@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import dataclasses
-import dill
 import inspect
 import math
 import pathlib
@@ -11,6 +10,7 @@ from typing import Generator
 from typing import Iterator
 from typing import TypeVar
 
+import dill
 import largestinteriorrectangle as lir
 import numpy as np
 import numpy.typing as npt
@@ -442,7 +442,7 @@ class TrenchColumn:
         return f'{self.__class__.__name__}@{id(self) & 0xFFFFFF:x}'
 
     @classmethod
-    def from_dict(cls: type[TC], param: dict[str, Any]) -> TC:
+    def from_dict(cls: type[TC], param: dict[str, Any], **kwargs) -> TC:
         """Create an instance of the class from a dictionary.
 
         It takes a class and a dictionary, and returns an instance of the class with the dictionary's keys as the
@@ -450,13 +450,19 @@ class TrenchColumn:
 
         Parameters
         ----------
-        param, dict()
+        param: dict()
             Dictionary mapping values to class attributes.
+        kwargs: optional
+            Series of keyword arguments that will be used to update the param file before the instantiation of the
+            class.
 
         Returns
         -------
         Instance of class
         """
+        # Update parameters with kwargs
+        param.update(kwargs)
+
         logger.debug(f'Create {cls.__name__} object from dictionary.')
         return cls(**{k: v for k, v in param.items() if k in inspect.signature(cls).parameters})
 
@@ -729,11 +735,16 @@ class UTrenchColumn(TrenchColumn):
 
     n_pillars: int = 0  #: number of sustaining pillars
     pillar_width: float = 0.040  #: width of the pillars
-    trenchbed: list[Trench] = dataclasses.field(default_factory=list)  #: List of beds blocks
+
+    _trenchbed: list[Trench] = dataclasses.field(default_factory=list)  #: List of beds blocks
 
     def __post_init__(self) -> None:
         super().__post_init__()
         self._id = 'UTC'  #: U-TrenchColumn identifier.
+
+    @property
+    def trench_bed(self) -> list[Trench]:
+        return self._trenchbed
 
     @property
     def adj_pillar_width(self) -> float:
@@ -766,12 +777,12 @@ class UTrenchColumn(TrenchColumn):
                 for t in self._trench_list
             ]
         )
-        t_bed = sum([b.floor_length / self.speed_floor for b in self.trenchbed])
+        t_bed = sum([b.floor_length / self.speed_floor for b in self._trenchbed])
         fab_time = t_box + t_bed
         logger.debug(f'The total fabrication time for the trench column is {fab_time} s.')
         return fab_time
 
-    def trenchbed_shape(self) -> None:
+    def define_trench_bed(self) -> None:
         """Trenchbed shape.
         This method is used to calculate the shape of the plane beneath the column of trenches based on a list of
         trenches.
@@ -781,7 +792,7 @@ class UTrenchColumn(TrenchColumn):
         This trench bed can be divided into several `beds` divided by structural pillars of a given `x`-width. The
         width and the number of the pillars can be defined by the user when the ``UTrenchColumn`` object is created.
 
-        This method populated the ``self.trenchbed`` attribute of the ``UTrenchColumn`` object.
+        This method populated the ``self._trenchbed`` attribute of the ``UTrenchColumn`` object.
 
 
         Returns
@@ -809,7 +820,7 @@ class UTrenchColumn(TrenchColumn):
 
         # Add bed blocks
         logger.debug('Add trench beds as trench objects with height = 0.015 mm.')
-        self.trenchbed = [
+        self._trenchbed = [
             Trench(
                 block=normalize_polygon(p.buffer(-self.round_corner).buffer(self.round_corner)),
                 height=0.015,
@@ -826,7 +837,7 @@ class UTrenchColumn(TrenchColumn):
         remove: list[int] | None = None,
     ) -> None:
         super()._dig(coords_list, remove)
-        self.trenchbed_shape()
+        self.define_trench_bed()
 
 
 def main() -> None:
@@ -852,7 +863,7 @@ def main() -> None:
     import matplotlib.pyplot as plt
 
     # b = T._trench_list[0]
-    # b = T.trenchbed[0]
+    # b = T._trenchbed[0]
     for tr in utc.trench_list:
         for (x, y) in tr.toolpath():
             plt.plot(x, y)

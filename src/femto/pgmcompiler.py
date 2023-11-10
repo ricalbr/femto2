@@ -4,6 +4,7 @@ import collections
 import contextlib
 import copy
 import dataclasses
+import inspect
 import itertools
 import math
 import pathlib
@@ -116,7 +117,7 @@ class PGMCompiler:
         logger.debug(f'Axis rotation (G84) angle is set to {self.aerotech_angle}.')
 
     @classmethod
-    def from_dict(cls: type[GC], param: dict[str, Any]) -> GC:
+    def from_dict(cls: type[GC], param: dict[str, Any], **kwargs) -> GC:
         """Create an instance of the class from a dictionary.
 
         It takes a class and a dictionary, and returns an instance of the class with the dictionary's keys as the
@@ -124,15 +125,21 @@ class PGMCompiler:
 
         Parameters
         ----------
-        param, dict()
+        param: dict()
             Dictionary mapping values to class attributes.
+        kwargs: optional
+            Series of keyword arguments that will be used to update the param file before the instantiation of the
+            class.
 
         Returns
         -------
         Instance of class
         """
+        # Update parameters with kwargs
+        param.update(kwargs)
+
         logger.debug(f'Create {cls.__name__} object from dictionary.')
-        return cls(**param)
+        return cls(**{k: v for k, v in param.items() if k in inspect.signature(cls).parameters})
 
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}@{id(self) & 0xFFFFFF:x}'

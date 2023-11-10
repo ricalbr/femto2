@@ -57,7 +57,7 @@ class LaserPath:
         return f'{self.__class__.__name__}@{id(self) & 0xFFFFFF:x}'
 
     @classmethod
-    def from_dict(cls: type[LP], param: dict[str, Any]) -> LP:
+    def from_dict(cls: type[LP], param: dict[str, Any], **kwargs) -> LP:
         """Create an instance of the class from a dictionary.
 
         It takes a class and a dictionary, and returns an instance of the class with the dictionary's keys as the
@@ -65,13 +65,19 @@ class LaserPath:
 
         Parameters
         ----------
-        param, dict()
+        param: dict()
             Dictionary mapping values to class attributes.
+        kwargs: optional
+            Series of keyword arguments that will be used to update the param file before the instantiation of the
+            class.
 
         Returns
         -------
         Instance of class
         """
+        # Update parameters with kwargs
+        param.update(kwargs)
+
         logger.debug(f'Create {cls.__name__} object from dictionary.')
         return cls(**{k: v for k, v in param.items() if k in inspect.signature(cls).parameters})
 
