@@ -321,7 +321,7 @@ class Waveguide(LaserPath):
         return self
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(repr=False)
 class NasuWaveguide(Waveguide):
     """Class that computes and stores the coordinates of a Nasu optical waveguide [#]_.
 
@@ -398,8 +398,8 @@ def coupler(param: dict[str, Any], f_profile: Callable, nasu: bool = False) -> l
         List of the two modes of the Directional Coupler.
     """
 
-    mode1 = NasuWaveguide(**param) if nasu else Waveguide(**param)
-    mode2 = NasuWaveguide(**param) if nasu else Waveguide(**param)
+    mode1 = NasuWaveguide.from_dict(param) if nasu else Waveguide.from_dict(param)
+    mode2 = NasuWaveguide.from_dict(param) if nasu else Waveguide.from_dict(param)
 
     lx = (mode1.samplesize[0] - mode1.dx_coupler) / 2
     logger.debug(f'Linear segment lx = {lx}.')
