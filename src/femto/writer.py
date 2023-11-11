@@ -891,7 +891,7 @@ class UTrenchWriter(TrenchWriter):
 
     def __init__(
         self,
-        param=dict[str, Any],
+        param: dict[str, Any],
         objects: UTrenchColumn | list[UTrenchColumn] | None = None,
         dirname: str = 'U-TRENCH',
         **kwargs,
