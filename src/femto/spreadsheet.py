@@ -1,34 +1,25 @@
 from __future__ import annotations
 
 import time
-
-from xlsxwriter import Workbook
-
-from pathlib import Path
-
-from femto import __file__ as fpath
-import numpy as np
-
-from types import TracebackType
-from femto.waveguide import Waveguide
-from femto.marker import Marker
-from femto.helpers import flatten
-from femto.writer import WaveguideWriter, MarkerWriter
-
-from typing import cast
-from typing import Union
-from typing import Any
-import nptyping as nptyp
-
 from dataclasses import dataclass
+from pathlib import Path
+from types import TracebackType
+from typing import Any
+from typing import cast
 
 import femto.device
+import nptyping as npt
+import numpy as np
+from femto import __file__ as fpath
+from femto.helpers import flatten
+from femto.marker import Marker
+from femto.waveguide import Waveguide
+from femto.writer import MarkerWriter
+from femto.writer import WaveguideWriter
+from xlsxwriter import Workbook
 
 
-def generate_all_cols_data() -> nptyp.NDArray[
-    Any,
-    nptyp.Structure["tagname: Str, fullname: Str, unit: Str, width: Int, format: Str"],
-]:
+def generate_all_cols_data() -> npt.NDArray[Any, npt.Structure[str, str, str, int, str]]:
     """
     Create the available columns array from a file.
 
@@ -113,7 +104,7 @@ class Parameter:
     """Class that handles preamble parameters."""
 
     n: str  # Full name
-    v: str = ""  # Value
+    v: str = ''  # Value
     loc: tuple[int, int] = (0, 0)  # Location (1-indexing)
     sz: tuple[int, int] = (0, 0)  # Size (for merged cells)
     fmt: str = 'parval'  # Format
@@ -135,10 +126,10 @@ class Spreadsheet:
     """Class representing the spreadsheet with all entities to fabricate."""
 
     device: femto.device.Device | None = None
-    columns_names: str = ""
-    book_name: str | Path = "my_fabrication.xlsx"
-    sheet_name: str = "Fabrication"
-    font_name: str = "DejaVu Sans Mono"
+    columns_names: str = ''
+    book_name: str | Path = 'my_fabrication.xlsx'
+    sheet_name: str = 'Fabrication'
+    font_name: str = 'DejaVu Sans Mono'
     font_size: int = 11
     suppr_redd_cols: bool = True
     static_preamble: bool = False
@@ -203,12 +194,10 @@ class Spreadsheet:
             self.columns_names = scn
             self.suppr_redd_cols = True
             print(
-                (
-                    'Columns_names not given in spreadsheet initialization.'
-                    f' Will proceed with standard columns names \'{scn}\' '
-                    'and activate the suppr_redd_cols flag to deal with '
-                    'reddundant columns.'
-                )
+                'Columns_names not given in spreadsheet initialization.'
+                f' Will proceed with standard columns names \'{scn}\' '
+                'and activate the suppr_redd_cols flag to deal with '
+                'reddundant columns.'
             )
 
         if 'name' not in self.columns_names:
@@ -370,7 +359,7 @@ class Spreadsheet:
         None.
 
         """
-        with open(Path(fpath).parent / 'utils' / 'saints_data.txt', 'r') as f:
+        with open(Path(fpath).parent / 'utils' / 'saints_data.txt') as f:
             for i in range(367):
                 s = f.readline().strip('\n')
                 # print(f'writing day {i}\t{s}')
@@ -412,9 +401,7 @@ class Spreadsheet:
 
         return dt
 
-    def _get_structure_list(
-        self, str_list: list[Union[Waveguide, Marker]] | None = None
-    ) -> list[Union[Waveguide, Marker]]:
+    def _get_structure_list(self, str_list: list[Waveguide | Marker] | None = None) -> list[Waveguide | Marker]:
 
         assert isinstance(self.device, femto.device.Device)
 
@@ -422,8 +409,8 @@ class Spreadsheet:
             d = self.device
             wgwr = cast(WaveguideWriter, d.writers[Waveguide])
             mkwr = cast(MarkerWriter, d.writers[Marker])
-            wgstrucs = flatten(wgwr.obj_list)
-            mkstrucs = flatten(mkwr.obj_list)
+            wgstrucs = flatten(wgwr.objs)
+            mkstrucs = flatten(mkwr.objs)
         else:
             wgstrucs = [s for s in flatten(str_list) if isinstance(s, Waveguide)]
             mkstrucs = [s for s in flatten(str_list) if isinstance(s, Marker)]
@@ -481,13 +468,15 @@ class Spreadsheet:
             case that suppr_redd_cols is set to True).
 
         """
-        coords = lambda x: {
-            Waveguide: {'yin': x.path3d[1][0], 'yout': x.path3d[1][-1]},
-            Marker: {
-                'yin': (max(x.path3d[0][:]) + min(x.path3d[0][:])) / 2,
-                'yout': (max(x.path3d[1][:]) + min(x.path3d[1][:])) / 2,
-            },
-        }
+
+        def coords(x):
+            return {
+                Waveguide: {'yin': x.path3d[1][0], 'yout': x.path3d[1][-1]},
+                Marker: {
+                    'yin': (max(x.path3d[0][:]) + min(x.path3d[0][:])) / 2,
+                    'yout': (max(x.path3d[1][:]) + min(x.path3d[1][:])) / 2,
+                },
+            }
 
         structures = self._get_structure_list(structures)
         n_structures = len(structures)
@@ -546,7 +535,7 @@ class Spreadsheet:
                 ignored_fields.append(t)
                 continue
 
-            if np.all(table_lines[t] == table_lines[t][0]) and suppr_redd_cols and table_lines[t][0] != "":
+            if np.all(table_lines[t] == table_lines[t][0]) and suppr_redd_cols and table_lines[t][0] != '':
                 # eliminate reddundancies if explicitly requested
                 ignored_fields.append(t)
 
@@ -570,10 +559,8 @@ class Spreadsheet:
         if ignored_fields and verbose:
             fields_left_out = ', '.join(ignored_fields)
             print(
-                (
-                    f'For all entities, the fields {fields_left_out} were not '
-                    'defined, so they will not be shown as table columns.'
-                )
+                f'For all entities, the fields {fields_left_out} were not '
+                'defined, so they will not be shown as table columns.'
             )
 
         self.keep = keep
@@ -654,7 +641,6 @@ class Spreadsheet:
         self._add_line((7, 5), titles, fmt='title')
 
         for i, sdata in enumerate(self.struct_data):
-
             sdata = [
                 s
                 if (isinstance(s, (np.int64, np.float64)) and s < 1e5) or (not isinstance(s, (np.int64, np.float64)))
@@ -768,7 +754,6 @@ class Spreadsheet:
 
 
 def main() -> None:
-
     import numpy as np
     from itertools import product
     from femto.device import Device
@@ -796,11 +781,11 @@ def main() -> None:
         samplesize=PARS_WG.samplesize,
     )
 
-    # SPREADSHEET PARAMETERS
-    PARS_SS = dotdict(
-        book_name='Fabbrication_GHZ_Jack.xlsx',
-        columns_names='name power speed scan depth int_dist yin yout obs',
-    )
+    # # SPREADSHEET PARAMETERS
+    # PARS_SS = dotdict(
+    #     book_name='Fabbrication_GHZ_Jack.xlsx',
+    #     columns_names='name power speed scan depth int_dist yin yout obs',
+    # )
 
     powers = np.linspace(600, 800, 5)
     speeds = [20, 30, 40]
@@ -809,7 +794,6 @@ def main() -> None:
     all_fabb = Device(**PARS_GC)
 
     for i_guide, (p, v, ns) in enumerate(product(powers, speeds, scans)):
-
         start_pt = [LS, 2 + i_guide * 0.08, PARS_WG.depth]
         wg = Waveguide(**PARS_WG, speed=v, scan=ns)
         # wg.power = p  # Can NOT be added inside of the arguments of Waveguide

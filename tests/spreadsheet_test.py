@@ -386,7 +386,7 @@ def test_static_preamble(powers, speeds, scans, gc_param, wg_param, ss_param):
 
         device.append(wg)
 
-    obj_list = device.writers[Waveguide].obj_list
+    obj_list = device.writers[Waveguide]._obj_list
     spsh = Spreadsheet(device=device, book_name=ss_param.book_name)
     spsh._build_struct_list(obj_list, columns_names=ss_param.columns_names, static_preamble=True)
     spsh.close()
@@ -411,7 +411,7 @@ def test_device_init(device, ss_param, init_dev, bsl_dev):
         ss_pars['device'] = device
 
     if bsl_dev:
-        bsl_pars['structures'] = device.writers[Waveguide].obj_list
+        bsl_pars['structures'] = device.writers[Waveguide]._obj_list
 
     exp = does_not_raise() if init_dev else pytest.raises(TypeError)
     with exp:
@@ -427,7 +427,7 @@ def test_device_init(device, ss_param, init_dev, bsl_dev):
 def test_build_structure_list(empty_device, list_wg, list_mk, ss_param, verbose):
     empty_device.extend(list_wg)
 
-    obj_list = empty_device.writers[Waveguide].obj_list
+    obj_list = empty_device.writers[Waveguide]._obj_list
 
     spsh = Spreadsheet(device=empty_device, **ss_param)
     # Use the defaults for suppressing reddundant olumns and static preamble

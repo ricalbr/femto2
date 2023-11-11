@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import abc
+import copy
 import datetime
+import inspect
 import itertools
 import pathlib
 from typing import Any
@@ -383,13 +385,23 @@ class Writer(PGMCompiler, abc.ABC):
 class TrenchWriter(Writer):
     """Trench Writer class."""
 
-    def __init__(self, tc_list: TrenchColumn | list[TrenchColumn], dirname: str = 'TRENCH', **param) -> None:
-        super().__init__(**param)
-        self.obj_list: list[TrenchColumn] = flatten(listcast(tc_list))
-        self.trenches: list[Trench] = [tr for col in self.obj_list for tr in col]
+    def __init__(
+        self,
+        param: dict[str, Any],
+        objects: TrenchColumn | list[TrenchColumn] | None = None,
+        dirname: str = 'TRENCH',
+        **kwargs,
+    ) -> None:
+
+        p = copy.deepcopy(param)
+        p.update(kwargs)
+
+        super().__init__(**{k: v for k, v in p.items() if k in inspect.signature(PGMCompiler).parameters})
         self.dirname: str = dirname
 
-        self._param: dict[str, Any] = dict(**param)
+        self._obj_list: list[TrenchColumn] = [] if objects is None else flatten(listcast(objects))
+        self._trenches: list[Trench] = [tr for col in self._obj_list for tr in col]
+        self._param: dict[str, Any] = p
         self._export_path = self.CWD / (self.export_dir or '') / (self.dirname or '')
         self._fabtime: float = 0.0
 
@@ -404,7 +416,21 @@ class TrenchWriter(Writer):
         list
            List of TrenchColumn objects.
         """
-        return self.obj_list
+        return self._obj_list
+
+    @property
+    def trench_list(self) -> list[Any]:
+        # TODO: test this
+        """Trench objects.
+
+        Property for returning the Trench objects contained inside a TrenchWriter.
+
+        Returns
+        -------
+        list
+           List of Trench objects.
+        """
+        return self._trenches
 
     @property
     def fab_time(self) -> float:
@@ -434,9 +460,9 @@ class TrenchWriter(Writer):
         if not isinstance(obj, TrenchColumn):
             logger.error(f'The object must be a TrenchColumn. {type(obj).__name__} was given.')
             raise TypeError(f'The object must be a TrenchColumn. {type(obj).__name__} was given.')
-        self.obj_list.append(obj)
-        self.trenches.extend(obj.trench_list)
-        logger.debug('Append Trench to obj_list.')
+        self._obj_list.append(obj)
+        self._trenches.extend(obj.trench_list)
+        logger.debug('Append Trench to _obj_list.')
 
     def extend(self, obj: list[TrenchColumn]) -> None:
         """Extend trench list.
@@ -464,7 +490,7 @@ class TrenchWriter(Writer):
     ) -> go.Figure:
         """Plot 2D.
 
-        2D plot of the Trench objects contained in ``self.obj_list``.
+        2D plot of the Trench objects contained in ``self._obj_list``.
 
         Parameters
         ----------
@@ -539,12 +565,12 @@ class TrenchWriter(Writer):
         ``femto.pgmcompiler.PGMCompiler`` : class that convert lists of points to PGM file.
         """
 
-        if not self.obj_list:
+        if not self._obj_list:
             logger.debug('No object in current writer, no PGM file created.')
             return None
 
         # Export each Trench for each TrenchColumn
-        for i_col, col in enumerate(self.obj_list):
+        for i_col, col in enumerate(self._obj_list):
             # Prepare PGM files export directory
             col_dir = self._export_path / f'trenchCol{i_col + 1:03}'
             col_dir.mkdir(parents=True, exist_ok=True)
@@ -556,22 +582,18 @@ class TrenchWriter(Writer):
             # Create FARCALL.pgm file for all trenches in current column
             self._farcall_trench_column(column=col, index=i_col)
 
-        if len(self.obj_list) > 1:
-            logger.debug('Generate MAIN.pgm file.')
+        if len(self._obj_list) > 1:
             # Create a MAIN farcall file, calls all columns .pgm scripts
-            main_param = dict(self._param.copy())
-            main_param['filename'] = self._export_path / 'MAIN.pgm'
-            main_param['aerotech_angle'] = None
-            main_param['rotation_angle'] = None
-
+            logger.debug('Generate MAIN.pgm file.')
             farcall_list = [
-                str(pathlib.Path(col.base_folder) / f'FARCALL{i + 1:03}.pgm') for i, col in enumerate(self.obj_list)
+                str(pathlib.Path(col.base_folder) / f'FARCALL{i + 1:03}.pgm') for i, col in enumerate(self._obj_list)
             ]
-            with PGMCompiler(**main_param) as G:
+            fn = self._export_path / 'MAIN.pgm'
+            with PGMCompiler.from_dict(self._param, filename=fn, aerotech_angle=None, rotation_angle=None) as G:
                 G.farcall_list(farcall_list)
 
         _tc_fab_time = self._fabtime
-        for col in self.obj_list:
+        for col in self._obj_list:
             _tc_fab_time += col.fabrication_time + 10
         self._fabtime = _tc_fab_time
         string = '{:.<49} {}'.format(
@@ -725,7 +747,7 @@ class TrenchWriter(Writer):
         logger.debug('Generate Trench columns FARCALL.pgm file.')
         column_param = dict(self._param.copy())
         column_param['filename'] = self._export_path / f'FARCALL{index + 1:03}.pgm'
-        with PGMCompiler(**column_param) as G:
+        with PGMCompiler.from_dict(column_param) as G:
             G.dvar(['ZCURR'])
 
             for nbox, (i_trc, trench) in list(itertools.product(range(column.nboxz), list(enumerate(column)))):
@@ -805,7 +827,7 @@ class TrenchWriter(Writer):
         tcargs = {**default_tcargs, **style}
 
         logger.debug('Add trenches shapes to figure.')
-        for tr in self.trenches:
+        for tr in self._trenches:
             # get points and transform them
             xt, yt = tr.border
             xt, yt, *_ = self.transform_points(xt, yt, np.zeros_like(xt, dtype=np.float32))
@@ -829,7 +851,7 @@ class TrenchWriter(Writer):
         tcargs = {**default_tcargs, **style}
 
         logger.debug('Add trenches 3D profile to figure.')
-        for tr in self.trenches:
+        for tr in self._trenches:
             # get points and transform them
             xt, yt = tr.border
             xt, yt, *_ = self.transform_points(xt, yt, np.zeros_like(xt, dtype=np.float32))
@@ -867,9 +889,16 @@ class TrenchWriter(Writer):
 class UTrenchWriter(TrenchWriter):
     """U-Trench Writer class."""
 
-    def __init__(self, utc_list: UTrenchColumn | list[UTrenchColumn], dirname: str = 'U-TRENCH', **param) -> None:
-        super().__init__(tc_list=utc_list, dirname=dirname, **param)
-        self.beds: list[Trench] = [ubed for col in utc_list for ubed in col._trenchbed]
+    def __init__(
+        self,
+        param=dict[str, Any],
+        objects: UTrenchColumn | list[UTrenchColumn] | None = None,
+        dirname: str = 'U-TRENCH',
+        **kwargs,
+    ) -> None:
+        obj_list = flatten(listcast(objects)) if objects is not None else []
+        super().__init__(param, objects=objects, dirname=dirname, **kwargs)
+        self.beds: list[Trench] = [ubed for col in obj_list for ubed in col.trench_bed]
 
     @property
     def objs(self) -> list[Any]:
@@ -882,7 +911,7 @@ class UTrenchWriter(TrenchWriter):
         list
            List of UTrenchColumn objects.
         """
-        return self.obj_list
+        return self._obj_list
 
     @property
     def fab_time(self) -> float:
@@ -912,10 +941,10 @@ class UTrenchWriter(TrenchWriter):
         if not isinstance(obj, UTrenchColumn):
             logger.error(f'The object must be a UTrenchColumn. {type(obj).__name__} was given.')
             raise TypeError(f'The object must be a UTrenchColumn. {type(obj).__name__} was given.')
-        self.obj_list.append(obj)
-        self.trenches.extend(obj.trench_list)
-        logger.debug('Append U-Trench to obj_list.')
-        self.beds.extend(obj._trenchbed)
+        self._obj_list.append(obj)
+        self._trenches.extend(obj.trench_list)
+        logger.debug('Append U-Trench to _obj_list.')
+        self.beds.extend(obj.trench_bed)
         logger.debug('Append Trench bed to _trenchbed.')
 
     # Private interface
@@ -943,7 +972,7 @@ class UTrenchWriter(TrenchWriter):
         super()._export_trench_column(column=column, column_path=column_path)
 
         # Bed script
-        for i, bed_block in enumerate(column._trenchbed):
+        for i, bed_block in enumerate(column.trench_bed):
             logger.debug(f'Export trench bed for {bed_block}.')
 
             x_bed_block = np.array([])
@@ -991,7 +1020,7 @@ class UTrenchWriter(TrenchWriter):
         logger.debug('Generate U-Trench columns FARCALL.pgm file.')
         column_param = dict(self._param.copy())
         column_param['filename'] = self._export_path / f'FARCALL{index + 1:03}.pgm'
-        with PGMCompiler(**column_param) as G:
+        with PGMCompiler.from_dict(column_param) as G:
             G.dvar(['ZCURR'])
 
             for nbox, (i_trc, trench) in list(itertools.product(range(column.nboxz), list(enumerate(column)))):
@@ -1041,7 +1070,7 @@ class UTrenchWriter(TrenchWriter):
                 G.remove_program(floor_filename)
 
             # BED
-            for i_bed, bed_block in enumerate(column._trenchbed):
+            for i_bed, bed_block in enumerate(column.trench_bed):
                 x0, y0, z0 = self.transform_points(
                     np.array(bed_block.block.exterior.coords.xy[0])[0],
                     np.array(bed_block.block.exterior.coords.xy[1])[0],
@@ -1122,7 +1151,10 @@ class UTrenchWriter(TrenchWriter):
         default_utcargs = {'dash': 'solid', 'color': '#000000', 'width': 1.5}
         utcargs = {**default_utcargs, **style}
 
-        for tr in self.trenches:
+        if not self._trenches:
+            return fig
+
+        for tr in self._trenches:
             # get points and transform them
             xt, yt = tr.border
             xt, yt, *_ = self.transform_points(xt, yt, np.zeros_like(xt, dtype=np.float32))
@@ -1156,6 +1188,7 @@ class UTrenchWriter(TrenchWriter):
                 )
 
         logger.debug('Add trenches beds 3D shapes to figure.')
+        tr = self._trenches[0]
         for bd in self.beds:
             xt, yt = bd.border
             xt, yt, *_ = self.transform_points(xt, yt, np.zeros_like(xt, dtype=np.float32))
@@ -1181,11 +1214,17 @@ class UTrenchWriter(TrenchWriter):
 class WaveguideWriter(Writer):
     """Waveguide Writer class."""
 
-    def __init__(self, wg_list: list[Waveguide | list[Waveguide]], **param) -> None:
-        super().__init__(**param)
-        self.obj_list: list[Waveguide | list[Waveguide]] = wg_list
+    def __init__(
+        self, param: dict[str, Any], objects: list[Waveguide | list[Waveguide]] | None = None, **kwargs
+    ) -> None:
 
-        self._param: dict[str, Any] = dict(**param)
+        p = copy.deepcopy(param)
+        p.update(kwargs)
+
+        super().__init__(**{k: v for k, v in p.items() if k in inspect.signature(PGMCompiler).parameters})
+
+        self._obj_list: list[Waveguide | list[Waveguide]] = [] if objects is None else flatten(listcast(objects))
+        self._param: dict[str, Any] = p
         self._export_path = self.CWD / (self.export_dir or '')
         self._fabtime: float = 0.0
 
@@ -1200,7 +1239,7 @@ class WaveguideWriter(Writer):
         list
            List of Waveguide objects.
         """
-        return self.obj_list
+        return self._obj_list
 
     @property
     def fab_time(self) -> float:
@@ -1230,8 +1269,8 @@ class WaveguideWriter(Writer):
         if not isinstance(obj, Waveguide):
             logger.error(f'The object must be a Waveguide. {type(obj).__name__} was given.')
             raise TypeError(f'The object must be a Waveguide. {type(obj).__name__} was given.')
-        self.obj_list.append(obj)
-        logger.debug('Append Waveguide to obj_list.')
+        self._obj_list.append(obj)
+        logger.debug('Append Waveguide to _obj_list.')
 
     def extend(self, obj: list[Waveguide] | list[list[Waveguide]]) -> None:
         """Extend waveguide list.
@@ -1257,7 +1296,7 @@ class WaveguideWriter(Writer):
                 f'The waveguide list has too many nested levels ({nest_level(obj)}). The maximum value is 2.'
             )
         if all(isinstance(wg, Waveguide) for wg in flatten(obj)):
-            self.obj_list.extend(obj)
+            self._obj_list.extend(obj)
         else:
             logger.error('Not all the objects in the list are type Waveguides.')
             raise TypeError('All the objects must be of type Waveguide.')
@@ -1267,7 +1306,7 @@ class WaveguideWriter(Writer):
     ) -> go.Figure:
         """Plot 2D.
 
-        2D plot of the Waveguide objects contained in ``self.obj_list``.
+        2D plot of the Waveguide objects contained in ``self._obj_list``.
 
         Parameters
         ----------
@@ -1304,7 +1343,7 @@ class WaveguideWriter(Writer):
     ) -> go.Figure:
         """Plot 3D.
 
-        3D plot of the Waveguide objects contained in ``self.obj_list``.
+        3D plot of the Waveguide objects contained in ``self._obj_list``.
 
         Parameters
         ----------
@@ -1352,21 +1391,20 @@ class WaveguideWriter(Writer):
         -------
         None
 
-        See Also
+        See Als*o
         --------
         ``femto.pgmcompiler.PGMCompiler`` : class that convert lists of points to PGM file.
         """
 
-        if not self.obj_list:
+        if not self.objs:
             logger.debug('No object in current writer, no PGM file created.')
             return
 
         _wg_fab_time = 0.0
-        _wg_param = dict(self._param.copy())
-        _wg_param['filename'] = pathlib.Path(self.filename).stem + '_WG.pgm'
+        fn = pathlib.Path(self.filename).stem + '_WG.pgm'
 
-        with PGMCompiler(**_wg_param) as G:
-            for bunch in self.obj_list:
+        with PGMCompiler.from_dict(self._param, filename=fn) as G:
+            for bunch in self.objs:
                 with G.repeat(listcast(bunch)[0].scan):
                     for wg in listcast(bunch):
                         _wg_fab_time += wg.fabrication_time
@@ -1418,7 +1456,7 @@ class WaveguideWriter(Writer):
         sc_args = {'dash': 'dot', 'color': '#0000ff', 'width': 0.5}
 
         logger.debug('Add waveguides to figure.')
-        for wg in listcast(flatten(self.obj_list)):
+        for wg in listcast(flatten(self._obj_list)):
             logger.debug('Add shutter open trace to figure.')
             x_wg, y_wg, z_wg, _, s = wg.points
             x, y, z = self.transform_points(x_wg, y_wg, z_wg)
@@ -1491,7 +1529,7 @@ class WaveguideWriter(Writer):
         sc_args = {'dash': 'dot', 'color': '#0000ff', 'width': 0.5}
 
         logger.debug('Add waveguides to figure.')
-        for wg in listcast(flatten(self.obj_list)):
+        for wg in listcast(flatten(self._obj_list)):
             x_wg, y_wg, z_wg, _, s = wg.points
             x, y, z = self.transform_points(x_wg, y_wg, z_wg)
             xo = split_mask(x, s.astype(bool))
@@ -1537,11 +1575,15 @@ class WaveguideWriter(Writer):
 class NasuWriter(Writer):
     """NasuWaveguide Writer class."""
 
-    def __init__(self, nw_list: list[NasuWaveguide], **param) -> None:
-        super().__init__(**param)
-        self.obj_list: list[NasuWaveguide] = nw_list
+    def __init__(self, param: dict[str, Any], objects: list[NasuWaveguide] | None = None, **kwargs) -> None:
 
-        self._param: dict[str, Any] = dict(**param)
+        p = copy.deepcopy(param)
+        p.update(kwargs)
+
+        super().__init__(**{k: v for k, v in p.items() if k in inspect.signature(PGMCompiler).parameters})
+
+        self._obj_list: list[NasuWaveguide] = flatten(listcast(objects)) if objects is not None else []
+        self._param: dict[str, Any] = p
         self._export_path = self.CWD / (self.export_dir or '')
         self._fabtime: float = 0.0
 
@@ -1556,7 +1598,7 @@ class NasuWriter(Writer):
         list
            List of NasuWaveguide objects.
         """
-        return self.obj_list
+        return self._obj_list
 
     @property
     def fab_time(self) -> float:
@@ -1586,8 +1628,8 @@ class NasuWriter(Writer):
         if not isinstance(obj, NasuWaveguide):
             logger.error(f'The object must be a NasuWaveguide. {type(obj).__name__} was given.')
             raise TypeError(f'The object must be a NasuWaveguide. {type(obj).__name__} was given.')
-        self.obj_list.append(obj)
-        logger.debug('Append Nasu Waveguide to obj_list.')
+        self._obj_list.append(obj)
+        logger.debug('Append Nasu Waveguide to _obj_list.')
 
     def extend(self, obj: list[NasuWaveguide]) -> None:
         """Extend Nasu waveguide list.
@@ -1608,7 +1650,7 @@ class NasuWriter(Writer):
             logger.error(f'The object must be a list. {type(obj).__name__} was given.')
             raise TypeError(f'The object must be a list. {type(obj).__name__} was given.')
         if all(isinstance(wg, NasuWaveguide) for wg in flatten(obj)):
-            self.obj_list.extend(obj)
+            self._obj_list.extend(obj)
         else:
             logger.error('Not all the objects of the list are type NasuWaveguide.')
             raise TypeError('All the objects must be of type NasuWaveguide.')
@@ -1618,7 +1660,7 @@ class NasuWriter(Writer):
     ) -> go.Figure:
         """Plot 2D.
 
-        2D plot of the NasuWaveguide objects contained in ``self.obj_list``.
+        2D plot of the NasuWaveguide objects contained in ``self._obj_list``.
 
         Parameters
         ----------
@@ -1655,7 +1697,7 @@ class NasuWriter(Writer):
     ) -> go.Figure:
         """Plot 3D.
 
-        3D plot of the NasuWaveguide objects contained in ``self.obj_list``.
+        3D plot of the NasuWaveguide objects contained in ``self._obj_list``.
 
         Parameters
         ----------
@@ -1708,16 +1750,15 @@ class NasuWriter(Writer):
         ``femto.pgmcompiler.PGMCompiler`` : class that convert lists of points to PGM file.
         """
 
-        if not self.obj_list:
+        if not self._obj_list:
             logger.debug('No object in current writer, no PGM file created.')
             return
 
         _nwg_fab_time = 0.0
-        _nwg_param = dict(self._param.copy())
-        _nwg_param['filename'] = pathlib.Path(self.filename).stem + '_NASU.pgm'
+        fn = pathlib.Path(self.filename).stem + '_NASU.pgm'
 
-        with PGMCompiler(**_nwg_param) as G:
-            for nwg in self.obj_list:
+        with PGMCompiler.from_dict(self._param, filename=fn) as G:
+            for nwg in self._obj_list:
                 for shift in nwg.adj_scan_order:
                     _nwg_fab_time += nwg.fabrication_time
                     dx, dy, dz = nwg.adj_scan_shift
@@ -1770,7 +1811,7 @@ class NasuWriter(Writer):
         sc_args = {'dash': 'dot', 'color': '#0000ff', 'width': 0.5}
 
         logger.debug('Add Nasu waveguides to figure.')
-        for nwg in listcast(flatten(self.obj_list)):
+        for nwg in listcast(flatten(self._obj_list)):
             for shift in nwg.adj_scan_order:
                 dx, dy, dz = nwg.adj_scan_shift
                 coord_shift = np.array([dx, dy, dz, 0, 0]).reshape(-1, 1)
@@ -1842,7 +1883,7 @@ class NasuWriter(Writer):
         sc_args = {'dash': 'dot', 'color': '#0000ff', 'width': 0.5}
 
         logger.debug('Add waveguides to figure.')
-        for nwg in listcast(flatten(self.obj_list)):
+        for nwg in listcast(flatten(self._obj_list)):
             for shift in nwg.adj_scan_order:
                 dx, dy, dz = nwg.adj_scan_shift
                 coord_shift = np.array([dx, dy, dz, 0, 0]).reshape(-1, 1)
@@ -1889,11 +1930,15 @@ class NasuWriter(Writer):
 class MarkerWriter(Writer):
     """Marker Writer class."""
 
-    def __init__(self, mk_list: list[Marker], **param) -> None:
-        super().__init__(**param)
-        self.obj_list: list[Marker] = flatten(mk_list)
+    def __init__(self, param: dict[str, Any], objects: list[Marker] | None = None, **kwargs) -> None:
 
-        self._param: dict[str, Any] = dict(**param)
+        p = copy.deepcopy(param)
+        p.update(kwargs)
+
+        super().__init__(**{k: v for k, v in p.items() if k in inspect.signature(PGMCompiler).parameters})
+
+        self._obj_list: list[Marker] = flatten(listcast(objects)) if objects is not None else []
+        self._param: dict[str, Any] = p
         self._export_path = self.CWD / (self.export_dir or '')
         self._fabtime: float = 0.0
 
@@ -1908,7 +1953,7 @@ class MarkerWriter(Writer):
         list
            List of Marker objects.
         """
-        return self.obj_list
+        return self._obj_list
 
     @property
     def fab_time(self) -> float:
@@ -1938,8 +1983,8 @@ class MarkerWriter(Writer):
         if not isinstance(obj, Marker):
             logger.error(f'The object must be a Marker. {type(obj).__name__} was given.')
             raise TypeError(f'The object must be a Marker. {type(obj).__name__} was given.')
-        self.obj_list.append(obj)
-        logger.debug('Append Marker to obj_list.')
+        self._obj_list.append(obj)
+        logger.debug('Append Marker to _obj_list.')
 
     def extend(self, obj: list[Marker]) -> None:
         """Extend Marker list.
@@ -1967,7 +2012,7 @@ class MarkerWriter(Writer):
     ) -> go.Figure:
         """Plot 2D.
 
-        2D plot of the Marker objects contained in ``self.obj_list``.
+        2D plot of the Marker objects contained in ``self._obj_list``.
 
         Parameters
         ----------
@@ -2004,7 +2049,7 @@ class MarkerWriter(Writer):
     ) -> go.Figure:
         """Plot 3D.
 
-        3D plot of the Marker objects contained in ``self.obj_list``.
+        3D plot of the Marker objects contained in ``self._obj_list``.
 
         Parameters
         ----------
@@ -2057,16 +2102,15 @@ class MarkerWriter(Writer):
         ``femto.pgmcompiler.PGMCompiler`` : class that convert lists of points to PGM file.
         """
 
-        if not self.obj_list:
+        if not self._obj_list:
             logger.debug('No object in current writer, no PGM file created.')
             return
 
         _mk_fab_time = 0.0
-        _mk_param = dict(self._param.copy())
-        _mk_param['filename'] = pathlib.Path(self.filename).stem + '_MK.pgm'
+        fn = pathlib.Path(self.filename).stem + '_MK.pgm'
 
-        with PGMCompiler(**_mk_param) as G:
-            for idx, mk in enumerate(flatten(self.obj_list)):
+        with PGMCompiler.from_dict(self._param, filename=fn) as G:
+            for idx, mk in enumerate(flatten(self._obj_list)):
                 logger.debug(f'Export {mk}.')
                 with G.repeat(mk.scan):
                     _mk_fab_time += mk.fabrication_time
@@ -2116,7 +2160,7 @@ class MarkerWriter(Writer):
         mk_args = {**default_mkargs, **style}
 
         logger.debug('Add marker trace to figure.')
-        for mk in listcast(flatten(self.obj_list)):
+        for mk in listcast(flatten(self._obj_list)):
             x_wg, y_wg, z_wg, _, s = mk.points
             x, y, z = self.transform_points(x_wg, y_wg, z_wg)
             xo = split_mask(x, s.astype(bool))
@@ -2166,7 +2210,7 @@ class MarkerWriter(Writer):
         mk_args = {**default_mkargs, **style}
 
         logger.debug('Add marker trace to figure.')
-        for mk in listcast(flatten(self.obj_list)):
+        for mk in listcast(flatten(self._obj_list)):
             x_wg, y_wg, z_wg, _, s = mk.points
             x, y, z = self.transform_points(x_wg, y_wg, z_wg)
             xo = split_mask(x, s.astype(bool))
@@ -2214,7 +2258,7 @@ def main() -> None:
         wg.end()
         mzi.append(wg)
 
-    nwr = NasuWriter(mzi, **param_gc)
+    nwr = NasuWriter(param_gc, objects=mzi)
     fig = nwr.plot3d()
     fig.show()
 

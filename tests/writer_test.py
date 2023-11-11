@@ -108,7 +108,7 @@ def test_writer(gc_param) -> None:
     class Dummy(Writer):
         pass
 
-    d = Dummy(**gc_param)
+    d = Dummy(gc_param)
     append = d.append(None)
     extend = d.extend([None])
     plot2d = d.plot2d(None)
@@ -123,7 +123,7 @@ def test_writer(gc_param) -> None:
 
 
 def test_trench_writer_init(gc_param, list_tcol) -> None:
-    twr = TrenchWriter(list_tcol, **gc_param)
+    twr = TrenchWriter(gc_param, list_tcol)
     dirname = 'TRENCH'
     expp = Path.cwd() / dirname
 
@@ -132,8 +132,8 @@ def test_trench_writer_init(gc_param, list_tcol) -> None:
         for tr in col:
             tcs.append(tr)
 
-    assert twr.obj_list == list_tcol
-    assert twr.trenches == tcs
+    assert twr._obj_list == list_tcol
+    assert twr._trenches == tcs
     assert twr.dirname == dirname
 
     assert twr._param == gc_param
@@ -142,11 +142,11 @@ def test_trench_writer_init(gc_param, list_tcol) -> None:
     del twr
 
     dirname = 'test'
-    twr = TrenchWriter([], dirname=dirname, **gc_param)
+    twr = TrenchWriter(gc_param, objects=[], dirname=dirname)
     expp = Path.cwd() / dirname
 
-    assert twr.obj_list == []
-    assert twr.trenches == []
+    assert twr._obj_list == []
+    assert twr._trenches == []
     assert twr.dirname == dirname
 
     assert twr._param == gc_param
@@ -154,43 +154,43 @@ def test_trench_writer_init(gc_param, list_tcol) -> None:
 
 
 def test_trench_writer_append(gc_param, list_tcol) -> None:
-    twr = TrenchWriter([], **gc_param)
+    twr = TrenchWriter(gc_param, objects=[])
     for col in list_tcol:
         twr.append(col)
-    assert twr.obj_list == list_tcol
-    assert twr.trenches == flatten([tr for col in listcast(list_tcol) for tr in col])
+    assert twr._obj_list == list_tcol
+    assert twr._trenches == flatten([tr for col in listcast(list_tcol) for tr in col])
 
 
 def test_trench_writer_append_raise(gc_param, list_tcol) -> None:
-    twr = TrenchWriter([], **gc_param)
+    twr = TrenchWriter(gc_param, objects=[])
     with pytest.raises(TypeError):
         twr.append(list_tcol)
 
 
 def test_trench_writer_extend(gc_param, list_tcol) -> None:
-    twr = TrenchWriter([], **gc_param)
+    twr = TrenchWriter(gc_param, objects=[])
     twr.extend(list_tcol)
-    assert twr.obj_list == list_tcol
-    assert twr.trenches == flatten([tr for col in listcast(list_tcol) for tr in col])
+    assert twr._obj_list == list_tcol
+    assert twr._trenches == flatten([tr for col in listcast(list_tcol) for tr in col])
     del twr
 
-    twr = TrenchWriter([], **gc_param)
+    twr = TrenchWriter(gc_param, objects=[])
     new_list = [[[list_tcol]]]
     twr.extend(new_list)
-    assert twr.obj_list == list_tcol
-    assert twr.trenches == flatten([tr for col in listcast(list_tcol) for tr in col])
+    assert twr._obj_list == list_tcol
+    assert twr._trenches == flatten([tr for col in listcast(list_tcol) for tr in col])
     del twr
 
-    twr = TrenchWriter([], **gc_param)
+    twr = TrenchWriter(gc_param, objects=[])
     new_list = [[[list_tcol, list_tcol], list_tcol], list_tcol]
     twr.extend(new_list)
-    assert twr.obj_list == flatten([list_tcol, list_tcol, list_tcol, list_tcol])
-    assert twr.trenches == flatten([tr for col in flatten([list_tcol, list_tcol, list_tcol, list_tcol]) for tr in col])
+    assert twr._obj_list == flatten([list_tcol, list_tcol, list_tcol, list_tcol])
+    assert twr._trenches == flatten([tr for col in flatten([list_tcol, list_tcol, list_tcol, list_tcol]) for tr in col])
     del twr
 
 
 def test_trench_writer_extend_raise(gc_param, list_tcol) -> None:
-    twr = TrenchWriter([], **gc_param)
+    twr = TrenchWriter(gc_param, objects=[])
     with pytest.raises(TypeError):
         l_t_col = (list_tcol, TrenchColumn(1, 2, 3))
         twr.extend(l_t_col)
@@ -201,11 +201,11 @@ def test_trench_writer_plot2d(gc_param, list_tcol) -> None:
 
     fig = go.Figure()
 
-    twr = TrenchWriter(list_tcol, **gc_param)
+    twr = TrenchWriter(gc_param, objects=list_tcol)
     assert twr.plot2d(fig=fig) is not None
     del twr
 
-    twr = TrenchWriter(list_tcol, **gc_param)
+    twr = TrenchWriter(gc_param, objects=list_tcol)
     assert twr.plot2d() is not None
     del twr
 
@@ -214,23 +214,23 @@ def test_trench_writer_plot3d(gc_param, list_tcol) -> None:
     from plotly import graph_objs as go
 
     fig = go.Figure()
-    twr = TrenchWriter(list_tcol, **gc_param)
+    twr = TrenchWriter(gc_param, objects=list_tcol)
     assert twr.plot3d(fig=fig) is not None
     del twr, fig
 
-    twr = TrenchWriter(list_tcol, **gc_param)
+    twr = TrenchWriter(gc_param, objects=list_tcol)
     assert twr.plot3d() is not None
     del twr
 
 
 def test_trench_writer_pgm_empty(gc_param) -> None:
-    twr = TrenchWriter(tc_list=[], **gc_param)
+    twr = TrenchWriter(gc_param, objects=[])
     assert twr.pgm() is None
     assert not twr._export_path.is_dir()
 
 
 def test_trench_writer_pgm(gc_param, list_tcol) -> None:
-    twr = TrenchWriter(tc_list=list_tcol, **gc_param)
+    twr = TrenchWriter(gc_param, objects=list_tcol)
     twr.pgm()
 
     assert twr._export_path.is_dir()
@@ -251,7 +251,7 @@ def test_trench_writer_pgm(gc_param, list_tcol) -> None:
 
 def test_trench_writer_pgm_single_col(gc_param, list_tcol) -> None:
     list_cols = [list_tcol[0]]
-    twr = TrenchWriter(tc_list=list_cols, **gc_param)
+    twr = TrenchWriter(gc_param, objects=list_cols)
     twr.pgm()
 
     assert twr._export_path.is_dir()
@@ -270,13 +270,13 @@ def test_trench_writer_pgm_single_col(gc_param, list_tcol) -> None:
 
 
 def test_trench_writer_export_array2d_raise(gc_param, list_tcol) -> None:
-    twr = TrenchWriter(tc_list=list_tcol, **gc_param)
+    twr = TrenchWriter(gc_param, objects=list_tcol)
     with pytest.raises(ValueError):
         twr.export_array2d(filename=None, x=np.array([1, 2, 3]), y=np.array([1, 2, 3]), speed=4)
 
 
 def test_utrench_writer_init(gc_param, list_utcol) -> None:
-    twr = UTrenchWriter(list_utcol, **gc_param)
+    twr = UTrenchWriter(gc_param, objects=list_utcol)
     dirname = 'U-TRENCH'
     expp = Path.cwd() / dirname
 
@@ -287,8 +287,8 @@ def test_utrench_writer_init(gc_param, list_utcol) -> None:
             tcs.append(tr)
         bds.extend(col._trenchbed)
 
-    assert twr.obj_list == list_utcol
-    assert twr.trenches == tcs
+    assert twr._obj_list == list_utcol
+    assert twr._trenches == tcs
     assert twr.beds == bds
     assert twr.dirname == dirname
 
@@ -298,11 +298,11 @@ def test_utrench_writer_init(gc_param, list_utcol) -> None:
     del twr
 
     dirname = 'test'
-    twr = UTrenchWriter([], dirname=dirname, **gc_param)
+    twr = UTrenchWriter(gc_param, objects=[], dirname=dirname)
     expp = Path.cwd() / dirname
 
-    assert twr.obj_list == []
-    assert twr.trenches == []
+    assert twr._obj_list == []
+    assert twr._trenches == []
     assert twr.beds == []
     assert twr.dirname == dirname
 
@@ -311,41 +311,41 @@ def test_utrench_writer_init(gc_param, list_utcol) -> None:
 
 
 def test_utrench_writer_append(gc_param, list_utcol) -> None:
-    twr = UTrenchWriter([], **gc_param)
+    twr = UTrenchWriter(gc_param, objects=[])
     for col in list_utcol:
         twr.append(col)
-    assert twr.obj_list == list_utcol
-    assert twr.trenches == flatten([tr for col in listcast(list_utcol) for tr in col])
+    assert twr._obj_list == list_utcol
+    assert twr._trenches == flatten([tr for col in listcast(list_utcol) for tr in col])
     assert twr.beds == flatten([bd for col in listcast(list_utcol) for bd in col._trenchbed])
 
 
 def test_utrench_writer_append_raise(gc_param, list_utcol) -> None:
-    twr = UTrenchWriter([], **gc_param)
+    twr = UTrenchWriter(gc_param, objects=[])
     with pytest.raises(TypeError):
         twr.append(list_utcol)
 
 
 def test_utrench_writer_extend(gc_param, list_utcol) -> None:
-    twr = UTrenchWriter([], **gc_param)
+    twr = UTrenchWriter(gc_param, objects=[])
     twr.extend(list_utcol)
-    assert twr.obj_list == list_utcol
-    assert twr.trenches == flatten([tr for col in listcast(list_utcol) for tr in col])
+    assert twr._obj_list == list_utcol
+    assert twr._trenches == flatten([tr for col in listcast(list_utcol) for tr in col])
     assert twr.beds == flatten([bd for col in listcast(list_utcol) for bd in col._trenchbed])
     del twr
 
-    twr = UTrenchWriter([], **gc_param)
+    twr = UTrenchWriter(gc_param, objects=[])
     new_list = [[[list_utcol]]]
     twr.extend(new_list)
-    assert twr.obj_list == list_utcol
-    assert twr.trenches == flatten([tr for col in listcast(list_utcol) for tr in col])
+    assert twr._obj_list == list_utcol
+    assert twr._trenches == flatten([tr for col in listcast(list_utcol) for tr in col])
     assert twr.beds == flatten([bd for col in listcast(list_utcol) for bd in col._trenchbed])
     del twr
 
-    twr = UTrenchWriter([], **gc_param)
+    twr = UTrenchWriter(gc_param, objects=[])
     new_list = [[[list_utcol, list_utcol], list_utcol], list_utcol]
     twr.extend(new_list)
-    assert twr.obj_list == flatten([list_utcol, list_utcol, list_utcol, list_utcol])
-    assert twr.trenches == flatten(
+    assert twr._obj_list == flatten([list_utcol, list_utcol, list_utcol, list_utcol])
+    assert twr._trenches == flatten(
         [tr for col in flatten([list_utcol, list_utcol, list_utcol, list_utcol]) for tr in col]
     )
     assert twr.beds == flatten(
@@ -355,7 +355,7 @@ def test_utrench_writer_extend(gc_param, list_utcol) -> None:
 
 
 def test_utrench_writer_extend_raise(gc_param, list_utcol) -> None:
-    twr = UTrenchWriter([], **gc_param)
+    twr = UTrenchWriter(gc_param, objects=[])
     with pytest.raises(TypeError):
         l_ut_col = (list_utcol, UTrenchColumn(1, 2, 3))
         twr.extend(l_ut_col)
@@ -366,11 +366,11 @@ def test_utrench_writer_plot2d(gc_param, list_utcol) -> None:
 
     fig = go.Figure()
 
-    twr = UTrenchWriter(list_utcol, **gc_param)
+    twr = UTrenchWriter(gc_param, list_utcol)
     assert twr.plot2d(fig=fig) is not None
     del twr
 
-    twr = UTrenchWriter(list_utcol, **gc_param)
+    twr = UTrenchWriter(gc_param, list_utcol)
     assert twr.plot2d() is not None
     del twr
 
@@ -379,23 +379,23 @@ def test_utrench_writer_plot3d(gc_param, list_utcol) -> None:
     from plotly import graph_objs as go
 
     fig = go.Figure()
-    twr = UTrenchWriter(list_utcol, **gc_param)
+    twr = UTrenchWriter(gc_param, list_utcol)
     assert twr.plot3d(fig=fig) is not None
     del twr, fig
 
-    twr = UTrenchWriter(list_utcol, **gc_param)
+    twr = UTrenchWriter(gc_param, list_utcol)
     assert twr.plot3d() is not None
     del twr
 
 
 def test_utrench_writer_pgm_empty(gc_param) -> None:
-    twr = UTrenchWriter(utc_list=[], **gc_param)
+    twr = UTrenchWriter(gc_param, objects=[])
     assert twr.pgm() is None
     assert not twr._export_path.is_dir()
 
 
 def test_utrench_writer_pgm(gc_param, list_utcol) -> None:
-    twr = UTrenchWriter(utc_list=list_utcol, **gc_param)
+    twr = UTrenchWriter(gc_param, list_utcol)
     twr.pgm()
 
     assert twr._export_path.is_dir()
@@ -421,16 +421,16 @@ def test_utrench_writer_pgm(gc_param, list_utcol) -> None:
 
 
 def test_utrench_writer_export_array2d_raise(gc_param, list_utcol) -> None:
-    twr = UTrenchWriter(utc_list=list_utcol, **gc_param)
+    twr = UTrenchWriter(gc_param, list_utcol)
     with pytest.raises(ValueError):
         twr.export_array2d(filename=None, x=np.array([1, 2, 3]), y=np.array([1, 2, 3]), speed=4)
 
 
 def test_waveguide_writer_init(gc_param, list_wg) -> None:
-    wwr = WaveguideWriter(list_wg, **gc_param)
+    wwr = WaveguideWriter(gc_param, objects=list_wg)
     expp = Path.cwd()
 
-    assert wwr.obj_list == list_wg
+    assert wwr._obj_list == list_wg
 
     assert wwr._param == gc_param
     assert wwr._export_path == expp
@@ -438,38 +438,38 @@ def test_waveguide_writer_init(gc_param, list_wg) -> None:
     del wwr
 
     dirname = 'test'
-    wwr = WaveguideWriter([], export_dir=dirname, **gc_param)
+    wwr = WaveguideWriter(gc_param, objects=[], export_dir=dirname)
     expp = Path.cwd() / dirname
 
-    assert wwr.obj_list == []
+    assert wwr._obj_list == []
 
     assert wwr._param == dict(export_dir=dirname, **gc_param)
     assert wwr._export_path == expp
 
 
 def test_waveguide_writer_append(gc_param, list_wg) -> None:
-    wwr = WaveguideWriter([], **gc_param)
+    wwr = WaveguideWriter(gc_param)
     for wg in list_wg:
         wwr.append(wg)
-    assert wwr.obj_list == list_wg
+    assert wwr._obj_list == list_wg
 
 
 def test_waveguide_writer_append_raise(gc_param, list_wg) -> None:
-    wwr = WaveguideWriter([], **gc_param)
+    wwr = WaveguideWriter(gc_param)
     with pytest.raises(TypeError):
         wwr.append(list_wg)
 
 
 def test_waveguide_writer_extend(gc_param, list_wg) -> None:
-    wwr = WaveguideWriter([], **gc_param)
+    wwr = WaveguideWriter(gc_param)
     wwr.extend(list_wg)
-    assert wwr.obj_list == list_wg
+    assert wwr._obj_list == list_wg
     del wwr
 
-    wwr = WaveguideWriter([], **gc_param)
+    wwr = WaveguideWriter(gc_param)
     new_list = [list_wg, list_wg, list_wg[0]]
     wwr.extend(new_list)
-    assert wwr.obj_list == new_list
+    assert wwr._obj_list == new_list
 
 
 @pytest.mark.parametrize(
@@ -486,7 +486,7 @@ def test_waveguide_writer_extend(gc_param, list_wg) -> None:
     ],
 )
 def test_waveguide_writer_extend_raise(gc_param, l_wg, expectation) -> None:
-    wwr = WaveguideWriter([], **gc_param)
+    wwr = WaveguideWriter(gc_param)
     with expectation:
         wwr.extend(l_wg)
 
@@ -496,11 +496,11 @@ def test_waveguide_writer_plot2d(gc_param, list_wg) -> None:
 
     fig = go.Figure()
 
-    wwr = WaveguideWriter(list_wg, **gc_param)
+    wwr = WaveguideWriter(gc_param, objects=list_wg)
     assert wwr.plot2d(fig=fig) is not None
     del wwr
 
-    wwr = WaveguideWriter(list_wg, **gc_param)
+    wwr = WaveguideWriter(gc_param, objects=list_wg)
     assert wwr.plot2d() is not None
     del wwr
 
@@ -510,17 +510,17 @@ def test_waveguide_writer_plot3d(gc_param, list_wg) -> None:
 
     fig = go.Figure()
 
-    wwr = WaveguideWriter(list_wg, **gc_param)
+    wwr = WaveguideWriter(gc_param, objects=list_wg)
     assert wwr.plot3d(fig=fig) is not None
     del wwr
 
-    wwr = WaveguideWriter(list_wg, **gc_param)
+    wwr = WaveguideWriter(gc_param, objects=list_wg)
     assert wwr.plot3d() is not None
     del wwr
 
 
 def test_waveguide_writer_pgm(gc_param, list_wg) -> None:
-    wwr = WaveguideWriter(list_wg, **gc_param)
+    wwr = WaveguideWriter(gc_param, objects=list_wg)
     wwr.pgm()
 
     fp = Path(wwr.filename).stem + '_WG.pgm'
@@ -531,7 +531,7 @@ def test_waveguide_writer_pgm(gc_param, list_wg) -> None:
 
 
 def test_waveguide_writer_pgm_empty(gc_param) -> None:
-    wwr = WaveguideWriter([], **gc_param)
+    wwr = WaveguideWriter(gc_param)
     wwr.pgm()
 
     fp = Path(wwr.filename).stem + '_WG.pgm'
@@ -541,10 +541,10 @@ def test_waveguide_writer_pgm_empty(gc_param) -> None:
 
 
 def test_nasu_writer_init(gc_param, list_ng) -> None:
-    wwr = NasuWriter(list_ng, **gc_param)
+    wwr = NasuWriter(gc_param, objects=list_ng)
     expp = Path.cwd()
 
-    assert wwr.obj_list == list_ng
+    assert wwr._obj_list == list_ng
 
     assert wwr._param == gc_param
     assert wwr._export_path == expp
@@ -552,38 +552,38 @@ def test_nasu_writer_init(gc_param, list_ng) -> None:
     del wwr
 
     dirname = 'test'
-    wwr = NasuWriter([], export_dir=dirname, **gc_param)
+    wwr = NasuWriter(gc_param, export_dir=dirname)
     expp = Path.cwd() / dirname
 
-    assert wwr.obj_list == []
+    assert wwr._obj_list == []
 
     assert wwr._param == dict(export_dir=dirname, **gc_param)
     assert wwr._export_path == expp
 
 
 def test_nasu_writer_append(gc_param, list_ng) -> None:
-    wwr = NasuWriter([], **gc_param)
+    wwr = NasuWriter(gc_param)
     for wg in list_ng:
         wwr.append(wg)
-    assert wwr.obj_list == list_ng
+    assert wwr._obj_list == list_ng
 
 
 def test_nasu_writer_append_raise(gc_param, list_ng) -> None:
-    wwr = NasuWriter([], **gc_param)
+    wwr = NasuWriter(gc_param)
     with pytest.raises(TypeError):
         wwr.append(list_ng)
 
 
 def test_nasu_writer_extend(gc_param, list_ng) -> None:
-    wwr = NasuWriter([], **gc_param)
+    wwr = NasuWriter(gc_param)
     wwr.extend(list_ng)
-    assert wwr.obj_list == list_ng
+    assert wwr._obj_list == list_ng
     del wwr
 
-    wwr = NasuWriter([], **gc_param)
+    wwr = NasuWriter(gc_param)
     new_list = [list_ng, list_ng, list_ng[0]]
     wwr.extend(new_list)
-    assert wwr.obj_list == new_list
+    assert wwr._obj_list == new_list
 
 
 @pytest.mark.parametrize(
@@ -598,7 +598,7 @@ def test_nasu_writer_extend(gc_param, list_ng) -> None:
     ],
 )
 def test_nasu_writer_extend_raise(gc_param, l_nw, expectation) -> None:
-    wwr = NasuWriter([], **gc_param)
+    wwr = NasuWriter(gc_param)
     with expectation:
         wwr.extend(l_nw)
 
@@ -608,11 +608,11 @@ def test_nasu_writer_plot2d(gc_param, list_ng) -> None:
 
     fig = go.Figure()
 
-    wwr = NasuWriter(list_ng, **gc_param)
+    wwr = NasuWriter(gc_param, objects=list_ng)
     assert wwr.plot2d(fig=fig) is not None
     del wwr
 
-    wwr = NasuWriter(list_ng, **gc_param)
+    wwr = NasuWriter(gc_param, objects=list_ng)
     assert wwr.plot2d() is not None
     del wwr
 
@@ -622,17 +622,17 @@ def test_nasu_writer_plot3d(gc_param, list_ng) -> None:
 
     fig = go.Figure()
 
-    wwr = NasuWriter(list_ng, **gc_param)
+    wwr = NasuWriter(gc_param, objects=list_ng)
     assert wwr.plot3d(fig=fig) is not None
     del wwr
 
-    wwr = NasuWriter(list_ng, **gc_param)
+    wwr = NasuWriter(gc_param, objects=list_ng)
     assert wwr.plot3d() is not None
     del wwr
 
 
 def test_nasu_writer_pgm(gc_param, list_ng) -> None:
-    wwr = NasuWriter(list_ng, **gc_param)
+    wwr = NasuWriter(gc_param, objects=list_ng)
     wwr.pgm()
 
     fp = Path(wwr.filename).stem + '_NASU.pgm'
@@ -643,7 +643,7 @@ def test_nasu_writer_pgm(gc_param, list_ng) -> None:
 
 
 def test_nasu_writer_pgm_empty(gc_param) -> None:
-    wwr = NasuWriter([], **gc_param)
+    wwr = NasuWriter(gc_param)
     wwr.pgm()
 
     fp = Path(wwr.filename).stem + '_NASU.pgm'
@@ -653,20 +653,20 @@ def test_nasu_writer_pgm_empty(gc_param) -> None:
 
 
 def test_marker_writer_init(gc_param, list_mk) -> None:
-    mwr = MarkerWriter(list_mk, **gc_param)
+    mwr = MarkerWriter(gc_param, objects=list_mk)
     expp = Path.cwd()
 
-    assert mwr.obj_list == list_mk
+    assert mwr._obj_list == list_mk
 
     assert mwr._param == gc_param
     assert mwr._export_path == expp
 
     del mwr
 
-    mwr = MarkerWriter([[list_mk]], **gc_param)
+    mwr = MarkerWriter(gc_param, objects=[[list_mk]])
     expp = Path.cwd()
 
-    assert mwr.obj_list == list_mk
+    assert mwr._obj_list == list_mk
 
     assert mwr._param == gc_param
     assert mwr._export_path == expp
@@ -674,38 +674,41 @@ def test_marker_writer_init(gc_param, list_mk) -> None:
     del mwr
 
     dirname = 'test'
-    mwr = MarkerWriter([], export_dir=dirname, **gc_param)
+    print()
+    print(gc_param)
+    mwr = MarkerWriter(gc_param, export_dir=dirname)
     expp = Path.cwd() / dirname
 
-    assert mwr.obj_list == []
+    assert mwr._obj_list == []
 
+    print(gc_param)
     assert mwr._param == dict(export_dir=dirname, **gc_param)
     assert mwr._export_path == expp
 
 
 def test_marker_writer_append(gc_param, list_mk) -> None:
-    mwr = MarkerWriter([], **gc_param)
+    mwr = MarkerWriter(gc_param)
     for mk in list_mk:
         mwr.append(mk)
-    assert mwr.obj_list == list_mk
+    assert mwr._obj_list == list_mk
 
 
 def test_marker_writer_append_raise(gc_param, list_mk) -> None:
-    mwr = MarkerWriter([], **gc_param)
+    mwr = MarkerWriter(gc_param)
     with pytest.raises(TypeError):
         mwr.append(list_mk)
 
 
 def test_marker_writer_extend(gc_param, list_mk) -> None:
-    mwr = MarkerWriter([], **gc_param)
+    mwr = MarkerWriter(gc_param)
     mwr.extend(list_mk)
-    assert mwr.obj_list == list_mk
+    assert mwr._obj_list == list_mk
     del mwr
 
-    mwr = MarkerWriter([], **gc_param)
+    mwr = MarkerWriter(gc_param)
     new_list = [[list_mk, list_mk, list_mk[0]]]
     mwr.extend(new_list)
-    assert mwr.obj_list == flatten(new_list)
+    assert mwr._obj_list == flatten(new_list)
 
 
 @pytest.mark.parametrize(
@@ -720,7 +723,7 @@ def test_marker_writer_extend(gc_param, list_mk) -> None:
     ],
 )
 def test_marker_writer_extend_raise(gc_param, l_mk, expectation) -> None:
-    mwr = MarkerWriter([], **gc_param)
+    mwr = MarkerWriter(gc_param)
     with expectation:
         mwr.extend(l_mk)
 
@@ -730,11 +733,11 @@ def test_marker_writer_plot2d(gc_param, list_mk) -> None:
 
     fig = go.Figure()
 
-    mwr = MarkerWriter(list_mk, **gc_param)
+    mwr = NasuWriter(gc_param, mk_list=list_mk)
     assert mwr.plot2d(fig=fig) is not None
     del mwr
 
-    mwr = MarkerWriter(list_mk, **gc_param)
+    mwr = NasuWriter(gc_param, mk_list=list_mk)
     assert mwr.plot2d() is not None
     del mwr
 
@@ -744,17 +747,17 @@ def test_marker_writer_plot3d(gc_param, list_mk) -> None:
 
     fig = go.Figure()
 
-    mwr = MarkerWriter(list_mk, **gc_param)
+    mwr = NasuWriter(gc_param, mk_list=list_mk)
     assert mwr.plot3d(fig=fig) is not None
     del mwr
 
-    mwr = MarkerWriter(list_mk, **gc_param)
+    mwr = NasuWriter(gc_param, mk_list=list_mk)
     assert mwr.plot3d() is not None
     del mwr
 
 
 def test_marker_writer_pgm(gc_param, list_mk) -> None:
-    mwr = MarkerWriter(list_mk, **gc_param)
+    mwr = MarkerWriter(gc_param, objects=list_mk)
     mwr.pgm()
 
     fp = Path(mwr.filename).stem + '_MK.pgm'
@@ -765,7 +768,7 @@ def test_marker_writer_pgm(gc_param, list_mk) -> None:
 
 
 def test_marker_writer_pgm_empty(gc_param, list_mk) -> None:
-    mwr = MarkerWriter([], **gc_param)
+    mwr = MarkerWriter(gc_param)
     mwr.pgm()
 
     fp = Path(mwr.filename).stem + '_MK.pgm'
