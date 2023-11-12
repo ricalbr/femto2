@@ -170,11 +170,11 @@ def test_spsh_defaults(device):
     assert spsh.columns_names == 'name power speed scan radius int_dist depth yin yout obs'
     assert spsh.wb.default_format_properties['font_name'] == 'DejaVu Sans Mono'
     assert spsh.wb.default_format_properties['font_size'] == 11
-    assert spsh.wb.filename == 'my_fabrication.xlsx'
+    assert spsh.wb.filename == 'FABRICATION.xlsx'
     assert spsh.ws.name == 'Fabrication'
     assert spsh.suppr_redd_cols
     assert not spsh.static_preamble
-    Path(dot_path / 'my_fabrication.xlsx').unlink()
+    Path(dot_path / 'FABRICATION.xlsx').unlink()
 
 
 def test_spsh_initialization_without_device():
