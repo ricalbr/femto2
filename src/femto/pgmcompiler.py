@@ -136,10 +136,11 @@ class PGMCompiler:
         Instance of class
         """
         # Update parameters with kwargs
-        param.update(kwargs)
+        p = copy.deepcopy(param)
+        p.update(kwargs)
 
         logger.debug(f'Create {cls.__name__} object from dictionary.')
-        return cls(**{k: v for k, v in param.items() if k in inspect.signature(cls).parameters})
+        return cls(**{k: v for k, v in p.items() if k in inspect.signature(cls).parameters})
 
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}@{id(self) & 0xFFFFFF:x}'

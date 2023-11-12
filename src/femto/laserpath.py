@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import dataclasses
 import inspect
 import pathlib
@@ -76,10 +77,11 @@ class LaserPath:
         Instance of class
         """
         # Update parameters with kwargs
-        param.update(kwargs)
+        p = copy.deepcopy(param)
+        p.update(kwargs)
 
         logger.debug(f'Create {cls.__name__} object from dictionary.')
-        return cls(**{k: v for k, v in param.items() if k in inspect.signature(cls).parameters})
+        return cls(**{k: v for k, v in p.items() if k in inspect.signature(cls).parameters})
 
     @classmethod
     def load(cls: type[LP], pickle_file: str | pathlib.Path) -> LP:
