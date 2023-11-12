@@ -101,11 +101,11 @@ class NestedDict:
 class Parameter:
     """Class that handles preamble parameters."""
 
-    n: str  # Full name
-    v: str = ''  # Value
-    loc: tuple[int, int] = (0, 0)  # Location (1-indexing)
-    sz: tuple[int, int] = (0, 0)  # Size (for merged cells)
-    fmt: str = 'parval'  # Format
+    n: str  #: Full name
+    v: str = ''  #: Value
+    loc: tuple[int, int] = (0, 0)  #: Location (1-indexing)
+    sz: tuple[int, int] = (0, 0)  #: Size (for merged cells)
+    fmt: str = 'parval'  #: Format
 
     def __post_init__(self):
         """Set row and column, from the location with Excel 1-indexing."""
@@ -125,7 +125,7 @@ class Spreadsheet:
 
     device: femto.device.Device | None = None
     columns_names: str = ''
-    book_name: str | Path = 'my_fabrication.xlsx'
+    book_name: str | Path = 'FABRICATION.xlsx'
     sheet_name: str = 'Fabrication'
     font_name: str = 'DejaVu Sans Mono'
     font_size: int = 11
@@ -153,7 +153,7 @@ class Spreadsheet:
 
         book_name: str
             Name of the Excel file, without the extension, which will be added automatically.
-            Defaults to ``my_fabrication``.
+            Defaults to ``FABRICATION.xlsx``.
 
         sheet_name: str
             Name of the Excel spreadsheet. Defaults to ``Fabrication``.
@@ -181,10 +181,8 @@ class Spreadsheet:
             self.columns_names = scn
             self.suppr_redd_cols = True
             print(
-                'Columns_names not given in spreadsheet initialization.'
-                f' Will proceed with standard columns names \'{scn}\' '
-                'and activate the suppr_redd_cols flag to deal with '
-                'reddundant columns.'
+                'Columns_names not given in spreadsheet initialization. Will proceed with standard columns names '
+                f'"{scn}" and activate the suppr_redd_cols flag to deal with reddundant columns.'
             )
 
         if 'name' not in self.columns_names:
