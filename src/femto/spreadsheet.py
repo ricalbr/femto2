@@ -20,12 +20,10 @@ from xlsxwriter import Workbook
 
 
 def generate_all_cols_data() -> npt.NDArray[Any, npt.Structure[str, str, str, int, str]]:
-    """
-    Create the available columns array from a file.
+    """Create the available columns array from a file.
 
-    Gathers all data from the ``utils/spreadsheet_columns.txt`` file and
-    creates a structured array with the information for all possible columns.
-    The user can only select columns to add to the spreadsheet throught their
+    Gathers all data from the ``utils/spreadsheet_columns.txt`` file and creates a structured array with the
+    information for all possible columns. The user can only select columns to add to the spreadsheet throught their
     tagname, which must be in the first column of the txt document.
     """
     all_cols = np.genfromtxt(
@@ -137,14 +135,11 @@ class Spreadsheet:
     new_columns: list | None = None
     extra_preamble_info: dict | None = None
 
-    def __post_init__(
-        self,
-    ) -> None:
+    def __post_init__(self) -> None:
         """Intitialization of the Spreadsheet object.
 
-        Opens a new workbook with a default spreadsheet named ``Fabrication``.
-        Creates the basic formats that will be used, determines the columns
-        that really need to be used, and writed the map of the fabrication.
+        Opens a new workbook with a default spreadsheet named ``Fabrication``. Creates the basic formats that will be
+        used, determines the columns that really need to be used, and writed the map of the fabrication.
 
         Parameters
         ----------
@@ -152,34 +147,26 @@ class Spreadsheet:
             Femto Device object, which can contain all sorts of structures.
 
         columns_names: str
-            The columns to be written, separated by a single whitespace.
-            The user must provide a string with tagnames separated by a
-            whitespace and the tagnames must be contained in the first column
-            of the text file ``columns.txt`` located in the utils folder.
+            The columns to be written, separated by a single whitespace. The user must provide a string with tagnames
+            separated by a whitespace and the tagnames must be contained in the first column of the text file
+            ``columns.txt`` located in the utils folder.
 
         book_name: str
-            Name of the Excel file, without the extension, which will be
-            added automatically.
+            Name of the Excel file, without the extension, which will be added automatically.
             Defaults to ``my_fabrication``.
 
         sheet_name: str
-            Name of the Excel spreadsheet.
-            Defaults to ``Fabrication``.
+            Name of the Excel spreadsheet. Defaults to ``Fabrication``.
 
         suppr_redd_cols: bool
-            If True, it will suppress all redundant columns, meaning that it
-            will not include them in the final spreadsheet, even if they are in
-            the sel_cols string. Redundant columns are columns that contain the
-            same value for all of the lines (structures) in the file.
-            Defaults to True.
+            If True, it will suppress all redundant columns, meaning that it will not include them in the final
+            spreadsheet, even if they are in the sel_cols string. Redundant columns are columns that contain the same
+            value for all of the lines (structures) in the file. Defaults to True.
 
         static_preamble: bool
-            If True, the preamble contains always the same information. For
-            instance, if power changes during fabrication, the preamble should
-            not contain this information, and a dedicated column would appear.
-            However, with static_preamble, a preamble row appears with the in
-            formation ``variable``.
-            Defaults to False.
+            If True, the preamble contains always the same information. For instance, if power changes during
+            fabrication, the preamble should not contain this information, and a dedicated column would appear.
+            However, with static_preamble, a preamble row appears with the in formation ``variable``. Defaults to False.
 
         Returns
         -------
@@ -312,15 +299,12 @@ class Spreadsheet:
         verbose: bool = True,
         saints: bool | None = None,
     ) -> None:
-        """
-        Write the structures to the spreadsheet.
+        """Write the structures to the spreadsheet.
 
-        Builds the structures list, containing all the required information
-        about the structures to fabricate. Then, prepares the columns in the
-        spreadsheet, setting their width according to the ``columns.txt`` file.
-        Finally, fills the spreadsheet with the contents of the structures
-        list, one structure per line, and creates the preamble, which is the
-        general information to the left of individual structure information.
+        Builds the structures list, containing all the required information about the structures to fabricate. Then,
+        prepares the columns in the spreadsheet, setting their width according to the ``columns.txt`` file. Finally,
+        fills the spreadsheet with the contents of the structures list, one structure per line, and creates the
+        preamble, which is the general information to the left of individual structure information.
 
         Returns
         -------
@@ -347,12 +331,10 @@ class Spreadsheet:
     def _write_saints_list(self, column: int = 156) -> None:
         """Write a list with all the daily saints to which pray.
 
-        In a distant column, write in cronological order the saint celebrated
-        in each day of the year. This data is available under the file
-        ``saints_data.txt`` in the utils folder. When writing the preamble,
-        upon adding the fabrication date, an empty box is filled with the words
-        ``Oggi dobbiamo pregare...`` meaning ``Today we must pray...``, in
-        order to protect our fabrication from bugs and general bad luck.
+        In a distant column, write in cronological order the saint celebrated in each day of the year. This data is
+        available under the file ``saints_data.txt`` in the utils folder. When writing the preamble, upon adding the
+        fabrication date, an empty box is filled with the words ``Oggi dobbiamo pregare...`` meaning ``Today we must
+        pray...``, in order to protect our fabrication from bugs and general bad luck.
 
         Returns
         -------
@@ -368,9 +350,8 @@ class Spreadsheet:
     def _dtype(self, tagname):
         """Return the data type corresponding to a give column tagname.
 
-        The data type is determined in the ``columns.txt`` file, under the
-        column named ``format``. The dtypes are assigned according to the
-        following possibilities for that field:
+        The data type is determined in the ``columns.txt`` file, under the column named ``format``. The dtypes are
+        assigned according to the following possibilities for that field:
 
         - ``text`` or ``title`` -> dtype: 20-character str
         - sequence of zeros with a dot somewhere -> dtype: float
@@ -379,8 +360,7 @@ class Spreadsheet:
         Parameters
         ----------
         tagname: str
-            The tagname of the column type. Must be contained in the
-            ``columns.txt`` file under the ``utils`` folder.
+            The tagname of the column type. Must be contained in the ``columns.txt`` file under the ``utils`` folder.
             Not case sensitive.
 
         Returns
@@ -428,13 +408,11 @@ class Spreadsheet:
         static_preamble: bool | None = None,
         verbose: bool = False,
     ):
-        """
-        Build a table with all of the structures.
+        """Build a table with all of the structures.
 
-        The table has as lines the several structures, and for each of them,
-        all of the fields given as columns_names as column data. Determines the
-        columns that will be effectively added to the sheet, according to the
-        specified suppr_redd_cols and static_preamble.
+        The table has as lines the several structures, and for each of them, all of the fields given as columns_names
+        as column data. Determines the columns that will be effectively added to the sheet, according to the specified
+        suppr_redd_cols and static_preamble.
 
         Parameters
         ----------
@@ -442,30 +420,24 @@ class Spreadsheet:
             Contains the waveguides and the markers to be added to the table.
 
         columns_names: str
-            The relevant table columns, separated by a single whitespace.
-            The user must provide a string with tagnames separated by a
-            whitespace and the tagnames must be contained in the first column
-            of the text file ``columns.txt`` located in the utils folder.
+            The relevant table columns, separated by a single whitespace. The user must provide a string with
+            tagnames separated by a whitespace and the tagnames must be contained in the first column of the text
+            file ``columns.txt`` located in the utils folder.
 
         suppr_redd_cols: bool
-            If True, it will suppress all redundant columns, meaning that it
-            will not include them in the final spreadsheet, even if they are in
-            the sel_cols string. Redundant columns are columns that contain the
-            same value for all of the lines (structures) in the file.
-            Defaults to the given instation value (otherwise True).
+            If True, it will suppress all redundant columns, meaning that it will not include them in the final
+            spreadsheet, even if they are in the sel_cols string. Redundant columns are columns that contain the same
+            value for all of the lines (structures) in the file. Defaults to the given instation value (otherwise True).
 
         static_preamble: bool
-            If True, the preamble contains always the same information. For
-            instance, if power changes during fabrication, the preamble should
-            not contain this information, and a dedicated column would appear.
-            However, with static_preamble, a preamble row appears with the in
-            formation ``variable``.
+            If True, the preamble contains always the same information. For instance, if power changes during
+            fabrication, the preamble should not contain this information, and a dedicated column would appear.
+            However, with static_preamble, a preamble row appears with the in formation ``variable``.
             Defaults to the given instation value (otherwise False).
 
         verbose: bool
-            If True, prints the columns, selected by the user, that will be
-            excluded from the spreadsheet because they are reddundant (in the
-            case that suppr_redd_cols is set to True).
+            If True, prints the columns, selected by the user, that will be excluded from the spreadsheet because they
+            are reddundant (in the case that suppr_redd_cols is set to True).
 
         """
 
@@ -569,8 +541,7 @@ class Spreadsheet:
         self.cols_data = cols_data
 
     def _prepare_columns(self, columns=None) -> None:
-        """
-        Prepare the columns that will be present in the spreadsheet.
+        """Prepare the columns that will be present in the spreadsheet.
 
         Create the data format and set the correct width.
         """
@@ -710,9 +681,8 @@ class Spreadsheet:
     ) -> None:
         """Add a line to the spreadsheet.
 
-        Takes a start cell and writes a sequence of data in that and the
-        following cells in the same line. Also accepts a fmt kwarg that tells
-        the format of the data.
+        Takes a start cell and writes a sequence of data in that and the following cells in the same line. Also
+        accepts a fmt kwarg that tells the format of the data.
 
         Parameters
         ----------
@@ -720,13 +690,11 @@ class Spreadsheet:
             Tuple with the row and column of the starting cell, 1-indexing.
 
         data: list
-            List of strings with the several data to write, in the order which
-            they should appear, column-wise.
+            List of strings with the several data to write, in the order which they should appear, column-wise.
 
         fmt: list
-            List of the formats to be used. Must be present in self.formats, so
-            make sure to create the format prior to using it. Defaults to the
-            default text properties of the spreadsheet, given at the moment of
+            List of the formats to be used. Must be present in self.formats, so make sure to create the format prior
+            to using it. Defaults to the default text properties of the spreadsheet, given at the moment of
             instantiation.
 
         Returns
