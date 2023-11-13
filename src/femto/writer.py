@@ -204,10 +204,10 @@ class Writer(PGMCompiler, abc.ABC):
         logger.debug('Add glass shape.')
         fig.add_shape(
             type='rect',
-            x0=self.new_origin[0] if self.flip_x else 0 - self.new_origin[0],
-            y0=self.new_origin[1] if self.flip_y else 0 - self.new_origin[1],
-            x1=self.new_origin[0] - self.xsample if self.flip_x else self.xsample - self.new_origin[0],
-            y1=self.new_origin[1] - self.ysample if self.flip_y else self.ysample - self.new_origin[1],
+            x0=self.shift_origin[0] if self.flip_x else 0 - self.shift_origin[0],
+            y0=self.shift_origin[1] if self.flip_y else 0 - self.shift_origin[1],
+            x1=self.shift_origin[0] - self.xsample if self.flip_x else self.xsample - self.shift_origin[0],
+            y1=self.shift_origin[1] - self.ysample if self.flip_y else self.ysample - self.shift_origin[1],
             fillcolor='#D0FAF9',
             line_color='#000000',
             line_width=2,

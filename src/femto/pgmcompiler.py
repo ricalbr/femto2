@@ -57,7 +57,7 @@ class PGMCompiler:
     n_environment: float = 1.33  #: Environment refrative index.
     export_dir: str = ''  #: Name of the directory onto which .pgm files will be exported. Default is current directoru.
     laser: str = 'PHAROS'  #: Name of the laser source.
-    new_origin: tuple[float, float] = (0.0, 0.0)  #: Set this point as new (0, 0) origin by shifting coordinates `[mm]`.
+    shift_origin: tuple[float, float] = (0.0, 0.0)  #: Shift the cooordinates of the origin to this new point.
     samplesize: tuple[float, float] = (100, 50)  #: `(x, y)`-size of the substrate `[mm]`.
     rotation_angle: float = 0.0  #: Apply a rotation matrix of this angle to all the points `[deg]`.
     aerotech_angle: float = 0.0  #: Apply part rotation (G84) with this angle as parameter `[deg]`.
@@ -952,8 +952,8 @@ class PGMCompiler:
         logger.debug('Normalize x-, y-, z-arrays to numpy.ndarrys.')
 
         # translate points to new origin
-        x -= self.new_origin[0]
-        y -= self.new_origin[1]
+        x -= self.shift_origin[0]
+        y -= self.shift_origin[1]
         logger.debug('Shift x-, y-arrays to new origin.')
 
         # flip x, y coordinates
@@ -992,7 +992,7 @@ class PGMCompiler:
             Flipped `x` and `y` arrays.
         """
 
-        # disp = np.array([self.new_origin[0], self.new_origin[1], 0])
+        # disp = np.array([self.shift_origin[0], self.shift_origin[1], 0])
         fx = int(self.flip_x) * 2 - 1
         fy = int(self.flip_y) * 2 - 1
         mirror_matrix = np.array([[-fx, 0], [0, -fy]])

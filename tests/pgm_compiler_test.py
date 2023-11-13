@@ -44,7 +44,7 @@ def test_default_values() -> None:
     assert G.samplesize == (100, 50)
     assert G.laser == 'PHAROS'
     assert G.home is False
-    assert G.new_origin == (0.0, 0.0)
+    assert G.shift_origin == (0.0, 0.0)
     assert G.warp_flag is False
     assert G.n_glass == float(1.50)
     assert G.n_environment == float(1.33)
@@ -66,7 +66,7 @@ def test_gcode_values(param) -> None:
     assert G.samplesize == (25, 25)
     assert G.laser == 'PHAROS'
     assert G.home is False
-    assert G.new_origin == (0.0, 0.0)
+    assert G.shift_origin == (0.0, 0.0)
     assert G.warp_flag is False
     assert G.n_glass == float(1.50)
     assert G.n_environment == float(1.33)
@@ -88,7 +88,7 @@ def test_mk_from_dict(param) -> None:
     assert G.samplesize == (25, 25)
     assert G.laser == 'PHAROS'
     assert G.home is False
-    assert G.new_origin == (0.0, 0.0)
+    assert G.shift_origin == (0.0, 0.0)
     assert G.warp_flag is False
     assert G.n_glass == float(1.50)
     assert G.n_environment == float(1.33)
