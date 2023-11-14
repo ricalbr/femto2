@@ -19,37 +19,38 @@ $angle = {angle:.6f}		; [deg] AeroTech rotation angle
 $meshSizeX = $sizeX - 2*$margin
 $meshSizeY = $sizeY - 2*$margin
 
-; CLEAR ALL CONSOLE MESSAGES, CLOSE ALL OPEN FILE HANDLES AND ADD TEXT HEADER
+; CLEAR ALL CONSOLE MESSAGES, CLOSE ALL OPEN FILE HANDLES
 MSGCLEAR -1
 FILECLOSE
-FILEWRITE "POS.txt"
 
 ; +--- START SAMPLING SCRIPT ---+
 LINEAR X0.000000 Y0.000000 Z0.000000 F5.000000
+DWELL 0.1
+
 G84 X Y
 DWELL 0.05
 G84 X Y F$angle
 
 LINEAR X$margin Y$margin
-PSOCONTROL X ON
 DWELL 0.1
+PSOCONTROL X ON
+DWELL 0.05
 
 FOR $iii = 0 to $pointsX-1
 	$thisX = $margin + $iii * $meshSizeX / ($pointsX-1)
-	LINEAR X $thisX F20.000000
-	DWELL 0.1
 
 	FOR $jjj = 0 to $pointsY-1
 		; MOVE ALONG
 		$thisY = $margin + $jjj * $meshSizeY / ($pointsY-1)
-		LINEAR Y $thisY F20.000000
+		LINEAR X $thisX Y $thisY F20.000000
+		DWELL 0.1
 
 		; POP UP MESSAGE AND SAVE DATA
 		MSGLAMP 1, CYAN, "Metti bene a fuoco."
 		MSGLAMP 2, GREEN, "MI RACCOMANDO."
 
 		PROGRAM 1 STEPINTO
-		$thisZ = AXISSTATUS(Z,DATAITEM_ProgramPositionCommand)
+		$thisZ = AXISSTATUS(Z, DATAITEM_ProgramPositionCommand)
 
 		; WRITE DATA ON FILE
 		FILEWRITE "POS.txt", $thisX, " ", $thisY, " ", $thisZ
@@ -58,18 +59,15 @@ FOR $iii = 0 to $pointsX-1
 		MSGLAMP 2, GRAY, ""
 		DWELL 0.2
 	NEXT $jjj
-
-	; RETURN TO STARTING Y POSITION
-	LINEAR Y$margin F20.000000
-	DWELL 0.1
 NEXT $iii
 
-; RETURN TO STARTING X POSITION
-LINEAR X$margin F20.000000
+; CLOSE FILE
 PSOCONTROL X OFF
-DWELL 0.1
+FILECLOSE
 
-LINEAR X0.000000 Y0.000000 Z0.000000 F5.000000
+; RETURN TO HOME POSITION
+LINEAR X0.000000 Y0.000000 Z0.000000 F20.000000
+DWELL 0.1
 G84 X Y
 
 END PROGRAM
