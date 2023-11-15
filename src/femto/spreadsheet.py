@@ -799,7 +799,7 @@ def main() -> None:
     # SPREADSHEET PARAMETERS
     PARS_SS = dotdict(
         book_name='Fabbrication_GHZ_Jack.xlsx',
-        columns_names='name power speed scan depth int_dist yin yout obs',
+        columns_names='name power speed depth int_dist yin yout obs',
     )
 
     powers = np.linspace(600, 800, 5)
@@ -819,7 +819,7 @@ def main() -> None:
 
         all_fabb.append(wg)
 
-    all_fabb.xlsx(saints=True)
+    all_fabb.xlsx(**PARS_SS, saints=True)
 
 
 if __name__ == '__main__':
