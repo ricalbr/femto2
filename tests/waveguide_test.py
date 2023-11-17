@@ -1037,7 +1037,6 @@ def test_nasu_values(param) -> None:
     assert ng.int_dist == float(0.005)
     assert ng.int_length == float(0.0)
     assert ng.arm_length == float(1.0)
-    # assert ng.ltrench == float(1.5)
     assert ng.dz_bridge == float(0.006)
     assert ng.adj_scan_shift == (0.1, 0.2, 0.003)
     assert ng.adj_scan == int(3)

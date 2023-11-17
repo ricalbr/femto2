@@ -61,6 +61,7 @@ def test_default_values() -> None:
     assert lp.acc_max == int(500)
     assert lp.samplesize == (100, 50)
     assert lp.end_off_sample is True
+    assert lp.warp_flag is False
 
 
 def test_laserpath_values(laser_path) -> None:
@@ -78,6 +79,7 @@ def test_laserpath_values(laser_path) -> None:
     assert laser_path.acc_max == int(500)
     assert laser_path.samplesize == (100, 15)
     assert laser_path.end_off_sample is True
+    assert laser_path.warp_flag is False
 
 
 def test_scan_float_err(param) -> None:
@@ -136,8 +138,12 @@ def test_lvelo(laser_path) -> None:
     assert pytest.approx(laser_path.lvelo) == 1.2
 
 
-def test_dl(laser_path) -> None:
-    assert pytest.approx(laser_path.dl) == (1 / 60)
+@pytest.mark.parametrize('s, cmd, exp', [(5, 500, 0.01), (0, 1000, 0.0), (100, 1000, 0.1), (100, 100, 1)])
+def test_dl(s, cmd, exp, param) -> None:
+    param['speed'] = s
+    param['cmd_rate_max'] = cmd
+    lp = LaserPath(**param)
+    assert pytest.approx(lp.dl) == exp
 
 
 def test_x_end(laser_path) -> None:
@@ -374,6 +380,32 @@ def test_linear_none(param) -> None:
 #     lp.radius = -60
 #     with pytest.raises(ValueError):
 #         lp.start([0, 0, 0]).circ(a_i, a_f).end()
+@pytest.mark.parametrize(
+    'increment, len',
+    [
+        ([1, 1, 1], np.sqrt(3)),
+        ([1, None, 4], np.sqrt(17)),
+        ([1, None, -2], np.sqrt(5)),
+        ([None, None, -2], 2),
+        ([-5, -5, -5], np.sqrt(75)),
+    ],
+)
+def test_linear_warp(param, increment, len) -> None:
+    lp = LaserPath(warp_flag=True, **param)
+    init_p = [0, 0, 0]
+    lp.start(init_p).linear(increment, mode='abs')
+    assert lp.x.size == lp.num_subdivisions(len, lp.speed) + 2
+    assert lp.y.size == lp.num_subdivisions(len, lp.speed) + 2
+    assert lp.z.size == lp.num_subdivisions(len, lp.speed) + 2
+
+
+def test_linear_warp_none(param) -> None:
+    lp = LaserPath(warp_flag=True, **param)
+    init_p = [0, 0, 0]
+    lp.start(init_p).linear([None, None, None], mode='abs')
+    assert lp.x.size == 3
+    assert lp.y.size == 3
+    assert lp.z.size == 3
 
 
 def test_add_path(laser_path) -> None:

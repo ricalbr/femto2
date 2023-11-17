@@ -29,7 +29,7 @@ def gc_param() -> dict:
         n_glass=1.5,
         n_environment=1.33,
         laser='PHAROS',
-        new_origin=(0.5, 0.5),
+        shift_origin=(0.5, 0.5),
         samplesize=(25, 1),
     )
     return p

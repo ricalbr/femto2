@@ -137,6 +137,8 @@ class Marker(LaserPath):
 
         # Add straight segments
         logger.debug(f'Start ruler at ({x_ticks}, {y_ticks[0]}, {self.depth})')
+        self.add_path(*np.array([x_init, y_ticks[0], self.depth, self.speed_pos, 0.0]))
+        self.add_path(*np.array([x_init, y_ticks[0], self.depth, self.speed_pos, 1.0]))
         for xt, yt in zip(x_ticks, y_ticks):
             self.linear([x_init, yt, self.depth], mode='ABS', shutter=0)
             self.linear([None, None, None], mode='ABS')
@@ -205,31 +207,28 @@ class Marker(LaserPath):
             )
 
         s = sign()
+        self.start(init_pos)
         if orientation.lower() == 'x':
             num_passes = math.floor(np.abs(yf - yi) / delta)
             delta = np.sign(yf - yi) * delta
             logger.debug('Start meander along x.')
             logger.debug(f'Number of passes = {num_passes}.')
 
-            self.start(init_pos)
             for _ in range(num_passes):
                 self.linear([next(s) * width, 0, 0], mode='INC')
                 self.linear([0, delta, 0], mode='INC')
             self.linear([next(s) * width, 0, 0], mode='INC')
-            self.end()
-
         else:
             num_passes = math.floor(np.abs(xf - xi) / delta)
             delta = np.sign(xf - xi) * delta
             logger.debug('Start meander along y.')
             logger.debug(f'Number of passes = {num_passes}.')
 
-            self.start(init_pos)
             for _ in range(num_passes):
                 self.linear([0, next(s) * width, 0], mode='INC')
                 self.linear([delta, 0, 0], mode='INC')
             self.linear([0, next(s) * width, 0], mode='INC')
-            self.end()
+        self.end()
 
     def ablation(
         self,
@@ -269,6 +268,7 @@ class Marker(LaserPath):
 
         # Add linear segments
         logger.debug('Start ablation line.')
+        self.add_path(*path_list[0][0], np.array(self.speed_pos), np.array(0))
         for path in path_list:
             self.linear(path[0], mode='ABS', shutter=0)
             self.linear(path[0], mode='ABS', shutter=1)
