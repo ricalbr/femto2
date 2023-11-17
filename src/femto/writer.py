@@ -563,6 +563,7 @@ class TrenchWriter(Writer):
             main_param['filename'] = self._export_path / 'MAIN.pgm'
             main_param['aerotech_angle'] = None
             main_param['rotation_angle'] = None
+            main_param['verbose'] = verbose
 
             farcall_list = [
                 str(pathlib.Path(col.base_folder) / f'FARCALL{i + 1:03}.pgm') for i, col in enumerate(self.obj_list)
@@ -578,8 +579,6 @@ class TrenchWriter(Writer):
             'Estimated isolation trenches fabrication time: ', datetime.timedelta(seconds=int(self._fabtime))
         )
         logger.info(string)
-        if verbose:
-            logger.info('G-code compilation completed.')
 
     def export_array2d(
         self,
@@ -730,8 +729,8 @@ class TrenchWriter(Writer):
 
             for nbox, (i_trc, trench) in list(itertools.product(range(column.nboxz), list(enumerate(column)))):
                 # load filenames (wall/floor)
-                wall_filename = f'trench{i_trc + 1:03}_wall.pgm'
-                floor_filename = f'trench{i_trc + 1:03}_floor.pgm'
+                wall_filename = f'trench{i_trc + 1:03}_WALL.pgm'
+                floor_filename = f'trench{i_trc + 1:03}_FLOOR.pgm'
                 wall_path = pathlib.Path(column.base_folder) / f'trenchCol{index + 1:03}' / wall_filename
                 floor_path = pathlib.Path(column.base_folder) / f'trenchCol{index + 1:03}' / floor_filename
 
@@ -1364,6 +1363,7 @@ class WaveguideWriter(Writer):
         _wg_fab_time = 0.0
         _wg_param = dict(self._param.copy())
         _wg_param['filename'] = pathlib.Path(self.filename).stem + '_WG.pgm'
+        _wg_param['verbose'] = verbose
 
         with PGMCompiler(**_wg_param) as G:
             for bunch in self.obj_list:
@@ -1381,8 +1381,6 @@ class WaveguideWriter(Writer):
             'Estimated waveguides fabrication time: ', datetime.timedelta(seconds=int(self._fabtime))
         )
         logger.info(string)
-        if verbose:
-            logger.info('G-code compilation completed.')
         self._instructions.clear()
 
     def _plot2d_wg(
@@ -1715,6 +1713,7 @@ class NasuWriter(Writer):
         _nwg_fab_time = 0.0
         _nwg_param = dict(self._param.copy())
         _nwg_param['filename'] = pathlib.Path(self.filename).stem + '_NASU.pgm'
+        _nwg_param['verbose'] = verbose
 
         with PGMCompiler(**_nwg_param) as G:
             for nwg in self.obj_list:
@@ -1733,8 +1732,6 @@ class NasuWriter(Writer):
             'Estimated Nasu waveguides fabrication time: ', datetime.timedelta(seconds=int(self._fabtime))
         )
         logger.info(string)
-        if verbose:
-            logger.info('G-code compilation completed.')
         self._instructions.clear()
 
     def _plot2d_nwg(
@@ -2064,6 +2061,7 @@ class MarkerWriter(Writer):
         _mk_fab_time = 0.0
         _mk_param = dict(self._param.copy())
         _mk_param['filename'] = pathlib.Path(self.filename).stem + '_MK.pgm'
+        _mk_param['verbose'] = verbose
 
         with PGMCompiler(**_mk_param) as G:
             for idx, mk in enumerate(flatten(self.obj_list)):
@@ -2082,8 +2080,6 @@ class MarkerWriter(Writer):
             'Estimated markers fabrication time: ', datetime.timedelta(seconds=int(self._fabtime))
         )
         logger.info(string)
-        if verbose:
-            logger.info('G-code compilation completed.')
         self._instructions.clear()
 
     def _plot2d_mk(self, fig: go.Figure, style: dict[str, Any] | None = None) -> go.Figure:

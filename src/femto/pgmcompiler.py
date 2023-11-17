@@ -70,6 +70,7 @@ class PGMCompiler:
     flip_x: bool = False  #: Flag, if True the x-coordinates will be flipped
     flip_y: bool = False  #: Flag, if True the y-coordinates will be flipped
     minimal_gcode: bool = False  #: Flag, if True redundant movements are suppressed.
+    verbose: bool = True  #: Flag, if True output informations during G-Code compilation.
 
     _total_dwell_time: float = 0.0
     _shutter_on: bool = False
@@ -81,7 +82,6 @@ class PGMCompiler:
         self.CWD: pathlib.Path = pathlib.Path.cwd()
         logger.debug(f'Set the current working directory to {self.CWD}.')
 
-        # TODO: check mode and pins for FIRE LINE1
         self._lasers = {
             'ant': Laser(name='ANT', lab='DIAMOND', axis='Z', pin=0, mode=1),
             'uwe': Laser(name='UWE', lab='FIRE', axis='X', pin=None, mode=None),
@@ -165,13 +165,17 @@ class PGMCompiler:
         self.instruction('\n')
 
         if self.rotation_angle:
-            logger.warning(
-                f' BEWARE, ANGLE MUST BE IN DEGREE! Rotation angle is {self.rotation_angle:.3f} deg. '.center(69, '*')
-            )
+            msg = f' BEWARE, ANGLE MUST BE IN DEGREE! Rotation angle is {self.rotation_angle:.3f} deg. '.center(69, '*')
+            if self.verbose:
+                logger.warning(msg)
+            else:
+                logger.debug(msg)
         if self.aerotech_angle:
-            logger.warning(
-                f' BEWARE, ANGLE MUST BE IN DEGREE! G84 angle is {self.aerotech_angle:.3f} deg. '.center(69, '*')
-            )
+            msg = f' BEWARE, ANGLE MUST BE IN DEGREE! G84 angle is {self.aerotech_angle:.3f} deg. '.center(69, '*')
+            if self.verbose:
+                logger.warning(msg)
+            else:
+                logger.debug(msg)
             self._enter_axis_rotation(angle=self.aerotech_angle)
         return self
 
@@ -878,7 +882,7 @@ class PGMCompiler:
         self.dwell(self.long_pause)
         self.instruction('\n')
 
-    def close(self, filename: str | None = None, verbose: bool = False) -> None:
+    def close(self, filename: str | None = None) -> None:
         """Close and export a G-Code file.
 
         The functions writes all the instructions in a .pgm file. The filename is specified during the class
@@ -888,8 +892,6 @@ class PGMCompiler:
         ----------
         filename: str, optional
             Name of the .pgm file. The default value is ``self.filename``.
-        verbose: bool
-            Flag to print info during .pgm file compilation.
 
         Returns
         -------
@@ -913,7 +915,7 @@ class PGMCompiler:
         with open(pgm_filename, 'w') as f:
             f.write(''.join(self._instructions))
         self._instructions.clear()
-        if verbose:
+        if self.verbose:
             logger.info('G-code compilation completed.')
         logger.debug('G-code compilation completed.')
 

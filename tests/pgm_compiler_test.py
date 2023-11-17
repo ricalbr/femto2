@@ -57,6 +57,7 @@ def test_default_values() -> None:
     assert G.flip_x is False
     assert G.flip_y is False
     assert G.minimal_gcode is False
+    assert G.verbose is True
 
 
 def test_gcode_values(param) -> None:
@@ -79,6 +80,7 @@ def test_gcode_values(param) -> None:
     assert G.flip_x is True
     assert G.flip_y is False
     assert G.minimal_gcode is True
+    assert G.verbose is True
 
 
 def test_mk_from_dict(param) -> None:
@@ -101,6 +103,7 @@ def test_mk_from_dict(param) -> None:
     assert G.flip_x is True
     assert G.flip_y is False
     assert G.minimal_gcode is True
+    assert G.verbose is True
 
 
 def test_repr(param) -> None:
@@ -1259,6 +1262,7 @@ def test_write(param, pts, expected) -> None:
 def test_close_dir(param) -> None:
     exp_dir = './src/femto/test/'
     param['export_dir'] = exp_dir
+    param['verbose'] = True
 
     # add some istructions
     G = PGMCompiler(**param)
@@ -1271,7 +1275,7 @@ def test_close_dir(param) -> None:
     assert G._instructions != deque([])
 
     # close and write to file
-    G.close(verbose=True)
+    G.close()
     assert G._instructions == deque([])
 
     # assert the exp directory has been created

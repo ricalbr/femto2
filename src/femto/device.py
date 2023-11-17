@@ -44,14 +44,15 @@ class Device:
         self.fig: go.Figure | None = None
         self.fabrication_time: float = 0.0
         self.writers = {
-            TrenchColumn: TrenchWriter(tc_list=[], **param),
-            UTrenchColumn: UTrenchWriter(utc_list=[], **param),
-            Marker: MarkerWriter(mk_list=[], **param),
             Waveguide: WaveguideWriter(wg_list=[], **param),
             NasuWaveguide: NasuWriter(nw_list=[], **param),
+            Marker: MarkerWriter(mk_list=[], **param),
+            TrenchColumn: TrenchWriter(tc_list=[], **param),
+            UTrenchColumn: UTrenchWriter(utc_list=[], **param),
         }
 
         self._param: dict[str, Any] = dict(**param)
+        self._printed_angle_warning: bool = False
         logger.info(f'Instantiate device {self._param["filename"].rsplit(".", 1)[0]}.')
 
     def append(self, obj: Any) -> None:
@@ -206,9 +207,12 @@ class Device:
                 logger.info(f'Exporting {key.__name__} objects...')
 
             # writer = cast(Union[WaveguideWriter, NasuWriter, TrenchWriter, UTrenchWriter, MarkerWriter], writer)
-            writer.pgm(verbose=verbose)
+            writer.pgm(verbose=self._printed_angle_warning)
+            self._printed_angle_warning = True
 
             self.fabrication_time += writer.fab_time
+
+        logger.info('\b' * 20)
         if verbose:
             logger.info('Export .pgm files completed.\n')
 
