@@ -49,9 +49,7 @@ class LaserPath:
 
     def __init__(self, **kwargs):
         kwargs.setdefault('name', type(self).__name__)
-        print([att.name for att in self.__attrs_attrs__])
         filtered = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}
-        print(filtered)
         self.__attrs_init__(**filtered)
 
     def __repr__(self) -> str:
