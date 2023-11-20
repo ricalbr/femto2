@@ -103,7 +103,7 @@ class PGMCompiler:
         # File initialization
         if self.filename is None:
             logger.error('Filename is None.')
-            raise ValueError("Filename is None, set 'filename' attribute")
+            raise ValueError("Filename is None, set 'filename' attribute.")
 
         # Set rotation angle in radians for matrix rotations
         if self.rotation_angle:
