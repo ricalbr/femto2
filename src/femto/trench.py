@@ -1,16 +1,16 @@
 from __future__ import annotations
 
 import copy
-import dataclasses
-import inspect
 import math
 import pathlib
 from functools import cached_property
 from typing import Any
 from typing import Generator
 from typing import Iterator
+from typing import TypeAlias
 from typing import TypeVar
 
+import attrs
 import dill
 import largestinteriorrectangle as lir
 import numpy as np
@@ -26,7 +26,9 @@ from femto.waveguide import Waveguide
 from shapely import geometry
 from shapely.ops import unary_union
 
+TR = TypeVar('TR', bound='Trench')
 TC = TypeVar('TC', bound='TrenchColumn')
+nparray: TypeAlias = npt.NDArray[np.float32]
 
 
 class Trench:
@@ -92,7 +94,7 @@ class Trench:
         return self._id
 
     @property
-    def border(self) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]:
+    def border(self) -> tuple[nparray, nparray]:
         """Border of the trench.
 
         It returns the border of the block as a tuple of two numpy arrays, one for the `x` coordinates and one for
@@ -108,7 +110,7 @@ class Trench:
         return np.asarray(xx, dtype=np.float32), np.asarray(yy, dtype=np.float32)
 
     @property
-    def xborder(self) -> npt.NDArray[np.float32]:
+    def xborder(self) -> nparray:
         """`x`-coordinates of the trench border.
 
         Returns
@@ -121,7 +123,7 @@ class Trench:
         return x
 
     @property
-    def yborder(self) -> npt.NDArray[np.float32]:
+    def yborder(self) -> nparray:
         """`y`-coordinates of the trench border.
 
         Returns
@@ -280,7 +282,7 @@ class Trench:
                 coords.extend([((xmax, ymin + (i + 1) * self.delta_floor), (xmin, ymin + (i + 1) * self.delta_floor))])
         return geometry.MultiLineString(coords)
 
-    def zigzag(self, poly: geometry.Polygon) -> npt.NDArray[np.float32]:
+    def zigzag(self, poly: geometry.Polygon) -> nparray:
         """Zig-zag filling pattern.
         The function `zigzag` takes a polygon as input, applies a zig-zag filling pattern to it, and returns the
         coordinates of the resulting zigzag pattern.
@@ -306,7 +308,7 @@ class Trench:
             coords.extend(line.coords)
         return np.array(coords).T
 
-    def toolpath(self) -> Generator[npt.NDArray[np.float32], None, None]:
+    def toolpath(self) -> Generator[nparray, None, None]:
         """Toolpath generator.
 
         The function takes a polygon and computes the filling toolpath.
@@ -396,7 +398,7 @@ class Trench:
         return [geometry.Polygon()]
 
 
-@dataclasses.dataclass
+@attrs.define(repr=False)
 class TrenchColumn:
     """Class representing a column of isolation trenches."""
 
@@ -420,16 +422,21 @@ class TrenchColumn:
     beam_waist: float = 0.004  #: Diameter of the laser beam-waist [mm].
     round_corner: float = 0.010  #: Radius of the blocks round corners [mm].
 
-    _trench_list: list[Trench] = dataclasses.field(default_factory=list)  #: List of trench objects
+    _id: str = attrs.field(alias='_id', default='TC')  #: TrenchColumn ID.
+    _trench_list: list[TR] = attrs.field(alias='_trench_list', factory=list)  #: List of trench objects.
 
-    def __post_init__(self):
-        self._id = 'TC'  #: TrenchColumn identifier.
-        self.CWD: pathlib.Path = pathlib.Path.cwd()  #: Current working directory
+    CWD: pathlib.Path = attrs.field(default=pathlib.Path.cwd())  #: Current working directory
+
+    def __init__(self, **kwargs):
+        filtered = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}
+        self.__attrs_init__(**filtered)
+
+    def __attrs_post_init__(self) -> None:
         if self.speed_floor is None:
             self.speed_floor = self.speed_wall
             logger.debug(f'Floor speed is set to {self.speed_floor} mm/s.')
 
-    def __iter__(self) -> Iterator[Trench]:
+    def __iter__(self) -> Iterator[TR]:
         """Iterator that yields single trench blocks of the column.
 
         Yields
@@ -443,7 +450,7 @@ class TrenchColumn:
         return f'{self.__class__.__name__}@{id(self) & 0xFFFFFF:x}'
 
     @classmethod
-    def from_dict(cls: type[TC], param: dict[str, Any], **kwargs) -> TC:
+    def from_dict(cls: type(TC), param: dict[str, Any], **kwargs) -> TC:
         """Create an instance of the class from a dictionary.
 
         It takes a class and a dictionary, and returns an instance of the class with the dictionary's keys as the
@@ -466,10 +473,10 @@ class TrenchColumn:
         p.update(kwargs)
 
         logger.debug(f'Create {cls.__name__} object from dictionary.')
-        return cls(**{k: v for k, v in p.items() if k in inspect.signature(cls).parameters})
+        return cls(**p)
 
     @classmethod
-    def load(cls: type[TC], pickle_file: str) -> TC:
+    def load(cls: type(TC), pickle_file: str) -> TC:
         """Create an instance of the class from a pickle file.
 
         The load function takes a class and a pickle file name, and returns an instance of the class with the
@@ -505,7 +512,7 @@ class TrenchColumn:
         return self._id
 
     @property
-    def trench_list(self) -> list[Trench]:
+    def trench_list(self) -> list[TR]:
         """List of Trench objects.
 
         Returns
@@ -642,7 +649,7 @@ class TrenchColumn:
 
     def dig_from_array(
         self,
-        waveguides: list[npt.NDArray[np.float32]],
+        waveguides: list[nparray],
         remove: list[int] | None = None,
     ) -> None:
         """Dig trenches from array-like input.
@@ -731,21 +738,23 @@ class TrenchColumn:
             del self._trench_list[index]
 
 
-@dataclasses.dataclass
+@attrs.define(repr=False)
 class UTrenchColumn(TrenchColumn):
     """Class representing a column of isolation U-trenches."""
 
-    n_pillars: int = 0  #: number of sustaining pillars
-    pillar_width: float = 0.040  #: width of the pillars
+    n_pillars: int = 0  #: number of sustaining pillars.
+    pillar_width: float = 0.040  #: width of the pillars.
 
-    _trenchbed: list[Trench] = dataclasses.field(default_factory=list)  #: List of beds blocks
+    _id: str = attrs.field(alias='_id', default='UTC')  #: UTrenchColumn ID.
+    _trenchbed: list[TR] = attrs.field(alias='_trenchbed', factory=list)  #: List of beds blocks.
 
-    def __post_init__(self) -> None:
-        super().__post_init__()
-        self._id = 'UTC'  #: U-TrenchColumn identifier.
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        filtered = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}
+        self.__attrs_init__(**filtered)
 
     @property
-    def trench_bed(self) -> list[Trench]:
+    def trench_bed(self) -> list[TR]:
         return self._trenchbed
 
     @property

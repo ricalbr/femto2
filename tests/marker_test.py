@@ -88,8 +88,15 @@ def test_z_init(param) -> None:
 
 def test_scan(param) -> None:
     param['scan'] = 1.2
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         Marker(**param)
+
+
+def test_slots(param) -> None:
+    m = Marker(**param)
+    with pytest.raises(AttributeError):
+        # non-existing attribrute
+        m.zinit = 0.00
 
 
 def test_id(param) -> None:

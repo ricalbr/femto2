@@ -3,7 +3,6 @@ from __future__ import annotations
 import abc
 import copy
 import datetime
-import inspect
 import itertools
 import pathlib
 from typing import Any
@@ -396,7 +395,7 @@ class TrenchWriter(Writer):
         p = copy.deepcopy(param)
         p.update(kwargs)
 
-        super().__init__(**{k: v for k, v in p.items() if k in inspect.signature(PGMCompiler).parameters})
+        super().__init__(**p)
         self.dirname: str = dirname
 
         self._obj_list: list[TrenchColumn] = [] if objects is None else flatten(listcast(objects))
@@ -1221,7 +1220,7 @@ class WaveguideWriter(Writer):
         p = copy.deepcopy(param)
         p.update(kwargs)
 
-        super().__init__(**{k: v for k, v in p.items() if k in inspect.signature(PGMCompiler).parameters})
+        super().__init__(**p)
 
         self._obj_list: list[Waveguide | list[Waveguide]] = [] if objects is None else flatten(listcast(objects))
         self._param: dict[str, Any] = p
@@ -1580,7 +1579,7 @@ class NasuWriter(Writer):
         p = copy.deepcopy(param)
         p.update(kwargs)
 
-        super().__init__(**{k: v for k, v in p.items() if k in inspect.signature(PGMCompiler).parameters})
+        super().__init__(**p)
 
         self._obj_list: list[NasuWaveguide] = flatten(listcast(objects)) if objects is not None else []
         self._param: dict[str, Any] = p
@@ -1935,7 +1934,7 @@ class MarkerWriter(Writer):
         p = copy.deepcopy(param)
         p.update(kwargs)
 
-        super().__init__(**{k: v for k, v in p.items() if k in inspect.signature(PGMCompiler).parameters})
+        super().__init__(**p)
 
         self._obj_list: list[Marker] = flatten(listcast(objects)) if objects is not None else []
         self._param: dict[str, Any] = p

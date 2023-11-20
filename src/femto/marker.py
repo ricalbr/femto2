@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import dataclasses
 import math
 
+import attrs
 import numpy as np
 import numpy.typing as npt
 from femto import logger
@@ -10,7 +10,7 @@ from femto.helpers import sign
 from femto.laserpath import LaserPath
 
 
-@dataclasses.dataclass(repr=False)
+@attrs.define(kw_only=True, repr=False)
 class Marker(LaserPath):
     """Class that computes and stores the coordinates of a superficial abletion marker."""
 
@@ -18,9 +18,14 @@ class Marker(LaserPath):
     lx: float = 1.000  #: Dimension of cross x-arm, `[mm]`.
     ly: float = 0.060  #: Dimension of cross y-arm, `[mm]`.
 
-    def __post_init__(self) -> None:
-        super().__post_init__()
-        self._id = 'MK'  #: Marker identifier.
+    _id: str = attrs.field(alias='_id', default='MK')  #: Marker ID.
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        filtered = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}
+        self.__attrs_init__(**filtered)
+
+    def __attrs_post_init__(self):
         if self.z_init is None:
             self.z_init = self.depth
             logger.debug(f'z_init set to {self.z_init}.')

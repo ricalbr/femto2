@@ -108,7 +108,7 @@ def test_writer(gc_param) -> None:
     class Dummy(Writer):
         pass
 
-    d = Dummy(gc_param)
+    d = Dummy(**gc_param)
     append = d.append(None)
     extend = d.extend([None])
     plot2d = d.plot2d(None)
@@ -482,7 +482,7 @@ def test_waveguide_writer_extend(gc_param, list_wg) -> None:
             [[[Waveguide()]], [[Waveguide(), [Waveguide(), [Waveguide(), Waveguide()]]], Waveguide()]],
             pytest.raises(ValueError),
         ),
-        ([TrenchColumn(1, 2, 3), [Waveguide(), Waveguide()]], pytest.raises(TypeError)),
+        ([TrenchColumn(x_center=1, y_min=2, y_max=3), [Waveguide(), Waveguide()]], pytest.raises(TypeError)),
     ],
 )
 def test_waveguide_writer_extend_raise(gc_param, l_wg, expectation) -> None:

@@ -31,7 +31,7 @@ def gc_param() -> dict:
     p = dict(
         filename='testCell.pgm',
         laser='PHAROS',
-        new_origin=(0.5, 0.5),
+        shift_origin=(0.5, 0.5),
         samplesize=(25, 1),
     )
     return p

@@ -4,10 +4,12 @@ from contextlib import nullcontext as does_not_raise
 
 import numpy as np
 import pytest
-from femto.curves import sin, circ, euler_S4
+from femto.curves import arc
+from femto.curves import circ
+from femto.curves import euler_S4
+from femto.curves import sin
 from femto.curves import spline
 from femto.curves import spline_bridge
-from femto.curves import arc
 from femto.waveguide import coupler
 from femto.waveguide import NasuWaveguide
 from femto.waveguide import Waveguide
@@ -111,6 +113,13 @@ def test_wg_from_dict(param) -> None:
     assert wg.dz_bridge == float(0.006)
 
 
+def test_slots(param) -> None:
+    wg = Waveguide(**param)
+    with pytest.raises(AttributeError):
+        # non-existing attribrute
+        wg.scns = 0.00
+
+
 def test_id(param) -> None:
     w = Waveguide(**param)
     assert w.id == 'WG'
@@ -125,7 +134,7 @@ def test_z_init(param) -> None:
 
 def test_scan(param) -> None:
     param['scan'] = 1.2
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         Waveguide(**param)
 
 
@@ -346,7 +355,7 @@ def test_arc_acc_len(param):
 
     wg = Waveguide(**param)
     wg.start([0, 0, 0]).coupler(dy=wg.dy_bend, dz=0, fx=circ, radius=wg.radius)
-    x, y = wg.x, wg.y
+    x, _ = wg.x, wg.y
     assert pytest.approx(x[-1] - x[0]) == 2 * wg.get_sbend_parameter(wg.dy_bend, wg.radius)[1] + wg.int_length
     wg.end()
 
@@ -1043,7 +1052,7 @@ def test_nasu_values(param) -> None:
     assert ng.adj_scan == int(3)
 
 
-def test_id(param) -> None:
+def test_nasu_id(param) -> None:
     nw = NasuWaveguide(**param)
     assert nw.id == 'NWG'
 
@@ -1052,8 +1061,8 @@ def test_id(param) -> None:
     'a_scan, exp',
     [
         (3, does_not_raise()),
-        (3.33, pytest.raises(ValueError)),
-        (0.01, pytest.raises(ValueError)),
+        (3.33, pytest.raises(TypeError)),
+        (0.01, pytest.raises(TypeError)),
         (5, does_not_raise()),
         (2, does_not_raise()),
     ],

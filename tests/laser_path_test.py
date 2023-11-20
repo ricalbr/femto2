@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import attrs
 import dill
 import numpy as np
 import pytest
@@ -80,9 +81,16 @@ def test_laserpath_values(laser_path) -> None:
     assert laser_path.end_off_sample is True
 
 
+def test_slots(param) -> None:
+    lp = LaserPath(**param)
+    with pytest.raises(AttributeError):
+        # non-existing attribrute
+        lp.sped = 10.00
+
+
 def test_scan_float_err(param) -> None:
     param['scan'] = 1.2
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         LaserPath(**param)
 
 
@@ -109,11 +117,11 @@ def test_load(param) -> None:
     lp1 = LaserPath(**param)
     fn = Path('obj.pkl')
     with open(fn, 'wb') as f:
-        dill.dump(lp1.__dict__, f)
+        dill.dump(attrs.asdict(lp1), f)
 
     lp2 = LaserPath.load(fn)
     assert isinstance(lp1, type(lp2))
-    assert sorted(lp1.__dict__) == sorted(lp2.__dict__)
+    assert sorted(attrs.asdict(lp1)) == sorted(attrs.asdict(lp2))
     fn.unlink()
 
 

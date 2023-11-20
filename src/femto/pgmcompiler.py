@@ -3,8 +3,6 @@ from __future__ import annotations
 import collections
 import contextlib
 import copy
-import dataclasses
-import inspect
 import itertools
 import math
 import pathlib
@@ -13,8 +11,10 @@ from typing import Any
 from typing import Callable
 from typing import Deque
 from typing import Generator
+from typing import TypeAlias
 from typing import TypeVar
 
+import attrs
 import dill
 import matplotlib.pyplot as plt
 import numpy as np
@@ -28,9 +28,10 @@ from scipy import interpolate
 
 # Create a generic variable that can be 'PGMCompiler', or any subclass.
 GC = TypeVar('GC', bound='PGMCompiler')
+nparray: TypeAlias = npt.NDArray[np.float32]
 
 
-@dataclasses.dataclass
+@attrs.define
 class Laser:
     """Class representing a Laser.
 
@@ -45,7 +46,7 @@ class Laser:
     mode: int | None  #: Mode od the PSO card
 
 
-@dataclasses.dataclass(repr=False)
+@attrs.define(kw_only=True, repr=False)
 class PGMCompiler:
     """Class representing a PGMCompiler.
 
@@ -71,17 +72,28 @@ class PGMCompiler:
     flip_y: bool = False  #: Flag, if True the y-coordinates will be flipped
     minimal_gcode: bool = False  #: Flag, if True redundant movements are suppressed.
 
-    _total_dwell_time: float = 0.0
-    _shutter_on: bool = False
-    _mode_abs: bool = True
-    _lasers: dict = dataclasses.field(default_factory=dict)
+    # Basic parameters
+    CWD: pathlib.Path = attrs.field(default=pathlib.Path.cwd())
+    # Load warp function
+    fwarp: Callable[[nparray, nparray], nparray] = attrs.field(
+        default=attrs.Factory(lambda self: self.antiwarp_management(self.warp_flag), takes_self=True)
+    )
 
-    def __post_init__(self) -> None:
-        # Basic parameters
-        self.CWD: pathlib.Path = pathlib.Path.cwd()
-        logger.debug(f'Set the current working directory to {self.CWD}.')
+    _total_dwell_time: float = attrs.field(alias='_total_dwell_time', default=0.0)
+    _shutter_on: bool = attrs.field(alias='_shutter_on', default=False)
+    _mode_abs: bool = attrs.field(alias='_mode_abs', default=True)
+    _lasers: dict = attrs.field(factory=dict)
+    _instructions: Deque[str] = attrs.field(factory=collections.deque)
+    _loaded_files: list[str] = attrs.field(factory=list)
+    _dvars: list[str] = attrs.field(factory=list)
 
-        # TODO: check mode and pins for FIRE LINE1
+    def __init__(self, **kwargs):
+        filtered = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}
+        print(filtered)
+        self.__attrs_init__(**filtered)
+
+    def __attrs_post_init__(self) -> None:
+
         self._lasers = {
             'ant': Laser(name='ANT', lab='DIAMOND', axis='Z', pin=0, mode=1),
             'uwe': Laser(name='UWE', lab='FIRE', axis='X', pin=None, mode=None),
@@ -93,31 +105,23 @@ class PGMCompiler:
         if self.filename is None:
             logger.error('Filename is None.')
             raise ValueError("Filename is None, set 'filename' attribute")
-        self._instructions: Deque[str] = collections.deque()
-        self._loaded_files: list[str] = []
-        self._dvars: list[str] = []
-
-        # Load warp function
-        self.fwarp: Callable[
-            [npt.NDArray[np.float32], npt.NDArray[np.float32]], npt.NDArray[np.float32]
-        ] = self.antiwarp_management(self.warp_flag)
 
         # Set rotation angle in radians for matrix rotations
         if self.rotation_angle:
             self.rotation_angle = math.radians(self.rotation_angle % 360)
+            logger.debug(f'Rotation angle is set to {self.rotation_angle}.')
         else:
             self.rotation_angle = float(0.0)
-        logger.debug(f'Rotation angle is set to {self.rotation_angle}.')
 
         # Set AeroTech angle between 0 and 359 for G84 command
         if self.aerotech_angle:
             self.aerotech_angle = self.aerotech_angle % 360
+            logger.debug(f'Axis rotation (G84) angle is set to {self.aerotech_angle}.')
         else:
             self.aerotech_angle = float(0.0)
-        logger.debug(f'Axis rotation (G84) angle is set to {self.aerotech_angle}.')
 
     @classmethod
-    def from_dict(cls: type[GC], param: dict[str, Any], **kwargs) -> GC:
+    def from_dict(cls: type(GC), param: dict[str, Any], **kwargs) -> GC:
         """Create an instance of the class from a dictionary.
 
         It takes a class and a dictionary, and returns an instance of the class with the dictionary's keys as the
@@ -140,12 +144,12 @@ class PGMCompiler:
         p.update(kwargs)
 
         logger.debug(f'Create {cls.__name__} object from dictionary.')
-        return cls(**{k: v for k, v in p.items() if k in inspect.signature(cls).parameters})
+        return cls(**p)
 
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}@{id(self) & 0xFFFFFF:x}'
 
-    def __enter__(self) -> PGMCompiler:
+    def __enter__(self) -> GC:
         """Context manager entry.
 
         The context manager takes care to automatically add the proper header file (from the `self.laser` attribute,
@@ -178,7 +182,7 @@ class PGMCompiler:
 
     def __exit__(
         self,
-        exc_type: type[BaseException] | None,
+        exc_type: type(BaseException) | None,
         exc_value: BaseException | None,
         traceback: TracebackType | None,
     ) -> None:
@@ -296,7 +300,7 @@ class PGMCompiler:
         """
 
         try:
-            par = self._lasers[self.laser.lower()].__dict__
+            par = attrs.asdict(self._lasers[self.laser.lower()])
             logger.debug(f'Load header for laser {self.laser.lower()}.')
         except (KeyError, AttributeError):
             logger.error(f'Laser can only be ANT, CARBIDE, PHAROS or UWE. Given {self.laser}.')
@@ -829,7 +833,7 @@ class PGMCompiler:
             self.dwell(self.short_pause)
             self.instruction('\n\n')
 
-    def write(self, points: npt.NDArray[np.float32]) -> None:
+    def write(self, points: nparray) -> None:
         """
         The function convert the quintuple (X,Y,Z,F,S) to G-Code instructions. The (X,Y,Z) coordinates are
         transformed using the transformation matrix that takes into account the rotation of a given rotation_angle
@@ -921,10 +925,10 @@ class PGMCompiler:
     # Geometrical transformations
     def transform_points(
         self,
-        x: npt.NDArray[np.float32],
-        y: npt.NDArray[np.float32],
-        z: npt.NDArray[np.float32],
-    ) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32], npt.NDArray[np.float32]]:
+        x: nparray,
+        y: nparray,
+        z: nparray,
+    ) -> tuple[nparray, nparray, nparray]:
         """Transform points.
 
         The function takes in a set of points and apply a set of geometrical transformation (flip, translation,
@@ -945,26 +949,26 @@ class PGMCompiler:
             Transformed `x`, `y` and `z` arrays.
         """
 
-        # normalize data
+        # Normalize data
         x = np.asarray(x, dtype=np.float32)
         y = np.asarray(y, dtype=np.float32)
         z = np.asarray(z, dtype=np.float32)
         logger.debug('Normalize x-, y-, z-arrays to numpy.ndarrys.')
 
-        # translate points to new origin
+        # Translate points to new origin
         x -= self.shift_origin[0]
         y -= self.shift_origin[1]
         logger.debug('Shift x-, y-arrays to new origin.')
 
-        # flip x, y coordinates
+        # Flip x, y coordinates
         x, y = self.flip(x, y)
 
-        # rotate points
+        # Rotate points
         point_matrix = np.stack((x, y, z), axis=-1)
         x_t, y_t, z_t = np.matmul(point_matrix, self.t_matrix).T
         logger.debug('Applied 3D rotation matrix.')
 
-        # compensate for warp
+        # Compensate for warp
         if self.warp_flag:
             logger.debug('Compensate for warp.')
             return self.compensate(x_t, y_t, z_t)
@@ -972,9 +976,9 @@ class PGMCompiler:
 
     def flip(
         self,
-        xc: npt.NDArray[np.float32],
-        yc: npt.NDArray[np.float32],
-    ) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]:
+        xc: nparray,
+        yc: nparray,
+    ) -> tuple[nparray, nparray]:
         """Flip path.
 
         Flip the laser path along the `x` and `y` coordinates.
@@ -1002,10 +1006,10 @@ class PGMCompiler:
 
     def compensate(
         self,
-        x: npt.NDArray[np.float32],
-        y: npt.NDArray[np.float32],
-        z: npt.NDArray[np.float32],
-    ) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32], npt.NDArray[np.float32]]:
+        x: nparray,
+        y: nparray,
+        z: nparray,
+    ) -> tuple[nparray, nparray, nparray]:
         """Warp compensation.
 
         Returns the `z`-compensated points for the glass warp using ``self.fwarp`` function.
@@ -1034,7 +1038,7 @@ class PGMCompiler:
         return x_comp, y_comp, z_comp
 
     @property
-    def t_matrix(self) -> npt.NDArray[np.float32]:
+    def t_matrix(self) -> nparray:
         """Composition of `xy` rotation matrix and `z` refractive index compensation.
 
         Given the rotation rotation_angle and the refractive index, the function compute the transformation matrix as

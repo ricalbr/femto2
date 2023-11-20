@@ -38,7 +38,7 @@ def empty_mk(param) -> PGMCompiler:
 
 
 def test_default_values() -> None:
-    G = PGMCompiler('prova', 1.50, 1.33)
+    G = PGMCompiler(filename='prova', n_glass=1.50, n_environment=1.33)
     assert G.filename == 'prova'
     assert G.export_dir == ''
     assert G.samplesize == (100, 50)
