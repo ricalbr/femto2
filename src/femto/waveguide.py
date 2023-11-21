@@ -17,7 +17,7 @@ WG = TypeVar('WG', bound='Waveguide')
 nparray: TypeAlias = npt.NDArray[np.float32]
 
 
-@attrs.define(slots=False, kw_only=True, repr=False)
+@attrs.define(kw_only=True, repr=False)
 class Waveguide(LaserPath):
     """Class that computes and stores the coordinates of an optical waveguide."""
 

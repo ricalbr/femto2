@@ -21,6 +21,7 @@ def param() -> dict:
         'speed_closed': 75,
         'speed_pos': 0.1,
         'samplesize': (100, 15),
+        'metadata': dict(name='LPth', power='300'),
     }
     return p
 
@@ -48,7 +49,6 @@ def laser_path(param) -> LaserPath:
 def test_default_values() -> None:
     lp = LaserPath()
 
-    assert lp.name == 'LaserPath'
     assert lp.radius == float(15)
     assert lp.scan == int(1)
     assert lp.speed == float(1.0)
@@ -62,10 +62,10 @@ def test_default_values() -> None:
     assert lp.acc_max == int(500)
     assert lp.samplesize == (100, 50)
     assert lp.end_off_sample is True
+    assert lp.metadata == {'name': 'LaserPath', 'power': None}
 
 
 def test_laserpath_values(laser_path) -> None:
-    assert laser_path.name == 'LaserPath'
     assert laser_path.radius == float(50.0)
     assert laser_path.scan == int(6)
     assert laser_path.speed == float(20.0)
@@ -79,6 +79,7 @@ def test_laserpath_values(laser_path) -> None:
     assert laser_path.acc_max == int(500)
     assert laser_path.samplesize == (100, 15)
     assert laser_path.end_off_sample is True
+    assert laser_path.metadata == dict(name='LPth', power='300')
 
 
 def test_slots(param) -> None:
@@ -97,7 +98,6 @@ def test_scan_float_err(param) -> None:
 def test_from_dict(param) -> None:
     lp = LaserPath.from_dict(param)
 
-    assert lp.name == 'LaserPath'
     assert lp.radius == float(50.0)
     assert lp.scan == int(6)
     assert lp.speed == float(20.0)
@@ -111,6 +111,7 @@ def test_from_dict(param) -> None:
     assert lp.acc_max == int(500)
     assert lp.samplesize == (100, 15)
     assert lp.end_off_sample is True
+    assert lp.metadata == dict(name='LPth', power='300')
 
 
 def test_load(param) -> None:

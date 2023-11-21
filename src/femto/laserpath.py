@@ -38,6 +38,12 @@ class LaserPath:
     cmd_rate_max: float = 1200.0  #: Maximum command rate `[cmd/s]`.
     acc_max: float = 500.0  #: Maximum acceleration/deceleration `[m/s^2]`.
     end_off_sample: bool = True  #: Flag to end laserpath off of the sample. (See `x_end`).
+    metadata: dict[str, str] = attrs.field(
+        default=attrs.Factory(
+            lambda self: {'name': type(self).__name__, 'power': None},
+            takes_self=True,
+        )
+    )
 
     _id: str = attrs.field(alias='_id', default='LP')
     _x: nparray = attrs.field(alias='_x', factory=lambda: np.array([], dtype=np.float32))
@@ -48,7 +54,6 @@ class LaserPath:
     logger.debug('Initialized all the coordinates arrays.')
 
     def __init__(self, **kwargs):
-        kwargs.setdefault('name', type(self).__name__)
         filtered = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}
         self.__attrs_init__(**filtered)
 
@@ -741,6 +746,8 @@ def main() -> None:
 
     print(f'Expected writing time {lpath.fabrication_time:.3f} seconds')
     print(f'Laser path length {lpath.length:.6f} mm')
+
+    print(lpath.metadata)
 
 
 if __name__ == '__main__':
