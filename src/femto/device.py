@@ -256,14 +256,19 @@ class Device:
                 'sample name': pathlib.Path(self._param.get('filename')).stem or '',
             }
 
+        # Fetch all objects from writers
+        objs = []
+        for key, writer in self.writers.items():
+            if isinstance(writer, (WaveguideWriter, NasuWriter, MarkerWriter)):
+                objs.extend(writer.objs)
+
+        # Generate Spreadsheet
         with Spreadsheet(**param, metadata=metadata) as S:
             if verbose:
                 logger.info('Generating spreadsheet...')
-            for key, writer in self.writers.items():
-                if isinstance(writer, (WaveguideWriter, NasuWriter, MarkerWriter)):
-                    S.write(writer.objs)
-        if verbose:
-            logger.info('Create .xlsx file completed.')
+            S.write(objs)
+            if verbose:
+                logger.info('Create .xlsx file completed.')
 
     def save(self, filename: str = 'scheme.html', opt: dict[str, Any] | None = None) -> None:
         """Save figure.
