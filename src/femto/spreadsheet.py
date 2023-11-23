@@ -25,7 +25,6 @@ class Spreadsheet:
     font_name: str = 'DejaVu Sans Mono'
     font_size: int = 11
     redundant_cols: bool = True
-    static_preamble: bool = False
     new_columns: list = attrs.field(factory=list)
     extra_preamble_info: dict = attrs.field(factory=dict)
 
@@ -60,11 +59,6 @@ class Spreadsheet:
             If True, it will suppress all redundant columns, meaning that it will not include them in the final
             spreadsheet, even if they are in the sel_cols string. Redundant columns are columns that contain the same
             value for all of the lines (structures) in the file. Defaults to True.
-
-        static_preamble: bool
-            If True, the preamble contains always the same information. For instance, if power changes during
-            fabrication, the preamble should not contain this information, and a dedicated column would appear.
-            However, with static_preamble, a preamble row appears with the in formation ``variable``. Defaults to False.
 
         Returns
         -------
