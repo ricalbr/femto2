@@ -11,6 +11,7 @@ from femto import logger
 from femto.helpers import flatten
 from femto.helpers import listcast
 from femto.marker import Marker
+from femto.waveguide import NasuWaveguide
 from femto.waveguide import Waveguide
 
 
@@ -190,7 +191,15 @@ class Spreadsheet:
 
         """
 
-        # TODO: assert data types
+        if not all(isinstance(obj_list, (Waveguide, NasuWaveguide, Marker))):
+            logger.error(
+                'Objects for Spreasheet files must be of type Waveguide, NasuWaveguide or Marker.'
+                f'Given {[type(obj) for obj in obj_list]}.'
+            )
+            raise ValueError(
+                'Objects for Spreasheet files must be of type Waveguide, NasuWaveguide or Marker.'
+                f'Given {[type(obj) for obj in obj_list]}.'
+            )
         cols_info, numerical_data = self._extract_data(obj_list)
 
         if not cols_info or numerical_data.size == 0:
