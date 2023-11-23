@@ -21,11 +21,11 @@ class Spreadsheet:
 
     columns_names: list[str] = attrs.field(factory=list)  #: List of column names for the Excel file.
     description: str = ''  #: Brief description of the fabrication for the Excel file header.
-    book_name: str | pathlib.Path = 'FABBRICATION.xlsx'  #: Name of the Excel file. Defaults to ``FABBRICATION.xlsx``.
+    book_name: str | pathlib.Path = 'FABRICATION.xlsx'  #: Name of the Excel file. Defaults to ``FABRICATION.xlsx``.
     sheet_name: str = 'Fabrication'  #: Name of the worksheet. Defaults to ``Fabrication``.
     font_name: str = 'DejaVu Sans Mono'  #: Font-family used in the document. Defaults to DejaVu Sans Mono.
     font_size: int = 11  #: Font-size used in the document. Defaults to 11.
-    redundant_cols: bool = True  #: Flag, remove redundant columns when filling the Excel file. Defaults to True.
+    redundant_cols: bool = False  #: Flag, remove redundant columns when filling the Excel file. Defaults to True.
     new_columns: list = attrs.field(factory=list)  #: New columns for the Excel file. As default value it is empty.
     metadata: dict = attrs.field(factory=dict)  #: Extra preamble information. As default it is empty.
 
@@ -41,7 +41,7 @@ class Spreadsheet:
         if not self.columns_names:
             default_cols = ['name', 'power', 'speed', 'scan', 'radius', 'int_dist', 'depth', 'yin', 'yout', 'obs']
             self.columns_names = default_cols
-            self.redundant_cols = True
+            self.redundant_cols = False
             logger.debug(
                 'Columns_names not given in Spreadsheet initialization. Will proceed with standard columns names '
                 f'"{default_cols}" and activate the redundant_cols flag to deal with reddundant columns.'
@@ -306,7 +306,7 @@ class Spreadsheet:
         if not structures:
             return [], np.ndarray([])
 
-        suppr_redd_cols = redundant_cols if redundant_cols is not None else self.redundant_cols
+        red_cols = redundant_cols if redundant_cols is not None else self.redundant_cols
         structures = flatten(structures)
 
         # Select with tagname
@@ -339,7 +339,7 @@ class Spreadsheet:
                 ignored_fields.append(t)
                 continue
 
-            if np.all(table_lines[t] == table_lines[t][0]) and suppr_redd_cols and table_lines[t][0] != '':
+            if np.all(table_lines[t] == table_lines[t][0]) and not red_cols and table_lines[t][0] != '':
                 # eliminate reddundancies if explicitly requested
                 ignored_fields.append(t)
             keep.append(t)
@@ -456,7 +456,7 @@ class Spreadsheet:
         """
         tag_columns = dict(zip([col.tagname for col in self._all_cols], self._all_cols))
 
-        if tag_columns[tag].format in 'text title':
+        if tag_columns[tag].format in ['text', 'title']:
             return 'U20'
         elif '.' in tag_columns[tag].format:
             return np.float64
