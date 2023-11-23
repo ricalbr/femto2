@@ -24,7 +24,7 @@ class Spreadsheet:
     sheet_name: str = 'Fabrication'
     font_name: str = 'DejaVu Sans Mono'
     font_size: int = 11
-    suppr_redundant_cols: bool = True
+    redundant_cols: bool = True
     static_preamble: bool = False
     new_columns: list = attrs.field(factory=list)
     extra_preamble_info: dict = attrs.field(factory=dict)
@@ -56,7 +56,7 @@ class Spreadsheet:
         sheet_name: str
             Name of the Excel spreadsheet. Defaults to ``Fabrication``.
 
-        suppr_redundant_cols: bool
+        redundant_cols: bool
             If True, it will suppress all redundant columns, meaning that it will not include them in the final
             spreadsheet, even if they are in the sel_cols string. Redundant columns are columns that contain the same
             value for all of the lines (structures) in the file. Defaults to True.
@@ -75,10 +75,10 @@ class Spreadsheet:
         if not self.columns_names:
             default_cols = ['name', 'power', 'speed', 'scan', 'radius', 'int_dist', 'depth', 'yin', 'yout', 'obs']
             self.columns_names = default_cols
-            self.suppr_redundant_cols = True
+            self.redundant_cols = True
             logger.debug(
                 'Columns_names not given in Spreadsheet initialization. Will proceed with standard columns names '
-                f'"{default_cols}" and activate the suppr_redundant_cols flag to deal with reddundant columns.'
+                f'"{default_cols}" and activate the redundant_cols flag to deal with reddundant columns.'
             )
 
         # Prepend 'name' column as default one
@@ -213,42 +213,7 @@ class Spreadsheet:
         """Close the workbook."""
         self._workbook.close()
 
-    def generate_all_cols_data(self) -> list[ColumnData]:
-        """Create the available columns array from a file.
-
-        Gathers all data from the ``utils/spreadsheet_columns.txt`` file and creates a structured array with the
-        information for all possible columns. The user can only select columns to add to the spreadsheet throught their
-        tagname, which must be in the first column of the txt document.
-        """
-
-        default_cols = []
-        new_cols = []
-        with open(pathlib.Path(__file__).parent / 'utils' / 'spreadsheet_columns.txt') as f:
-            next(f)
-            for line in f:
-                tag, name, unit, width, fmt = line.strip().split(', ')
-                default_cols.append(ColumnData(tagname=tag, name=name, unit=unit, width=width, format=fmt))
-
-        if self.new_columns:
-            for elem in self.new_columns:
-                try:
-                    tag, name, unit, width, fmt = elem
-                    new_cols.append(ColumnData(tagname=tag, name=name, unit=unit, width=width, format=fmt))
-                except ValueError:
-                    logger.error(
-                        'Wrong format. Elements of new_columns should be of the type:' '(tag, name, unit, width, fmt).'
-                    )
-                    raise ValueError(
-                        'Wrong format. Elements of new_columns should be of the type:' '(tag, name, unit, width, fmt).'
-                    )
-
-        # Merge default columns and new columns
-        def_dict = dict(zip([col.tagname for col in default_cols], default_cols))
-        new_dict = dict(zip([col.tagname for col in new_cols], new_cols))
-        def_dict.update(new_dict)
-        return list(def_dict.values())
-
-    def write(self, obj_list: list, start: int = 5) -> None:
+    def write(self, obj_list: list[Waveguide, Marker], start: int = 5) -> None:
         """Write the structures to the spreadsheet.
 
         Builds the structures list, containing all the required information about the structures to fabricate. Then,
@@ -262,6 +227,7 @@ class Spreadsheet:
 
         """
 
+        # TODO: assert data types
         cols_info, numerical_data = self._extract_data(obj_list)
 
         # Set the correct width and create the data format.
@@ -289,73 +255,66 @@ class Spreadsheet:
             ]
             self._add_line(row=i + 8, col=5, data=sdata, fmt=[col.format for col in cols_info])
 
-    def _dtype(self, tag: str):
-        """Return the data type corresponding to a give column tagname.
+    def generate_all_cols_data(self) -> list[ColumnData]:
+        """Create the available columns array from a file.
 
-        The data type is determined in the ``columns.txt`` file, under the column named ``format``. The dtypes are
-        assigned according to the following possibilities for that field:
-
-        - ``text`` or ``title`` -> dtype: 20-character str
-        - sequence of zeros with a dot somewhere -> dtype: float
-        - sequence of zeros with no dot -> dtype: int
-
-        Parameters
-        ----------
-        tag: str
-            The tagname of the column type. Must be contained in the ``columns.txt`` file under the ``utils`` folder.
-            Not case sensitive.
-
-        Returns
-        -------
-        dt: type
-            Type of the data.
-
+        Gathers all data from the ``utils/spreadsheet_columns.txt`` file and creates a structured array with the
+        information for all possible columns. The user can only select columns to add to the spreadsheet throught their
+        tagname, which must be in the first column of the txt document.
         """
-        tag_columns = dict(zip([col.tagname for col in self._all_cols], self._all_cols))
 
-        if tag_columns[tag].format in 'text title':
-            return 'U20'
-        elif '.' in tag_columns[tag].format:
-            return np.float64
-        else:
-            return np.int64
+        default_cols = []
+        new_cols = []
+        with open(pathlib.Path(__file__).parent / 'utils' / 'spreadsheet_columns.txt') as f:
+            next(f)
+            for line in f:
+                tag, name, unit, width, fmt = line.strip().split(', ')
+                default_cols.append(ColumnData(tagname=tag, name=name, unit=unit, width=width, format=fmt))
+
+        if self.new_columns:
+            for elem in self.new_columns:
+                try:
+                    tag, name, unit, width, fmt = elem
+                    new_cols.append(ColumnData(tagname=tag, name=name, unit=unit, width=width, format=fmt))
+                except ValueError:
+                    logger.error(
+                        'Wrong format. Elements of new_columns should be of the type: (tag, name, unit, width, fmt).'
+                    )
+                    raise ValueError(
+                        'Wrong format. Elements of new_columns should be of the type: (tag, name, unit, width, fmt).'
+                    )
+
+        # Merge default columns and new columns
+        def_dict = dict(zip([col.tagname for col in default_cols], default_cols))
+        new_dict = dict(zip([col.tagname for col in new_cols], new_cols))
+        def_dict.update(new_dict)
+        return list(def_dict.values())
 
     def _extract_data(
         self,
         structures: list[Waveguide | Marker] | None = None,
+        redundant_cols: bool | None = None,
         verbose: bool = False,
-    ):
+    ) -> tuple[list[ColumnData], np.ndarray]:
         """Build a table with all of the structures.
 
         The table has as lines the several structures, and for each of them, all of the fields given as columns_names
         as column data. Determines the columns that will be effectively added to the sheet, according to the specified
-        suppr_redundant_cols and static_preamble.
+        redundant_cols and static_preamble.
 
         Parameters
         ----------
         structures: list
             Contains the waveguides and the markers to be added to the table.
 
-        columns_names: str
-            The relevant table columns, separated by a single whitespace. The user must provide a string with
-            tagnames separated by a whitespace and the tagnames must be contained in the first column of the text
-            file ``columns.txt`` located in the utils folder.
-
-        suppr_redd_cols: bool
+        redundant_cols: bool, optional
             If True, it will suppress all redundant columns, meaning that it will not include them in the final
             spreadsheet, even if they are in the sel_cols string. Redundant columns are columns that contain the same
             value for all of the lines (structures) in the file. Defaults to the given instation value (otherwise True).
 
-        static_preamble: bool
-            If True, the preamble contains always the same information. For instance, if power changes during
-            fabrication, the preamble should not contain this information, and a dedicated column would appear.
-            However, with static_preamble, a preamble row appears with the in formation ``variable``.
-            Defaults to the given instation value (otherwise False).
-
         verbose: bool
             If True, prints the columns, selected by the user, that will be excluded from the spreadsheet because they
-            are reddundant (in the case that suppr_redundant_cols is set to True).
-
+            are reddundant (in the case that redundant_cols is set to True).
         """
 
         def coords(x):
@@ -367,16 +326,15 @@ class Spreadsheet:
                 },
             }
 
-        suppr_redd_cols = self.suppr_redundant_cols
+        suppr_redd_cols = redundant_cols if redundant_cols is not None else self.redundant_cols
         structures = flatten(structures)
 
         # Select with tagname
         column_name_info = [col for col in self._all_cols if col.tagname in self.columns_names]
         dtype = [(t, self._dtype(t)) for t in self.columns_names]
 
-        # Create table
+        # Create data table
         table_lines = np.zeros_like(structures, dtype=dtype)
-        # table_lines = []
 
         # Extract all data from structures (either attributes of metadata)
         for i, ent in enumerate(structures):
@@ -391,7 +349,6 @@ class Spreadsheet:
                     item = 1.1e5 if typ in [np.float64, np.int64] else ''
                 data_line.append(item)
             table_lines[i] = tuple(data_line)
-            # table_lines.append(tuple(data_line))
 
         # Select
         keep = []
@@ -420,46 +377,7 @@ class Spreadsheet:
         info = [col for col in column_name_info if col.tagname in keep]
         return info, table_lines[keep]
 
-    def _create_formats(self) -> dict[str, Any]:
-        """Prepare the basic formats that will be used.
-
-        These are the following:
-            - title: used for all section titles
-            - parameter name: used for the name of variables in the preamble
-            - parameter value: used for the preamble variables themselves
-            - time: general time format HH:MM:SS for the fabrication time
-            - date: general date format DD/MM/YYYY for the fabrication date
-
-        They are inserted into a dictionary, becoming available through the respective abbreviated key.
-        """
-
-        al = {'align': 'center', 'valign': 'vcenter', 'border': 1}
-        tit_specs = {'font_color': 'white', 'bg_color': '#6C5B7B'}
-        titt = dict(**{'bold': True, 'text_wrap': True}, **al)
-
-        title_fmt = self._workbook.add_format(dict(**tit_specs, **titt))
-        parname_fmt = self._workbook.add_format(dict(**{'bg_color': '#D5CABD'}, **titt))
-        parval_fmt = self._workbook.add_format(dict(**{'text_wrap': True}, **al))
-        text_fmt = self._workbook.add_format({'align': 'center', 'valign': 'vcenter'})
-        date_fmt = self._workbook.add_format(dict(**{'num_format': 'DD/MM/YYYY'}, **al))
-        time_fmt = self._workbook.add_format(dict(**{'num_format': 'HH:MM:SS'}, **al))
-
-        return {
-            'title': title_fmt,
-            'parname': parname_fmt,
-            'parval': parval_fmt,
-            'text': text_fmt,
-            'date': date_fmt,
-            'time': time_fmt,
-        }
-
-    def _add_line(
-        self,
-        row: int,
-        col: int,
-        data: list[str],
-        fmt: list[str] | None = None,
-    ) -> None:
+    def _add_line(self, row: int, col: int, data: list[str], fmt: list[str] | None = None) -> None:
         """Add a line to the spreadsheet.
 
         Takes a start cell and writes a sequence of data in that and the following cells in the same line. Also
@@ -500,6 +418,70 @@ class Spreadsheet:
                 self._worksheet.write_formula(row, col + i, data_val, f)
             else:
                 self._worksheet.write(row, col + i, data_val, f)
+
+    def _create_formats(self) -> dict[str, Any]:
+        """Prepare the basic formats that will be used.
+
+        These are the following:
+            - title: used for all section titles
+            - parameter name: used for the name of variables in the preamble
+            - parameter value: used for the preamble variables themselves
+            - time: general time format HH:MM:SS for the fabrication time
+            - date: general date format DD/MM/YYYY for the fabrication date
+
+        They are inserted into a dictionary, becoming available through the respective abbreviated key.
+        """
+
+        al = {'align': 'center', 'valign': 'vcenter', 'border': 1}
+        tit_specs = {'font_color': 'white', 'bg_color': '#6C5B7B'}
+        titt = dict(**{'bold': True, 'text_wrap': True}, **al)
+
+        title_fmt = self._workbook.add_format(dict(**tit_specs, **titt))
+        parname_fmt = self._workbook.add_format(dict(**{'bg_color': '#D5CABD'}, **titt))
+        parval_fmt = self._workbook.add_format(dict(**{'text_wrap': True}, **al))
+        text_fmt = self._workbook.add_format({'align': 'center', 'valign': 'vcenter'})
+        date_fmt = self._workbook.add_format(dict(**{'num_format': 'DD/MM/YYYY'}, **al))
+        time_fmt = self._workbook.add_format(dict(**{'num_format': 'HH:MM:SS'}, **al))
+
+        return {
+            'title': title_fmt,
+            'parname': parname_fmt,
+            'parval': parval_fmt,
+            'text': text_fmt,
+            'date': date_fmt,
+            'time': time_fmt,
+        }
+
+    def _dtype(self, tag: str):
+        """Return the data type corresponding to a give column tagname.
+
+        The data type is determined in the ``columns.txt`` file, under the column named ``format``. The dtypes are
+        assigned according to the following possibilities for that field:
+
+        - ``text`` or ``title`` -> dtype: 20-character str
+        - sequence of zeros with a dot somewhere -> dtype: float
+        - sequence of zeros with no dot -> dtype: int
+
+        Parameters
+        ----------
+        tag: str
+            The tagname of the column type. Must be contained in the ``columns.txt`` file under the ``utils`` folder.
+            Not case sensitive.
+
+        Returns
+        -------
+        dt: type
+            Type of the data.
+
+        """
+        tag_columns = dict(zip([col.tagname for col in self._all_cols], self._all_cols))
+
+        if tag_columns[tag].format in 'text title':
+            return 'U20'
+        elif '.' in tag_columns[tag].format:
+            return np.float64
+        else:
+            return np.int64
 
 
 @attrs.define
