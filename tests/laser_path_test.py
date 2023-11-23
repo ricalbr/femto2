@@ -62,7 +62,7 @@ def test_default_values() -> None:
     assert lp.acc_max == int(500)
     assert lp.samplesize == (100, 50)
     assert lp.end_off_sample is True
-    assert lp.metadata == {'name': 'LaserPath', 'power': None}
+    assert lp.metadata == {'name': 'LaserPath'}
 
 
 def test_laserpath_values(laser_path) -> None:
