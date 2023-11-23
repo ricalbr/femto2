@@ -38,6 +38,7 @@ class Waveguide(LaserPath):
         self.__attrs_init__(**filtered)
 
     def __attrs_post_init__(self):
+        super().__attrs_post_init__()
         if self.z_init is None:
             self.z_init = self.depth
             logger.debug(f'Set z_init to {self.z_init} mm.')

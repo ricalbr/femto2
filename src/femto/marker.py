@@ -26,6 +26,7 @@ class Marker(LaserPath):
         self.__attrs_init__(**filtered)
 
     def __attrs_post_init__(self):
+        super().__attrs_post_init__()
         if self.z_init is None:
             self.z_init = self.depth
             logger.debug(f'z_init set to {self.z_init}.')

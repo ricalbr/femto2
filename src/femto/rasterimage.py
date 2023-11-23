@@ -19,6 +19,7 @@ class RasterImage(LaserPath):
     _id: str = attrs.field(alias='_id', default='RI')  #: RasterImage ID.
 
     def __attrs_post_init__(self):
+        super().__attrs_post_init__()
         if self.z_init is None:
             self.z_init = 0.0
 

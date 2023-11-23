@@ -38,12 +38,7 @@ class LaserPath:
     cmd_rate_max: float = 1200.0  #: Maximum command rate `[cmd/s]`.
     acc_max: float = 500.0  #: Maximum acceleration/deceleration `[m/s^2]`.
     end_off_sample: bool = True  #: Flag to end laserpath off of the sample. (See `x_end`).
-    metadata: dict[str, str] = attrs.field(
-        default=attrs.Factory(
-            lambda self: {'name': type(self).__name__, 'power': None},
-            takes_self=True,
-        )
-    )
+    metadata: dict[str, str] = attrs.field(default=dict())
 
     _id: str = attrs.field(alias='_id', default='LP')
     _x: nparray = attrs.field(alias='_x', factory=lambda: np.array([], dtype=np.float32))
@@ -56,6 +51,10 @@ class LaserPath:
     def __init__(self, **kwargs):
         filtered = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}
         self.__attrs_init__(**filtered)
+
+    def __attrs_post_init__(self):
+        if 'name' not in self.metadata.keys():
+            self.metadata['name'] = type(self).__name__
 
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}@{id(self) & 0xFFFFFF:x}'
