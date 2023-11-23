@@ -449,7 +449,8 @@ class Spreadsheet:
             }
 
         structures = self._get_structure_list(structures)
-        n_structures = len(structures)
+        # n_structures = len(structures)
+        # structure è lista flattened di oggetti -> guide e marker
 
         if columns_names is None:
             columns_names = self.columns_names
@@ -463,35 +464,35 @@ class Spreadsheet:
         sel_cols = columns_names.split(' ')
 
         ac = self.all_cols
+        # carico lista di colonne (custom) + parametri di default + all_cols
 
+        # selezione con tagname
         inds = [np.where(ac['tagname'] == sc)[0][0] for sc in sel_cols]
 
         cols_data = ac[inds]
         tagnames = cols_data['tagname']
-        dtype = [(t, self._dtype(t)) for t in tagnames]
+        # dtype = [(t, self._dtype(t)) for t in tagnames]
 
-        table_lines = np.zeros(n_structures, dtype=dtype)
+        # table_lines = np.zeros(n_structures, dtype=dtype)
+        table_lines = []
 
         for i, ent in enumerate(structures):
 
             sline = []
-
             for t in tagnames:
-
-                if t in 'yin yout':
+                if t in ['yin', 'yout']:
                     item = coords(ent)[type(ent)][t]
                 else:
                     item = getattr(ent, t, None)
 
                 if item is None:
                     item = 1.1e5 if self._dtype(t) in [np.float64, np.int64] else ''
-
+                    # item = ''
                 sline.append(item)
 
             table_lines[i] = tuple(sline)
 
         keep = []
-
         ignored_fields = []
 
         for i, t in enumerate(tagnames):
@@ -509,28 +510,27 @@ class Spreadsheet:
                 # eliminate reddundancies if explicitly requested
                 ignored_fields.append(t)
 
-                if self.preamble[t]:
-                    # is it something that might go on the preamble?
-                    # If yes, put it there
-                    self.preamble[t].v = f'{table_lines[t][0]}'
-
+                # if self.preamble[t]:
+                #     # is it something that might go on the preamble?
+                #     # If yes, put it there
+                #     self.preamble[t].v = f'{table_lines[t][0]}'
                 continue
 
-            elif static_preamble and self.preamble[t]:
-                # keep it in the preamble with the indication variable
-                self.preamble[t].v = 'variable'
+            # elif static_preamble and self.preamble[t]:
+            #     # keep it in the preamble with the indication variable
+            #     self.preamble[t].v = 'variable'
 
-            elif self.preamble[t]:
-                # it has a dedicated column, so need not be in the preamble
-                self.preamble.pop(t)
+            # elif self.preamble[t]:
+            #     # it has a dedicated column, so need not be in the preamble
+            #     self.preamble.pop(t)
 
             keep.append(i)
 
         if ignored_fields and verbose:
             fields_left_out = ', '.join(ignored_fields)
             print(
-                f'For all entities, the fields {fields_left_out} were not '
-                'defined, so they will not be shown as table columns.'
+                f'For all entities, the fields {fields_left_out} were not defined, so they will not be shown as '
+                'table columns.'
             )
 
         self.keep = keep
@@ -691,8 +691,8 @@ class Spreadsheet:
             List of strings with the several data to write, in the order which they should appear, column-wise.
 
         fmt: list
-            List of the formats to be used. Must be present in self.formats, so make sure to create the format prior
-            to using it. Defaults to the default text properties of the spreadsheet, given at the moment of
+            list of the formats to be used. must be present in self.formats, so make sure to create the format prior
+            to using it. defaults to the default text properties of the spreadsheet, given at the moment of
             instantiation.
 
         Returns
