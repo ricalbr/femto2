@@ -438,7 +438,7 @@ class Spreadsheet:
         titt = dict(**{'bold': True, 'text_wrap': True}, **al)
 
         title_fmt = self._workbook.add_format(dict(**tit_specs, **titt))
-        parname_fmt = self._workbook.add_format(dict(**{'bg_color': '#F8B195'}, **titt))
+        parname_fmt = self._workbook.add_format(dict(**{'bg_color': '#D5CABD'}, **titt))
         parval_fmt = self._workbook.add_format(dict(**{'text_wrap': True}, **al))
         text_fmt = self._workbook.add_format({'align': 'center', 'valign': 'vcenter'})
         date_fmt = self._workbook.add_format(dict(**{'num_format': 'DD/MM/YYYY'}, **al))
