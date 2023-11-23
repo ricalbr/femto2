@@ -191,7 +191,7 @@ class Spreadsheet:
 
         """
 
-        if not all(isinstance(obj_list, (Waveguide, NasuWaveguide, Marker))):
+        if not all([isinstance(obj, (Waveguide, NasuWaveguide, Marker)) for obj in obj_list]):
             logger.error(
                 'Objects for Spreasheet files must be of type Waveguide, NasuWaveguide or Marker.'
                 f'Given {[type(obj) for obj in obj_list]}.'
@@ -234,13 +234,12 @@ class Spreadsheet:
     def generate_all_cols_data(self) -> list[ColumnData]:
         """Create the available columns array from a file.
 
-        Gathers all data from the ``utils/spreadsheet_columns.txt`` file and creates a structured array with the
-        information for all possible columns. The user can only select columns to add to the spreadsheet throught their
-        tagname, which must be in the first column of the txt document.
+        Fetches all data from the ``utils/spreadsheet_columns.txt`` file and creates a list with the information for
+        all possible columns. The user can only select columns to add to the spreadsheet throught their tagname,
+        which must be in the first column of the txt document.
         """
 
         default_cols = []
-        new_cols = []
         with open(pathlib.Path(__file__).parent / 'utils' / 'spreadsheet_columns.txt') as f:
             next(f)
             for line in f:
@@ -248,23 +247,22 @@ class Spreadsheet:
                 default_cols.append(ColumnData(tagname=tag, name=name, unit=unit, width=width, format=fmt))
 
         if self.new_columns:
+            new_cols = []
             for elem in self.new_columns:
                 try:
                     tag, name, unit, width, fmt = elem
                     new_cols.append(ColumnData(tagname=tag, name=name, unit=unit, width=width, format=fmt))
                 except ValueError:
-                    logger.error(
-                        'Wrong format. Elements of new_columns should be of the type: (tag, name, unit, width, fmt).'
-                    )
-                    raise ValueError(
-                        'Wrong format. Elements of new_columns should be of the type: (tag, name, unit, width, fmt).'
-                    )
+                    logger.error('Wrong format. Columns elements must be a tuple: (tag, name, unit, width, fmt).')
+                    raise ValueError('Wrong format. Columns elements must be a tuple: (tag, name, unit, width, fmt).')
 
-        # Merge default columns and new columns
-        def_dict = dict(zip([col.tagname for col in default_cols], default_cols))
-        new_dict = dict(zip([col.tagname for col in new_cols], new_cols))
-        def_dict.update(new_dict)
-        return list(def_dict.values())
+            # Merge default columns and new columns keeping the values of the latter ones.
+            def_dict = dict(zip([col.tagname for col in default_cols], default_cols))
+            new_dict = dict(zip([col.tagname for col in new_cols], new_cols))
+            def_dict.update(new_dict)
+            return list(def_dict.values())
+
+        return default_cols
 
     def _extract_data(
         self,
@@ -295,7 +293,10 @@ class Spreadsheet:
 
         def coords(x):
             return {
-                Waveguide: {'yin': x.path3d[1][0], 'yout': x.path3d[1][-1]},
+                Waveguide: {
+                    'yin': x.path3d[1][0],
+                    'yout': x.path3d[1][-1],
+                },
                 Marker: {
                     'yin': (max(x.path3d[0][:]) + min(x.path3d[0][:])) / 2,
                     'yout': (max(x.path3d[1][:]) + min(x.path3d[1][:])) / 2,
