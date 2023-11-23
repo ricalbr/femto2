@@ -523,7 +523,6 @@ def main() -> None:
     import numpy as np
     from itertools import product
 
-    # from femto.device import Device
     from femto.helpers import dotdict
     from femto.waveguide import Waveguide
 
