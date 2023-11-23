@@ -353,6 +353,7 @@ class NasuWaveguide(Waveguide):
         self.__attrs_init__(**filtered)
 
     def __attrs_post_init__(self):
+        super().__attrs_post_init__()
         if self.z_init is None:
             self.z_init = self.depth
 
