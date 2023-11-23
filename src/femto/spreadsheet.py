@@ -206,7 +206,8 @@ class Spreadsheet:
                         cell_format=self._formats[p.format],
                     )
                 row += 1
-                self._add_line(row=p.row, col=p.col, data=[p.name.capitalize(), ''], fmt=['parname', p.format])
+
+                self._add_line(row=p.row, col=p.col, data=[p.name.capitalize(), p.value], fmt=['parname', p.format])
             row += 2
 
     def close(self):
@@ -229,6 +230,10 @@ class Spreadsheet:
 
         # TODO: assert data types
         cols_info, numerical_data = self._extract_data(obj_list)
+
+        if not cols_info or numerical_data.size == 0:
+            logger.debug('No column names or numerical data.')
+            return
 
         # Set the correct width and create the data format.
         for i, col in enumerate(cols_info):
@@ -325,6 +330,9 @@ class Spreadsheet:
                     'yout': (max(x.path3d[1][:]) + min(x.path3d[1][:])) / 2,
                 },
             }
+
+        if not structures:
+            return [], np.ndarray([])
 
         suppr_redd_cols = redundant_cols if redundant_cols is not None else self.redundant_cols
         structures = flatten(structures)

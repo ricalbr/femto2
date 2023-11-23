@@ -250,10 +250,12 @@ class Device:
         Add all waveguides and markers of the ``Device`` to the spreadsheet.
         """
 
-        with Spreadsheet(device=self, **param) as spsh:
+        with Spreadsheet(**param) as S:
             if verbose:
                 logger.info('Generating spreadsheet...')
-            spsh.write_structures(verbose=verbose)
+            for key, writer in self.writers.items():
+                if isinstance(writer, (WaveguideWriter, NasuWriter, MarkerWriter)):
+                    S.write(writer.objs)
         if verbose:
             logger.info('Create .xlsx file completed.')
 
@@ -367,8 +369,9 @@ def main() -> None:
     # Export
     # dev.plot2d()
     # dev.save('circuit_scheme.pdf')
-    dev.pgm()
-    dev.export()
+    # dev.pgm()
+    # dev.export()
+    dev.xlsx()
 
 
 if __name__ == '__main__':
