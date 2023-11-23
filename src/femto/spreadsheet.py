@@ -18,15 +18,15 @@ from femto.waveguide import Waveguide
 class Spreadsheet:
     """Class representing the spreadsheet with all entities to fabricate."""
 
-    columns_names: list[str] = attrs.field(factory=list)
-    description: str = ''
-    book_name: str | pathlib.Path = 'FABRICATION.xlsx'
-    sheet_name: str = 'Fabrication'
-    font_name: str = 'DejaVu Sans Mono'
-    font_size: int = 11
-    redundant_cols: bool = True
-    new_columns: list = attrs.field(factory=list)
-    extra_preamble_info: dict = attrs.field(factory=dict)
+    columns_names: list[str] = attrs.field(factory=list)  #: List of column names for the Excel file.
+    description: str = ''  #: Brief description of the fabrication for the Excel file header.
+    book_name: str | pathlib.Path = 'FABBRICATION.xlsx'  #: Name of the Excel file. Defaults to ``FABBRICATION.xlsx``.
+    sheet_name: str = 'Fabrication'  #: Name of the worksheet. Defaults to ``Fabrication``.
+    font_name: str = 'DejaVu Sans Mono'  #: Font-family used in the document. Defaults to DejaVu Sans Mono.
+    font_size: int = 11  #: Font-size used in the document. Defaults to 11.
+    redundant_cols: bool = True  #: Flag, remove redundant columns when filling the Excel file. Defaults to True.
+    new_columns: list = attrs.field(factory=list)  #: New columns for the Excel file. As default value it is empty.
+    metadata: dict = attrs.field(factory=dict)  #: Extra preamble information. As default it is empty.
 
     _workbook: xlsxwriter.Workbook = None
     _worksheet: xlsxwriter.Workbook.worksheets = None
@@ -35,37 +35,8 @@ class Spreadsheet:
     _formats: dict = attrs.field(alias='_formats', factory=dict)
 
     def __attrs_post_init__(self) -> None:
-        """Intitialization of the Spreadsheet object.
 
-        Opens a new workbook with a default spreadsheet named ``Fabrication``. Creates the basic formats that will be
-        used, determines the columns that really need to be used, and writed the map of the fabrication.
-
-        Parameters
-        ----------
-
-        columns_names: str
-            The columns to be written, separated by a single whitespace. The user must provide a string with tagnames
-            separated by a whitespace and the tagnames must be contained in the first column of the text file
-            ``columns.txt`` located in the utils folder.
-
-        book_name: str
-            Name of the Excel file, without the extension, which will be added automatically.
-            Defaults to ``FABRICATION.xlsx``.
-
-        sheet_name: str
-            Name of the Excel spreadsheet. Defaults to ``Fabrication``.
-
-        redundant_cols: bool
-            If True, it will suppress all redundant columns, meaning that it will not include them in the final
-            spreadsheet, even if they are in the sel_cols string. Redundant columns are columns that contain the same
-            value for all of the lines (structures) in the file. Defaults to True.
-
-        Returns
-        -------
-        None
-
-        """
-
+        # Fetch default column names
         if not self.columns_names:
             default_cols = ['name', 'power', 'speed', 'scan', 'radius', 'int_dist', 'depth', 'yin', 'yout', 'obs']
             self.columns_names = default_cols
@@ -79,6 +50,7 @@ class Spreadsheet:
         if 'name' not in self.columns_names:
             self.columns_names = ['name'] + self.columns_names
 
+        # Create the workbook and worksheet
         self._workbook = xlsxwriter.Workbook(
             self.book_name,
             options={'default_format_properties': {'font_name': self.font_name, 'font_size': self.font_size}},
@@ -86,7 +58,7 @@ class Spreadsheet:
         self._worksheet = self._workbook.add_worksheet(self.sheet_name)
         self._workbook.set_calc_mode('auto')
 
-        # Create all the Parameters contained in the general preamble_info
+        # Create all the Parameters contained in the preamble_info
         # Add them to a dictionary with the key equal to their tagname
         preamble_info: dict = {
             'General': ['laboratory', 'temperature', 'humidity', 'date', 'start', 'sample name'],
@@ -97,14 +69,11 @@ class Spreadsheet:
 
         preamble_data = {}
         for k, val in preamble_info.items():
-            subcat_data = {}
-            for t in val:
-                p = PreambleParameter(name=t)
-                subcat_data[t] = p
-            preamble_data[k] = subcat_data
+            preamble_data[k] = {t: PreambleParameter(name=t) for t in val}
 
-        preamble_data = {**preamble_data, **self.extra_preamble_info}
-        preamble_data['Laser']['laser name'].value = 'Pharos'
+        # TODO: fill with metadata
+        preamble_data['Laser']['laser name'].value = self.metadata.get('laser name') or ''
+        preamble_data['General']['sample name'].value = self.metadata.get('sample name') or ''
         preamble_data['General']['start'].format = 'time'
         preamble_data['General']['date'].format = 'date'
 
