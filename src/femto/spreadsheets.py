@@ -7,7 +7,6 @@ from typing import Any
 import attrs
 import numpy as np
 import xlsxwriter
-from femto import __file__ as fpath
 from femto import logger
 from femto.helpers import flatten
 from femto.helpers import listcast
@@ -27,19 +26,10 @@ class Spreadsheet:
     font_size: int = 11
     suppr_redundant_cols: bool = True
     static_preamble: bool = False
-    saints: bool = False
     new_columns: list = attrs.field(factory=list)
     extra_preamble_info: dict = attrs.field(factory=dict)
 
-    _workbook: xlsxwriter.Workbook = attrs.field(
-        default=attrs.Factory(
-            lambda self: xlsxwriter.Workbook(
-                self.book_name,
-                options={'default_format_properties': {'font_name': self.font_name, 'font_size': self.font_size}},
-            ),
-            takes_self=True,
-        )
-    )
+    _workbook: xlsxwriter.Workbook = None
     _worksheet: xlsxwriter.Workbook.worksheets = None
     _all_cols: list[ColumnData] = attrs.field(alias='_all_cols', factory=list)
     _preamble_data: dict = attrs.field(alias='_preamble_data', factory=dict)
@@ -91,38 +81,41 @@ class Spreadsheet:
                 f'"{default_cols}" and activate the suppr_redundant_cols flag to deal with reddundant columns.'
             )
 
+        # Prepend 'name' column as default one
         if 'name' not in self.columns_names:
-            self.columns_names = ['name', *self.columns_names]
+            self.columns_names = ['name'] + self.columns_names
 
-        self._all_cols = self.generate_all_cols_data()
+        self._workbook = xlsxwriter.Workbook(
+            self.book_name,
+            options={'default_format_properties': {'font_name': self.font_name, 'font_size': self.font_size}},
+        )
         self._worksheet = self._workbook.add_worksheet(self.sheet_name)
         self._workbook.set_calc_mode('auto')
 
         # Create all the Parameters contained in the general preamble_info
         # Add them to a dictionary with the key equal to their tagname
         preamble_info: dict = {
-            'General': ['laboratory', 'temperature', 'humidity', 'date', 'start', 'sample_name'],
+            'General': ['laboratory', 'temperature', 'humidity', 'date', 'start', 'sample name'],
             'Substrate': ['material', 'facet', 'thickness'],
-            'Laser': ['laser_name', 'wl', 'duration', 'reprate', 'attenuator', 'preset'],
+            'Laser': ['laser name', 'wl', 'duration', 'reprate', 'attenuator', 'preset'],
             'Irradiation': ['objective', 'power', 'speed', 'scan', 'depth'],
         }
 
         preamble_data = {}
-        for k, v in preamble_info.items():
+        for k, val in preamble_info.items():
             subcat_data = {}
-            for t in v:
-                p = PreambleParameter(name=t.replace('_', ' '))
+            for t in val:
+                p = PreambleParameter(name=t)
                 subcat_data[t] = p
             preamble_data[k] = subcat_data
 
-        self.description = self.extra_preamble_info.pop('description', '')
-
         preamble_data = {**preamble_data, **self.extra_preamble_info}
-        preamble_data['Laser']['laser_name'].value = 'Pharos'
+        preamble_data['Laser']['laser name'].value = 'Pharos'
         preamble_data['General']['start'].format = 'time'
         preamble_data['General']['date'].format = 'date'
 
         self._preamble_data = preamble_data
+        self._all_cols = self.generate_all_cols_data()
         self._formats = self._create_formats()
 
     def __enter__(self) -> Spreadsheet:
@@ -153,12 +146,8 @@ class Spreadsheet:
         self._worksheet.set_column(first_col=2, last_col=2, width=15)
 
         # Add the femto logo at top left of spreadsheet
-        path_logo = pathlib.Path(fpath).parent / 'utils' / 'logo_excel.jpg'
-        self._worksheet.insert_image(
-            'B2',
-            filename=path_logo,
-            options={'x_scale': 0.525, 'y_scale': 0.525},
-        )
+        path_logo = pathlib.Path(__file__).parent / 'utils' / 'logo_excel.png'
+        self._worksheet.insert_image('B2', filename=path_logo, options={'x_scale': 0.33, 'y_scale': 0.33})
 
         # Write the header and leave space for fabrication description
         self._worksheet.set_row(row=2, height=50)
@@ -234,7 +223,7 @@ class Spreadsheet:
 
         default_cols = []
         new_cols = []
-        with open(pathlib.Path(fpath).parent / 'utils' / 'spreadsheet_columns.txt') as f:
+        with open(pathlib.Path(__file__).parent / 'utils' / 'spreadsheet_columns.txt') as f:
             next(f)
             for line in f:
                 tag, name, unit, width, fmt = line.strip().split(', ')
@@ -291,11 +280,7 @@ class Spreadsheet:
         self._add_line(row=7, col=5, data=titles, fmt=len(titles) * ['title'])
 
         # Data
-        for c in cols_info:
-            print(c)
-        print(numerical_data)
         for i, sdata in enumerate(numerical_data):
-            print(sdata)
             sdata = [
                 s
                 if (isinstance(s, (np.int64, np.float64)) and s < 1e5) or (not isinstance(s, (np.int64, np.float64)))
@@ -449,11 +434,11 @@ class Spreadsheet:
         """
 
         al = {'align': 'center', 'valign': 'vcenter', 'border': 1}
-        tit_specs = {'font_color': 'white', 'bg_color': '#0D47A1'}
+        tit_specs = {'font_color': 'white', 'bg_color': '#6C5B7B'}
         titt = dict(**{'bold': True, 'text_wrap': True}, **al)
 
         title_fmt = self._workbook.add_format(dict(**tit_specs, **titt))
-        parname_fmt = self._workbook.add_format(dict(**{'bg_color': '#BBDEFB'}, **titt))
+        parname_fmt = self._workbook.add_format(dict(**{'bg_color': '#F8B195'}, **titt))
         parval_fmt = self._workbook.add_format(dict(**{'text_wrap': True}, **al))
         text_fmt = self._workbook.add_format({'align': 'center', 'valign': 'vcenter'})
         date_fmt = self._workbook.add_format(dict(**{'num_format': 'DD/MM/YYYY'}, **al))
