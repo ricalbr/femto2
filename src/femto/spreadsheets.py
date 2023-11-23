@@ -3,7 +3,6 @@ from __future__ import annotations
 import pathlib
 from types import TracebackType
 from typing import Any
-from typing import TypeAlias
 
 import attrs
 import numpy as np
@@ -14,9 +13,6 @@ from femto.helpers import flatten
 from femto.helpers import listcast
 from femto.marker import Marker
 from femto.waveguide import Waveguide
-
-# SpreadsheetStruct: TypeAlias = npt.NDArray[Any, tuple[str, str, str, int, str]]
-SpreadsheetStruct: TypeAlias = list[tuple[str, str, str, int, str]]
 
 
 @attrs.define(kw_only=True)
@@ -45,7 +41,7 @@ class Spreadsheet:
         )
     )
     _worksheet: xlsxwriter.Workbook.worksheets = None
-    _all_cols: SpreadsheetStruct = attrs.field(alias='_all_cols', factory=SpreadsheetStruct)
+    _all_cols: list[ColumnData] = attrs.field(alias='_all_cols', factory=list)
     _preamble_data: dict = attrs.field(alias='_preamble_data', factory=dict)
     _formats: dict = attrs.field(alias='_formats', factory=dict)
 
@@ -281,8 +277,8 @@ class Spreadsheet:
 
         # Set the correct width and create the data format.
         for i, col in enumerate(cols_info):
-            self._worksheet.set_column(first_col=start + i, last_col=start + i, width=col['width'])
-            fmt = col['format']
+            self._worksheet.set_column(first_col=start + i, last_col=start + i, width=int(col.width))
+            fmt = col.format
             if fmt not in self._formats.keys():
                 self._formats[str(fmt)] = self._workbook.add_format(
                     {'align': 'center', 'valign': 'vcenter', 'num_format': str(fmt)}
@@ -290,21 +286,25 @@ class Spreadsheet:
 
         # Fill SpreadSheet
         # Titles
-        titles = [f'{f} \n [{u}]' if u != '' else f'{f}' for f, u in zip(cols_info['fullname'], cols_info['unit'])]
+        titles = [f'{col.name}\n[{col.unit}]' if col.unit != '' else f'{col.name}' for col in cols_info]
         self._worksheet.set_row(row=7, height=50)
         self._add_line(row=7, col=5, data=titles, fmt=len(titles) * ['title'])
 
         # Data
+        for c in cols_info:
+            print(c)
+        print(numerical_data)
         for i, sdata in enumerate(numerical_data):
+            print(sdata)
             sdata = [
                 s
                 if (isinstance(s, (np.int64, np.float64)) and s < 1e5) or (not isinstance(s, (np.int64, np.float64)))
                 else ''
                 for s in sdata
             ]
-            self._add_line(row=i + 8, col=5, data=sdata, fmt=listcast(cols_info['format']))
+            self._add_line(row=i + 8, col=5, data=sdata, fmt=[col.format for col in cols_info])
 
-    def _dtype(self, tagname: str):
+    def _dtype(self, tag: str):
         """Return the data type corresponding to a give column tagname.
 
         The data type is determined in the ``columns.txt`` file, under the column named ``format``. The dtypes are
@@ -316,7 +316,7 @@ class Spreadsheet:
 
         Parameters
         ----------
-        tagname: str
+        tag: str
             The tagname of the column type. Must be contained in the ``columns.txt`` file under the ``utils`` folder.
             Not case sensitive.
 
@@ -326,23 +326,14 @@ class Spreadsheet:
             Type of the data.
 
         """
-        ac = self._all_cols
-        ind = np.where(ac['tagname'] == tagname.lower())[0][0]
+        tag_columns = dict(zip([col.tagname for col in self._all_cols], self._all_cols))
 
-        if ac['format'][ind] in 'text title':
+        if tag_columns[tag].format in 'text title':
             return 'U20'
-        elif '.' in ac['format'][ind]:
+        elif '.' in tag_columns[tag].format:
             return np.float64
         else:
             return np.int64
-
-        # formatting = self._all_cols['format'][np.where(self._all_cols['tagname'] == tagname.lower())]
-        # if formatting in ['text', 'title']:
-        #     return 'U20'
-        # elif '.' in formatting:
-        #     return np.float64
-        # else:
-        #     return np.int64
 
     def _extract_data(
         self,
@@ -391,22 +382,16 @@ class Spreadsheet:
                 },
             }
 
+        suppr_redd_cols = self.suppr_redundant_cols
         structures = flatten(structures)
 
-        suppr_redd_cols = self.suppr_redundant_cols
-
-        sel_cols = self.columns_names
-        ac = self._all_cols
-
         # Select with tagname
-        inds = [np.where(ac['tagname'] == sc)[0][0] for sc in sel_cols]
-
-        cols_data = ac[inds]
-        tagnames = cols_data['tagname']
-        dtype = [(t, self._dtype(t)) for t in tagnames]
+        column_name_info = [col for col in self._all_cols if col.tagname in self.columns_names]
+        dtype = [(t, self._dtype(t)) for t in self.columns_names]
 
         # Create table
         table_lines = np.zeros_like(structures, dtype=dtype)
+        # table_lines = []
 
         # Extract all data from structures (either attributes of metadata)
         for i, ent in enumerate(structures):
@@ -421,16 +406,12 @@ class Spreadsheet:
                     item = 1.1e5 if typ in [np.float64, np.int64] else ''
                 data_line.append(item)
             table_lines[i] = tuple(data_line)
+            # table_lines.append(tuple(data_line))
 
         # Select
         keep = []
         ignored_fields = []
-        for i, t in enumerate(tagnames):
-
-            if t.lower() == 'name':
-                # the name of the structure is always present
-                keep.append(i)
-                continue
+        for i, t in enumerate(self.columns_names):
 
             if table_lines.dtype.fields[t][0].char in 'ld' and np.all(table_lines[t] > 1e5):
                 ignored_fields.append(t)
@@ -439,16 +420,20 @@ class Spreadsheet:
             if np.all(table_lines[t] == table_lines[t][0]) and suppr_redd_cols and table_lines[t][0] != '':
                 # eliminate reddundancies if explicitly requested
                 ignored_fields.append(t)
-            keep.append(i)
+            keep.append(t)
+
+        # Add 'name' field as first default value
+        if 'name' not in keep:
+            keep = ['name'] + keep
 
         if ignored_fields and verbose:
             fields_left_out = ', '.join(ignored_fields)
             logger.debug(
-                f'For all entities, the fields {fields_left_out} were not defined, so they will not be shown as '
-                'table columns.'
+                f'For all entities, the fields {fields_left_out} were not defined, they will not be shown as columns.'
             )
 
-        return cols_data[keep], table_lines[tagnames[keep]]
+        info = [col for col in column_name_info if col.tagname in keep]
+        return info, table_lines[keep]
 
     def _create_formats(self) -> dict[str, Any]:
         """Prepare the basic formats that will be used.
