@@ -377,7 +377,22 @@ def main() -> None:
     # dev.save('circuit_scheme.pdf')
     # dev.pgm()
     # dev.export()
-    dev.xlsx()
+
+    data_xlsx = dict(
+        laboratory='CAPABLE',
+        samplename=pathlib.Path(param_gc['filename']).stem,
+        material='Cornings Eagle-XG',
+        facet='Bottom',
+        thickness='1 mm',
+        lasername=param_gc['laser'],
+        wavelength='1030 nm',
+        duration='180 fs',
+        reprate='1 MHz',
+        attenuator='15 %',
+        preset='1',
+        objective='20X WI',
+    )
+    dev.xlsx(metadata=data_xlsx)
 
 
 if __name__ == '__main__':

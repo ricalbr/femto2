@@ -61,19 +61,18 @@ class Spreadsheet:
         # Create all the Parameters contained in the preamble_info
         # Add them to a dictionary with the key equal to their tagname
         preamble_info: dict = {
-            'General': ['laboratory', 'temperature', 'humidity', 'date', 'start', 'sample name'],
+            'General': ['laboratory', 'temperature', 'humidity', 'date', 'start', 'samplename'],
             'Substrate': ['material', 'facet', 'thickness'],
-            'Laser': ['laser name', 'wl', 'duration', 'reprate', 'attenuator', 'preset'],
+            'Laser': ['lasername', 'wavelength', 'duration', 'reprate', 'attenuator', 'preset'],
             'Irradiation': ['objective', 'power', 'speed', 'scan', 'depth'],
         }
 
         preamble_data = {}
-        for k, val in preamble_info.items():
-            preamble_data[k] = {t: PreambleParameter(name=t) for t in val}
+        for k, section in preamble_info.items():
+            preamble_data[k] = {
+                field: PreambleParameter(name=field, value=self.metadata.get(field) or '') for field in section
+            }
 
-        # TODO: fill with metadata
-        preamble_data['Laser']['laser name'].value = self.metadata.get('laser name') or ''
-        preamble_data['General']['sample name'].value = self.metadata.get('sample name') or ''
         preamble_data['General']['start'].format = 'time'
         preamble_data['General']['date'].format = 'date'
 
