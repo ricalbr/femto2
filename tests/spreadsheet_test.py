@@ -217,56 +217,95 @@ def test_extra_preamble_info(all_cols, ss_param):
 #     (dot_path / 'test_new_column.xlsx').unlink()
 
 
-def test_write_header(device, ss_param):
-    spsh = Spreadsheet(device, **ss_param)
-    spsh._build_struct_list()
-    spsh._write_header()
-    spsh.close()
+def test_write_header(ss_param):
+    with Spreadsheet(**ss_param) as S:
+        print(S)
 
     wb = openpyxl.load_workbook(dot_path / 'custom_book_name.xlsx')
     worksheet = wb['custom_sheet_name']
 
-    assert worksheet.cell(row=2, column=4).value == 'Description'
+    assert worksheet.cell(row=1, column=4).value == 'Description'
     (dot_path / 'custom_book_name.xlsx').unlink()
 
 
-# @pytest.mark.parametrize(
-#     'cols',
-#     [
-#         'power speed scan radius int_dist, ',
-#         'power, speed scan radius int_dist',
-#         'power scan, speed radius int_dist',
-#         'radius, power speed scan',
-#     ],
-# )
-# def test_redd_cols(cols, ss_param, gc_param):
-#
-#     non_redd_cols, redd_cols = cols.split(', ')
-#     non_redd_cols = non_redd_cols.split()
-#     redd_cols = redd_cols.split()
-#
-#     d = device_redd_cols(redd_cols, non_redd_cols, gc_param)
-#
-#     ss_param.columns_names = cols.replace(',', '').strip()
-#     ss_param.suppr_redd_cols = True
-#     ss_param.device = d
-#
-#     spsh = Spreadsheet(**ss_param)
-#     spsh._build_struct_list()
-#     spsh.close()
-#
-#     columns_tnames = list(spsh.columns_data['tagname'])
-#     columns_tnames.remove('name')
-#
-#     assert all([tn in non_redd_cols for tn in columns_tnames])
-#     assert all([tn not in redd_cols for tn in columns_tnames])
-#
-#     (dot_path / 'custom_book_name.xlsx').unlink()
+def test_write_preamble_default(ss_param):
+    del ss_param['columns_names']
+    with Spreadsheet(**ss_param) as S:
+        print(S)
+
+    wb = openpyxl.load_workbook(dot_path / 'custom_book_name.xlsx')
+    worksheet = wb['custom_sheet_name']
+
+    assert worksheet.cell(row=9, column=2).value == 'General'
+    assert worksheet.cell(row=10, column=2).value == 'Laboratory'
+    assert worksheet.cell(row=11, column=2).value == 'Temperature'
+    assert worksheet.cell(row=12, column=2).value == 'Humidity'
+    assert worksheet.cell(row=13, column=2).value == 'Date'
+    assert worksheet.cell(row=14, column=2).value == 'Start'
+    assert worksheet.cell(row=15, column=2).value == 'Samplename'
+
+    assert worksheet.cell(row=18, column=2).value == 'Substrate'
+    assert worksheet.cell(row=19, column=2).value == 'Material'
+    assert worksheet.cell(row=20, column=2).value == 'Facet'
+    assert worksheet.cell(row=21, column=2).value == 'Thickness'
+
+    assert worksheet.cell(row=24, column=2).value == 'Laser'
+    assert worksheet.cell(row=25, column=2).value == 'Lasername'
+    assert worksheet.cell(row=26, column=2).value == 'Wavelength'
+    assert worksheet.cell(row=27, column=2).value == 'Duration'
+    assert worksheet.cell(row=28, column=2).value == 'Reprate'
+    assert worksheet.cell(row=29, column=2).value == 'Attenuator'
+    assert worksheet.cell(row=30, column=2).value == 'Preset'
+
+    assert worksheet.cell(row=33, column=2).value == 'Irradiation'
+    assert worksheet.cell(row=34, column=2).value == 'Objective'
+    assert worksheet.cell(row=35, column=2).value == 'Power'
+    assert worksheet.cell(row=36, column=2).value == 'Speed'
+    assert worksheet.cell(row=37, column=2).value == 'Scan'
+    assert worksheet.cell(row=38, column=2).value == 'Depth'
+
+    for i in range(8, 39):
+        assert worksheet.cell(row=i, column=3).value == None
+    (dot_path / 'custom_book_name.xlsx').unlink()
 
 
-def test_write_structures(wg_param, gc_param, ss_param):
+@pytest.mark.parametrize(
+    'cols',
+    [
+        'power speed scan radius int_dist, ',
+        'power, speed scan radius int_dist',
+        'power scan, speed radius int_dist',
+        'radius, power speed scan',
+    ],
+)
+def test_redd_cols(cols, ss_param, gc_param):
+
+    non_redd_cols, redd_cols = cols.split(', ')
+    non_redd_cols = non_redd_cols.split()
+    redd_cols = redd_cols.split()
+
+    d = device_redd_cols(redd_cols, non_redd_cols, gc_param)
+
+    ss_param.columns_names = cols.replace(',', '').strip()
+    ss_param.suppr_redd_cols = True
+    ss_param.device = d
+
+    spsh = Spreadsheet(**ss_param)
+    spsh._build_struct_list()
+    spsh.close()
+
+    columns_tnames = list(spsh.columns_data['tagname'])
+    columns_tnames.remove('name')
+
+    assert all([tn in non_redd_cols for tn in columns_tnames])
+    assert all([tn not in redd_cols for tn in columns_tnames])
+
+    (dot_path / 'custom_book_name.xlsx').unlink()
+
+
+def test_create_structures(list_wg, gc_param, ss_param):
     with Spreadsheet(**ss_param) as spsh:
-        spsh.write_structures(verbose=True)
+        spsh.write(list_wg)
 
     assert (dot_path / 'custom_book_name.xlsx').is_file()
     (dot_path / 'custom_book_name.xlsx').unlink()
