@@ -146,31 +146,8 @@ class Spreadsheet:
 
             for tname, p in parameters.items():
                 p.set_location((row, 1))
-
-                # Merge cell only if one of the preamble parameters have a size bigger than one cell.
-                if any(p.size):
-                    # Field titles
-                    self._worksheet.merge_range(
-                        first_row=p.row,
-                        first_col=p.col,
-                        last_row=p.row + p.size[0],
-                        last_col=p.col + p.size[1],
-                        data='',
-                        cell_format=self._formats['parname'],
-                    )
-
-                    # Empty fields entry
-                    self._worksheet.merge_range(
-                        first_row=p.row,
-                        first_col=p.col + 1,
-                        last_row=p.row + p.size[0],
-                        last_col=p.col + p.size[1] + 1,
-                        data='',
-                        cell_format=self._formats[p.format],
-                    )
-                row += 1
-
                 self._add_line(row=p.row, col=p.col, data=[p.name.capitalize(), p.value], fmt=['parname', p.format])
+                row += 1
             row += 2
 
     def close(self):
@@ -383,7 +360,7 @@ class Spreadsheet:
 
         data = listcast(data)
         if fmt is None:
-            cell_fmt = [self.wb.default_format_properties]
+            cell_fmt = [self._workbook.default_format_properties]
         else:
             cell_fmt = []
             for key in listcast(fmt):
@@ -482,7 +459,6 @@ class PreambleParameter:
     name: str  #: Full name.
     value: str = ''  #: Value.
     location: tuple[int, int] = (0, 0)  #: Location (1-indexing).
-    size: tuple[int, int] = (0, 0)  #: Size (for merged cells).
     format: str = 'parval'  #: Format.
     row: int | None = None
     col: int | None = None
@@ -500,7 +476,6 @@ class PreambleParameter:
 
 
 def main() -> None:
-    import numpy as np
     from itertools import product
 
     from femto.helpers import dotdict
