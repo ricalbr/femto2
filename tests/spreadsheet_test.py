@@ -1,10 +1,7 @@
 from __future__ import annotations
 
-from contextlib import nullcontext as does_not_raise
-from itertools import product
 from pathlib import Path
 
-import numpy as np
 import openpyxl
 import pytest
 from femto import __file__ as fpath
@@ -19,12 +16,15 @@ dot_path = Path('.').cwd()
 
 @pytest.fixture
 def all_cols():
-    all_cols = np.genfromtxt(
-        src_path / 'utils' / 'spreadsheet_columns.txt',
-        delimiter=', ',
-        dtype=[('tagname', 'U20'), ('fullname', 'U20'), ('unit', 'U20'), ('width', int), ('format', 'U20')],
-    )
-    return all_cols
+    from femto.spreadsheet import ColumnData
+
+    default_cols = []
+    with open(src_path / 'utils' / 'spreadsheet_columns.txt') as f:
+        next(f)
+        for line in f:
+            tag, name, unit, width, fmt = line.strip().split(', ')
+            default_cols.append(ColumnData(tagname=tag, name=name, unit=unit, width=width, format=fmt))
+    return default_cols
 
 
 @pytest.fixture
@@ -224,7 +224,7 @@ def test_write_header(ss_param):
     wb = openpyxl.load_workbook(dot_path / 'custom_book_name.xlsx')
     worksheet = wb['custom_sheet_name']
 
-    assert worksheet.cell(row=1, column=4).value == 'Description'
+    assert worksheet.cell(row=2, column=5).value == 'Description'
     (dot_path / 'custom_book_name.xlsx').unlink()
 
 
@@ -269,38 +269,46 @@ def test_write_preamble_default(ss_param):
     (dot_path / 'custom_book_name.xlsx').unlink()
 
 
-# @pytest.mark.parametrize(
-#     'cols',
-#     [
-#         'power speed scan radius int_dist, ',
-#         'power, speed scan radius int_dist',
-#         'power scan, speed radius int_dist',
-#         'radius, power speed scan',
-#     ],
-# )
-# def test_redd_cols(cols, ss_param, gc_param):
-#
-#     non_redd_cols, redd_cols = cols.split(', ')
-#     non_redd_cols = non_redd_cols.split()
-#     redd_cols = redd_cols.split()
-#
-#     d = device_redd_cols(redd_cols, non_redd_cols, gc_param)
-#
-#     ss_param.columns_names = cols.replace(',', '').strip()
-#     ss_param.suppr_redd_cols = True
-#     ss_param.device = d
-#
-#     spsh = Spreadsheet(**ss_param)
-#     spsh._build_struct_list()
-#     spsh.close()
-#
-#     columns_tnames = list(spsh.columns_data['tagname'])
-#     columns_tnames.remove('name')
-#
-#     assert all([tn in non_redd_cols for tn in columns_tnames])
-#     assert all([tn not in redd_cols for tn in columns_tnames])
-#
-#     (dot_path / 'custom_book_name.xlsx').unlink()
+def test_add_name_col(ss_param):
+    ss_param['columns_names'] = [tag for tag in ss_param['columns_names'] if tag != 'name']
+    with Spreadsheet(**ss_param) as S:
+        assert S.columns_names[0] == 'name'
+
+
+def test_generate_all_cols_data(all_cols):
+    with Spreadsheet() as S:
+        assert S.generate_all_cols_data() == all_cols
+    (dot_path / 'FABRICATION.xlsx').unlink()
+
+
+def test_generate_all_cols_with_newcols(all_cols):
+    from femto.spreadsheet import ColumnData
+
+    new_cols = [
+        ('reprate', 'Rep. rate', 'MHz', '20', '0.000'),
+        ('camera', 'CAM', '', '20', 'text'),
+        ('cmdrate', 'Command rate', 'pt/s', '25', '0.000'),
+    ]
+    new_cols_obj = [ColumnData(*nc) for nc in new_cols]
+
+    all_cols.extend(new_cols_obj[1:])
+    with Spreadsheet(new_columns=new_cols) as S:
+        assert S.generate_all_cols_data() == all_cols
+    (dot_path / 'FABRICATION.xlsx').unlink()
+
+
+@pytest.mark.parametrize(
+    'ncol',
+    [
+        ('reprate', 'MHz', '20', '0.000'),
+        ('camera', 'CAM', '', 'text'),
+        ('cmdrate', 'Command rate', 'pt/s', '25', '0.000', 'foo', 'bar'),
+    ],
+)
+def test_new_col_wrong_format(ncol):
+    with pytest.raises(ValueError):
+        with Spreadsheet(new_columns=ncol) as S:
+            print(S)
 
 
 def test_create_structures(list_wg, gc_param, ss_param):
@@ -311,51 +319,15 @@ def test_create_structures(list_wg, gc_param, ss_param):
     (dot_path / 'custom_book_name.xlsx').unlink()
 
 
-@pytest.mark.parametrize(
-    'init_dev, bsl_dev',
-    list(product(*2 * [[True, False]])),
-)
-def test_device_init(device, ss_param, init_dev, bsl_dev):
-
-    ss_pars = ss_param
-    bsl_pars = {}
-
-    if init_dev:
-        ss_pars['device'] = device
-
-    if bsl_dev:
-        bsl_pars['structures'] = device.writers[Waveguide]._obj_list
-
-    exp = does_not_raise() if init_dev else pytest.raises(TypeError)
-    with exp:
-        spsh = Spreadsheet(**ss_pars)
-        spsh._build_struct_list()
-        spsh.close()
-
-    if (dot_path / 'custom_book_name.xlsx').exists():
-        (dot_path / 'custom_book_name.xlsx').unlink()
-
-
-@pytest.mark.parametrize('verbose', [True, False])
-def test_build_structure_list(empty_device, list_wg, list_mk, ss_param, verbose):
-    empty_device.extend(list_wg)
-
-    obj_list = empty_device.writers[Waveguide]._obj_list
-
-    spsh = Spreadsheet(device=empty_device, **ss_param)
-    # Use the defaults for suppressing reddundant olumns and static preamble
-    spsh._build_struct_list(obj_list, ss_param['columns_names'], verbose=verbose)
-    spsh.close()
-
-    assert (dot_path / 'custom_book_name.xlsx').is_file()
-    assert len(spsh.struct_data) == len(obj_list)
-
-    (dot_path / 'custom_book_name.xlsx').unlink()
-
-
 @pytest.mark.parametrize('structures', [[], [[]], [[[]]], [[[[]]]]])
 def test_write_empty(ss_param, structures):
     with Spreadsheet(**ss_param) as S:
         info, numdata = S._extract_data(structures)
     assert info == []
     assert numdata.size == 0
+
+
+def test_write_error(ss_param):
+    with pytest.raises(ValueError):
+        with Spreadsheet(**ss_param) as S:
+            S.write([1, 2, 3])
