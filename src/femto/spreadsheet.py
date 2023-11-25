@@ -13,6 +13,7 @@ from femto.helpers import listcast
 from femto.marker import Marker
 from femto.waveguide import NasuWaveguide
 from femto.waveguide import Waveguide
+from numpy import ndarray
 
 
 @attrs.define(kw_only=True)
@@ -267,8 +268,6 @@ class Spreadsheet:
     def _extract_data(
         self,
         structures: list[Waveguide | Marker] | None = None,
-        redundant_cols: bool | None = None,
-        verbose: bool = False,
     ) -> tuple[list[ColumnData], np.ndarray]:
         """Build a table with all of the structures.
 
@@ -281,14 +280,11 @@ class Spreadsheet:
         structures: list
             Contains the waveguides and the markers to be added to the table.
 
-        redundant_cols: bool, optional
-            If True, it will suppress all redundant columns, meaning that it will not include them in the final
-            spreadsheet, even if they are in the sel_cols string. Redundant columns are columns that contain the same
-            value for all of the lines (structures) in the file. Defaults to the given instation value (otherwise True).
-
-        verbose: bool
-            If True, prints the columns, selected by the user, that will be excluded from the spreadsheet because they
-            are reddundant (in the case that redundant_cols is set to True).
+        Returns
+        -------
+        tuple[list[ColumnData], np.ndarray]
+            Returns a tuple with the informations of the columns to export to the spreadsheet file and a numpy array
+            with all the numerical data relative to the columns.
         """
 
         def coords(x):
@@ -303,18 +299,17 @@ class Spreadsheet:
                 },
             }
 
+        structures = flatten(listcast(structures))
         if not structures:
-            return [], np.ndarray([])
-
-        red_cols = redundant_cols if redundant_cols is not None else self.redundant_cols
-        structures = flatten(structures)
+            # Base case, if the structures list is empty, return no columns info and no numerical data
+            return [], np.array([])
 
         # Select with tagname
         column_name_info = [col for col in self._all_cols if col.tagname in self.columns_names]
         dtype = [(t, self._dtype(t)) for t in self.columns_names]
 
         # Create data table
-        table_lines = np.zeros_like(structures, dtype=dtype)
+        table_lines: ndarray = np.zeros_like(structures, dtype=dtype)
 
         # Extract all data from structures (either attributes of metadata)
         for i, ent in enumerate(structures):
@@ -334,21 +329,25 @@ class Spreadsheet:
         keep = []
         ignored_fields = []
         for i, t in enumerate(self.columns_names):
-
-            if table_lines.dtype.fields[t][0].char in 'ld' and np.all(table_lines[t] > 1e5):
-                ignored_fields.append(t)
+            # Keep string-type columns (nmes, obs,...)
+            if table_lines.dtype.fields[t][0] not in [np.int64, np.float64]:
+                keep.append(t)
                 continue
 
-            if np.all(table_lines[t] == table_lines[t][0]) and not red_cols and table_lines[t][0] != '':
-                # eliminate reddundancies if explicitly requested
+            # Ignore redundant columns (same value on all the rows) if explicitly requested
+            if not self.redundant_cols and np.all(table_lines[t] == table_lines[t][0]):
                 ignored_fields.append(t)
-            keep.append(t)
+            # Ignore columns with all the values greater than 1e5
+            elif np.all(table_lines[t] >= 1e5):
+                ignored_fields.append(t)
+            else:
+                keep.append(t)
 
         # Add 'name' field as first default value
         if 'name' not in keep:
             keep = ['name'] + keep
 
-        if ignored_fields and verbose:
+        if ignored_fields:
             fields_left_out = ', '.join(ignored_fields)
             logger.debug(
                 f'For all entities, the fields {fields_left_out} were not defined, they will not be shown as columns.'
@@ -500,7 +499,6 @@ class PreambleParameter:
 
 
 def main() -> None:
-    import numpy as np
     from itertools import product
 
     from femto.helpers import dotdict
@@ -522,6 +520,7 @@ def main() -> None:
     PARS_SS = dotdict(
         book_name='Fabbrication.xlsx',
         columns_names=['name', 'power', 'speed', 'scan', 'depth', 'int_dist', 'yin', 'yout', 'obs'],
+        redundant_cols=True,
     )
 
     powers = np.linspace(600, 800, 5)
