@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import Any
 from typing import Callable
-from typing import TypeAlias
 from typing import TypeVar
 
 import attrs
@@ -14,7 +13,7 @@ from femto.laserpath import LaserPath
 
 # Create a generic variable that can be 'Waveguide', or any subclass.
 WG = TypeVar('WG', bound='Waveguide')
-nparray: TypeAlias = npt.NDArray[np.float32]
+nparray = npt.NDArray[np.float32]
 
 
 @attrs.define(kw_only=True, repr=False)

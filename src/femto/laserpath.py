@@ -4,7 +4,6 @@ import copy
 import pathlib
 from typing import Any
 from typing import Sequence
-from typing import TypeAlias
 from typing import TypeVar
 
 import attrs
@@ -16,7 +15,7 @@ from femto.helpers import unique_filter
 
 # Create a generic variable that can be 'LaserPath', or any subclass.
 LP = TypeVar('LP', bound='LaserPath')
-nparray: TypeAlias = npt.NDArray[np.float32]
+nparray = npt.NDArray[np.float32]
 
 
 @attrs.define(kw_only=True, repr=False)

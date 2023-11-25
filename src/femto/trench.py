@@ -7,7 +7,6 @@ from functools import cached_property
 from typing import Any
 from typing import Generator
 from typing import Iterator
-from typing import TypeAlias
 from typing import TypeVar
 
 import attrs
@@ -28,7 +27,7 @@ from shapely.ops import unary_union
 
 TR = TypeVar('TR', bound='Trench')
 TC = TypeVar('TC', bound='TrenchColumn')
-nparray: TypeAlias = npt.NDArray[np.float32]
+nparray = npt.NDArray[np.float32]
 
 
 class Trench:

@@ -11,7 +11,6 @@ from typing import Any
 from typing import Callable
 from typing import Deque
 from typing import Generator
-from typing import TypeAlias
 from typing import TypeVar
 
 import attrs
@@ -28,7 +27,7 @@ from scipy import interpolate
 
 # Create a generic variable that can be 'PGMCompiler', or any subclass.
 GC = TypeVar('GC', bound='PGMCompiler')
-nparray: TypeAlias = npt.NDArray[np.float32]
+nparray = npt.NDArray[np.float32]
 
 
 @attrs.define
