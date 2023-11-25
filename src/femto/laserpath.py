@@ -38,7 +38,7 @@ class LaserPath:
     cmd_rate_max: float = 1200.0  #: Maximum command rate `[cmd/s]`.
     acc_max: float = 500.0  #: Maximum acceleration/deceleration `[m/s^2]`.
     end_off_sample: bool = True  #: Flag to end laserpath off of the sample. (See `x_end`).
-    metadata: dict[str, str] = attrs.field(default=dict())
+    metadata: dict[str, str] = attrs.field(factory=dict)  #: Dictionary with laserpath metadata.
 
     _id: str = attrs.field(alias='_id', default='LP')
     _x: nparray = attrs.field(alias='_x', factory=lambda: np.array([], dtype=np.float32))

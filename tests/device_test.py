@@ -22,7 +22,7 @@ def ss_param() -> dict:
     return dict(
         book_name='custom_book_name.xlsx',
         sheet_name='custom_sheet_name',
-        columns_names='name power speed scan depth int_dist yin yout obs',
+        columns_names=['name', 'power', 'speed', 'scan', 'depth', 'int_dist', 'yin', 'yout', 'obs'],
     )
 
 
