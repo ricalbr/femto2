@@ -13,7 +13,6 @@ from femto.helpers import listcast
 from femto.marker import Marker
 from femto.waveguide import NasuWaveguide
 from femto.waveguide import Waveguide
-from numpy import ndarray
 
 
 @attrs.define(kw_only=True)
@@ -362,7 +361,7 @@ class Spreadsheet:
         dtype = [(t, self._dtype(t)) for t in self.columns_names]
 
         # Create data table
-        table_lines: ndarray = np.zeros_like(structures, dtype=dtype)
+        table_lines: np.ndarray = np.zeros_like(structures, dtype=dtype)
 
         # Extract all data from structures (either attributes of metadata)
         for i, ent in enumerate(structures):
