@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import itertools
 import pathlib
 from types import TracebackType
-from typing import Any
 
 import attrs
 import numpy as np
@@ -80,7 +80,7 @@ class Spreadsheet:
 
         self._preamble_data = preamble_data
         self._all_cols = self.generate_all_cols_data()
-        self._formats = self._create_formats()
+        self._formats = self._default_formats()
 
     def __enter__(self) -> Spreadsheet:
         """Context manager entry.
@@ -104,6 +104,19 @@ class Spreadsheet:
         self.close()
 
     def header(self, desc_size: int = 8) -> None:
+        """Header
+
+        Write the header info to xlsx file.
+
+        Parameters
+        ----------
+        desc_size: int, optional
+            Number of cells to merge for the decription field, the default value is 8.
+
+        Returns
+        -------
+        None
+        """
 
         # Set columns properties
         self._worksheet.set_column(first_col=1, last_col=1, width=15)
@@ -121,7 +134,7 @@ class Spreadsheet:
             last_row=1,
             last_col=desc_size + 4,
             data='Description',
-            cell_format=self._formats['title'],
+            cell_format=self._workbook.add_format(self._formats['title']),
         )
         self._worksheet.merge_range(
             first_row=2,
@@ -129,10 +142,23 @@ class Spreadsheet:
             last_row=2,
             last_col=desc_size + 4,
             data=self.description,
-            cell_format=self._formats['parval'],
+            cell_format=self._workbook.add_format(self._formats['parval']),
         )
 
     def fabbrication_info(self, row: int = 8) -> None:
+        """Fabrication information
+
+        Write the fabrication info to xlsx file.
+
+        Parameters
+        ----------
+        row: int, optional
+            First row of the preamble information table, the values are 0-indexed. The default value is 8.
+
+        Returns
+        -------
+        None
+        """
 
         for pre_title, parameters in self._preamble_data.items():
             self._worksheet.merge_range(
@@ -141,13 +167,13 @@ class Spreadsheet:
                 last_row=row,
                 last_col=2,
                 data=pre_title,
-                cell_format=self._formats['title'],
+                cell_format=self._workbook.add_format(self._formats['title']),
             )
             row += 1
 
             for tname, p in parameters.items():
                 p.set_location((row, 1))
-                self._add_line(row=p.row, col=p.col, data=[p.name.capitalize(), p.value], fmt=['parname', p.format])
+                self.add_line(row=p.row, col=p.col, data=[p.name.capitalize(), p.value], fmt=['parname', p.format])
                 row += 1
             row += 2
 
@@ -189,15 +215,13 @@ class Spreadsheet:
             self._worksheet.set_column(first_col=start + i, last_col=start + i, width=int(col.width))
             fmt = col.format
             if fmt not in self._formats.keys():
-                self._formats[str(fmt)] = self._workbook.add_format(
-                    {'align': 'center', 'valign': 'vcenter', 'num_format': str(fmt)}
-                )
+                self._formats[str(fmt)] = {'align': 'center', 'valign': 'vcenter', 'num_format': str(fmt)}
 
         # Fill SpreadSheet
         # Titles
         titles = [f'{col.name}\n[{col.unit}]' if col.unit != '' else f'{col.name}' for col in cols_info]
         self._worksheet.set_row(row=7, height=50)
-        self._add_line(row=7, col=5, data=titles, fmt=len(titles) * ['title'])
+        self.add_line(row=7, col=5, data=titles, fmt=len(titles) * ['title'])
 
         # Data
         for i, sdata in enumerate(numerical_data):
@@ -207,7 +231,7 @@ class Spreadsheet:
                 else ''
                 for s in sdata
             ]
-            self._add_line(row=i + 8, col=5, data=sdata, fmt=[col.format for col in cols_info])
+            self.add_line(row=i + 8, col=5, data=sdata, fmt=[col.format for col in cols_info])
 
     def generate_all_cols_data(self) -> list[ColumnData]:
         """Create the available columns array from a file.
@@ -242,6 +266,57 @@ class Spreadsheet:
 
         return default_cols
 
+    def add_line(self, row: int, col: int, data: list[str | int | float], fmt: list[str] | None = None) -> None:
+        """Add a line to the spreadsheet.
+
+        Takes a start cell and writes a sequence of data in that and the following cells in the same line. Also
+        accepts a fmt kwarg that tells the cell_fmt of the data.
+
+        Parameters
+        ----------
+        row: int
+            Row of the starting cell, 1-indexing.
+        col: int
+            Column of the starting cell, 1-indexing.
+        data: str
+            List of strings with the several data to write, in the order which they should appear, column-wise.
+        fmt: str, optional
+            list of the formatting options to be used. They must be present in self._formats, so make sure to create the
+            format prior to using it. defaults to the default text properties of the spreadsheet, given at the moment of
+            instantiation.
+
+        Returns
+        -------
+        None.
+        """
+
+        data = listcast(data)
+        if fmt is None:
+            cell_fmt = [self._workbook.default_format_properties]
+        else:
+            cell_fmt = []
+            for key in listcast(fmt):
+                try:
+                    cell_fmt.append(self._formats[str(key).lower()])
+                except KeyError:
+                    logger.error(f'Found unknown key for formatting options. Given key {key}.')
+                    raise KeyError(f'Found unknown key for formatting options. Given key {key}.')
+
+        if len(data) < len(cell_fmt):
+            logger.error('The number of formatting options is bigger than the number of data to write in xlsx file.')
+            raise ValueError(
+                'The number of formatting options is bigger than the number of data to write in xlsx file.'
+            )
+
+        for i, (data_val, format_opts) in enumerate(
+            itertools.zip_longest(data, cell_fmt, fillvalue=self._workbook.default_format_properties)
+        ):
+            f = self._workbook.add_format(format_opts)
+            if isinstance(data_val, str) and data_val.startswith('='):
+                self._worksheet.write_formula(row, col + i, data_val, f)
+            else:
+                self._worksheet.write(row, col + i, data_val, f)
+
     def _extract_data(
         self,
         structures: list[Waveguide | Marker] | None = None,
@@ -265,6 +340,7 @@ class Spreadsheet:
         """
 
         def coords(x):
+            """Input/output y-coordinates of Waveguide and Marker objects."""
             return {
                 Waveguide: {
                     'yin': x.path3d[1][0],
@@ -320,10 +396,6 @@ class Spreadsheet:
             else:
                 keep.append(t)
 
-        # Add 'name' field as first default value
-        if 'name' not in keep:
-            keep = ['name'] + keep
-
         if ignored_fields:
             fields_left_out = ', '.join(ignored_fields)
             logger.debug(
@@ -333,49 +405,8 @@ class Spreadsheet:
         info = [col for col in column_name_info if col.tagname in keep]
         return info, table_lines[keep]
 
-    def _add_line(self, row: int, col: int, data: list[str], fmt: list[str] | None = None) -> None:
-        """Add a line to the spreadsheet.
-
-        Takes a start cell and writes a sequence of data in that and the following cells in the same line. Also
-        accepts a fmt kwarg that tells the cell_fmt of the data.
-
-        Parameters
-        ----------
-        row: int
-            Row of the starting cell, 1-indexing.
-        col: int
-            Column of the starting cell, 1-indexing.
-        data: str
-            List of strings with the several data to write, in the order which they should appear, column-wise.
-        fmt: str, optional
-            list of the formatting options to be used. They must be present in self._formats, so make sure to create the
-            format prior to using it. defaults to the default text properties of the spreadsheet, given at the moment of
-            instantiation.
-
-        Returns
-        -------
-        None.
-        """
-
-        data = listcast(data)
-        if fmt is None:
-            cell_fmt = [self._workbook.default_format_properties]
-        else:
-            cell_fmt = []
-            for key in listcast(fmt):
-                try:
-                    cell_fmt.append(self._formats[str(key)])
-                except KeyError:
-                    logger.error(f'Found unknown key for formatting options. Given key {key}.')
-                    raise KeyError(f'Found unknown key for formatting options. Given key {key}.')
-
-        for i, (data_val, f) in enumerate(zip(data, cell_fmt)):
-            if isinstance(data_val, str) and data_val.startswith('='):
-                self._worksheet.write_formula(row, col + i, data_val, f)
-            else:
-                self._worksheet.write(row, col + i, data_val, f)
-
-    def _create_formats(self) -> dict[str, Any]:
+    @staticmethod
+    def _default_formats() -> dict[str, dict[str, str]]:
         """Prepare the basic formats that will be used.
 
         These are the following:
@@ -389,23 +420,16 @@ class Spreadsheet:
         """
 
         al = {'align': 'center', 'valign': 'vcenter', 'border': 1}
+        titt = {**{'bold': True, 'text_wrap': True}, **al}
         tit_specs = {'font_color': 'white', 'bg_color': '#6C5B7B'}
-        titt = dict(**{'bold': True, 'text_wrap': True}, **al)
-
-        title_fmt = self._workbook.add_format(dict(**tit_specs, **titt))
-        parname_fmt = self._workbook.add_format(dict(**{'bg_color': '#D5CABD'}, **titt))
-        parval_fmt = self._workbook.add_format(dict(**{'text_wrap': True}, **al))
-        text_fmt = self._workbook.add_format({'align': 'center', 'valign': 'vcenter'})
-        date_fmt = self._workbook.add_format(dict(**{'num_format': 'DD/MM/YYYY'}, **al))
-        time_fmt = self._workbook.add_format(dict(**{'num_format': 'HH:MM:SS'}, **al))
 
         return {
-            'title': title_fmt,
-            'parname': parname_fmt,
-            'parval': parval_fmt,
-            'text': text_fmt,
-            'date': date_fmt,
-            'time': time_fmt,
+            'title': {**tit_specs, **titt},
+            'parname': {**{'bg_color': '#D5CABD'}, **titt},
+            'parval': {**{'text_wrap': True}, **al},
+            'text': {'align': 'center', 'valign': 'vcenter'},
+            'date': {**{'num_format': 'DD/MM/YYYY'}, **al},
+            'time': {**{'num_format': 'HH:MM:SS'}, **al},
         }
 
     def _dtype(self, tag: str):
@@ -480,11 +504,11 @@ def main() -> None:
     from femto.helpers import dotdict
     from femto.waveguide import Waveguide
 
-    LS = -2
-    LE = 27
+    l_start = -2
+    l_end = 27
 
     # GEOMETRICAL DATA
-    PARS_WG = dotdict(
+    pars_wg = dotdict(
         speed_closed=40,
         radius=40,
         depth=-0.860,
@@ -493,7 +517,7 @@ def main() -> None:
     )
 
     # SPREADSHEET PARAMETERS
-    PARS_SS = dotdict(
+    pars_ss = dotdict(
         book_name='Fabbrication.xlsx',
         columns_names=['name', 'power', 'speed', 'scan', 'depth', 'int_dist', 'yin', 'yout', 'obs'],
         redundant_cols=True,
@@ -506,15 +530,15 @@ def main() -> None:
     all_fabb = []
 
     for i_guide, (p, v, ns) in enumerate(product(powers, speeds, scans)):
-        start_pt = [LS, 2 + i_guide * 0.08, PARS_WG.depth]
-        wg = Waveguide(**PARS_WG, speed=v, scan=ns, metadata={'power': p})
+        start_pt = [l_start, 2 + i_guide * 0.08, pars_wg.depth]
+        wg = Waveguide(**pars_wg, speed=v, scan=ns, metadata={'power': p})
         wg.start(start_pt)
-        wg.linear([LE - LS, 0, 0])
+        wg.linear([l_end - l_start, 0, 0])
         wg.end()
 
         all_fabb.append(wg)
 
-    with Spreadsheet(**PARS_SS) as S:
+    with Spreadsheet(**pars_ss) as S:
         S.write(all_fabb)
 
 

@@ -1,4 +1,5 @@
 from __future__ import annotations
+from contextlib import nullcontext as does_not_raise
 
 from pathlib import Path
 
@@ -331,3 +332,103 @@ def test_write_error(ss_param):
     with pytest.raises(ValueError):
         with Spreadsheet(**ss_param) as S:
             S.write([1, 2, 3])
+
+
+def test_create_formats():
+    with Spreadsheet() as S:
+        fmt_dict = S._default_formats()
+
+    default_value = {
+        'title': {
+            'font_color': 'white',
+            'bg_color': '#6C5B7B',
+            'align': 'center',
+            'valign': 'vcenter',
+            'border': 1,
+            'bold': True,
+            'text_wrap': True,
+        },
+        'parname': {
+            'bg_color': '#D5CABD',
+            'align': 'center',
+            'valign': 'vcenter',
+            'border': 1,
+            'bold': True,
+            'text_wrap': True,
+        },
+        'parval': {'text_wrap': True, 'align': 'center', 'valign': 'vcenter', 'border': 1},
+        'text': {'align': 'center', 'valign': 'vcenter'},
+        'date': {'align': 'center', 'valign': 'vcenter', 'border': 1, 'num_format': 'DD/MM/YYYY'},
+        'time': {'align': 'center', 'valign': 'vcenter', 'border': 1, 'num_format': 'HH:MM:SS'},
+    }
+    assert fmt_dict == default_value
+
+
+def test_add_line_no_format() -> None:
+    with Spreadsheet() as S:
+        S.add_line(row=1, col=1, data=['ciao'], fmt=None)
+        _, fmt = S._worksheet.table[1][1]
+        assert fmt.font_size == 11
+        assert fmt.font_name == 'DejaVu Sans Mono'
+
+
+@pytest.mark.parametrize(
+    'fmt_str, expectation',
+    [
+        ('title', does_not_raise()),
+        (['parname', 'title', 'title'], does_not_raise()),
+        (['date', 'date', 'date', 'date'], does_not_raise()),
+        (['DATE', 'PARNAME'], does_not_raise()),
+        (['null'], pytest.raises(KeyError)),
+    ],
+)
+def test_add_line_keyerror(fmt_str, expectation) -> None:
+    S = Spreadsheet()
+    data = len(fmt_str) * [1]
+    with expectation:
+        S.add_line(row=1, col=1, data=data, fmt=fmt_str)
+
+
+@pytest.mark.parametrize(
+    'data, fmt_str, expectation',
+    [
+        ([1, 2, 3], 'title', does_not_raise()),
+        ([1, 2, 3], ['parname', 'title', 'title'], does_not_raise()),
+        ([1, '2', 3, 'test'], ['date', 'date', 'date', 'date'], does_not_raise()),
+        ([1, 2, 3], ['title', 'parname', 'parname', 'parname'], pytest.raises(ValueError)),
+    ],
+)
+def test_add_line_length_data_fmt(data, fmt_str, expectation) -> None:
+    S = Spreadsheet()
+    with expectation:
+        S.add_line(row=1, col=1, data=data, fmt=fmt_str)
+
+
+def test_add_line_formula() -> None:
+    with Spreadsheet() as S:
+        S.add_line(row=1, col=1, data="=SUM(A1:A5)")
+        assert S._worksheet.table[1][1].formula
+        assert S._worksheet.table[1][1].formula == "SUM(A1:A5)"
+
+
+def test_add_line_data() -> None:
+    with Spreadsheet() as S:
+        S.add_line(row=1, col=1, data=[1, 2, 'ciao', 1.2])
+        for row in range(5):
+            row_dict = S._worksheet.table.get(row, None)
+            for col in range(5):
+                if row_dict is not None:
+                    col_entry = row_dict.get(col, None)
+                else:
+                    col_entry = None
+                print(row, col, col_entry)
+        shared_strings = sorted(S._worksheet.str_table.string_table, key=S._worksheet.str_table.string_table.get)
+
+        assert S._worksheet.table[1][1].number
+        assert S._worksheet.table[1][1].number == 1
+        assert S._worksheet.table[1][2].number
+        assert S._worksheet.table[1][2].number == 2
+        assert S._worksheet.table[1][3].string
+        assert shared_strings[S._worksheet.table[1][3].string] == 'ciao'
+        assert S._worksheet.table[1][4].number
+        assert S._worksheet.table[1][4].number == 1.2
