@@ -274,6 +274,7 @@ def test_add_name_col(ss_param):
     ss_param['columns_names'] = [tag for tag in ss_param['columns_names'] if tag != 'name']
     with Spreadsheet(**ss_param) as S:
         assert S.columns_names[0] == 'name'
+    (dot_path / 'custom_book_name.xlsx').unlink()
 
 
 def test_generate_all_cols_data(all_cols):
@@ -307,9 +308,9 @@ def test_generate_all_cols_with_newcols(all_cols):
     ],
 )
 def test_new_col_wrong_format(ncol):
+
     with pytest.raises(ValueError):
-        with Spreadsheet(new_columns=ncol) as S:
-            print(S)
+        S = Spreadsheet(new_columns=ncol)
 
 
 def test_create_structures(list_wg, gc_param, ss_param):
@@ -326,12 +327,14 @@ def test_write_empty(ss_param, structures):
         info, numdata = S._extract_data(structures)
     assert info == []
     assert numdata.size == 0
+    (dot_path / 'custom_book_name.xlsx').unlink()
 
 
 def test_write_error(ss_param):
     with pytest.raises(ValueError):
         with Spreadsheet(**ss_param) as S:
             S.write([1, 2, 3])
+    (dot_path / 'custom_book_name.xlsx').unlink()
 
 
 def test_create_formats():
@@ -370,6 +373,7 @@ def test_add_line_no_format() -> None:
         _, fmt = S._worksheet.table[1][1]
         assert fmt.font_size == 11
         assert fmt.font_name == 'DejaVu Sans Mono'
+    (dot_path / 'FABRICATION.xlsx').unlink()
 
 
 @pytest.mark.parametrize(
@@ -409,6 +413,7 @@ def test_add_line_formula() -> None:
         S.add_line(row=1, col=1, data="=SUM(A1:A5)")
         assert S._worksheet.table[1][1].formula
         assert S._worksheet.table[1][1].formula == "SUM(A1:A5)"
+    (dot_path / 'FABRICATION.xlsx').unlink()
 
 
 def test_add_line_data() -> None:
@@ -432,3 +437,4 @@ def test_add_line_data() -> None:
         assert shared_strings[S._worksheet.table[1][3].string] == 'ciao'
         assert S._worksheet.table[1][4].number
         assert S._worksheet.table[1][4].number == 1.2
+    (dot_path / 'FABRICATION.xlsx').unlink()
