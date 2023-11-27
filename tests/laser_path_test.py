@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import attrs
 import dill
 import numpy as np
 import pytest
@@ -20,6 +21,7 @@ def param() -> dict:
         'speed_closed': 75,
         'speed_pos': 0.1,
         'samplesize': (100, 15),
+        'metadata': dict(name='LPth', power='300'),
     }
     return p
 
@@ -47,7 +49,6 @@ def laser_path(param) -> LaserPath:
 def test_default_values() -> None:
     lp = LaserPath()
 
-    assert lp.name == 'LaserPath'
     assert lp.radius == float(15)
     assert lp.scan == int(1)
     assert lp.speed == float(1.0)
@@ -62,10 +63,10 @@ def test_default_values() -> None:
     assert lp.samplesize == (100, 50)
     assert lp.end_off_sample is True
     assert lp.warp_flag is False
+    assert lp.metadata == {'name': 'LaserPath'}
 
 
 def test_laserpath_values(laser_path) -> None:
-    assert laser_path.name == 'LaserPath'
     assert laser_path.radius == float(50.0)
     assert laser_path.scan == int(6)
     assert laser_path.speed == float(20.0)
@@ -80,18 +81,25 @@ def test_laserpath_values(laser_path) -> None:
     assert laser_path.samplesize == (100, 15)
     assert laser_path.end_off_sample is True
     assert laser_path.warp_flag is False
+    assert laser_path.metadata == dict(name='LPth', power='300')
+
+
+def test_slots(param) -> None:
+    lp = LaserPath(**param)
+    with pytest.raises(AttributeError):
+        # non-existing attribrute
+        lp.sped = 10.00
 
 
 def test_scan_float_err(param) -> None:
     param['scan'] = 1.2
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         LaserPath(**param)
 
 
 def test_from_dict(param) -> None:
     lp = LaserPath.from_dict(param)
 
-    assert lp.name == 'LaserPath'
     assert lp.radius == float(50.0)
     assert lp.scan == int(6)
     assert lp.speed == float(20.0)
@@ -105,17 +113,18 @@ def test_from_dict(param) -> None:
     assert lp.acc_max == int(500)
     assert lp.samplesize == (100, 15)
     assert lp.end_off_sample is True
+    assert lp.metadata == dict(name='LPth', power='300')
 
 
 def test_load(param) -> None:
     lp1 = LaserPath(**param)
     fn = Path('obj.pkl')
     with open(fn, 'wb') as f:
-        dill.dump(lp1.__dict__, f)
+        dill.dump(attrs.asdict(lp1), f)
 
     lp2 = LaserPath.load(fn)
     assert isinstance(lp1, type(lp2))
-    assert sorted(lp1.__dict__) == sorted(lp2.__dict__)
+    assert sorted(attrs.asdict(lp1)) == sorted(attrs.asdict(lp2))
     fn.unlink()
 
 

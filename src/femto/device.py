@@ -2,24 +2,26 @@ from __future__ import annotations
 
 import collections
 import copy
-import pathlib
 import os
-import dill
-from typing import Any, TypeVar
+import pathlib
+from typing import Any
 from typing import cast
+from typing import TypeVar
 from typing import Union
 
+import dill
 import plotly.graph_objects as go
 from femto import logger
 from femto.curves import sin
 from femto.helpers import flatten
+from femto.laserpath import LaserPath
 from femto.marker import Marker
 from femto.spreadsheet import Spreadsheet
-from femto.trench import TrenchColumn, Trench
+from femto.trench import Trench
+from femto.trench import TrenchColumn
 from femto.trench import UTrenchColumn
 from femto.waveguide import NasuWaveguide
 from femto.waveguide import Waveguide
-from femto.laserpath import LaserPath
 from femto.writer import MarkerWriter
 from femto.writer import NasuWriter
 from femto.writer import TrenchWriter
@@ -44,16 +46,20 @@ class Device:
         self.fig: go.Figure | None = None
         self.fabrication_time: float = 0.0
         self.writers = {
-            Waveguide: WaveguideWriter(wg_list=[], **param),
-            NasuWaveguide: NasuWriter(nw_list=[], **param),
-            Marker: MarkerWriter(mk_list=[], **param),
-            TrenchColumn: TrenchWriter(tc_list=[], **param),
-            UTrenchColumn: UTrenchWriter(utc_list=[], **param),
+            TrenchColumn: TrenchWriter(param=param, objects=[]),
+            UTrenchColumn: UTrenchWriter(param=param, objects=[]),
+            Marker: MarkerWriter(param=param, objects=[]),
+            Waveguide: WaveguideWriter(param=param, objects=[]),
+            NasuWaveguide: NasuWriter(param=param, objects=[]),
         }
 
         self._param: dict[str, Any] = dict(**param)
         self._printed_angle_warning: bool = False
         logger.info(f'Instantiate device {self._param["filename"].rsplit(".", 1)[0]}.')
+
+    @classmethod
+    def from_dict(cls, param: dict[str, Any]):
+        return cls(**param)
 
     def append(self, obj: Any) -> None:
         """Append object to Device.
@@ -92,7 +98,7 @@ class Device:
 
         The function takes a list of objects and parse all of them based on their types.
         If the type of the object matches one of the types of the ``Writer`` registered in the ``Device`` class,
-        the object is added to the ``Writer.obj_list``. If not, a ``TypeError`` is raised.
+        the object is added to the ``Writer._obj_list``. If not, a ``TypeError`` is raised.
 
         Parameters
         ----------
@@ -203,7 +209,7 @@ class Device:
         """
 
         for key, writer in self.writers.items():
-            if verbose and writer.obj_list:
+            if verbose and writer.objs:
                 logger.info(f'Exporting {key.__name__} objects...')
 
             # writer = cast(Union[WaveguideWriter, NasuWriter, TrenchWriter, UTrenchWriter, MarkerWriter], writer)
@@ -234,7 +240,7 @@ class Device:
         """
 
         for key, writer in self.writers.items():
-            if verbose and writer.obj_list:
+            if verbose and writer.objs:
                 logger.info(f'Exporting {key.__name__} objects...')
 
             writer = cast(Union[WaveguideWriter, NasuWriter, TrenchWriter, UTrenchWriter, MarkerWriter], writer)
@@ -242,18 +248,31 @@ class Device:
         if verbose:
             logger.info('Export objects completed.\n')
 
-    def xlsx(self, verbose: bool = True, **param) -> None:
+    def xlsx(self, metadata: dict | None = None, verbose: bool = True, **param) -> None:
         """Generate the spreadsheet.
 
         Add all waveguides and markers of the ``Device`` to the spreadsheet.
         """
 
-        with Spreadsheet(device=self, **param) as spsh:
+        if not metadata:
+            metadata = {
+                'laser name': self._param.get('laser') or '',
+                'sample name': pathlib.Path(self._param.get('filename')).stem or '',
+            }
+
+        # Fetch all objects from writers
+        objs = []
+        for key, writer in self.writers.items():
+            if isinstance(writer, (WaveguideWriter, NasuWriter, MarkerWriter)):
+                objs.extend(writer.objs)
+
+        # Generate Spreadsheet
+        with Spreadsheet(**param, metadata=metadata) as S:
             if verbose:
                 logger.info('Generating spreadsheet...')
-            spsh.write_structures(verbose=verbose)
-        if verbose:
-            logger.info('Create .xlsx file completed.')
+            S.write(objs)
+            if verbose:
+                logger.info('Create .xlsx file completed.')
 
     def save(self, filename: str = 'scheme.html', opt: dict[str, Any] | None = None) -> None:
         """Save figure.
@@ -293,7 +312,7 @@ class Device:
             self.fig.write_image(str(fn), **opt)
 
     @staticmethod
-    def load_objects(folder: str | pathlib.Path, param: dict, verbose: bool = False) -> Device:
+    def load_objects(folder: str | pathlib.Path, param: dict[str, Any], verbose: bool = False) -> Device:
         """
         The load_objects method loads the objects from a folder.
 
@@ -344,7 +363,7 @@ def main() -> None:
         filename='testCell.pgm', laser='PHAROS', new_origin=(0.5, 0.5), samplesize=(25, 1), aerotech_angle=-1.023
     )
 
-    dev = Device(**param_gc)
+    dev = Device.from_dict(param_gc)
 
     # Waveguides
     x_center = 0
@@ -365,8 +384,24 @@ def main() -> None:
     # Export
     # dev.plot2d()
     # dev.save('circuit_scheme.pdf')
-    dev.pgm()
-    dev.export()
+    # dev.pgm()
+    # dev.export()
+
+    data_xlsx = dict(
+        laboratory='CAPABLE',
+        samplename=pathlib.Path(param_gc['filename']).stem,
+        material='Cornings Eagle-XG',
+        facet='Bottom',
+        thickness='1 mm',
+        lasername=param_gc['laser'],
+        wavelength='1030 nm',
+        duration='180 fs',
+        reprate='1 MHz',
+        attenuator='15 %',
+        preset='1',
+        objective='20X WI',
+    )
+    dev.xlsx(metadata=data_xlsx)
 
 
 if __name__ == '__main__':

@@ -3,6 +3,7 @@ from __future__ import annotations
 from copy import deepcopy
 from pathlib import Path
 
+import attrs
 import dill
 import numpy as np
 import pytest
@@ -287,7 +288,7 @@ def test_toolpath() -> None:
 
 def test_trenchcol_default() -> None:
     x, ymin, ymax = 1, 2, 5
-    tcol = TrenchColumn(x, ymin, ymax)
+    tcol = TrenchColumn(x_center=x, y_min=ymin, y_max=ymax)
 
     assert tcol.x_center == x
     assert tcol.y_min == ymin
@@ -371,11 +372,11 @@ def test_load(param) -> None:
     tc1 = TrenchColumn(**param)
     fn = Path('obj.pkl')
     with open(fn, 'wb') as f:
-        dill.dump(tc1.__dict__, f)
+        dill.dump(attrs.asdict(tc1), f)
 
     tc2 = TrenchColumn.load(fn)
     assert type(tc1) == type(tc2)
-    assert sorted(tc1.__dict__) == sorted(tc2.__dict__)
+    assert sorted(attrs.asdict(tc1)) == sorted(attrs.asdict(tc2))
     fn.unlink()
 
 
@@ -465,7 +466,7 @@ def test_trenchcol_rect(tc, param) -> None:
 
 
 def test_trenchcol_rect_empty() -> None:
-    tc = TrenchColumn(1, 2, 3, length=None)
+    tc = TrenchColumn(x_center=1, y_min=2, y_max=3, length=None)
     bb = tc.rect
     assert bb == Polygon()
 
@@ -627,7 +628,7 @@ def test_normalize(tc):
 
 def test_utrenchcol_default() -> None:
     x, ymin, ymax = 1, 2, 5
-    tcol = UTrenchColumn(x, ymin, ymax)
+    tcol = UTrenchColumn(x_center=x, y_min=ymin, y_max=ymax)
 
     assert tcol.x_center == x
     assert tcol.y_min == ymin

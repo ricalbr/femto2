@@ -128,3 +128,6 @@ fit_stress_test.py
 # Documentation
 docs/*
 *.pdf
+
+# Excel files
+*.xlsx

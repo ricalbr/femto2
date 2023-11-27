@@ -1,17 +1,22 @@
 from __future__ import annotations
 
-import dataclasses
 from typing import Any
 from typing import Callable
+from typing import TypeVar
 
+import attrs
 import numpy as np
 import numpy.typing as npt
 from femto import logger
 from femto.helpers import dotdict
 from femto.laserpath import LaserPath
 
+# Create a generic variable that can be 'Waveguide', or any subclass.
+WG = TypeVar('WG', bound='Waveguide')
+nparray = npt.NDArray[np.float32]
 
-@dataclasses.dataclass(repr=False)
+
+@attrs.define(kw_only=True, repr=False)
 class Waveguide(LaserPath):
     """Class that computes and stores the coordinates of an optical waveguide."""
 
@@ -24,9 +29,15 @@ class Waveguide(LaserPath):
     dz_bridge: float = 0.007  #: Maximum `z`-height for 3D bridges, `[mm]`.
     ltrench: float = 0.0  #: Length of straight segment to accomodate trenches, `[mm]`.
 
-    def __post_init__(self) -> None:
-        super().__post_init__()
-        self._id = 'WG'  #: Waveguide identifier.
+    _id: str = attrs.field(alias='_id', default='WG')  #: Waveguide ID.
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        filtered = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}
+        self.__attrs_init__(**filtered)
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
         if self.z_init is None:
             self.z_init = self.depth
             logger.debug(f'Set z_init to {self.z_init} mm.')
@@ -102,14 +113,14 @@ class Waveguide(LaserPath):
         self,
         dy: float,
         dz: float,
-        fx: Callable[..., tuple[npt.NDArray[np.float32], npt.NDArray[np.float32], npt.NDArray[np.float32]]],
+        fx: Callable[..., tuple[nparray, nparray, nparray]],
         disp_x: float | None = None,
         radius: float | None = None,
         num_points: int | None = None,
         speed: float | None = None,
         shutter: int = 1,
         **kwargs,
-    ) -> Waveguide:
+    ) -> WG:
         """Bend segment.
 
         Add a bent segment to the current waveguide with a shape that is defined by the ``fx`` function. The ``fx``
@@ -182,7 +193,7 @@ class Waveguide(LaserPath):
         self,
         dy: float,
         dz: float,
-        fx: Callable[..., tuple[npt.NDArray[np.float32], npt.NDArray[np.float32], npt.NDArray[np.float32]]],
+        fx: Callable[..., tuple[nparray, nparray, nparray]],
         int_length: float | None = None,
         disp_x: float | None = None,
         radius: float | None = None,
@@ -190,7 +201,7 @@ class Waveguide(LaserPath):
         speed: float | None = None,
         shutter: int = 1,
         **kwargs,
-    ) -> Waveguide:
+    ) -> WG:
         """Concatenate two bends to make a single mode of a Directional Coupler.
 
         The ``fx`` function describing the profile of the bend is repeated twice, make sure the joints connect smoothly.
@@ -243,7 +254,7 @@ class Waveguide(LaserPath):
         self,
         dy: float,
         dz: float,
-        fx: Callable[..., tuple[npt.NDArray[np.float32], npt.NDArray[np.float32], npt.NDArray[np.float32]]],
+        fx: Callable[..., tuple[nparray, nparray, nparray]],
         int_length: float | None = None,
         arm_length: float | None = None,
         disp_x: float | None = None,
@@ -252,7 +263,7 @@ class Waveguide(LaserPath):
         speed: float | None = None,
         shutter: int = 1,
         **kwargs,
-    ) -> Waveguide:
+    ) -> WG:
         """Concatenate two Directional Couplers segments to make a single mode of a Mach-Zehnder Interferometer.
 
         Parameters
@@ -321,7 +332,7 @@ class Waveguide(LaserPath):
         return self
 
 
-@dataclasses.dataclass
+@attrs.define(kw_only=True, repr=False)
 class NasuWaveguide(Waveguide):
     """Class that computes and stores the coordinates of a Nasu optical waveguide [#]_.
 
@@ -331,14 +342,19 @@ class NasuWaveguide(Waveguide):
     """
 
     adj_scan_shift: tuple[float, float, float] = (0, 0.0004, 0)  #: (`x`, `y`, `z`)-shifts between adjacent passes
-    adj_scan: int = 5  #: Number of adjacent scans
+    adj_scan: int = attrs.field(validator=attrs.validators.instance_of(int), default=5)  #: Number of adjacent scans.
 
-    def __post_init__(self) -> None:
-        super().__post_init__()
-        self._id = 'NWG'  #: NasuWaveguide identifier.
-        if not isinstance(self.adj_scan, int):
-            logger.error('Number of adjacent scans is of the wrong type.2')
-            raise ValueError(f'Number of adjacent scans must be of type int. Given type is {type(self.scan).__name__}.')
+    _id: str = attrs.field(alias='_id', default='NWG')  #: Nasu Waveguide ID.
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        filtered = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}
+        self.__attrs_init__(**filtered)
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
+        if self.z_init is None:
+            self.z_init = self.depth
 
     @property
     def adj_scan_order(self) -> list[float]:
@@ -398,8 +414,8 @@ def coupler(param: dict[str, Any], f_profile: Callable, nasu: bool = False) -> l
         List of the two modes of the Directional Coupler.
     """
 
-    mode1 = NasuWaveguide(**param) if nasu else Waveguide(**param)
-    mode2 = NasuWaveguide(**param) if nasu else Waveguide(**param)
+    mode1 = NasuWaveguide.from_dict(param) if nasu else Waveguide.from_dict(param)
+    mode2 = NasuWaveguide.from_dict(param) if nasu else Waveguide.from_dict(param)
 
     lx = (mode1.samplesize[0] - mode1.dx_coupler) / 2
     logger.debug(f'Linear segment lx = {lx}.')

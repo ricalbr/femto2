@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import dataclasses
 import math
 
+import attrs
 import numpy as np
 import numpy.typing as npt
 from femto import logger
@@ -10,7 +10,7 @@ from femto.helpers import sign
 from femto.laserpath import LaserPath
 
 
-@dataclasses.dataclass(repr=False)
+@attrs.define(kw_only=True, repr=False)
 class Marker(LaserPath):
     """Class that computes and stores the coordinates of a superficial abletion marker."""
 
@@ -18,9 +18,15 @@ class Marker(LaserPath):
     lx: float = 1.000  #: Dimension of cross x-arm, `[mm]`.
     ly: float = 0.060  #: Dimension of cross y-arm, `[mm]`.
 
-    def __post_init__(self) -> None:
-        super().__post_init__()
-        self._id = 'MK'  #: Marker identifier.
+    _id: str = attrs.field(alias='_id', default='MK')  #: Marker ID.
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        filtered = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}
+        self.__attrs_init__(**filtered)
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
         if self.z_init is None:
             self.z_init = self.depth
             logger.debug(f'z_init set to {self.z_init}.')
@@ -316,11 +322,11 @@ def main() -> None:
     from femto.helpers import dotdict, split_mask
 
     parameters_mk = dotdict(scan=1, speed=2, speed_pos=5, speed_closed=5, depth=0.000, lx=1, ly=1)
-    parameters_gc = dotdict(filename='testPGM.pgm', laser='PHAROS', samplesize=(10, 10), flip_x=True, new_origin=[1, 1])
+    parameters_gc = dotdict(filename='test.pgm', laser='PHAROS', samplesize=(10, 10), flip_x=True, shift_origin=[1, 1])
 
     c = Marker(**parameters_mk)
     # c.cross([2.5, 1], 5, 2)
-    # c.ablation([[0, 0, 0], [5, 0, 0], [5, 1, 0], [2, 2, 0]])
+    # c.ablation([[0, 0, 0], [5, 0, 0], [5, 1, 0], [2, 2, 0]], shift=0.001)
     c.box([1, 2, 3], width=5.0, height=0.01)
     print(c.points)
 

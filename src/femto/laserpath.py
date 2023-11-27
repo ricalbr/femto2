@@ -1,28 +1,30 @@
 from __future__ import annotations
 
-import dataclasses
-import inspect
+import copy
 import pathlib
 from typing import Any
 from typing import Sequence
 from typing import TypeVar
 
+import attrs
 import dill
 import numpy as np
 import numpy.typing as npt
 from femto import logger
 from femto.helpers import unique_filter
 
+# Create a generic variable that can be 'LaserPath', or any subclass.
 LP = TypeVar('LP', bound='LaserPath')
+nparray = npt.NDArray[np.float32]
 
 
-@dataclasses.dataclass(repr=False)
+@attrs.define(kw_only=True, repr=False)
 class LaserPath:
     """Class that computes and stores the coordinates of a laser path."""
 
     name: str | None = None  #: Name of the laser path.
     radius: float = 15  #: Curvature radius
-    scan: int = 1  #: Number of overlapped scans.
+    scan: int = attrs.field(validator=attrs.validators.instance_of(int), default=1)  #: Number of overlapped scans.
     speed: float = 1.0  #: Opened shutter translation speed `[mm/s]`.
     samplesize: tuple[float, float] = (100, 50)  #: Dimensions of the sample (x `[mm]`, y `[mm]`).
     x_init: float = -2.0  #: Initial x-coordinate for the laser path `[mm]`.
@@ -30,35 +32,35 @@ class LaserPath:
     z_init: float | None = None  #: Initial z-coordinate for the laser path `[mm]`.
     shrink_correction_factor: float = 1.0  #: Correcting factor for glass shrinking.
     lsafe: float = 2.0  #: Safe margin length `[mm]`.
-    speed_closed: float = 5  #: Closed shutter translation speed `[mm/s]`.
+    speed_closed: float = 5.0  #: Closed shutter translation speed `[mm/s]`.
     speed_pos: float = 0.5  #: Positioning speed (shutter closed)`[mm/s]`.
-    cmd_rate_max: float = 1200  #: Maximum command rate `[cmd/s]`.
-    acc_max: float = 500  #: Maximum acceleration/deceleration `[m/s^2]`.
+    cmd_rate_max: float = 1200.0  #: Maximum command rate `[cmd/s]`.
+    acc_max: float = 500.0  #: Maximum acceleration/deceleration `[m/s^2]`.
     end_off_sample: bool = True  #: Flag to end laserpath off of the sample. (See `x_end`).
     warp_flag: bool = False  #: Flag to toggle the glass warp compensation.
+    metadata: dict[str, str] = attrs.field(factory=dict)  #: Dictionary with laserpath metadata.
 
-    _x: npt.NDArray[np.float32] = dataclasses.field(default_factory=lambda: np.array([], dtype=np.float32))
-    _y: npt.NDArray[np.float32] = dataclasses.field(default_factory=lambda: np.array([], dtype=np.float32))
-    _z: npt.NDArray[np.float32] = dataclasses.field(default_factory=lambda: np.array([], dtype=np.float32))
-    _f: npt.NDArray[np.float32] = dataclasses.field(default_factory=lambda: np.array([], dtype=np.float32))
-    _s: npt.NDArray[np.float32] = dataclasses.field(default_factory=lambda: np.array([], dtype=np.float32))
+    _id: str = attrs.field(alias='_id', default='LP')
+    _x: nparray = attrs.field(alias='_x', factory=lambda: np.array([], dtype=np.float32))
+    _y: nparray = attrs.field(alias='_y', factory=lambda: np.array([], dtype=np.float32))
+    _z: nparray = attrs.field(alias='_z', factory=lambda: np.array([], dtype=np.float32))
+    _f: nparray = attrs.field(alias='_f', factory=lambda: np.array([], dtype=np.float32))
+    _s: nparray = attrs.field(alias='_s', factory=lambda: np.array([], dtype=np.float32))
     logger.debug('Initialized all the coordinates arrays.')
 
-    def __post_init__(self) -> None:
-        self._id = 'LP'  #: LaserPath identifier.
-        if not isinstance(self.scan, int):
-            logger.error(f'Number of scan must be integer. Given {self.scan}.')
-            raise ValueError(f'Number of scan must be integer. Given {self.scan}.')
+    def __init__(self, **kwargs):
+        filtered = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}
+        self.__attrs_init__(**filtered)
 
-        if self.name is None:
-            logger.debug(f'Assign name to {type(self).__name__}.')
-            self.name = type(self).__name__
+    def __attrs_post_init__(self):
+        if 'name' not in self.metadata.keys():
+            self.metadata['name'] = type(self).__name__
 
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}@{id(self) & 0xFFFFFF:x}'
 
     @classmethod
-    def from_dict(cls: type[LP], param: dict[str, Any], **kwargs) -> LP:
+    def from_dict(cls: type(LP), param: dict[str, Any], **kwargs) -> LP:
         """Create an instance of the class from a dictionary.
 
         It takes a class and a dictionary, and returns an instance of the class with the dictionary's keys as the
@@ -76,14 +78,16 @@ class LaserPath:
         -------
         Instance of class
         """
+
         # Update parameters with kwargs
-        param.update(kwargs)
+        p = copy.deepcopy(param)
+        p.update(kwargs)
 
         logger.debug(f'Create {cls.__name__} object from dictionary.')
-        return cls(**{k: v for k, v in param.items() if k in inspect.signature(cls).parameters})
+        return cls(**p)
 
     @classmethod
-    def load(cls: type[LP], pickle_file: str | pathlib.Path) -> LP:
+    def load(cls: type(LP), pickle_file: str | pathlib.Path) -> LP:
         """Create an instance of the class from a pickle file.
 
         It takes a class and a pickle file name, and returns an instance of the class with the dictionary's keys as the
@@ -183,7 +187,7 @@ class LaserPath:
             return self.samplesize[0] - self.lsafe
 
     @property
-    def points(self) -> npt.NDArray[np.float32]:
+    def points(self) -> nparray:
         """Matrix of the unique points in the trajectory.
 
         The matrix of points is parsed through a unique functions that removes all the subsequent identical points in
@@ -202,7 +206,7 @@ class LaserPath:
         return np.array(unique_filter([self._x, self._y, self._z, self._f, self._s]))
 
     @property
-    def x(self) -> npt.NDArray[np.float32]:
+    def x(self) -> nparray:
         """`x`-coordinate vector as a numpy array.
 
         The subsequent identical points in the vector are removed.
@@ -242,7 +246,7 @@ class LaserPath:
         return None
 
     @property
-    def y(self) -> npt.NDArray[np.float32]:
+    def y(self) -> nparray:
         """`y`-coordinate vector as a numpy array.
 
         The subsequent identical points in the vector are removed.
@@ -282,7 +286,7 @@ class LaserPath:
         return None
 
     @property
-    def z(self) -> npt.NDArray[np.float32]:
+    def z(self) -> nparray:
         """`z`-coordinate vector as a numpy array.
 
         The subsequent identical points in the vector are removed.
@@ -322,7 +326,7 @@ class LaserPath:
         return None
 
     @property
-    def lastpt(self) -> npt.NDArray[np.float32]:
+    def lastpt(self) -> nparray:
         """Last point of the laser path, if any.
 
         Returns
@@ -338,7 +342,7 @@ class LaserPath:
         return np.array([])
 
     @property
-    def path(self) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]:
+    def path(self) -> tuple[nparray, nparray]:
         """List of `x` and `y`-coordinates of the laser path written with open shutter.
 
         Returns
@@ -356,7 +360,7 @@ class LaserPath:
         return x, y
 
     @property
-    def path3d(self) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32], npt.NDArray[np.float32]]:
+    def path3d(self) -> tuple[nparray, nparray, nparray]:
         """List of `x`, `y` and `z`-coordinates of the laser path written with open shutter.
 
         It takes the `x`, `y` and `z`, and shutter values `s` values from the path trajectory and filters out the
@@ -424,7 +428,7 @@ class LaserPath:
         return time
 
     @property
-    def curvature_radius(self) -> npt.NDArray[np.float32]:
+    def curvature_radius(self) -> nparray:
         """Point-to-point curvature radius of the trajectory.
 
         The curvature radius is computed as the radius of the circle that best fits the curve at a given point.
@@ -455,7 +459,7 @@ class LaserPath:
         return curv_rad
 
     @property
-    def cmd_rate(self) -> npt.NDArray[np.float32]:
+    def cmd_rate(self) -> nparray:
         """Point-to-point command rate of the laser path.
 
         Returns
@@ -505,7 +509,7 @@ class LaserPath:
         return a, dx
 
     # Methods
-    def start(self, init_pos: list[float] | None = None, speed_pos: float | None = None) -> LaserPath:
+    def start(self, init_pos: list[float] | None = None, speed_pos: float | None = None) -> LP:
         """Start a laser path.
 
         The function starts the laserpath in the optional initial position given as input. If the initial position
@@ -570,11 +574,11 @@ class LaserPath:
 
     def add_path(
         self,
-        x: npt.NDArray[np.float32],
-        y: npt.NDArray[np.float32],
-        z: npt.NDArray[np.float32],
-        f: npt.NDArray[np.float32],
-        s: npt.NDArray[np.float32],
+        x: nparray,
+        y: nparray,
+        z: nparray,
+        f: nparray,
+        s: nparray,
     ):
         """Appends the given arrays to the end of the existing coordinates.
 
@@ -607,7 +611,7 @@ class LaserPath:
         mode: str = 'INC',
         shutter: int = 1,
         speed: float | None = None,
-    ) -> LaserPath:
+    ) -> LP:
         """Add a linear increment to the current laser path.
 
         Parameters
@@ -713,7 +717,7 @@ class LaserPath:
             fn = pathlib.Path(fn.stem + '.pkl')
         with open(fn, 'wb') as p:
             if as_dict:
-                dill.dump(self.__dict__, p)
+                dill.dump(attrs.asdict(self), p)
             else:
                 dill.dump(self, p)
             logger.info(f'{self.__class__.__name__} exported to {fn}.')
@@ -753,6 +757,8 @@ def main() -> None:
 
     print(f'Expected writing time {lpath.fabrication_time:.3f} seconds')
     print(f'Laser path length {lpath.length:.6f} mm')
+
+    print(lpath.metadata)
 
 
 if __name__ == '__main__':

@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+import os
 import pathlib
 from contextlib import nullcontext as does_not_raise
 from pathlib import Path
 
-import dill
 import pytest
 from femto.curves import sin
 from femto.device import Device
@@ -15,7 +15,6 @@ from femto.trench import Trench
 from femto.trench import TrenchColumn
 from femto.waveguide import Waveguide
 from shapely.geometry import Polygon
-import os
 
 
 @pytest.fixture
@@ -23,7 +22,7 @@ def ss_param() -> dict:
     return dict(
         book_name='custom_book_name.xlsx',
         sheet_name='custom_sheet_name',
-        columns_names='name power speed scan depth int_dist yin yout obs',
+        columns_names=['name', 'power', 'speed', 'scan', 'depth', 'int_dist', 'yin', 'yout', 'obs'],
     )
 
 
@@ -89,11 +88,21 @@ def device(gc_param) -> Device:
 
 def test_device_init(device, gc_param) -> None:
     assert device.unparsed_objects == []
-    assert device._param == dict(**gc_param)
+    assert device._param == gc_param
     assert device.fig is None
     assert device.writers
     for wr in device.writers.values():
-        assert wr.obj_list == []
+        assert wr.objs == []
+
+
+def test_device_from_dict(device, gc_param) -> None:
+    dev = Device.from_dict(gc_param)
+    assert dev.unparsed_objects == device.unparsed_objects
+    assert dev._param == device._param
+    assert dev.fig is device.fig
+    assert dev.writers
+    for (wr, wr_exp) in zip(dev.writers.values(), device.writers.values()):
+        assert wr.objs == wr_exp.objs
 
 
 @pytest.mark.parametrize(
@@ -115,45 +124,32 @@ def test_device_append(gc_param, list_wg, list_mk, list_tcol) -> None:
     for wg in list_wg:
         device.append(wg)
 
-    assert device.writers[Waveguide].obj_list == list_wg
-    assert device.writers[TrenchColumn].obj_list == []
-    assert device.writers[Marker].obj_list == []
+    assert device.writers[Waveguide]._obj_list == list_wg
+    assert device.writers[TrenchColumn]._obj_list == []
+    assert device.writers[Marker]._obj_list == []
     del device
 
     device = Device(**gc_param)
     for wg in list_wg:
         device.append(wg)
 
-    assert device.writers[Waveguide].obj_list == list_wg
-    assert device.writers[TrenchColumn].obj_list == []
-    assert device.writers[Marker].obj_list == []
+    assert device.writers[Waveguide]._obj_list == list_wg
+    assert device.writers[TrenchColumn]._obj_list == []
+    assert device.writers[Marker]._obj_list == []
 
     for mk in list_mk:
         device.append(mk)
 
-    assert device.writers[Waveguide].obj_list == list_wg
-    assert device.writers[TrenchColumn].obj_list == []
-    assert device.writers[Marker].obj_list == list_mk
+    assert device.writers[Waveguide]._obj_list == list_wg
+    assert device.writers[TrenchColumn]._obj_list == []
+    assert device.writers[Marker]._obj_list == list_mk
 
     for tc in list_tcol:
         device.append(tc)
 
-    assert device.writers[Waveguide].obj_list == list_wg
-    assert device.writers[TrenchColumn].obj_list == list_tcol
-    assert device.writers[Marker].obj_list == list_mk
-    del device
-
-    device = Device(**gc_param)
-    for wg in list_wg:
-        device.append(wg)
-    for mk in list_mk:
-        device.append(mk)
-    for tc in list_tcol:
-        device.append(tc)
-
-    assert device.writers[Waveguide].obj_list == list_wg
-    assert device.writers[TrenchColumn].obj_list == list_tcol
-    assert device.writers[Marker].obj_list == list_mk
+    assert device.writers[Waveguide]._obj_list == list_wg
+    assert device.writers[TrenchColumn]._obj_list == list_tcol
+    assert device.writers[Marker]._obj_list == list_mk
     del device
 
     device = Device(**gc_param)
@@ -164,12 +160,25 @@ def test_device_append(gc_param, list_wg, list_mk, list_tcol) -> None:
     for tc in list_tcol:
         device.append(tc)
 
+    assert device.writers[Waveguide]._obj_list == list_wg
+    assert device.writers[TrenchColumn]._obj_list == list_tcol
+    assert device.writers[Marker]._obj_list == list_mk
+    del device
+
+    device = Device(**gc_param)
+    for wg in list_wg:
+        device.append(wg)
+    for mk in list_mk:
+        device.append(mk)
     for tc in list_tcol:
         device.append(tc)
 
-    assert device.writers[Waveguide].obj_list == list_wg
-    assert device.writers[TrenchColumn].obj_list == list_tcol * 2
-    assert device.writers[Marker].obj_list == list_mk
+    for tc in list_tcol:
+        device.append(tc)
+
+    assert device.writers[Waveguide]._obj_list == list_wg
+    assert device.writers[TrenchColumn]._obj_list == list_tcol * 2
+    assert device.writers[Marker]._obj_list == list_mk
     del device
 
 
@@ -177,61 +186,61 @@ def test_device_extend(gc_param, list_wg, list_mk, list_tcol) -> None:
     device = Device(**gc_param)
     device.extend(list_wg)
 
-    assert device.writers[Waveguide].obj_list == list_wg
-    assert device.writers[TrenchColumn].obj_list == []
-    assert device.writers[Marker].obj_list == []
+    assert device.writers[Waveguide]._obj_list == list_wg
+    assert device.writers[TrenchColumn]._obj_list == []
+    assert device.writers[Marker]._obj_list == []
     del device
 
     device = Device(**gc_param)
     device.extend(list_wg)
 
-    assert device.writers[Waveguide].obj_list == list_wg
-    assert device.writers[TrenchColumn].obj_list == []
-    assert device.writers[Marker].obj_list == []
+    assert device.writers[Waveguide]._obj_list == list_wg
+    assert device.writers[TrenchColumn]._obj_list == []
+    assert device.writers[Marker]._obj_list == []
 
     device.extend(list_mk)
 
-    assert device.writers[Waveguide].obj_list == list_wg
-    assert device.writers[TrenchColumn].obj_list == []
-    assert device.writers[Marker].obj_list == list_mk
+    assert device.writers[Waveguide]._obj_list == list_wg
+    assert device.writers[TrenchColumn]._obj_list == []
+    assert device.writers[Marker]._obj_list == list_mk
 
     device.extend(list_tcol)
 
-    assert device.writers[Waveguide].obj_list == list_wg
-    assert device.writers[TrenchColumn].obj_list == list_tcol
-    assert device.writers[Marker].obj_list == list_mk
-    del device
-
-    device = Device(**gc_param)
-    device.extend(list_tcol)
-    device.extend(list_wg)
-    device.extend(list_mk)
-
-    assert device.writers[Waveguide].obj_list == list_wg
-    assert device.writers[TrenchColumn].obj_list == list_tcol
-    assert device.writers[Marker].obj_list == list_mk
+    assert device.writers[Waveguide]._obj_list == list_wg
+    assert device.writers[TrenchColumn]._obj_list == list_tcol
+    assert device.writers[Marker]._obj_list == list_mk
     del device
 
     device = Device(**gc_param)
     device.extend(list_tcol)
     device.extend(list_wg)
     device.extend(list_mk)
+
+    assert device.writers[Waveguide]._obj_list == list_wg
+    assert device.writers[TrenchColumn]._obj_list == list_tcol
+    assert device.writers[Marker]._obj_list == list_mk
+    del device
+
+    device = Device(**gc_param)
+    device.extend(list_tcol)
+    device.extend(list_wg)
+    device.extend(list_mk)
     device.extend(list_wg)
     device.extend(list_mk)
     device.extend(list_wg)
     device.extend(list_mk)
 
-    assert device.writers[Waveguide].obj_list == list_wg * 3
-    assert device.writers[TrenchColumn].obj_list == list_tcol
-    assert device.writers[Marker].obj_list == list_mk * 3
+    assert device.writers[Waveguide]._obj_list == list_wg * 3
+    assert device.writers[TrenchColumn]._obj_list == list_tcol
+    assert device.writers[Marker]._obj_list == list_mk * 3
     del device
 
     device = Device(**gc_param)
     device.extend([])
 
-    assert device.writers[Waveguide].obj_list == []
-    assert device.writers[TrenchColumn].obj_list == []
-    assert device.writers[Marker].obj_list == []
+    assert device.writers[Waveguide]._obj_list == []
+    assert device.writers[TrenchColumn]._obj_list == []
+    assert device.writers[Marker]._obj_list == []
     del device
 
 
@@ -392,6 +401,9 @@ def test_device_load_verbose(device, list_wg, list_mk, gc_param) -> None:
     fn = Path().cwd() / 'EXPORT' / 'testCell'
 
     d2 = Device.load_objects(fn, gc_param, verbose=True)
+    assert d2.writers[Waveguide].objs
+    assert not d2.writers[TrenchColumn].objs
+    assert d2.writers[Marker].objs
 
     objs = []
     objs.extend(list_wg)
@@ -416,9 +428,12 @@ def test_device_load_empty(list_wg, list_mk, list_tcol, gc_param) -> None:
     fn = Path().cwd() / 'EXPORT' / 'testCell'
 
     d2 = Device.load_objects(fn, gc_param, verbose=True)
-    # assert d2.writers[Waveguide].obj_list == list_wg
-    # assert d2.writers[TrenchColumn].obj_list == list_tcol
-    # assert d2.writers[Marker].obj_list == list_mk
+    assert d2.writers[Waveguide].objs
+    assert d2.writers[TrenchColumn].objs
+    assert d2.writers[Marker].objs
+    # assert d2.writers[Waveguide].objs == list_wg
+    # assert d2.writers[TrenchColumn].objs == list_tcol
+    # assert d2.writers[Marker].objs == list_mk
 
     for root, dirs, files in os.walk(fn):
         for file in files:

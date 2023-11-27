@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-import dataclasses
-
+import attrs
 import numpy as np
 from femto import logger
 from femto.helpers import dotdict
@@ -10,16 +9,17 @@ from femto.laserpath import LaserPath
 from PIL import Image
 
 
-@dataclasses.dataclass(repr=False)
+@attrs.define(repr=False)
 class RasterImage(LaserPath):
     """Class representing a laser path in the xy-plane of a b/w rastered image."""
 
     px_to_mm: float = 0.010  #: Pixel to millimeter scale convertion.
     img_size: tuple[int, int] = (0, 0)  #: Number of pixels in x and y direction of the image.
 
-    def __post_init__(self) -> None:
-        super().__post_init__()
-        self._id = 'RI'  #: RasterImage identifier.
+    _id: str = attrs.field(alias='_id', default='RI')  #: RasterImage ID.
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
         if self.z_init is None:
             self.z_init = 0.0
 
