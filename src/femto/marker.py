@@ -9,6 +9,9 @@ from femto import logger
 from femto.helpers import sign
 from femto.laserpath import LaserPath
 
+# Define array type
+nparray = npt.NDArray[np.float32]
+
 
 @attrs.define(kw_only=True, repr=False)
 class Marker(LaserPath):
@@ -238,7 +241,7 @@ class Marker(LaserPath):
 
     def ablation(
         self,
-        points: list[list[float]] | list[np.ndarray[float]],
+        points: list[list[float]] | list[nparray],
         shift: float | None = None,
     ) -> None:
         """Ablation line.
@@ -274,7 +277,8 @@ class Marker(LaserPath):
 
         # Add linear segments
         logger.debug('Start ablation line.')
-        self.add_path(*path_list[0][0], np.array(self.speed_pos), np.array(0))
+        x0, y0, z0 = path_list[0][0]
+        self.add_path(x0, y0, z0, np.array(self.speed_pos), np.array(0))
         for path in path_list:
             self.linear(path[0], mode='ABS', shutter=0)
             self.linear(path[0], mode='ABS', shutter=1)
@@ -284,7 +288,7 @@ class Marker(LaserPath):
             self.linear(path[-1], mode='ABS', shutter=0)
         self.end()
 
-    def box(self, lower_left_corner: list[float], width: float = 1.0, height: float = 0.06) -> None:
+    def box(self, lower_left_corner: list[float] | nparray, width: float = 1.0, height: float = 0.06) -> None:
         """Box.
         The function creates a rectangular ablation pattern. It takes in the lower left corner of the rectangle,
         the width and height of the rectangle as input and generates a list of points representing the vertices of
@@ -302,14 +306,14 @@ class Marker(LaserPath):
         if not lower_left_corner:
             logger.error('No lower_left_corner was given.')
             return
-        lower_left_corner = np.array(lower_left_corner)
+        ll_corner: nparray = np.array(lower_left_corner)
 
         pts = [
-            lower_left_corner,
-            lower_left_corner + np.array([abs(width), 0, 0]),
-            lower_left_corner + np.array([abs(width), abs(height), 0]),
-            lower_left_corner + np.array([0, abs(height), 0]),
-            lower_left_corner,
+            ll_corner,
+            ll_corner + np.array([abs(width), 0, 0]),
+            ll_corner + np.array([abs(width), abs(height), 0]),
+            ll_corner + np.array([0, abs(height), 0]),
+            ll_corner,
         ]
         logger.debug('Start box as ablation line.')
         self.ablation(points=pts, shift=None)
@@ -329,11 +333,6 @@ def main() -> None:
     # c.ablation([[0, 0, 0], [5, 0, 0], [5, 1, 0], [2, 2, 0]], shift=0.001)
     c.box([1, 2, 3], width=5.0, height=0.01)
     print(c.points)
-
-    from femto.pgmcompiler import PGMCompiler
-
-    with PGMCompiler(**parameters_gc) as gc:
-        gc.write(c.points)
 
     # Plot
     fig, ax = plt.subplots()

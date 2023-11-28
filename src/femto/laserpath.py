@@ -4,7 +4,6 @@ import copy
 import pathlib
 from typing import Any
 from typing import Sequence
-from typing import TypeVar
 
 import attrs
 import dill
@@ -13,8 +12,7 @@ import numpy.typing as npt
 from femto import logger
 from femto.helpers import unique_filter
 
-# Create a generic variable that can be 'LaserPath', or any subclass.
-LP = TypeVar('LP', bound='LaserPath')
+# Define array type
 nparray = npt.NDArray[np.float32]
 
 
@@ -22,7 +20,6 @@ nparray = npt.NDArray[np.float32]
 class LaserPath:
     """Class that computes and stores the coordinates of a laser path."""
 
-    name: str | None = None  #: Name of the laser path.
     radius: float = 15  #: Curvature radius
     scan: int = attrs.field(validator=attrs.validators.instance_of(int), default=1)  #: Number of overlapped scans.
     speed: float = 1.0  #: Opened shutter translation speed `[mm/s]`.
@@ -60,7 +57,7 @@ class LaserPath:
         return f'{self.__class__.__name__}@{id(self) & 0xFFFFFF:x}'
 
     @classmethod
-    def from_dict(cls: type(LP), param: dict[str, Any], **kwargs) -> LP:
+    def from_dict(cls: type[LaserPath], param: dict[str, Any], **kwargs) -> LaserPath:
         """Create an instance of the class from a dictionary.
 
         It takes a class and a dictionary, and returns an instance of the class with the dictionary's keys as the
@@ -87,7 +84,7 @@ class LaserPath:
         return cls(**p)
 
     @classmethod
-    def load(cls: type(LP), pickle_file: str | pathlib.Path) -> LP:
+    def load(cls: type[LaserPath], pickle_file: str | pathlib.Path) -> LaserPath:
         """Create an instance of the class from a pickle file.
 
         It takes a class and a pickle file name, and returns an instance of the class with the dictionary's keys as the
@@ -452,8 +449,12 @@ class LaserPath:
         norm_r1 = np.linalg.norm(r1, axis=1)
 
         # Return the local curvature radius, where cannot divide by 0 return inf
-        curv_rad = np.divide(
-            norm_r1**3, norm_cross, out=np.full_like(norm_r1, fill_value=np.inf), where=~(norm_cross == 0)
+        curv_rad: nparray = np.divide(
+            norm_r1**3,
+            norm_cross,
+            out=np.full_like(norm_r1, fill_value=np.inf),
+            where=~(norm_cross == 0),
+            dtype=np.float32,
         )
         logger.debug(f'Return curvature radius, avg_curvature_radius = {np.mean(curv_rad)}.')
         return curv_rad
@@ -509,7 +510,7 @@ class LaserPath:
         return a, dx
 
     # Methods
-    def start(self, init_pos: list[float] | None = None, speed_pos: float | None = None) -> LP:
+    def start(self, init_pos: list[float] | None = None, speed_pos: float | None = None) -> LaserPath:
         """Start a laser path.
 
         The function starts the laserpath in the optional initial position given as input. If the initial position
@@ -611,7 +612,7 @@ class LaserPath:
         mode: str = 'INC',
         shutter: int = 1,
         speed: float | None = None,
-    ) -> LP:
+    ) -> LaserPath:
         """Add a linear increment to the current laser path.
 
         Parameters
@@ -664,7 +665,7 @@ class LaserPath:
             z_arr = np.linspace(self._z[-1], z_inc, num)
 
         f_arr = f_val * np.ones_like(x_arr)
-        s_arr = shutter * np.ones_like(x_arr)
+        s_arr = float(shutter) * np.ones_like(x_arr)
 
         self.add_path(x_arr, y_arr, z_arr, f_arr, s_arr)
         return self

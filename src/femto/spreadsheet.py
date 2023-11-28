@@ -3,9 +3,12 @@ from __future__ import annotations
 import itertools
 import pathlib
 from types import TracebackType
+from typing import Any
 
 import attrs
+import numpy
 import numpy as np
+import numpy.typing as npt
 import xlsxwriter
 from femto import logger
 from femto.helpers import flatten
@@ -13,6 +16,9 @@ from femto.helpers import listcast
 from femto.marker import Marker
 from femto.waveguide import NasuWaveguide
 from femto.waveguide import Waveguide
+
+# Define array type
+nparray = npt.NDArray[np.float32]
 
 
 @attrs.define(kw_only=True)
@@ -26,14 +32,14 @@ class Spreadsheet:
     font_name: str = 'DejaVu Sans Mono'  #: Font-family used in the document. Defaults to DejaVu Sans Mono.
     font_size: int = 11  #: Font-size used in the document. Defaults to 11.
     redundant_cols: bool = False  #: Flag, remove redundant columns when filling the Excel file. Defaults to True.
-    new_columns: list = attrs.field(factory=list)  #: New columns for the Excel file. As default value it is empty.
-    metadata: dict = attrs.field(factory=dict)  #: Extra preamble information. As default it is empty.
+    new_columns: list[Any] = attrs.field(factory=list)  #: New columns for the Excel file. As default value it is empty.
+    metadata: dict[str, Any] = attrs.field(factory=dict)  #: Extra preamble information. As default it is empty.
 
     _workbook: xlsxwriter.Workbook = None
     _worksheet: xlsxwriter.Workbook.worksheets = None
     _all_cols: list[ColumnData] = attrs.field(alias='_all_cols', factory=list)
-    _preamble_data: dict = attrs.field(alias='_preamble_data', factory=dict)
-    _formats: dict = attrs.field(alias='_formats', factory=dict)
+    _preamble_data: dict[str, dict[str, Any]] = attrs.field(alias='_preamble_data', factory=dict)
+    _formats: dict[str, dict[str, Any]] = attrs.field(alias='_formats', factory=dict)
 
     def __attrs_post_init__(self) -> None:
 
@@ -61,7 +67,7 @@ class Spreadsheet:
 
         # Create all the Parameters contained in the preamble_info
         # Add them to a dictionary with the key equal to their tagname
-        preamble_info: dict = {
+        preamble_info: dict[str, list[str]] = {
             'General': ['laboratory', 'temperature', 'humidity', 'date', 'start', 'samplename'],
             'Substrate': ['material', 'facet', 'thickness'],
             'Laser': ['lasername', 'wavelength', 'duration', 'reprate', 'attenuator', 'preset'],
@@ -95,7 +101,7 @@ class Spreadsheet:
 
     def __exit__(
         self,
-        exc_type: type(BaseException) | None,
+        exc_type: type[BaseException] | None,
         exc_value: BaseException | None,
         traceback: TracebackType | None,
     ) -> None:
@@ -180,7 +186,7 @@ class Spreadsheet:
         """Close the workbook."""
         self._workbook.close()
 
-    def write(self, obj_list: list[Waveguide, Marker], start: int = 5) -> None:
+    def write(self, obj_list: list[Waveguide | Marker], start: int = 5) -> None:
         """Write the structures to the spreadsheet.
 
         Builds the structures list, containing all the required information about the structures to fabricate. Then,
@@ -218,7 +224,9 @@ class Spreadsheet:
 
         # Fill SpreadSheet
         # Titles
-        titles = [f'{col.name}\n[{col.unit}]' if col.unit != '' else f'{col.name}' for col in cols_info]
+        titles: list[str | int | float] = [
+            f'{col.name}\n[{col.unit}]' if col.unit != '' else f'{col.name}' for col in cols_info
+        ]
         self._worksheet.set_row(row=7, height=50)
         self.add_line(row=7, col=5, data=titles, fmt=len(titles) * ['title'])
 
@@ -319,7 +327,7 @@ class Spreadsheet:
     def _extract_data(
         self,
         structures: list[Waveguide | Marker] | None = None,
-    ) -> tuple[list[ColumnData], np.ndarray]:
+    ) -> tuple[list[ColumnData], npt.NDArray[Any]]:
         """Build a table with all of the structures.
 
         The table has as lines the several structures, and for each of them, all of the fields given as columns_names
@@ -361,7 +369,7 @@ class Spreadsheet:
         dtype = [(t, self._dtype(t)) for t in self.columns_names]
 
         # Create data table
-        table_lines: np.ndarray = np.zeros_like(structures, dtype=dtype)
+        table_lines = np.zeros_like(structures, dtype=dtype)
 
         # Extract all data from structures (either attributes of metadata)
         for i, ent in enumerate(structures):
@@ -405,7 +413,7 @@ class Spreadsheet:
         return info, table_lines[keep]
 
     @staticmethod
-    def _default_formats() -> dict[str, dict[str, str]]:
+    def _default_formats() -> dict[str, dict[str, Any]]:
         """Prepare the basic formats that will be used.
 
         These are the following:
@@ -418,9 +426,9 @@ class Spreadsheet:
         They are inserted into a dictionary, becoming available through the respective abbreviated key.
         """
 
-        al = {'align': 'center', 'valign': 'vcenter', 'border': 1}
-        titt = {**{'bold': True, 'text_wrap': True}, **al}
-        tit_specs = {'font_color': 'white', 'bg_color': '#6C5B7B'}
+        al: dict[str, Any] = {'align': 'center', 'valign': 'vcenter', 'border': 1}
+        titt: dict[str, Any] = {**{'bold': True, 'text_wrap': True}, **al}
+        tit_specs: dict[str, Any] = {'font_color': 'white', 'bg_color': '#6C5B7B'}
 
         return {
             'title': {**tit_specs, **titt},
@@ -527,7 +535,7 @@ def main() -> None:
     speeds = [20, 30, 40]
     scans = [3, 5, 7]
 
-    all_fabb = []
+    all_fabb: list[Waveguide | Marker] = []
 
     for i_guide, (p, v, ns) in enumerate(product(powers, speeds, scans)):
         start_pt = [l_start, 2 + i_guide * 0.08, pars_wg.depth]

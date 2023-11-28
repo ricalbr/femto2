@@ -168,7 +168,7 @@ def sign() -> Iterator[int]:
     return itertools.cycle([1, -1])
 
 
-def remove_repeated_coordinates(array: npt.NDArray[np.float32]) -> npt.NDArray[np.float32 | None]:
+def remove_repeated_coordinates(array: npt.NDArray[np.float32]) -> npt.NDArray[np.float32]:
     """Remove repeated coordinates
 
     Parameters
@@ -185,7 +185,7 @@ def remove_repeated_coordinates(array: npt.NDArray[np.float32]) -> npt.NDArray[n
 
     mask = np.diff(array).astype(bool)
     mask = np.insert(mask, 0, True)
-    return np.where(~mask, np.nan, array)
+    return np.where(~mask, np.nan, array).astype(np.float32)
 
 
 # Filtering adjacent identical points from a list of arrays.
@@ -304,7 +304,7 @@ def almost_equal(
     return bool(polygon.symmetric_difference(other).area < tol)
 
 
-def load_parameters(param_file: str | pathlib.Path) -> list[dict]:
+def load_parameters(param_file: str | pathlib.Path) -> list[dict[str, Any]]:
     """
     The `load_param` function loads a YAML configuration file and returns a list of dictionaries containing the
     parameters.

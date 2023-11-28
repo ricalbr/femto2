@@ -248,7 +248,7 @@ class Device:
         if verbose:
             logger.info('Export objects completed.\n')
 
-    def xlsx(self, metadata: dict | None = None, verbose: bool = True, **param) -> None:
+    def xlsx(self, metadata: dict[str, Any] | None = None, verbose: bool = True, **param) -> None:
         """Generate the spreadsheet.
 
         Add all waveguides and markers of the ``Device`` to the spreadsheet.
@@ -257,7 +257,7 @@ class Device:
         if not metadata:
             metadata = {
                 'laser name': self._param.get('laser') or '',
-                'sample name': pathlib.Path(self._param.get('filename')).stem or '',
+                'sample name': pathlib.Path(self._param.get('filename') or '').stem,
             }
 
         # Fetch all objects from writers

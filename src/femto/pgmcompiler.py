@@ -74,14 +74,14 @@ class PGMCompiler:
     # Basic parameters
     CWD: pathlib.Path = attrs.field(default=pathlib.Path.cwd())
     # Load warp function
-    fwarp: Callable[[nparray, nparray], nparray] = attrs.field(
+    fwarp: Callable[[nparray], nparray] = attrs.field(
         default=attrs.Factory(lambda self: self.warp_management(self.warp_flag), takes_self=True)
     )
 
     _total_dwell_time: float = attrs.field(alias='_total_dwell_time', default=0.0)
     _shutter_on: bool = attrs.field(alias='_shutter_on', default=False)
     _mode_abs: bool = attrs.field(alias='_mode_abs', default=True)
-    _lasers: dict = attrs.field(factory=dict)
+    _lasers: dict[str, Laser] = attrs.field(factory=dict)
     _instructions: Deque[str] = attrs.field(factory=collections.deque)
     _loaded_files: list[str] = attrs.field(factory=list)
     _dvars: list[str] = attrs.field(factory=list)
@@ -108,9 +108,7 @@ class PGMCompiler:
         self._dvars: list[str] = []
 
         # Load warp function
-        self.fwarp: Callable[
-            [npt.NDArray[np.float32], npt.NDArray[np.float32]], npt.NDArray[np.float32]
-        ] = self.warp_management(self.warp_flag)
+        self.fwarp: Callable[[npt.NDArray[np.float32]], npt.NDArray[np.float32]] = self.warp_management(self.warp_flag)
 
         # Set rotation angle in radians for matrix rotations
         if self.rotation_angle:
@@ -127,7 +125,7 @@ class PGMCompiler:
             self.aerotech_angle = float(0.0)
 
     @classmethod
-    def from_dict(cls: type(GC), param: dict[str, Any], **kwargs) -> GC:
+    def from_dict(cls: type[PGMCompiler], param: dict[str, Any], **kwargs) -> PGMCompiler:
         """Create an instance of the class from a dictionary.
 
         It takes a class and a dictionary, and returns an instance of the class with the dictionary's keys as the
@@ -155,7 +153,7 @@ class PGMCompiler:
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}@{id(self) & 0xFFFFFF:x}'
 
-    def __enter__(self) -> GC:
+    def __enter__(self) -> PGMCompiler:
         """Context manager entry.
 
         The context manager takes care to automatically add the proper header file (from the `self.laser` attribute,
@@ -192,7 +190,7 @@ class PGMCompiler:
 
     def __exit__(
         self,
-        exc_type: type(BaseException) | None,
+        exc_type: type[BaseException] | None,
         exc_value: BaseException | None,
         traceback: TracebackType | None,
     ) -> None:
@@ -1125,7 +1123,7 @@ class PGMCompiler:
 
         if not opt:
 
-            def fwarp(_x: float, _y: float) -> float:
+            def fwarp(_xy: float) -> float:
                 """Dummy warp function."""
                 return 0.0
 
@@ -1375,6 +1373,7 @@ def main() -> None:
         wg.end()
 
     # Compilation
+    G: PGMCompiler
     with PGMCompiler(**param_gc) as G:
         G.set_home([0, 0, 0])
         with G.repeat(param_wg['scan']):

@@ -303,30 +303,30 @@ def test_dwell_time(param, p, t, expected) -> None:
 
 
 @pytest.mark.parametrize(
-    'x, y, expected',
+    'xy, expected',
     [
-        (0, 0, 0),
-        (1, 1, 0),
-        (2, 2, 0),
-        (3, 3, 0),
-        (4, 4, 0),
-        (5, 5, 0),
-        (50, 50, 0),
-        (-1, -1.8, 0),
-        (-2, -2.8, 0),
-        (-3, -3.8, 0),
-        (-4, -4.8, 0),
-        (-5, -5.8, 0),
-        (-50, -50, 0),
+        (0, 0),
+        (1, 0),
+        (2, 0),
+        (3, 0),
+        (4, 0),
+        (5, 0),
+        (50, 0),
+        (-1, 0),
+        (-2, 0),
+        (-3, 0),
+        (-4, 0),
+        (-5, 0),
+        (-50, 0),
     ],
 )
-def test_antiwarp_management(param, x, y, expected) -> None:
+def test_antiwarp_management(param, xy, expected) -> None:
     from pathlib import Path
 
     function_pickle = Path.cwd() / 'fwarp.pkl'
     G = PGMCompiler(**param)
     f = G.warp_management(opt=False)
-    assert f(x, y) == expected
+    assert f(xy) == expected
     if function_pickle.is_file():
         function_pickle.unlink()
 

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import Any
 from typing import Callable
-from typing import TypeVar
 
 import attrs
 import numpy as np
@@ -11,8 +10,7 @@ from femto import logger
 from femto.helpers import dotdict
 from femto.laserpath import LaserPath
 
-# Create a generic variable that can be 'Waveguide', or any subclass.
-WG = TypeVar('WG', bound='Waveguide')
+# Define array type
 nparray = npt.NDArray[np.float32]
 
 
@@ -120,7 +118,7 @@ class Waveguide(LaserPath):
         speed: float | None = None,
         shutter: int = 1,
         **kwargs,
-    ) -> WG:
+    ) -> Waveguide:
         """Bend segment.
 
         Add a bent segment to the current waveguide with a shape that is defined by the ``fx`` function. The ``fx``
@@ -201,7 +199,7 @@ class Waveguide(LaserPath):
         speed: float | None = None,
         shutter: int = 1,
         **kwargs,
-    ) -> WG:
+    ) -> Waveguide:
         """Concatenate two bends to make a single mode of a Directional Coupler.
 
         The ``fx`` function describing the profile of the bend is repeated twice, make sure the joints connect smoothly.
@@ -263,7 +261,7 @@ class Waveguide(LaserPath):
         speed: float | None = None,
         shutter: int = 1,
         **kwargs,
-    ) -> WG:
+    ) -> Waveguide:
         """Concatenate two Directional Couplers segments to make a single mode of a Mach-Zehnder Interferometer.
 
         Parameters
@@ -388,7 +386,9 @@ class NasuWaveguide(Waveguide):
         return adj_scan_list
 
 
-def coupler(param: dict[str, Any], f_profile: Callable, nasu: bool = False) -> list[Waveguide | NasuWaveguide]:
+def coupler(
+    param: dict[str, Any], f_profile: Callable[..., tuple[nparray, nparray, nparray]], nasu: bool = False
+) -> list[Waveguide | NasuWaveguide]:
     """
     Directional coupler.
 
@@ -414,8 +414,10 @@ def coupler(param: dict[str, Any], f_profile: Callable, nasu: bool = False) -> l
         List of the two modes of the Directional Coupler.
     """
 
-    mode1 = NasuWaveguide.from_dict(param) if nasu else Waveguide.from_dict(param)
-    mode2 = NasuWaveguide.from_dict(param) if nasu else Waveguide.from_dict(param)
+    mode1: Waveguide | NasuWaveguide
+    mode2: Waveguide | NasuWaveguide
+    mode1 = NasuWaveguide(**param) if nasu else Waveguide(**param)
+    mode2 = NasuWaveguide(**param) if nasu else Waveguide(**param)
 
     lx = (mode1.samplesize[0] - mode1.dx_coupler) / 2
     logger.debug(f'Linear segment lx = {lx}.')

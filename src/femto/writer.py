@@ -352,8 +352,8 @@ class Writer(PGMCompiler, abc.ABC):
 
     def export(
         self,
-        filename: str | pathlib.Path = None,
-        export_path: str | pathlib.Path = None,
+        filename: str | pathlib.Path | None = None,
+        export_path: str | pathlib.Path | None = None,
         export_dir: str | pathlib.Path = 'EXPORT',
     ):
         """Export Nasu Waveguide objects.
@@ -372,7 +372,7 @@ class Writer(PGMCompiler, abc.ABC):
         fn = filename if filename is not None else self.filename
         exp_p = self.CWD if export_path is None else export_dir
 
-        filepath = pathlib.Path(exp_p / export_dir / pathlib.Path(fn).stem)
+        filepath = pathlib.Path(exp_p) / export_dir / pathlib.Path(fn).stem
         filepath.mkdir(exist_ok=True, parents=True)
 
         for i, el in enumerate(self.objs):
@@ -612,7 +612,7 @@ class TrenchWriter(Writer):
         x: npt.NDArray[np.float32],
         y: npt.NDArray[np.float32],
         speed: float | list[float],
-        forced_deceleration: bool | list[bool] | npt.NDArray[bool] = False,
+        forced_deceleration: bool | list[bool] | npt.NDArray[np.bool_] = False,
     ) -> None:
         """Export 2D path to PGM file.
 
@@ -899,8 +899,8 @@ class UTrenchWriter(TrenchWriter):
         dirname: str = 'U-TRENCH',
         **kwargs,
     ) -> None:
-        obj_list = flatten(listcast(objects)) if objects is not None else []
-        super().__init__(param, objects=objects, dirname=dirname, **kwargs)
+        obj_list: list[UTrenchColumn] = flatten(listcast(objects)) if objects is not None else []
+        super().__init__(param, objects=obj_list, dirname=dirname, **kwargs)
         self.beds: list[Trench] = [ubed for col in obj_list for ubed in col.trench_bed]
 
     @property

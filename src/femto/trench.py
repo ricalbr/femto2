@@ -25,8 +25,7 @@ from femto.waveguide import Waveguide
 from shapely import geometry
 from shapely.ops import unary_union
 
-TR = TypeVar('TR', bound='Trench')
-TC = TypeVar('TC', bound='TrenchColumn')
+# Define array type
 nparray = npt.NDArray[np.float32]
 
 
@@ -412,9 +411,9 @@ class TrenchColumn:
     deltaz: float = 0.0015  #: Offset distance between countors paths of the trench wall [mm].
     delta_floor: float = 0.001  #: Offset distance between buffered polygons in the trench toolpath [mm].
     safe_inner_turns: int = 5  #: Number of spiral turns befor zig-zag filling
-    u: list[float] | None = None  #: List of U coordinate to change irradiation power automatically [deg].
+    u: list[float] = attrs.field(factory=list)  #: List of U coordinate to change irradiation power automatically [deg].
     speed_wall: float = 4.0  #: Translation speed of the wall section [mm/s].
-    speed_floor: float | None = None  #: Translation speed of the floor section [mm/s].
+    speed_floor: float = attrs.field(factory=float)  #: Translation speed of the floor section [mm/s].
     speed_closed: float = 5.0  #: Translation speed with closed shutter [mm/s].
     speed_pos: float = 2.0  #: Positioning speed with closed shutter [mm/s].
     base_folder: str = ''  #: Location where PGM files are stored in lab PC. If empty, load files with relative path.
@@ -422,7 +421,7 @@ class TrenchColumn:
     round_corner: float = 0.010  #: Radius of the blocks round corners [mm].
 
     _id: str = attrs.field(alias='_id', default='TC')  #: TrenchColumn ID.
-    _trench_list: list[TR] = attrs.field(alias='_trench_list', factory=list)  #: List of trench objects.
+    _trench_list: list[Trench] = attrs.field(alias='_trench_list', factory=list)  #: List of trench objects.
 
     CWD: pathlib.Path = attrs.field(default=pathlib.Path.cwd())  #: Current working directory
 
@@ -431,11 +430,11 @@ class TrenchColumn:
         self.__attrs_init__(**filtered)
 
     def __attrs_post_init__(self) -> None:
-        if self.speed_floor is None:
+        if not self.speed_floor:
             self.speed_floor = self.speed_wall
             logger.debug(f'Floor speed is set to {self.speed_floor} mm/s.')
 
-    def __iter__(self) -> Iterator[TR]:
+    def __iter__(self) -> Iterator[Trench]:
         """Iterator that yields single trench blocks of the column.
 
         Yields
@@ -449,7 +448,7 @@ class TrenchColumn:
         return f'{self.__class__.__name__}@{id(self) & 0xFFFFFF:x}'
 
     @classmethod
-    def from_dict(cls: type(TC), param: dict[str, Any], **kwargs) -> TC:
+    def from_dict(cls: type[TrenchColumn], param: dict[str, Any], **kwargs) -> TrenchColumn:
         """Create an instance of the class from a dictionary.
 
         It takes a class and a dictionary, and returns an instance of the class with the dictionary's keys as the
@@ -475,7 +474,7 @@ class TrenchColumn:
         return cls(**p)
 
     @classmethod
-    def load(cls: type(TC), pickle_file: str) -> TC:
+    def load(cls: type[TrenchColumn], pickle_file: str) -> TrenchColumn:
         """Create an instance of the class from a pickle file.
 
         The load function takes a class and a pickle file name, and returns an instance of the class with the
@@ -511,7 +510,7 @@ class TrenchColumn:
         return self._id
 
     @property
-    def trench_list(self) -> list[TR]:
+    def trench_list(self) -> list[Trench]:
         """List of Trench objects.
 
         Returns
@@ -559,7 +558,7 @@ class TrenchColumn:
         float
             Total fabrication time [s].
         """
-        fab_time = sum(
+        fab_time = np.sum(
             [
                 self.nboxz * (self.n_repeat * t.wall_length / self.speed_wall + t.floor_length / self.speed_floor)
                 for t in self._trench_list
@@ -745,7 +744,7 @@ class UTrenchColumn(TrenchColumn):
     pillar_width: float = 0.040  #: width of the pillars.
 
     _id: str = attrs.field(alias='_id', default='UTC')  #: UTrenchColumn ID.
-    _trenchbed: list[TR] = attrs.field(alias='_trenchbed', factory=list)  #: List of beds blocks.
+    _trenchbed: list[Trench] = attrs.field(alias='_trenchbed', factory=list)  #: List of beds blocks.
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -753,7 +752,7 @@ class UTrenchColumn(TrenchColumn):
         self.__attrs_init__(**filtered)
 
     @property
-    def trench_bed(self) -> list[TR]:
+    def trench_bed(self) -> list[Trench]:
         """Trench bed list
 
         Returns
@@ -788,13 +787,13 @@ class UTrenchColumn(TrenchColumn):
         float
             Total fabrication time [s].
         """
-        t_box = sum(
+        t_box = np.sum(
             [
                 self.nboxz * (self.n_repeat * t.wall_length / self.speed_wall + t.floor_length / self.speed_floor)
                 for t in self._trench_list
             ]
         )
-        t_bed = sum([b.floor_length / self.speed_floor for b in self._trenchbed])
+        t_bed = np.sum([b.floor_length / self.speed_floor for b in self._trenchbed])
         fab_time = t_box + t_bed
         logger.debug(f'The total fabrication time for the trench column is {fab_time} s.')
         return fab_time

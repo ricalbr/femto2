@@ -304,7 +304,7 @@ def test_trenchcol_default() -> None:
     assert tcol.safe_inner_turns == int(5)
     assert tcol.beam_waist == float(0.004)
     assert tcol.round_corner == float(0.010)
-    assert tcol.u is None
+    assert tcol.u == []
     assert tcol.speed_wall == float(4)
     assert tcol.speed_floor == float(4.0)
     assert tcol.speed_closed == float(5)
@@ -644,7 +644,7 @@ def test_utrenchcol_default() -> None:
     assert tcol.safe_inner_turns == int(5)
     assert tcol.beam_waist == float(0.004)
     assert tcol.round_corner == float(0.010)
-    assert tcol.u is None
+    assert tcol.u == []
     assert tcol.speed_wall == float(4.0)
     assert tcol.speed_floor == float(4.0)
     assert tcol.speed_closed == float(5)
