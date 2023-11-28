@@ -407,9 +407,12 @@ def test_load_param_empty():
     [
         ([], np.array([])),
         (np.array([1, 2, 3]), np.array([1, 2, 3])),
-        (np.array([1, 2, 2]), np.array([1, 2, None])),
-        (np.array([1, 1, 1, 1, 1, 1, 1, 1, 1]), np.array([1, None, None, None, None, None, None, None, None])),
-        (np.array([1, 2, 2, 2, 3, 3, 4]), np.array([1, 2, None, None, 3, None, 4])),
+        (np.array([1, 2, 2]), np.array([1, 2, np.nan])),
+        (
+            np.array([1, 1, 1, 1, 1, 1, 1, 1, 1]),
+            np.array([1, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan]),
+        ),
+        (np.array([1, 2, 2, 2, 3, 3, 4]), np.array([1, 2, np.nan, np.nan, 3, np.nan, 4])),
     ],
 )
 def test_remove_doubles(arr, exp):

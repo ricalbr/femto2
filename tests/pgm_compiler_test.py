@@ -203,6 +203,14 @@ def test_enter_exit_method() -> None:
     file.unlink()
 
 
+@pytest.mark.parametrize('p, n, expected', [(1, 1, 1), (0.5, 1, 0.5), (405, 1, 405), (2, 3, 6), (15, 15, 225)])
+def test_total_dwell_time(param, p, n, expected) -> None:
+    G = PGMCompiler(**param)
+    for _ in range(n):
+        G.dwell(p)
+    assert G.total_dwell_time == expected
+
+
 @pytest.mark.parametrize('xs, expected', [(1, 1), (0.5, 0.5), (-5, 5)])
 def test_xsample(param, xs, expected) -> None:
     param['samplesize'] = (xs, xs)  # set ysample to the same value of xsample, just for testing purposes
