@@ -558,7 +558,7 @@ class TrenchColumn:
         float
             Total fabrication time [s].
         """
-        fab_time = np.sum(
+        fab_time: float = np.sum(
             [
                 self.nboxz * (self.n_repeat * t.wall_length / self.speed_wall + t.floor_length / self.speed_floor)
                 for t in self._trench_list
@@ -787,14 +787,14 @@ class UTrenchColumn(TrenchColumn):
         float
             Total fabrication time [s].
         """
-        t_box = np.sum(
+        t_box: float = np.sum(
             [
                 self.nboxz * (self.n_repeat * t.wall_length / self.speed_wall + t.floor_length / self.speed_floor)
                 for t in self._trench_list
             ]
         )
-        t_bed = np.sum([b.floor_length / self.speed_floor for b in self._trenchbed])
-        fab_time = t_box + t_bed
+        t_bed: float = np.sum([b.floor_length / self.speed_floor for b in self._trenchbed])
+        fab_time: float = t_box + t_bed
         logger.debug(f'The total fabrication time for the trench column is {fab_time} s.')
         return fab_time
 
