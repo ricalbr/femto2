@@ -212,6 +212,16 @@ class PGMCompiler:
         logger.debug('Close PGM file.')
 
     @property
+    def total_dwell_time(self) -> float:
+        """Total DWEL time
+
+        Returns
+        -------
+        The total waiting time due to pauses (G4, or DWELL commands).
+        """
+        return self._total_dwell_time
+
+    @property
     def xsample(self) -> float:
         """`x`-dimension of the sample
 
@@ -853,9 +863,14 @@ class PGMCompiler:
         The transformed points are then parsed together with the feed rate and shutter state coordinate to produce
         the LINEAR (G1) movements.
 
-        :param points: Numpy matrix containing the values of the tuple [X,Y,Z,F,S] coordinates.
-        :type points: numpy.ndarray
-        :return: None
+        Parameters
+        ----------
+        points: numpy.ndarray[numpy.float32]
+            Numpy matrix containing the values of the tuple [X,Y,Z,F,S] coordinates.
+
+        Returns
+        -------
+        None
         """
 
         logger.debug('Start writing points to file...')
@@ -1216,13 +1231,16 @@ class PGMCompiler:
         :raise ValueError: Try to move null speed.
         """
         args = []
-        if x is not None:
+
+        # If a coordinate is None or np.nan discard it. The x == x check is for np.nan values.
+        # NB. np.nan == np.nan return False.
+        if x is not None and x == x:
             args.append(f'X{x:.{self.output_digits}f}')
-        if y is not None:
+        if y is not None and y == y:
             args.append(f'Y{y:.{self.output_digits}f}')
-        if z is not None:
+        if z is not None and z == z:
             args.append(f'Z{z:.{self.output_digits}f}')
-        if f is not None:
+        if f is not None and f == f:
             if f < 10 ** (-self.output_digits):
                 logger.error(f'Try to move with F <= 0.0 mm/s. speed = {f}.')
                 raise ValueError('Try to move with F <= 0.0 mm/s. Check speed parameter.')
@@ -1367,7 +1385,7 @@ def main() -> None:
         G.set_home([0, 0, 0])
 
     # Test warp script
-    sample_warp(ptsX=9, ptsY=9, margin=2, PARAM_GC=param_gc)
+    sample_warp(pts_x=9, pts_y=9, margin=2, parameters=param_gc)
 
 
 if __name__ == '__main__':
