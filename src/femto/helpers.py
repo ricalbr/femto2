@@ -3,6 +3,7 @@ from __future__ import annotations
 import functools
 import itertools
 import pathlib
+import warnings
 from typing import Any
 from typing import Dict
 from typing import Iterable
@@ -80,6 +81,12 @@ class dotdict(Dict[Any, Any]):
     """dot.notation access to dictionary attributes"""
 
     def __init__(self, *args, **kwargs) -> None:
+        warnings.warn(
+            f'{self.__class__.__name__} is deprecated and it will be removed in future versions of the library. Use '
+            'Addict() from the addict library instead.',
+            DeprecationWarning,
+            stacklevel=2,
+        )
         super().__init__(*args, **kwargs)
         for arg in args:
             if isinstance(arg, dict):
@@ -162,10 +169,23 @@ def sign() -> Iterator[int]:
 
 
 def remove_repeated_coordinates(array: npt.NDArray[np.float32]) -> npt.NDArray[np.float32 | None]:
+    """Remove repeated coordinates
+
+    Parameters
+    ----------
+    array: numpy.ndarray
+        Coordinate array.
+
+    Returns
+    -------
+    numpy.ndarray
+        Returns an array of the same dimensions as the input one in which repeated points (redundant movements) are
+        substituted with NaN values.
+    """
 
     mask = np.diff(array).astype(bool)
     mask = np.insert(mask, 0, True)
-    return np.where(~mask, None, array)
+    return np.where(~mask, np.nan, array)
 
 
 # Filtering adjacent identical points from a list of arrays.
