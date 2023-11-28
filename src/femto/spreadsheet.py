@@ -498,6 +498,7 @@ class PreambleParameter:
 
 
 def main() -> None:
+    """The main function of the script."""
     from itertools import product
 
     from femto.helpers import dotdict

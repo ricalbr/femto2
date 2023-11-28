@@ -1196,12 +1196,12 @@ class PGMCompiler:
             y_f = np.linspace(np.min(y), np.max(y), int(gridsize[1]))
 
             # Interpolate
-            X, Y = np.meshgrid(x_f, y_f)
-            xy_points = np.stack([X.ravel(), Y.ravel()], -1)
-            Z = f.__call__(xy_points).reshape(X.shape)
+            x, y = np.meshgrid(x_f, y_f)
+            xy_points = np.stack([x.ravel(), y.ravel()], -1)
+            z = f.__call__(xy_points).reshape(x.shape)
 
             ax = plt.axes(projection='3d')
-            ax.contour3D(X, Y, Z, 200, cmap='viridis')
+            ax.contour3D(x, y, z, 200, cmap='viridis')
             ax.set_xlabel('X [mm]'), ax.set_ylabel('Y [mm]'), ax.set_zlabel('Z [mm]')
             ax.set_aspect('equalxz')
             plt.show()
@@ -1303,7 +1303,7 @@ class PGMCompiler:
         logger.debug('Deactivate axis rotation.')
 
 
-def sample_warp(pts_x: int, pts_y: int, margin: float, parameters: dict(str, Any)) -> None:
+def sample_warp(pts_x: int, pts_y: int, margin: float, parameters: dict[str, Any]) -> None:
     """Generate sampling script
 
     The function compile a PGM file that automatically reads the G-Code parameters (namely, angle and sample size)
@@ -1337,19 +1337,19 @@ def sample_warp(pts_x: int, pts_y: int, margin: float, parameters: dict(str, Any
     angle = parameters['aerotech_angle']
     warp_name = 'WARP.txt'
 
-    G = PGMCompiler(**parameters)
+    gcode_writer = PGMCompiler(**parameters)
 
-    function_txt = G.CWD / 'POS.txt'
+    function_txt = gcode_writer.CWD / 'POS.txt'
     if pathlib.Path.is_file(function_txt):
         pathlib.Path.unlink(function_txt)
 
     with open(pathlib.Path(__file__).parent / 'utils' / warp_name) as f:
         for line in f:
             if line.startswith('<HEADER>'):
-                G.header()
+                gcode_writer.header()
             else:
-                G.instruction(line.format_map(locals()))
-    G.close()
+                gcode_writer.instruction(line.format_map(locals()))
+    gcode_writer.close()
 
 
 def main() -> None:

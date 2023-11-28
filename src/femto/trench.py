@@ -754,6 +754,13 @@ class UTrenchColumn(TrenchColumn):
 
     @property
     def trench_bed(self) -> list[TR]:
+        """Trench bed list
+
+        Returns
+        -------
+        list[Trench]
+            List of Trench objects that constitute the "bed" under the waveguides of the U-Trench structure.
+        """
         return self._trenchbed
 
     @property
