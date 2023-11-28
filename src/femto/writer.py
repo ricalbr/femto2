@@ -1414,7 +1414,7 @@ class WaveguideWriter(Writer):
                         logger.debug(f'Export {wg}.')
                         G.write(wg.points)
             G.go_init()
-            _wg_fab_time += G._total_dwell_time
+            _wg_fab_time += G.total_dwell_time
         del G
 
         self._fabtime = _wg_fab_time
@@ -1767,7 +1767,7 @@ class NasuWriter(Writer):
                     logger.debug(f'Export {nwg}.')
                     G.write(nwg.points + shift * coord_shift)
             G.go_init()
-            _nwg_fab_time += G._total_dwell_time
+            _nwg_fab_time += G.total_dwell_time
         del G
 
         self._fabtime = _nwg_fab_time
@@ -2117,7 +2117,7 @@ class MarkerWriter(Writer):
                     G.write(mk.points)
                     G.comment('')
             G.go_origin()
-            _mk_fab_time += G._total_dwell_time
+            _mk_fab_time += G.total_dwell_time
         del G
 
         self._fabtime = _mk_fab_time
