@@ -3,14 +3,11 @@ requires = ["setuptools>=42.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
-addopts = "--cov=src --cov-report html:tests/covreport_html -p no:logging"
+addopts = "--cache-clear --lf --last-failed-no-failures none -p no:logging --cov=src --cov-report html:tests/covreport_html"
 filterwarnings = [
     "ignore::DeprecationWarning",
 ]
-
-testpaths = [
-    "tests",
-]
+testpaths = "tests"
 
 [tool.mypy]
 mypy_path = "src"
