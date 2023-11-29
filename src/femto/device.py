@@ -83,7 +83,8 @@ class Device:
         """
         # Update parameters with kwargs
         p = copy.deepcopy(param)
-        p.update(kwargs)
+        if kwargs:
+            p.update(kwargs)
 
         logger.debug(f'Create {cls.__name__} object from dictionary.')
         return cls(**p)
