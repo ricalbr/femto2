@@ -876,8 +876,9 @@ class PGMCompiler:
             x, y, z, f_gc, s_gc = points
             logger.debug('Points fetched.')
         except ValueError:
-            logger.warning('Points-array is either empty or missing some coordinates. '
-                           'No instructions is added to PGM file.')
+            logger.warning(
+                'Points-array is either empty or missing some coordinates. No instructions is added to PGM file.'
+            )
             return
 
         # Transform points (rotations, z-compensation and flipping)
