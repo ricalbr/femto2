@@ -124,6 +124,7 @@ class Marker(LaserPath):
         x_init = self.x_init if x_init is None else x_init
 
         # Add straight segments
+        self.start([x_init, y_ticks[0], self.depth])
         for xt, yt in zip(x_ticks, y_ticks):
             self.linear([x_init, yt, self.depth], mode='ABS', shutter=0)
             self.linear([None, None, None], mode='ABS')
@@ -181,27 +182,24 @@ class Marker(LaserPath):
             )
 
         s = sign()
+        self.start(init_pos)
         if orientation.lower() == 'x':
             num_passes = math.floor(np.abs(yf - yi) / delta)
             delta = np.sign(yf - yi) * delta
 
-            self.start(init_pos)
             for _ in range(num_passes):
                 self.linear([next(s) * width, 0, 0], mode='INC')
                 self.linear([0, delta, 0], mode='INC')
             self.linear([next(s) * width, 0, 0], mode='INC')
-            self.end()
-
         else:
             num_passes = math.floor(np.abs(xf - xi) / delta)
             delta = np.sign(xf - xi) * delta
 
-            self.start(init_pos)
             for _ in range(num_passes):
                 self.linear([0, next(s) * width, 0], mode='INC')
                 self.linear([delta, 0, 0], mode='INC')
             self.linear([0, next(s) * width, 0], mode='INC')
-            self.end()
+        self.end()
 
     def ablation(
         self,
@@ -237,7 +235,15 @@ class Marker(LaserPath):
                 np.add(pts, [0, -shift, 0]),
             ]
 
-        # Add linear segments
+        # Start and add first path
+        p_init = path_list.pop(0)
+        self.start(p_init[0])
+        for p in p_init:
+            self.linear(p, mode='ABS')
+        self.linear(p_init[-1], mode='ABS', shutter=1)
+        self.linear(p_init[-1], mode='ABS', shutter=0)
+
+        # Add all shifted paths
         for path in path_list:
             self.linear(path[0], mode='ABS', shutter=0)
             self.linear(path[0], mode='ABS', shutter=1)
@@ -282,11 +288,11 @@ def main() -> None:
     from femto.helpers import dotdict, split_mask
 
     PARAMETERS_MK = dotdict(scan=1, speed=2, speed_pos=5, speed_closed=5, depth=0.000, lx=1, ly=1)
-    PARAMETERS_GC = dotdict(filename='testPGM.pgm', laser='PHAROS', samplesize=(10, 10), flip_x=True, new_origin=[1, 1])
+    PARAMETERS_GC = dotdict(filename='testPGM.pgm', laser='PHAROS', samplesize=(10, 10))
 
     c = Marker(**PARAMETERS_MK)
-    # c.cross([2.5, 1], 5, 2)
-    # c.ablation([[0, 0, 0], [5, 0, 0], [5, 1, 0], [2, 2, 0]])
+    # c.cross([0, 0], 5, 2)
+    # c.ablation([[0, 0, 0], [5, 0, 0], [5, 1, 0], [2, 2, 0]], shift=0.001)
     c.box([1, 2, 3], width=5.0, height=0.01)
     print(c.points)
 

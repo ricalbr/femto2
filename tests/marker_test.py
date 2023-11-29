@@ -196,13 +196,14 @@ def test_ruler_yticks(param) -> None:
     yt = np.array([0, 0.3, 0.6, 0.78, 0.99, 1, 45])
     mk = Marker(**param)
     mk.ruler(yt)
-    assert pytest.approx(mk.y[0:-2:4]) == yt
+    print(mk.y[2:-2:4])
+    assert pytest.approx(mk.y[2:-2:4]) == yt
 
     # check the list is ordered and unique
     yt = np.array([3, 2, 6, 4, 8, 9, 1, 3])
     mk = Marker(**param)
     mk.ruler(yt)
-    assert pytest.approx(mk.y[0:-2:4]) == np.unique(yt)
+    assert pytest.approx(mk.y[2:-2:4]) == np.unique(yt)
 
 
 def test_ruler_lx(param) -> None:
@@ -229,13 +230,13 @@ def test_ruler_lx_short(param) -> None:
     # test default lx2
     mk = Marker(**param)
     mk.ruler([1, 2, 3])
-    assert pytest.approx(mk.x[6]) == 0.75 * mk.lx
+    assert pytest.approx(mk.x[8]) == 0.75 * mk.lx
 
     # test custom lx2
     lxx = 5
     mk = Marker(**param)
     mk.ruler([1, 2, 3], lx2=lxx)
-    assert pytest.approx(mk.x[6]) == lxx
+    assert pytest.approx(mk.x[8]) == lxx
 
 
 def test_ruler_x_init(param) -> None:
@@ -269,17 +270,20 @@ def test_ruler_points(param) -> None:
 
     x, y, z, f, s = mk.points
     np.testing.assert_almost_equal(
-        x, np.array([-2.0, -2.0, 5.0, 5.0, -2.0, -2.0, 2.0, 2.0, -2.0, -2.0, 2.0, 2.0, -2.0, -2.0, 2.0, 2.0, -2.0])
+        x,
+        np.array(
+            [-2.0, -2.0, -2.0, -2.0, 5.0, 5.0, -2.0, -2.0, 2.0, 2.0, -2.0, -2.0, 2.0, 2.0, -2.0, -2.0, 2.0, 2.0, -2.0]
+        ),
     )
     np.testing.assert_almost_equal(
-        y, np.array([1.0, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 3.0, 3.0, 3.0, 3.0, 4.0, 4.0, 4.0, 4.0, 1.0])
+        y, np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 3.0, 3.0, 3.0, 3.0, 4.0, 4.0, 4.0, 4.0, 1.0])
     )
     np.testing.assert_almost_equal(z, np.repeat(0.001, len(y)))
     np.testing.assert_almost_equal(
-        f, np.array([2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 24.0])
+        f, np.array([0.5, 0.5, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 24.0])
     )
     np.testing.assert_almost_equal(
-        s, np.array([0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0])
+        s, np.array([0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0])
     )
 
 
@@ -369,9 +373,9 @@ def test_ablation_shift_default(param) -> None:
     mk.ablation([[0, 0, 0], [5, 0, 0]], shift=None)
     x, y, *_ = mk.points
 
-    assert len(x) == 5
-    np.testing.assert_almost_equal(x, np.array([0.0, 0.0, 5.0, 5.0, 0.0]))
-    np.testing.assert_almost_equal(y, np.array([0.0, 0.0, 0.0, 0.0, 0.0]))
+    assert len(x) == 6
+    np.testing.assert_almost_equal(x, np.array([0.0, 0.0, 0.0, 5.0, 5.0, 0.0]))
+    np.testing.assert_almost_equal(y, np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
     # test None values
 
 
@@ -380,17 +384,41 @@ def test_ablation_shift_custom(param) -> None:
     mk.ablation([[0, 0, 0], [5, 0, 0]], shift=0.1)
     x, y, *_ = mk.points
 
-    assert len(x) == 21
+    assert len(x) == 22
     np.testing.assert_almost_equal(
         x,
         np.array(
-            [0.0, 0.0, 5.0, 5.0, 0.1, 0.1, 5.1, 5.1, -0.1, -0.1, 4.9, 4.9, 0.0, 0.0, 5.0, 5.0, 0.0, 0.0, 5.0, 5.0, 0.0]
+            [
+                0.0,
+                0.0,
+                0.0,
+                5.0,
+                5.0,
+                0.1,
+                0.1,
+                5.1,
+                5.1,
+                -0.1,
+                -0.1,
+                4.9,
+                4.9,
+                0.0,
+                0.0,
+                5.0,
+                5.0,
+                0.0,
+                0.0,
+                5.0,
+                5.0,
+                0.0,
+            ]
         ),
     )
     np.testing.assert_almost_equal(
         y,
         np.array(
             [
+                0.0,
                 0.0,
                 0.0,
                 0.0,
@@ -429,36 +457,36 @@ def test_box_empty(param) -> None:
 @pytest.mark.parametrize(
     'w, h, exp_x, exp_y, exp_z',
     [
-        (0, 0, np.array([0, 0, 0, 0]), np.array([0, 0, 0, 0]), np.array([0, 0, 0, 0])),
-        (1, 0, np.array([0, 0, 1, 0, 0, 0]), np.array([0, 0, 0, 0, 0, 0]), np.array([0, 0, 0, 0, 0, 0])),
-        (0, 1, np.array([0, 0, 0, 0, 0, 0]), np.array([0, 0, 1, 0, 0, 0]), np.array([0, 0, 0, 0, 0, 0])),
+        (0, 0, np.array([0, 0, 0, 0, 0]), np.array([0, 0, 0, 0, 0]), np.array([0, 0, 0, 0, 0])),
+        (1, 0, np.array([0, 0, 0, 1, 0, 0, 0]), np.array([0, 0, 0, 0, 0, 0, 0]), np.array([0, 0, 0, 0, 0, 0, 0])),
+        (0, 1, np.array([0, 0, 0, 0, 0, 0, 0]), np.array([0, 0, 0, 1, 0, 0, 0]), np.array([0, 0, 0, 0, 0, 0, 0])),
         (
             1,
             1,
-            np.array([0, 0, 1, 1, 0, 0, 0, 0]),
-            np.array([0, 0, 0, 1, 1, 0, 0, 0]),
-            np.array([0, 0, 0, 0, 0, 0, 0, 0]),
+            np.array([0, 0, 0, 1, 1, 0, 0, 0, 0]),
+            np.array([0, 0, 0, 0, 1, 1, 0, 0, 0]),
+            np.array([0, 0, 0, 0, 0, 0, 0, 0, 0]),
         ),
         (
             1,
             2,
-            np.array([0, 0, 1, 1, 0, 0, 0, 0]),
-            np.array([0, 0, 0, 2, 2, 0, 0, 0]),
-            np.array([0, 0, 0, 0, 0, 0, 0, 0]),
+            np.array([0, 0, 0, 1, 1, 0, 0, 0, 0]),
+            np.array([0, 0, 0, 0, 2, 2, 0, 0, 0]),
+            np.array([0, 0, 0, 0, 0, 0, 0, 0, 0]),
         ),
         (
             5,
             5,
-            np.array([0, 0, 5, 5, 0, 0, 0, 0]),
-            np.array([0, 0, 0, 5, 5, 0, 0, 0]),
-            np.array([0, 0, 0, 0, 0, 0, 0, 0]),
+            np.array([0, 0, 0, 5, 5, 0, 0, 0, 0]),
+            np.array([0, 0, 0, 0, 5, 5, 0, 0, 0]),
+            np.array([0, 0, 0, 0, 0, 0, 0, 0, 0]),
         ),
         (
             -5,
             -5,
-            np.array([0, 0, 5, 5, 0, 0, 0, 0]),
-            np.array([0, 0, 0, 5, 5, 0, 0, 0]),
-            np.array([0, 0, 0, 0, 0, 0, 0, 0]),
+            np.array([0, 0, 0, 5, 5, 0, 0, 0, 0]),
+            np.array([0, 0, 0, 0, 5, 5, 0, 0, 0]),
+            np.array([0, 0, 0, 0, 0, 0, 0, 0, 0]),
         ),
     ],
 )

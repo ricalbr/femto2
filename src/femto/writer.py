@@ -155,7 +155,7 @@ class Writer(PGMCompiler, abc.ABC):
         """2D plot update.
 
         Helper function that update a 2D plot by adding the rectangle representing the sample glass, the `(0, 0)`
-        origin point and formats the axis.
+        shift_origin point and formats the axis.
 
         Parameters
         ----------
@@ -165,16 +165,16 @@ class Writer(PGMCompiler, abc.ABC):
         Returns
         -------
         go.Figure
-            Input figure updated with sample glass shape, origin point and axis.
+            Input figure updated with sample glass shape, shift_origin point and axis.
         """
 
         # GLASS
         fig.add_shape(
             type='rect',
-            x0=self.new_origin[0] if self.flip_x else 0 - self.new_origin[0],
-            y0=self.new_origin[1] if self.flip_y else 0 - self.new_origin[1],
-            x1=self.new_origin[0] - self.xsample if self.flip_x else self.xsample - self.new_origin[0],
-            y1=self.new_origin[1] - self.ysample if self.flip_y else self.ysample - self.new_origin[1],
+            x0=self.shift_origin[0] if self.flip_x else 0 - self.shift_origin[0],
+            y0=self.shift_origin[1] if self.flip_y else 0 - self.shift_origin[1],
+            x1=self.shift_origin[0] - self.xsample if self.flip_x else self.xsample - self.shift_origin[0],
+            y1=self.shift_origin[1] - self.ysample if self.flip_y else self.ysample - self.shift_origin[1],
             fillcolor='#D0FAF9',
             line_color='#000000',
             line_width=2,
@@ -249,7 +249,7 @@ class Writer(PGMCompiler, abc.ABC):
     def standard_3d_figure_update(fig: go.Figure) -> go.Figure:
         """3D plot update.
 
-        Helper function that update a 3D plot by adding the sample glass, the `(0, 0, 0)` origin point and formats
+        Helper function that update a 3D plot by adding the sample glass, the `(0, 0, 0)` shift_origin point and formats
         the axis.
 
         Parameters
@@ -260,7 +260,7 @@ class Writer(PGMCompiler, abc.ABC):
         Returns
         -------
         go.Figure
-            Input figure updated with sample glass shape, origin point and axis.
+            Input figure updated with sample glass shape, shift_origin point and axis.
         """
         # ORIGIN
         fig.add_trace(
@@ -397,7 +397,7 @@ class TrenchWriter(Writer):
         # If fig is None create a new figure from scratch
         fig = go.Figure()
         fig = self._plot2d_trench(fig=fig, style=style)
-        fig = super().standard_2d_figure_update(fig)  # Add glass, origin and axis elements
+        fig = super().standard_2d_figure_update(fig)  # Add glass, shift_origin and axis elements
         return fig
 
     def plot3d(
@@ -414,7 +414,7 @@ class TrenchWriter(Writer):
         # If fig is None create a new figure from scratch
         fig = go.Figure()
         fig = self._plot3d_trench(fig=fig, style=style)
-        fig = super().standard_2d_figure_update(fig)  # Add glass, origin and axis elements
+        fig = super().standard_2d_figure_update(fig)  # Add glass, shift_origin and axis elements
         return fig
 
     def pgm(self, verbose: bool = True) -> None:
@@ -1123,7 +1123,7 @@ class WaveguideWriter(Writer):
         # If fig is None create a new figure from scratch
         fig = go.Figure()
         fig = self._plot2d_wg(fig=fig, show_shutter_close=show_shutter_close, style=style)
-        fig = super().standard_2d_figure_update(fig)  # Add glass, origin and axis elements
+        fig = super().standard_2d_figure_update(fig)  # Add glass, shift_origin and axis elements
         return fig
 
     def plot3d(
@@ -1157,7 +1157,7 @@ class WaveguideWriter(Writer):
         # If fig is None create a new figure from scratch
         fig = go.Figure()
         fig = self._plot3d_wg(fig=fig, show_shutter_close=show_shutter_close, style=style)
-        fig = super().standard_3d_figure_update(fig)  # Add glass, origin and axis elements
+        fig = super().standard_3d_figure_update(fig)  # Add glass, shift_origin and axis elements
         return fig
 
     def pgm(self, verbose: bool = True) -> None:
@@ -1433,7 +1433,7 @@ class NasuWriter(Writer):
         # If fig is None create a new figure from scratch
         fig = go.Figure()
         fig = self._plot2d_nwg(fig=fig, show_shutter_close=show_shutter_close, style=style)
-        fig = super().standard_2d_figure_update(fig)  # Add glass, origin and axis elements
+        fig = super().standard_2d_figure_update(fig)  # Add glass, shift_origin and axis elements
         return fig
 
     def plot3d(
@@ -1467,7 +1467,7 @@ class NasuWriter(Writer):
         # If fig is None create a new figure from scratch
         fig = go.Figure()
         fig = self._plot3d_nwg(fig=fig, show_shutter_close=show_shutter_close, style=style)
-        fig = super().standard_3d_figure_update(fig)  # Add glass, origin and axis elements
+        fig = super().standard_3d_figure_update(fig)  # Add glass, shift_origin and axis elements
         return fig
 
     def pgm(self, verbose: bool = True) -> None:
@@ -1746,7 +1746,7 @@ class MarkerWriter(Writer):
         # If fig is None create a new figure from scratch
         fig = go.Figure()
         fig = self._plot2d_mk(fig=fig, style=style)
-        fig = super().standard_2d_figure_update(fig)  # Add glass, origin and axis elements
+        fig = super().standard_2d_figure_update(fig)  # Add glass, shift_origin and axis elements
         return fig
 
     def plot3d(
@@ -1780,7 +1780,7 @@ class MarkerWriter(Writer):
         # If fig is None create a new figure from scratch
         fig = go.Figure()
         fig = self._plot3d_mk(fig=fig, style=style)
-        fig = super().standard_3d_figure_update(fig)  # Add glass, origin and axis elements
+        fig = super().standard_3d_figure_update(fig)  # Add glass, shift_origin and axis elements
         return fig
 
     def pgm(self, verbose: bool = True) -> None:

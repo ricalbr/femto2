@@ -33,6 +33,7 @@ class LaserPath:
     cmd_rate_max: float = 1200  #: Maximum command rate `[cmd/s]`.
     acc_max: float = 500  #: Maximum acceleration/deceleration `[m/s^2]`.
     end_off_sample: bool = True  #: Flag to end laserpath off of the sample. (See `x_end`).
+    warp_flag: bool = False  #: Flag to toggle the glass warp compensation.
 
     _x: npt.NDArray[np.float32] = dataclasses.field(default_factory=lambda: np.array([], dtype=np.float32))
     _y: npt.NDArray[np.float32] = dataclasses.field(default_factory=lambda: np.array([], dtype=np.float32))
@@ -543,10 +544,22 @@ class LaserPath:
             y_inc = np.array([self._y[-1] + y])
             z_inc = np.array([self._z[-1] + z])
 
-        f_inc = np.array([self.speed]) if speed is None else np.array([speed])
-        s_inc = np.array([shutter])
+        l_curve = np.sqrt((x_inc - self._x[-1]) ** 2 + (y_inc - self._y[-1]) ** 2 + (z_inc - self._z[-1]) ** 2)
+        f_val = self.speed if speed is None else speed
+        if l_curve <= 1e-6 or self.warp_flag is False:
+            x_arr = np.array([x_inc])
+            y_arr = np.array([y_inc])
+            z_arr = np.array([z_inc])
+        else:
+            num = self.num_subdivisions(l_curve=l_curve, speed=f_val)
+            x_arr = np.linspace(self._x[-1], x_inc, num)
+            y_arr = np.linspace(self._y[-1], y_inc, num)
+            z_arr = np.linspace(self._z[-1], z_inc, num)
 
-        self.add_path(x_inc, y_inc, z_inc, f_inc, s_inc)
+        f_arr = f_val * np.ones_like(x_arr)
+        s_arr = shutter * np.ones_like(x_arr)
+
+        self.add_path(x_arr, y_arr, z_arr, f_arr, s_arr)
         return self
 
     def num_subdivisions(self, l_curve: float = 0, speed: float | None = None) -> int:
@@ -622,7 +635,7 @@ def main() -> None:
     print(lpath.points.T)
 
     # Export Laserpath
-    lpath.export('LP.p')
+    lpath.export('LP.pkl')
 
     # Plot
     fig = plt.figure()

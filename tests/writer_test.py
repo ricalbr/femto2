@@ -9,12 +9,14 @@ from femto.helpers import dotdict
 from femto.helpers import flatten
 from femto.helpers import listcast
 from femto.marker import Marker
-from femto.trench import TrenchColumn, UTrenchColumn
+from femto.trench import TrenchColumn
+from femto.trench import UTrenchColumn
 from femto.waveguide import NasuWaveguide
 from femto.waveguide import Waveguide
-from femto.writer import MarkerWriter, UTrenchWriter
+from femto.writer import MarkerWriter
 from femto.writer import NasuWriter
 from femto.writer import TrenchWriter
+from femto.writer import UTrenchWriter
 from femto.writer import WaveguideWriter
 from femto.writer import Writer
 
@@ -26,7 +28,7 @@ def gc_param() -> dict:
         n_glass=1.5,
         n_environment=1.33,
         laser='PHAROS',
-        new_origin=(0.5, 0.5),
+        shift_origin=(0.5, 0.5),
         samplesize=(25, 1),
     )
     return p
