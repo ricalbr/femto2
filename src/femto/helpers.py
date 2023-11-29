@@ -83,7 +83,7 @@ class dotdict(Dict[Any, Any]):
     def __init__(self, *args, **kwargs) -> None:
         warnings.warn(
             f'{self.__class__.__name__} is deprecated and it will be removed in future versions of the library. Use '
-            'Addict() from the addict library instead.',
+            'Dict() from the addict library instead.',
             DeprecationWarning,
             stacklevel=2,
         )

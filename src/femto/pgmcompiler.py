@@ -1347,6 +1347,7 @@ def sample_warp(pts_x: int, pts_y: int, margin: float, parameters: dict[str, Any
                 gcode_writer.header()
             else:
                 gcode_writer.instruction(line.format_map(locals()))
+                print(line.format_map(locals()))
     gcode_writer.close()
 
 
@@ -1354,12 +1355,12 @@ def main() -> None:
     """The main function of the script."""
     from femto.waveguide import Waveguide
     from femto.curves import sin
-    from femto.helpers import dotdict
+    from addict import Dict as ddict
 
     # Parameters
-    param_wg = dotdict(scan=6, speed=20, radius=15, pitch=0.080, int_dist=0.007, lsafe=3, samplesize=(25, 3))
-    param_gc = dotdict(
-        filename='testPGM.pgm', samplesize=param_wg['samplesize'], rotation_angle=2.0, flip_x=True, minimal_gcode=True
+    param_wg = ddict(scan=6, speed=20, radius=15, pitch=0.080, int_dist=0.007, lsafe=3, samplesize=(25, 3))
+    param_gc = ddict(
+        filename='testPGM.pgm', samplesize=param_wg['samplesize'], aerotech_angle=2.0, flip_x=True, minimal_gcode=True
     )
 
     # Build paths

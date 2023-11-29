@@ -99,7 +99,7 @@ def main() -> None:
     import matplotlib.pyplot as plt
     from pathlib import Path
 
-    param_rimg = dotdict(px_to_mm=0.04, speed=1)
+    param_rimg = dict(px_to_mm=0.04, speed=1)
     logo_path = Path('./utils/logo.png')
 
     im = Image.open(logo_path)

@@ -509,14 +509,14 @@ def main() -> None:
     """The main function of the script."""
     from itertools import product
 
-    from femto.helpers import dotdict
+    from addict import Addict as ddict
     from femto.waveguide import Waveguide
 
     l_start = -2
     l_end = 27
 
     # GEOMETRICAL DATA
-    pars_wg = dotdict(
+    pars_wg = ddict(
         speed_closed=40,
         radius=40,
         depth=-0.860,
@@ -525,7 +525,7 @@ def main() -> None:
     )
 
     # SPREADSHEET PARAMETERS
-    pars_ss = dotdict(
+    pars_ss = ddict(
         book_name='Fabbrication.xlsx',
         columns_names=['name', 'power', 'speed', 'scan', 'depth', 'int_dist', 'yin', 'yout', 'obs'],
         redundant_cols=True,

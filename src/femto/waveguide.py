@@ -7,7 +7,6 @@ import attrs
 import numpy as np
 import numpy.typing as npt
 from femto import logger
-from femto.helpers import dotdict
 from femto.laserpath import LaserPath
 
 # Define array type
@@ -447,9 +446,10 @@ def main() -> None:
     import matplotlib.pyplot as plt
     from curves import circ, sin
     from mpl_toolkits.mplot3d import Axes3D
+    from addict import Dict as ddict
 
     # Data
-    param_wg = dotdict(scan=6, speed=20, radius=15, pitch=0.080, int_dist=0.007, lsafe=3, samplesize=(50, 3))
+    param_wg = ddict(scan=6, speed=20, radius=15, pitch=0.080, int_dist=0.007, lsafe=3, samplesize=(50, 3))
 
     increment = [5.0, 0, 0]
 

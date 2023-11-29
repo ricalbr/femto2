@@ -729,10 +729,10 @@ def main() -> None:
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
 
-    from femto.helpers import dotdict
+    from addict import Dict as ddict
 
     # Data
-    parameters_lp = dotdict(scan=6, speed=20, lsafe=3)
+    parameters_lp = ddict(scan=6, speed=20, lsafe=3)
 
     lpath = LaserPath(**parameters_lp)
     path_x = np.array([0, 1, 1, 2, 4, 4, 4, 4, 4, 6, 4, 4, 4, 4, 4])

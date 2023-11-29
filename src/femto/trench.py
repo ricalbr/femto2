@@ -858,9 +858,11 @@ class UTrenchColumn(TrenchColumn):
 
 def main() -> None:
     """The main function of the script."""
+    from addict import Dict as ddict
+
     # Data
-    param_wg = dotdict(speed=20, radius=25, pitch=0.080, int_dist=0.007, samplesize=(25, 3))
-    param_tc = dotdict(length=1.0, base_folder='', y_min=-0.1, y_max=19 * param_wg['pitch'] + 0.1, u=[30.339, 32.825])
+    param_wg = ddict(speed=20, radius=25, pitch=0.080, int_dist=0.007, samplesize=(25, 3))
+    param_tc = ddict(length=1.0, base_folder='', y_min=-0.1, y_max=19 * param_wg['pitch'] + 0.1, u=[30.339, 32.825])
 
     # Calculations
     x_c = 0

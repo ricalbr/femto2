@@ -323,10 +323,11 @@ def main() -> None:
     """The main function of the script."""
     import matplotlib.pyplot as plt
 
-    from femto.helpers import dotdict, split_mask
+    from femto.helpers import split_mask
+    from addict import Dict as ddict
 
-    parameters_mk = dotdict(scan=1, speed=2, speed_pos=5, speed_closed=5, depth=0.000, lx=1, ly=1)
-    parameters_gc = dotdict(filename='test.pgm', laser='PHAROS', samplesize=(10, 10), flip_x=True, shift_origin=[1, 1])
+    parameters_mk = ddict(scan=1, speed=2, speed_pos=5, speed_closed=5, depth=0.000, lx=1, ly=1)
+    parameters_gc = ddict(filename='test.pgm', laser='PHAROS', samplesize=(10, 10), flip_x=True, shift_origin=[1, 1])
 
     c = Marker(**parameters_mk)
     # c.cross([2.5, 1], 5, 2)
