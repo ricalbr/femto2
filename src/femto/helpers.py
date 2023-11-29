@@ -3,6 +3,7 @@ from __future__ import annotations
 import functools
 import itertools
 import pathlib
+import warnings
 from typing import Any
 from typing import Dict
 from typing import Iterable
@@ -80,6 +81,12 @@ class dotdict(Dict[Any, Any]):
     """dot.notation access to dictionary attributes"""
 
     def __init__(self, *args, **kwargs) -> None:
+        warnings.warn(
+            f'{self.__class__.__name__} is deprecated and it will be removed in future versions of the library. Use '
+            'Dict() from the addict library instead.',
+            DeprecationWarning,
+            stacklevel=2,
+        )
         super().__init__(*args, **kwargs)
         for arg in args:
             if isinstance(arg, dict):
