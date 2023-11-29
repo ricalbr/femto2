@@ -24,7 +24,6 @@ class Marker(LaserPath):
     _id: str = attrs.field(alias='_id', default='MK')  #: Marker ID.
 
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
         filtered = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}
         self.__attrs_init__(**filtered)
 
@@ -278,7 +277,7 @@ class Marker(LaserPath):
         # Add linear segments
         logger.debug('Start ablation line.')
         x0, y0, z0 = path_list[0][0]
-        self.add_path(x0, y0, z0, np.array(self.speed_pos), np.array(0))
+        self.add_path(np.array(x0), np.array(y0), np.array(z0), np.array(self.speed_pos), np.array(0))
         for path in path_list:
             self.linear(path[0], mode='ABS', shutter=0)
             self.linear(path[0], mode='ABS', shutter=1)
@@ -326,7 +325,7 @@ def main() -> None:
     from femto.helpers import split_mask
     from addict import Dict as ddict
 
-    parameters_mk = ddict(scan=1, speed=2, speed_pos=5, speed_closed=5, depth=0.000, lx=1, ly=1)
+    parameters_mk = ddict(scan=1, speed=2, speed_pos=5, speed_closed=5, depth=0.010, lx=1, ly=1)
     parameters_gc = ddict(filename='test.pgm', laser='PHAROS', samplesize=(10, 10), flip_x=True, shift_origin=[1, 1])
 
     c = Marker(**parameters_mk)
@@ -343,7 +342,7 @@ def main() -> None:
         ax.plot(x_seg, y_seg, '-k', linewidth=2.5)
     for x_seg, y_seg in zip(split_mask(x, ~s.astype(bool)), split_mask(y, ~s.astype(bool))):
         ax.plot(x_seg, y_seg, ':b', linewidth=0.5)
-    plt.show()
+    # plt.show()
 
 
 if __name__ == '__main__':

@@ -19,7 +19,6 @@ class RasterImage(LaserPath):
     _id: str = attrs.field(alias='_id', default='RI')  #: RasterImage ID.
 
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
         filtered = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}
         self.__attrs_init__(**filtered)
 

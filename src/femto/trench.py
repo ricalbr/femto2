@@ -747,7 +747,6 @@ class UTrenchColumn(TrenchColumn):
     _trenchbed: list[Trench] = attrs.field(alias='_trenchbed', factory=list)  #: List of beds blocks.
 
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
         filtered = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}
         self.__attrs_init__(**filtered)
 

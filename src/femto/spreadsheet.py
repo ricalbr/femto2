@@ -42,7 +42,6 @@ class Spreadsheet:
     _formats: dict[str, dict[str, Any]] = attrs.field(alias='_formats', factory=dict)
 
     def __attrs_post_init__(self) -> None:
-
         # Fetch default column names
         if not self.columns_names:
             default_cols = ['name', 'power', 'speed', 'scan', 'radius', 'int_dist', 'depth', 'yin', 'yout', 'obs']
