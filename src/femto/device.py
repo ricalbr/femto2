@@ -6,7 +6,6 @@ import os
 import pathlib
 from typing import Any
 from typing import cast
-from typing import TypeVar
 from typing import Union
 
 import dill
@@ -28,10 +27,16 @@ from femto.writer import TrenchWriter
 from femto.writer import UTrenchWriter
 from femto.writer import WaveguideWriter
 
-# Create a generic variable that can be 'Device', or any subclass.
-DV = TypeVar('DV', bound='Device')
-
-types = dict(WG=Waveguide, NWG=NasuWaveguide, MK=Marker, LP=LaserPath, TR=Trench, TC=TrenchColumn, UTC=UTrenchColumn)
+# List of femto objects
+types = dict(
+    WG=Waveguide,
+    NWG=NasuWaveguide,
+    MK=Marker,
+    LP=LaserPath,
+    TR=Trench,
+    TC=TrenchColumn,
+    UTC=UTrenchColumn,
+)
 
 
 class Device:
@@ -58,8 +63,30 @@ class Device:
         logger.info(f'Instantiate device {self._param["filename"].rsplit(".", 1)[0]}.')
 
     @classmethod
-    def from_dict(cls, param: dict[str, Any]):
-        return cls(**param)
+    def from_dict(cls, param: dict[str, Any], **kwargs):
+        """Create an instance of the class from a dictionary.
+
+        It takes a class and a dictionary, and returns an instance of the class with the dictionary's keys as the
+        instance's attributes.
+
+        Parameters
+        ----------
+        param: dict()
+           Dictionary mapping values to class attributes.
+        kwargs: optional
+           Series of keyword arguments that will be used to update the param file before the instantiation of the
+           class.
+
+        Returns
+        -------
+        Instance of class
+        """
+        # Update parameters with kwargs
+        p = copy.deepcopy(param)
+        p.update(kwargs)
+
+        logger.debug(f'Create {cls.__name__} object from dictionary.')
+        return cls(**p)
 
     def append(self, obj: Any) -> None:
         """Append object to Device.
