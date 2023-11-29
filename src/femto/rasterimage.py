@@ -9,7 +9,7 @@ from femto.laserpath import LaserPath
 from PIL import Image
 
 
-@attrs.define(repr=False)
+@attrs.define(kw_only=True, repr=False)
 class RasterImage(LaserPath):
     """Class representing a laser path in the xy-plane of a b/w rastered image."""
 
@@ -17,6 +17,11 @@ class RasterImage(LaserPath):
     img_size: tuple[int, int] = (0, 0)  #: Number of pixels in x and y direction of the image.
 
     _id: str = attrs.field(alias='_id', default='RI')  #: RasterImage ID.
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        filtered = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}
+        self.__attrs_init__(**filtered)
 
     def __attrs_post_init__(self):
         super().__attrs_post_init__()
