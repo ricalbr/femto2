@@ -67,9 +67,9 @@ class Spreadsheet:
         # Create all the Parameters contained in the preamble_info
         # Add them to a dictionary with the key equal to their tagname
         preamble_info: dict[str, list[str]] = {
-            'General': ['laboratory', 'temperature', 'humidity', 'date', 'start', 'samplename'],
+            'General': ['laboratory', 'temperature', 'humidity', 'date', 'start', 'sample_name'],
             'Substrate': ['material', 'facet', 'thickness'],
-            'Laser': ['lasername', 'wavelength', 'duration', 'reprate', 'attenuator', 'preset'],
+            'Laser': ['laser_name', 'wavelength', 'duration', 'reprate', 'attenuator', 'preset'],
             'Irradiation': ['objective', 'power', 'speed', 'scan', 'depth'],
         }
 
@@ -268,8 +268,13 @@ class Spreadsheet:
             def_dict = dict(zip([col.tagname for col in default_cols], default_cols))
             new_dict = dict(zip([col.tagname for col in new_cols], new_cols))
             def_dict.update(new_dict)
-            return list(def_dict.values())
+            # Keep 'Observation' column as last one
+            obs_entry = def_dict.pop('obs')
+            def_dict['obs'] = obs_entry
 
+            # Update the columns names and return
+            self.columns_names = list(def_dict.keys())
+            return list(def_dict.values())
         return default_cols
 
     def add_line(self, row: int, col: int, data: list[str | int | float], fmt: list[str] | None = None) -> None:
@@ -388,7 +393,7 @@ class Spreadsheet:
         keep = []
         ignored_fields = []
         for i, t in enumerate(self.columns_names):
-            # Keep string-type columns (nmes, obs,...)
+            # Keep string-type columns (names, obs,...)
             if table_lines.dtype.fields[t][0] not in [np.int64, np.float64]:
                 keep.append(t)
                 continue
@@ -407,7 +412,6 @@ class Spreadsheet:
             logger.debug(
                 f'For all entities, the fields {fields_left_out} were not defined, they will not be shown as columns.'
             )
-
         info = [col for col in column_name_info if col.tagname in keep]
         return info, table_lines[keep]
 
@@ -508,7 +512,7 @@ def main() -> None:
     """The main function of the script."""
     from itertools import product
 
-    from addict import Addict as ddict
+    from addict import Dict as ddict
     from femto.waveguide import Waveguide
 
     l_start = -2

@@ -276,16 +276,19 @@ class Device:
         if verbose:
             logger.info('Export objects completed.\n')
 
-    def xlsx(self, metadata: dict[str, Any] | None = None, verbose: bool = True, **param) -> None:
+    def xlsx(self, metadata: dict[str, Any] | None = None, verbose: bool = True, **kwargs) -> None:
         """Generate the spreadsheet.
 
         Add all waveguides and markers of the ``Device`` to the spreadsheet.
         """
 
-        if not metadata:
+        # Case in which metadata is given as keyword argument, use it for the Spreadsheet generation
+        if 'metadata' in kwargs.keys():
+            metadata = kwargs.pop('metadata')
+        elif not metadata:
             metadata = {
-                'laser name': self._param.get('laser') or '',
-                'sample name': pathlib.Path(self._param.get('filename') or '').stem,
+                'laser_name': self._param.get('laser') or '',
+                'sample_name': pathlib.Path(self._param.get('filename') or '').stem,
             }
 
         # Fetch all objects from writers
@@ -295,7 +298,7 @@ class Device:
                 objs.extend(writer.objs)
 
         # Generate Spreadsheet
-        with Spreadsheet(**param, metadata=metadata) as S:
+        with Spreadsheet(**kwargs, metadata=metadata) as S:
             if verbose:
                 logger.info('Generating spreadsheet...')
             S.write(objs)
