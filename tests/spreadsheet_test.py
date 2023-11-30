@@ -141,7 +141,7 @@ def test_extra_preamble_info(all_cols, ss_param):
         'preset': '4',
         'attenuator': '33 %',
         'objective': '1000x',
-        'samplename': 'My sample 01',
+        'filename': 'My sample 01',
     }
 
     ss_param['metadata'] = extra_preamble_info
@@ -225,7 +225,7 @@ def test_write_header(ss_param):
     wb = openpyxl.load_workbook(dot_path / 'custom_book_name.xlsx')
     worksheet = wb['custom_sheet_name']
 
-    assert worksheet.cell(row=2, column=5).value == 'Description'
+    assert worksheet.cell(row=2, column=6).value == 'Description'
     (dot_path / 'custom_book_name.xlsx').unlink()
 
 
@@ -243,15 +243,15 @@ def test_write_preamble_default(ss_param):
     assert worksheet.cell(row=12, column=2).value == 'Humidity'
     assert worksheet.cell(row=13, column=2).value == 'Date'
     assert worksheet.cell(row=14, column=2).value == 'Start'
-    assert worksheet.cell(row=15, column=2).value == 'Samplename'
+    assert worksheet.cell(row=15, column=2).value == 'Filename'
 
     assert worksheet.cell(row=18, column=2).value == 'Substrate'
     assert worksheet.cell(row=19, column=2).value == 'Material'
     assert worksheet.cell(row=20, column=2).value == 'Facet'
     assert worksheet.cell(row=21, column=2).value == 'Thickness'
 
-    assert worksheet.cell(row=24, column=2).value == 'Laser'
-    assert worksheet.cell(row=25, column=2).value == 'Lasername'
+    assert worksheet.cell(row=24, column=2).value == 'Laser Parameters'
+    assert worksheet.cell(row=25, column=2).value == 'Laser'
     assert worksheet.cell(row=26, column=2).value == 'Wavelength'
     assert worksheet.cell(row=27, column=2).value == 'Duration'
     assert worksheet.cell(row=28, column=2).value == 'Reprate'
@@ -293,7 +293,9 @@ def test_generate_all_cols_with_newcols(all_cols):
     ]
     new_cols_obj = [ColumnData(*nc) for nc in new_cols]
 
+    obs = all_cols.pop(-1)
     all_cols.extend(new_cols_obj[1:])
+    all_cols.append(obs)
     with Spreadsheet(new_columns=new_cols) as S:
         assert S.generate_all_cols_data() == all_cols
     (dot_path / 'FABRICATION.xlsx').unlink()

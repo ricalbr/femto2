@@ -67,9 +67,9 @@ class Spreadsheet:
         # Create all the Parameters contained in the preamble_info
         # Add them to a dictionary with the key equal to their tagname
         preamble_info: dict[str, list[str]] = {
-            'General': ['laboratory', 'temperature', 'humidity', 'date', 'start', 'sample_name'],
+            'General': ['laboratory', 'temperature', 'humidity', 'date', 'start', 'filename'],
             'Substrate': ['material', 'facet', 'thickness'],
-            'Laser': ['laser_name', 'wavelength', 'duration', 'reprate', 'attenuator', 'preset'],
+            'Laser Parameters': ['laser', 'wavelength', 'duration', 'reprate', 'attenuator', 'preset'],
             'Irradiation': ['objective', 'power', 'speed', 'scan', 'depth'],
         }
 
@@ -124,7 +124,8 @@ class Spreadsheet:
 
         # Set columns properties
         self._worksheet.set_column(first_col=1, last_col=1, width=15)
-        self._worksheet.set_column(first_col=2, last_col=2, width=15)
+        self._worksheet.set_column(first_col=2, last_col=2, width=25)
+        self._worksheet.set_column(first_col=3, last_col=3, width=5)
 
         # Add the femto logo at top left of spreadsheet
         path_logo = pathlib.Path(__file__).parent / 'utils' / 'logo_excel.png'
@@ -134,17 +135,17 @@ class Spreadsheet:
         self._worksheet.set_row(row=2, height=50)
         self._worksheet.merge_range(
             first_row=1,
-            first_col=4,
+            first_col=5,
             last_row=1,
-            last_col=desc_size + 4,
+            last_col=desc_size + 5,
             data='Description',
             cell_format=self._workbook.add_format(self._formats['title']),
         )
         self._worksheet.merge_range(
             first_row=2,
-            first_col=4,
+            first_col=5,
             last_row=2,
-            last_col=desc_size + 4,
+            last_col=desc_size + 5,
             data=self.description,
             cell_format=self._workbook.add_format(self._formats['parval']),
         )
@@ -483,6 +484,9 @@ class ColumnData:
     unit: str
     width: str
     format: str
+
+    def __repr__(self):
+        return self.name
 
 
 @attrs.define
