@@ -3,6 +3,8 @@ from __future__ import annotations
 from copy import deepcopy
 from pathlib import Path
 
+import attrs
+import dill
 import numpy as np
 import pytest
 from femto.helpers import almost_equal
@@ -110,6 +112,11 @@ def test_repr(poly) -> None:
     r = Trench(poly).__repr__()
     cname, _ = r.split('@')
     assert cname == 'Trench'
+
+
+def test_id_trench(poly) -> None:
+    t = Trench(poly)
+    assert t.id == 'TR'
 
 
 def test_repr_trenchcol(param) -> None:
@@ -281,7 +288,7 @@ def test_toolpath() -> None:
 
 def test_trenchcol_default() -> None:
     x, ymin, ymax = 1, 2, 5
-    tcol = TrenchColumn(x, ymin, ymax)
+    tcol = TrenchColumn(x_center=x, y_min=ymin, y_max=ymax)
 
     assert tcol.x_center == x
     assert tcol.y_min == ymin
@@ -297,7 +304,7 @@ def test_trenchcol_default() -> None:
     assert tcol.safe_inner_turns == int(5)
     assert tcol.beam_waist == float(0.004)
     assert tcol.round_corner == float(0.010)
-    assert tcol.u is None
+    assert tcol.u == []
     assert tcol.speed_wall == float(4)
     assert tcol.speed_floor == float(4.0)
     assert tcol.speed_closed == float(5)
@@ -332,6 +339,59 @@ def test_trenchcol_param(param) -> None:
 
     assert tcol.CWD == Path.cwd()
     assert tcol._trench_list == []
+
+
+def test_trenchcol_from_dict(param) -> None:
+    tcol = TrenchColumn.from_dict(param)
+
+    assert tcol.x_center == float(6)
+    assert tcol.y_min == float(1)
+    assert tcol.y_max == float(2)
+    assert tcol.bridge == float(0.050)
+    assert tcol.length == float(3)
+    assert tcol.nboxz == int(4)
+    assert tcol.z_off == float(-0.020)
+    assert tcol.h_box == float(0.080)
+    assert tcol.base_folder == ''
+    assert tcol.deltaz == float(0.002)
+    assert tcol.delta_floor == float(0.0015)
+    assert tcol.safe_inner_turns == int(8)
+    assert tcol.beam_waist == float(0.002)
+    assert tcol.round_corner == float(0.010)
+    assert tcol.u == [28, 29.47]
+    assert tcol.speed_wall == float(5.0)
+    assert tcol.speed_floor == float(3.0)
+    assert tcol.speed_closed == float(5.0)
+    assert tcol.speed_pos == float(0.5)
+
+    assert tcol.CWD == Path.cwd()
+    assert tcol._trench_list == []
+
+
+def test_load(param) -> None:
+    tc1 = TrenchColumn(**param)
+    fn = Path('obj.pkl')
+    with open(fn, 'wb') as f:
+        dill.dump(attrs.asdict(tc1), f)
+
+    tc2 = TrenchColumn.load(fn)
+    assert type(tc1) == type(tc2)
+    assert sorted(attrs.asdict(tc1)) == sorted(attrs.asdict(tc2))
+    fn.unlink()
+
+
+def test_id_TCol(param) -> None:
+    tc = TrenchColumn(**param)
+    assert tc.id == 'TC'
+
+
+def test_id_UTCol(param) -> None:
+    utc = UTrenchColumn(**param)
+    assert utc.id == 'UTC'
+
+
+def test_trench_list_empty(tc) -> None:
+    assert tc.trench_list == []
 
 
 def test_trenchcol_adj_bridge(tc, param) -> None:
@@ -406,7 +466,7 @@ def test_trenchcol_rect(tc, param) -> None:
 
 
 def test_trenchcol_rect_empty() -> None:
-    tc = TrenchColumn(1, 2, 3, length=None)
+    tc = TrenchColumn(x_center=1, y_min=2, y_max=3, length=None)
     bb = tc.rect
     assert bb == Polygon()
 
@@ -439,7 +499,7 @@ def test_trenchcol_dig() -> None:
 
     tc._dig(coords)
 
-    for (t, c) in zip(tc._trench_list, comp_box):
+    for (t, c) in zip(tc.trench_list, comp_box):
         assert normalize_polygon(c).equals_exact(t.block, tolerance=1e-8)
         assert almost_equal(normalize_polygon(c), t.block)
 
@@ -568,7 +628,7 @@ def test_normalize(tc):
 
 def test_utrenchcol_default() -> None:
     x, ymin, ymax = 1, 2, 5
-    tcol = UTrenchColumn(x, ymin, ymax)
+    tcol = UTrenchColumn(x_center=x, y_min=ymin, y_max=ymax)
 
     assert tcol.x_center == x
     assert tcol.y_min == ymin
@@ -584,15 +644,15 @@ def test_utrenchcol_default() -> None:
     assert tcol.safe_inner_turns == int(5)
     assert tcol.beam_waist == float(0.004)
     assert tcol.round_corner == float(0.010)
-    assert tcol.u is None
+    assert tcol.u == []
     assert tcol.speed_wall == float(4.0)
     assert tcol.speed_floor == float(4.0)
     assert tcol.speed_closed == float(5)
     assert tcol.speed_pos == float(2.0)
     assert tcol.n_pillars == int(0)
     assert tcol.pillar_width == float(0.040)
-    assert tcol.trenchbed == []
 
+    assert tcol._trenchbed == []
     assert tcol.CWD == Path.cwd()
     assert tcol._trench_list == []
 
@@ -621,8 +681,8 @@ def test_utrenchcol_param(uparam) -> None:
     assert tcol.speed_pos == float(0.5)
     assert tcol.n_pillars == int(4)
     assert tcol.pillar_width == float(0.044)
-    assert tcol.trenchbed == []
 
+    assert tcol._trenchbed == []
     assert tcol.CWD == Path.cwd()
     assert tcol._trench_list == []
 
@@ -652,9 +712,9 @@ def test_u_dig() -> None:
     for (t, c) in zip(utc._trench_list, comp_box):
         assert normalize_polygon(c).equals_exact(t.block, tolerance=1e-8)
         assert almost_equal(normalize_polygon(c), t.block)
-    assert utc.trenchbed is not []
+    assert utc.trench_bed is not []
 
-    assert len(utc.trenchbed) == utc.n_pillars + 1
+    assert len(utc.trench_bed) == utc.n_pillars + 1
 
 
 def test_u_dig_no_pillars() -> None:
@@ -678,9 +738,9 @@ def test_u_dig_no_pillars() -> None:
     for (t, c) in zip(utc._trench_list, comp_box):
         assert normalize_polygon(c).equals_exact(t.block, tolerance=1e-8)
         assert almost_equal(normalize_polygon(c), t.block)
-    assert utc.trenchbed is not []
+    assert utc.trench_bed is not []
 
-    assert len(utc.trenchbed) == utc.n_pillars + 1
+    assert len(utc.trench_bed) == utc.n_pillars + 1
 
 
 def test_u_dig_no_trench() -> None:
@@ -695,8 +755,8 @@ def test_u_dig_no_trench() -> None:
         'n_pillars': 0,
     }
     utc = UTrenchColumn(**p)
-    assert utc.trenchbed_shape() is None
-    assert utc.trenchbed == []
+    assert utc.define_trench_bed() is None
+    assert utc.trench_bed == []
 
 
 @pytest.mark.parametrize(

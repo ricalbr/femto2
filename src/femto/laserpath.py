@@ -1,26 +1,27 @@
 from __future__ import annotations
 
-import dataclasses
-import inspect
+import copy
 import pathlib
 from typing import Any
 from typing import Sequence
-from typing import TypeVar
 
+import attrs
 import dill
 import numpy as np
 import numpy.typing as npt
+from femto import logger
 from femto.helpers import unique_filter
 
-LP = TypeVar('LP', bound='LaserPath')
+# Define array type
+nparray = npt.NDArray[np.float32]
 
 
-@dataclasses.dataclass(repr=False)
+@attrs.define(kw_only=True, repr=False)
 class LaserPath:
     """Class that computes and stores the coordinates of a laser path."""
 
-    name: str | None = None  # Name of the laser path.
-    scan: int = 1  #: Number of overlapped scans.
+    radius: float = 15  #: Curvature radius
+    scan: int = attrs.field(validator=attrs.validators.instance_of(int), default=1)  #: Number of overlapped scans.
     speed: float = 1.0  #: Opened shutter translation speed `[mm/s]`.
     samplesize: tuple[float, float] = (100, 50)  #: Dimensions of the sample (x `[mm]`, y `[mm]`).
     x_init: float = -2.0  #: Initial x-coordinate for the laser path `[mm]`.
@@ -28,31 +29,35 @@ class LaserPath:
     z_init: float | None = None  #: Initial z-coordinate for the laser path `[mm]`.
     shrink_correction_factor: float = 1.0  #: Correcting factor for glass shrinking.
     lsafe: float = 2.0  #: Safe margin length `[mm]`.
-    speed_closed: float = 5  #: Closed shutter translation speed `[mm/s]`.
+    speed_closed: float = 5.0  #: Closed shutter translation speed `[mm/s]`.
     speed_pos: float = 0.5  #: Positioning speed (shutter closed)`[mm/s]`.
-    cmd_rate_max: float = 1200  #: Maximum command rate `[cmd/s]`.
-    acc_max: float = 500  #: Maximum acceleration/deceleration `[m/s^2]`.
+    cmd_rate_max: float = 1200.0  #: Maximum command rate `[cmd/s]`.
+    acc_max: float = 500.0  #: Maximum acceleration/deceleration `[m/s^2]`.
     end_off_sample: bool = True  #: Flag to end laserpath off of the sample. (See `x_end`).
     warp_flag: bool = False  #: Flag to toggle the glass warp compensation.
+    metadata: dict[str, str] = attrs.field(factory=dict)  #: Dictionary with laserpath metadata.
 
-    _x: npt.NDArray[np.float32] = dataclasses.field(default_factory=lambda: np.array([], dtype=np.float32))
-    _y: npt.NDArray[np.float32] = dataclasses.field(default_factory=lambda: np.array([], dtype=np.float32))
-    _z: npt.NDArray[np.float32] = dataclasses.field(default_factory=lambda: np.array([], dtype=np.float32))
-    _f: npt.NDArray[np.float32] = dataclasses.field(default_factory=lambda: np.array([], dtype=np.float32))
-    _s: npt.NDArray[np.float32] = dataclasses.field(default_factory=lambda: np.array([], dtype=np.float32))
+    _id: str = attrs.field(alias='_id', default='LP')
+    _x: nparray = attrs.field(alias='_x', factory=lambda: np.array([], dtype=np.float32))
+    _y: nparray = attrs.field(alias='_y', factory=lambda: np.array([], dtype=np.float32))
+    _z: nparray = attrs.field(alias='_z', factory=lambda: np.array([], dtype=np.float32))
+    _f: nparray = attrs.field(alias='_f', factory=lambda: np.array([], dtype=np.float32))
+    _s: nparray = attrs.field(alias='_s', factory=lambda: np.array([], dtype=np.float32))
+    logger.debug('Initialized all the coordinates arrays.')
 
-    def __post_init__(self) -> None:
-        if not isinstance(self.scan, int):
-            raise ValueError(f'Number of scan must be integer. Given {self.scan}.')
+    def __init__(self, **kwargs):
+        filtered = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}
+        self.__attrs_init__(**filtered)
 
-        if self.name is None:
-            self.name = type(self).__name__
+    def __attrs_post_init__(self):
+        if 'name' not in self.metadata.keys():
+            self.metadata['name'] = type(self).__name__
 
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}@{id(self) & 0xFFFFFF:x}'
 
     @classmethod
-    def from_dict(cls: type[LP], param: dict[str, Any]) -> LP:
+    def from_dict(cls: type[LaserPath], param: dict[str, Any], **kwargs) -> LaserPath:
         """Create an instance of the class from a dictionary.
 
         It takes a class and a dictionary, and returns an instance of the class with the dictionary's keys as the
@@ -60,14 +65,46 @@ class LaserPath:
 
         Parameters
         ----------
-        param, dict()
+        param: dict()
             Dictionary mapping values to class attributes.
+        kwargs: optional
+            Series of keyword arguments that will be used to update the param file before the instantiation of the
+            class.
 
         Returns
         -------
         Instance of class
         """
-        return cls(**{k: v for k, v in param.items() if k in inspect.signature(cls).parameters})
+
+        # Update parameters with kwargs
+        p = copy.deepcopy(param)
+        if kwargs:
+            p.update(kwargs)
+
+        logger.debug(f'Create {cls.__name__} object from dictionary.')
+        return cls(**p)
+
+    @classmethod
+    def load(cls: type[LaserPath], pickle_file: str | pathlib.Path) -> LaserPath:
+        """Create an instance of the class from a pickle file.
+
+        It takes a class and a pickle file name, and returns an instance of the class with the dictionary's keys as the
+        instance's attributes.
+
+        Parameters
+        ----------
+        pickle_file: str or pathlib.Path
+            Filename of the pickle_file.
+
+        Returns
+        -------
+        Instance of class
+        """
+        logger.info(f'Load {cls.__name__} object from pickle file.')
+        with open(pickle_file, 'rb') as f:
+            tmp = dill.load(f)
+            logger.debug(f'Load {f} file.')
+        return cls.from_dict(tmp)
 
     @property
     def init_point(self) -> tuple[float, float, float]:
@@ -80,7 +117,21 @@ class LaserPath:
         """
 
         z0 = self.z_init if self.z_init is not None else 0.0
+        logger.debug(f'Return init point: ({self.x_init}, {self.y_init}, {z0}).')
         return self.x_init, self.y_init, z0
+
+    @property
+    def id(self) -> str:
+        """Object ID.
+
+        The property returns the ID of a given object.
+
+        Returns
+        -------
+        str
+            The ID of the object.
+        """
+        return self._id
 
     @property
     def lvelo(self) -> float:
@@ -95,6 +146,7 @@ class LaserPath:
             Length needed to accelerate to translation speed [mm].
         """
 
+        logger.debug(f'Return translation lvelo = {3 * (0.5 * self.speed**2 / self.acc_max)}.')
         return 3 * (0.5 * self.speed**2 / self.acc_max)
 
     @property
@@ -109,6 +161,7 @@ class LaserPath:
             The minimum separation between two points [mm]
         """
 
+        logger.debug(f'Return minimum spatial separation between two points dl = {self.speed / self.cmd_rate_max}.')
         return self.speed / self.cmd_rate_max
 
     @property
@@ -122,14 +175,17 @@ class LaserPath:
         """
 
         if self.samplesize[0] is None:
+            logger.debug('Return None, check samplesize.')
             return None
         if self.end_off_sample:
+            logger.debug(f'Return x_end = {self.samplesize[0] + self.lsafe}.')
             return self.samplesize[0] + self.lsafe
         else:
+            logger.debug(f'Return x_end = {self.samplesize[0] - self.lsafe}.')
             return self.samplesize[0] - self.lsafe
 
     @property
-    def points(self) -> npt.NDArray[np.float32]:
+    def points(self) -> nparray:
         """Matrix of the unique points in the trajectory.
 
         The matrix of points is parsed through a unique functions that removes all the subsequent identical points in
@@ -144,11 +200,11 @@ class LaserPath:
         numpy.ndarray
             `[X, Y, Z, F, S]` points of the laser trajectory.
         """
-
+        logger.debug('Return matrix with filtered coordinate. See femto.helpers.unique_filter().')
         return np.array(unique_filter([self._x, self._y, self._z, self._f, self._s]))
 
     @property
-    def x(self) -> npt.NDArray[np.float32]:
+    def x(self) -> nparray:
         """`x`-coordinate vector as a numpy array.
 
         The subsequent identical points in the vector are removed.
@@ -165,7 +221,9 @@ class LaserPath:
 
         coords = unique_filter([self._x, self._y, self._z, self._f, self._s])
         if coords.ndim == 2:
+            logger.debug('Return x-coordinates.')
             return np.array(coords[0])
+        logger.debug('x-coordinate array is empty. Return empty array.')
         return np.array([])
 
     @property
@@ -180,11 +238,13 @@ class LaserPath:
 
         arrx = self.x
         if arrx.size:
+            logger.debug(f'Return x-coordinate of last point: {float(arrx[-1])}.')
             return float(arrx[-1])
+        logger.debug('x-coordinate array is empty. Return None.')
         return None
 
     @property
-    def y(self) -> npt.NDArray[np.float32]:
+    def y(self) -> nparray:
         """`y`-coordinate vector as a numpy array.
 
         The subsequent identical points in the vector are removed.
@@ -201,7 +261,9 @@ class LaserPath:
 
         coords = unique_filter([self._x, self._y, self._z, self._f, self._s])
         if coords.ndim == 2:
+            logger.debug('Return y-coordinates.')
             return np.array(coords[1])
+        logger.debug('y-coordinate array is empty. Return empty array.')
         return np.array([])
 
     @property
@@ -216,11 +278,13 @@ class LaserPath:
 
         arry = self.y
         if arry.size:
+            logger.debug(f'Return y-coordinate of last point: {float(arry[-1])}.')
             return float(arry[-1])
+        logger.debug('y-coordinate array is empty. Return None.')
         return None
 
     @property
-    def z(self) -> npt.NDArray[np.float32]:
+    def z(self) -> nparray:
         """`z`-coordinate vector as a numpy array.
 
         The subsequent identical points in the vector are removed.
@@ -237,7 +301,9 @@ class LaserPath:
 
         coords = unique_filter([self._x, self._y, self._z, self._f, self._s])
         if coords.ndim == 2:
+            logger.debug('Return z-coordinates.')
             return np.array(coords[2])
+        logger.debug('z-coordinate array is empty. Return empty array.')
         return np.array([])
 
     @property
@@ -252,11 +318,13 @@ class LaserPath:
 
         arrz = self.z
         if arrz.size:
+            logger.debug(f'Return z-coordinate of last point: {float(arrz[-1])}.')
             return float(arrz[-1])
+        logger.debug('z-coordinate array is empty. Return None.')
         return None
 
     @property
-    def lastpt(self) -> npt.NDArray[np.float32]:
+    def lastpt(self) -> nparray:
         """Last point of the laser path, if any.
 
         Returns
@@ -266,11 +334,13 @@ class LaserPath:
         """
 
         if self._x.size > 0:
+            logger.debug(f'Return last point ({self._x[-1]}, {self._y[-1]}, {self._z[-1]}).')
             return np.array([self._x[-1], self._y[-1], self._z[-1]])
+        logger.debug('No points present, return empty array.')
         return np.array([])
 
     @property
-    def path(self) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]:
+    def path(self) -> tuple[nparray, nparray]:
         """List of `x` and `y`-coordinates of the laser path written with open shutter.
 
         Returns
@@ -283,11 +353,12 @@ class LaserPath:
         path3d: List of `x`, `y` and `z`-coordinates of the laser path written with open shutter.
         """
 
+        logger.debug('Return 2D path with shutter = ON.')
         x, y, _ = self.path3d
         return x, y
 
     @property
-    def path3d(self) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32], npt.NDArray[np.float32]]:
+    def path3d(self) -> tuple[nparray, nparray, nparray]:
         """List of `x`, `y` and `z`-coordinates of the laser path written with open shutter.
 
         It takes the `x`, `y` and `z`, and shutter values `s` values from the path trajectory and filters out the
@@ -310,7 +381,9 @@ class LaserPath:
             x = np.delete(x, np.where(np.invert(s.astype(bool))))
             y = np.delete(y, np.where(np.invert(s.astype(bool))))
             z = np.delete(z, np.where(np.invert(s.astype(bool))))
+            logger.debug('Return 3D path with shutter = ON.')
             return x, y, z
+        logger.debug('No points present, return empty arrays.')
         return np.array([]), np.array([]), np.array([])
 
     @property
@@ -324,7 +397,9 @@ class LaserPath:
         """
 
         x, y, z = self.path3d
-        return float(np.sum(np.sqrt(np.diff(x) ** 2 + np.diff(y) ** 2 + np.diff(z) ** 2)))
+        length = float(np.sum(np.sqrt(np.diff(x) ** 2 + np.diff(y) ** 2 + np.diff(z) ** 2)))
+        logger.debug(f'Return total length, l = {length}.')
+        return length
 
     @property
     def fabrication_time(self) -> float:
@@ -346,11 +421,12 @@ class LaserPath:
         f = np.tile(self._f, self.scan)
 
         dists = np.sqrt(np.diff(x) ** 2 + np.diff(y) ** 2 + np.diff(z) ** 2)
-        times = dists / f[1:]
-        return float(sum(times))
+        time = float(sum(dists / f[1:]))
+        logger.debug(f'Return total fabrication time, {time} s.')
+        return time
 
     @property
-    def curvature_radius(self) -> npt.NDArray[np.float32]:
+    def curvature_radius(self) -> nparray:
         """Point-to-point curvature radius of the trajectory.
 
         The curvature radius is computed as the radius of the circle that best fits the curve at a given point.
@@ -374,12 +450,18 @@ class LaserPath:
         norm_r1 = np.linalg.norm(r1, axis=1)
 
         # Return the local curvature radius, where cannot divide by 0 return inf
-        return np.divide(
-            norm_r1**3, norm_cross, out=np.full_like(norm_r1, fill_value=np.inf), where=~(norm_cross == 0)
+        curv_rad: nparray = np.divide(
+            norm_r1**3,
+            norm_cross,
+            out=np.full_like(norm_r1, fill_value=np.inf),
+            where=~(norm_cross == 0),
+            dtype=np.float32,
         )
+        logger.debug(f'Return curvature radius, avg_curvature_radius = {np.mean(curv_rad)}.')
+        return curv_rad
 
     @property
-    def cmd_rate(self) -> npt.NDArray[np.float32]:
+    def cmd_rate(self) -> nparray:
         """Point-to-point command rate of the laser path.
 
         Returns
@@ -398,8 +480,35 @@ class LaserPath:
 
         # only divide nonzeros else Inf
         default_zero = np.zeros(np.size(dt))
-        cmd_rate = np.divide(f, dt, out=default_zero, where=(dt != 0))
-        return np.array(cmd_rate, dtype=np.float32)
+        cmd_rate = np.divide(f, dt, out=default_zero, where=(dt != 0)).astype(np.float32)
+        logger.debug(f'Return point-to-point command rate values, avg_cmd_rate = {np.mean(cmd_rate)}.')
+        return cmd_rate
+
+    @staticmethod
+    def get_sbend_parameter(dy: float, radius: float) -> tuple[float, float]:
+        """Compute the rotation angle, and `x`-displacement for a circular S-bend.
+
+        Parameters
+        ----------
+        dy: float, optional
+            Displacement along `y`-direction [mm].
+        radius: float, optional
+            Curvature radius of the S-bend [mm]. The default value is `self.radius`
+
+        Returns
+        -------
+        tuple(float, float)
+            Rotation angle [rad], `x`-displacement [mm].
+        """
+
+        if radius is None or radius <= 0:
+            raise ValueError(f'Radius should be a positive value. Given {radius}.')
+        if dy is None:
+            raise ValueError('dy is None. Give a valid input valid.')
+
+        a = np.arccos(1 - (np.abs(dy / 2) / radius))
+        dx = 2 * radius * np.sin(a)
+        return a, dx
 
     # Methods
     def start(self, init_pos: list[float] | None = None, speed_pos: float | None = None) -> LaserPath:
@@ -467,11 +576,11 @@ class LaserPath:
 
     def add_path(
         self,
-        x: npt.NDArray[np.float32],
-        y: npt.NDArray[np.float32],
-        z: npt.NDArray[np.float32],
-        f: npt.NDArray[np.float32],
-        s: npt.NDArray[np.float32],
+        x: nparray,
+        y: nparray,
+        z: nparray,
+        f: nparray,
+        s: nparray,
     ):
         """Appends the given arrays to the end of the existing coordinates.
 
@@ -557,7 +666,7 @@ class LaserPath:
             z_arr = np.linspace(self._z[-1], z_inc, num)
 
         f_arr = f_val * np.ones_like(x_arr)
-        s_arr = shutter * np.ones_like(x_arr)
+        s_arr = float(shutter) * np.ones_like(x_arr)
 
         self.add_path(x_arr, y_arr, z_arr, f_arr, s_arr)
         return self
@@ -585,7 +694,7 @@ class LaserPath:
         dl = f / self.cmd_rate_max
         num = int(np.ceil(l_curve / dl))
         if num <= 1:
-            print('I had to add use an higher instruction rate.\n')
+            logger.critical('I had to add use an higher instruction rate.\n')
             return 3
         else:
             return num
@@ -610,22 +719,23 @@ class LaserPath:
             fn = pathlib.Path(fn.stem + '.pkl')
         with open(fn, 'wb') as p:
             if as_dict:
-                dill.dump(self.__dict__, p)
+                dill.dump(attrs.asdict(self), p)
             else:
                 dill.dump(self, p)
-            print(f'{self.__class__.__name__} exported to {fn}.')
+            logger.info(f'{self.__class__.__name__} exported to {fn}.')
 
 
 def main() -> None:
+    """The main function of the script."""
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
 
-    from femto.helpers import dotdict
+    from addict import Dict as ddict
 
     # Data
-    PARAMETERS_LP = dotdict(scan=6, speed=20, lsafe=3)
+    parameters_lp = ddict(scan=6, speed=20, lsafe=3)
 
-    lpath = LaserPath(**PARAMETERS_LP)
+    lpath = LaserPath(**parameters_lp)
     path_x = np.array([0, 1, 1, 2, 4, 4, 4, 4, 4, 6, 4, 4, 4, 4, 4])
     path_y = np.array([0, 0, 2, 3, 4, 4, 4, 4, 4, 7, 4, 4, 4, 4, 4])
     path_z = np.array([0, 0, 0, 3, 4, 4, 4, 4, 4, 6, 4, 4, 4, 4, 4])
@@ -649,6 +759,8 @@ def main() -> None:
 
     print(f'Expected writing time {lpath.fabrication_time:.3f} seconds')
     print(f'Laser path length {lpath.length:.6f} mm')
+
+    print(lpath.metadata)
 
 
 if __name__ == '__main__':

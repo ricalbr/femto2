@@ -88,8 +88,20 @@ def test_z_init(param) -> None:
 
 def test_scan(param) -> None:
     param['scan'] = 1.2
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         Marker(**param)
+
+
+def test_slots(param) -> None:
+    m = Marker(**param)
+    with pytest.raises(AttributeError):
+        # non-existing attribrute
+        m.zinit = 0.00
+
+
+def test_id(param) -> None:
+    mk = Marker(**param)
+    assert mk.id == 'MK'
 
 
 def test_repr(param) -> None:
@@ -269,6 +281,11 @@ def test_ruler_points(param) -> None:
     mk.ruler([1, 2, 3, 4], 5, 2, x_init=-2)
 
     x, y, z, f, s = mk.points
+    print(x)
+    print(y)
+    print(z)
+    print(f)
+    print(s)
     np.testing.assert_almost_equal(
         x,
         np.array(

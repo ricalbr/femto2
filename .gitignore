@@ -128,4 +128,6 @@ fit_stress_test.py
 # Documentation
 docs/*
 *.pdf
-src/femto/Fabbrication_GHZ_Jack.xlsx
+
+# Excel files
+*.xlsx

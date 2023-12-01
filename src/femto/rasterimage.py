@@ -1,23 +1,29 @@
 from __future__ import annotations
 
-import dataclasses
-
+import attrs
 import numpy as np
+from femto import logger
 from femto.helpers import dotdict
 from femto.helpers import split_mask
 from femto.laserpath import LaserPath
 from PIL import Image
 
 
-@dataclasses.dataclass(repr=False)
+@attrs.define(kw_only=True, repr=False)
 class RasterImage(LaserPath):
     """Class representing a laser path in the xy-plane of a b/w rastered image."""
 
-    px_to_mm: float = 0.01  # pixel to millimeter scale convertion
-    img_size: tuple[int, int] = (0, 0)
+    px_to_mm: float = 0.010  #: Pixel to millimeter scale convertion.
+    img_size: tuple[int, int] = (0, 0)  #: Number of pixels in x and y direction of the image.
 
-    def __post_init__(self) -> None:
-        super().__post_init__()
+    _id: str = attrs.field(alias='_id', default='RI')  #: RasterImage ID.
+
+    def __init__(self, **kwargs):
+        filtered = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}
+        self.__attrs_init__(**filtered)
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
         if self.z_init is None:
             self.z_init = 0.0
 
@@ -31,8 +37,10 @@ class RasterImage(LaserPath):
             (`x`, `y`) size of the laser path [mm].
         """
         if not all(self.img_size):  # check if img_size is non-zero
+            logger.error('No image size given, unable to compute laserpath dimension.')
             raise ValueError('No image size given, unable to compute laserpath dimension.')
         else:
+            logger.debug('Return list of path_size.')
             return [self.px_to_mm * elem for elem in self.img_size]
 
     # Methods
@@ -55,9 +63,9 @@ class RasterImage(LaserPath):
         """
         # displaying image information
         self.img_size = img.size  # update of img_size property
-        print('Image opened. Displaying information..')
-        print(f'Extension:\t{img.format}\nImage size:\t{img.size}\nColor mode:\t{img.mode}\n', '-' * 40)
-        print(f'Laser path dimension {self.path_size[0]:.3f} by {self.path_size[1]:.3f} mm^2\n', '-' * 40)
+        logger.info('Image opened. Displaying information..')
+        logger.info(f'Extension:\t{img.format}\nImage size:\t{img.size}\nColor mode:\t{img.mode}\n')
+        logger.info(f'Laser path dimension {self.path_size[0]:.3f} by {self.path_size[1]:.3f} mm^2\n')
 
         if img.mode != '1':
             img = img.convert('1')
@@ -68,6 +76,7 @@ class RasterImage(LaserPath):
         z_val = self.z_init or 0.0
 
         # loop through all the rows of the image
+        logger.debug('Convert image to path...')
         for row, y_val in zip(img_matrix, y_scan):
             x_open_shutter = split_mask(x_scan, ~row)
 
@@ -86,17 +95,22 @@ class RasterImage(LaserPath):
                 s_row = np.array([0, 1, 1, 0, 0], dtype=int)
 
                 self.add_path(x_row, y_row, z_row, f_row, s_row)
+        logger.debug('Image converted.')
 
 
 def main() -> None:
+    """The main function of the script."""
     import matplotlib.pyplot as plt
+    from pathlib import Path
 
-    PARAM_RIMG = dotdict(px_to_mm=0.04, speed=1)
+    param_rimg = dict(px_to_mm=0.04, speed=1)
+    logo_path = Path('./utils/logo.png')
 
-    im = Image.open(r'.\\utils\\logo.png')
-    im.thumbnail((512, 512), Image.ANTIALIAS)
+    im = Image.open(logo_path)
+    im.thumbnail((512, 512))
+    # im.thumbnail((512, 512), Image.ANTIALIAS)
 
-    r_img = RasterImage(**PARAM_RIMG)
+    r_img = RasterImage(**param_rimg)
     r_img.image_to_path(im)
 
     # Plot

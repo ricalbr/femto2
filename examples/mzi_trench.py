@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from femto.curves import sin
 from femto.device import Device
 from femto.helpers import dotdict
 from femto.marker import Marker
@@ -70,7 +71,7 @@ for i in range(6):
     wg = Waveguide(**PARAM_WG)
     wg.start([wg.x_init, wg.y_init + (i + 1) * wg.pitch, wg.z_init])
     wg.linear([l_x, 0, 0])
-    wg.arc_mzi((-1) ** i * wg.dy_bend)
+    wg.mzi(dy=(-1) ** i * wg.dy_bend, dz=0, fx=sin)
     wg.linear([wg.x_end, wg.lasty, wg.lastz], mode='ABS')
     wg.end()
     wgs.append(wg)

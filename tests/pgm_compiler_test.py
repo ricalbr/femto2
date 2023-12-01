@@ -27,6 +27,7 @@ def param() -> dict:
         'short_pause': 0.025,
         'speed_pos': 10,
         'flip_x': True,
+        'minimal_gcode': True,
     }
     return p
 
@@ -50,11 +51,13 @@ def test_default_values() -> None:
     assert G.rotation_angle == float(0.0)
     assert G.aerotech_angle == float(0.0)
     assert G.long_pause == float(0.5)
-    assert G.short_pause == float(0.1)
+    assert G.short_pause == float(0.05)
     assert G.output_digits == int(6)
     assert G.speed_pos == float(5.0)
     assert G.flip_x is False
     assert G.flip_y is False
+    assert G.minimal_gcode is False
+    assert G.verbose is True
 
 
 def test_gcode_values(param) -> None:
@@ -76,6 +79,8 @@ def test_gcode_values(param) -> None:
     assert G.speed_pos == float(10)
     assert G.flip_x is True
     assert G.flip_y is False
+    assert G.minimal_gcode is True
+    assert G.verbose is True
 
 
 def test_mk_from_dict(param) -> None:
@@ -97,6 +102,8 @@ def test_mk_from_dict(param) -> None:
     assert G.speed_pos == float(10)
     assert G.flip_x is True
     assert G.flip_y is False
+    assert G.minimal_gcode is True
+    assert G.verbose is True
 
 
 def test_repr(param) -> None:
@@ -121,20 +128,21 @@ def test_enter_exit_method_default(param) -> None:
                 '; SETUP PHAROS - CAPABLE LAB\n',
                 '\n',
                 'ENABLE X Y Z\n',
-                'METRIC\n',
-                'SECONDS\n',
-                'G359\n',
-                'VELOCITY ON\n',
                 'PSOCONTROL X RESET\n',
                 'PSOOUTPUT X CONTROL 3 0\n',
                 'PSOCONTROL X OFF\n',
-                'ABSOLUTE\n',
-                'G17\n',
+                '\n',
+                'G71     ; DISTANCE UNITS: METRIC\n',
+                'G76     ; TIME UNITS: SECONDS\n',
+                'G90     ; ABSOLUTE MODE\n',
+                'G359    ; WAIT MODE NOWAIT\n',
+                'G108    ; VELOCITY ON\n',
+                'G17     ; ROTATIONS IN XY PLANE\n',
                 '\n',
                 '; NSCOPETRIG\n',
                 '; MSGCLEAR -1\n',
                 '\n',
-                'DWELL 1.0\n',
+                'G4 P1.0 ; DWELL\n',
                 '\n',
             ]
         )
@@ -164,27 +172,28 @@ def test_enter_exit_method() -> None:
                 '; SETUP ANT - DIAMOND LAB\n',
                 '\n',
                 'ENABLE X Y Z\n',
-                'METRIC\n',
-                'SECONDS\n',
-                'G359\n',
-                'VELOCITY ON\n',
                 'PSOCONTROL Z RESET\n',
                 'PSOOUTPUT Z CONTROL 0 1\n',
                 'PSOCONTROL Z OFF\n',
-                'ABSOLUTE\n',
-                'G17\n',
+                '\n',
+                'G71     ; DISTANCE UNITS: METRIC\n',
+                'G76     ; TIME UNITS: SECONDS\n',
+                'G90     ; ABSOLUTE MODE\n',
+                'G359    ; WAIT MODE NOWAIT\n',
+                'G108    ; VELOCITY ON\n',
+                'G17     ; ROTATIONS IN XY PLANE\n',
                 '\n',
                 '; NSCOPETRIG\n',
                 '; MSGCLEAR -1\n',
                 '\n',
-                'DWELL 1.0\n',
+                'G4 P1.0 ; DWELL\n',
                 '\n',
                 '\n; ACTIVATE AXIS ROTATION\n',
                 'G1 X0.000000 Y0.000000 Z0.000000 F5.000000\n',
                 'G84 X Y\n',
-                'DWELL 0.1\n',
+                'G4 P0.05 ; DWELL\n',
                 'G84 X Y F2.0\n\n',
-                'DWELL 0.1\n',
+                'G4 P0.05 ; DWELL\n',
             ]
         )
     assert G._instructions == deque([])
@@ -192,6 +201,14 @@ def test_enter_exit_method() -> None:
     file = Path('.') / p['filename']
     assert file.is_file()
     file.unlink()
+
+
+@pytest.mark.parametrize('p, n, expected', [(1, 1, 1), (0.5, 1, 0.5), (405, 1, 405), (2, 3, 6), (15, 15, 225)])
+def test_total_dwell_time(param, p, n, expected) -> None:
+    G = PGMCompiler(**param)
+    for _ in range(n):
+        G.dwell(p)
+    assert G.total_dwell_time == expected
 
 
 @pytest.mark.parametrize('xs, expected', [(1, 1), (0.5, 0.5), (-5, 5)])
@@ -226,7 +243,7 @@ def test_neff(param, ng, ne, expected) -> None:
 def test_pso_label(param, laser, expected) -> None:
     param['laser'] = laser
     G = PGMCompiler(**param)
-    assert G.pso_label == expected
+    assert G.pso_axis == expected
 
 
 @pytest.mark.parametrize(
@@ -244,7 +261,7 @@ def test_pso_label_raise(param, laser, expectation) -> None:
     param['laser'] = laser
     G = PGMCompiler(**param)
     with expectation:
-        print(G.pso_label)
+        print(G.pso_axis)
 
 
 @pytest.mark.parametrize(
@@ -286,30 +303,30 @@ def test_dwell_time(param, p, t, expected) -> None:
 
 
 @pytest.mark.parametrize(
-    'x, y, expected',
+    'xy, expected',
     [
-        (0, 0, 0),
-        (1, 1, 0),
-        (2, 2, 0),
-        (3, 3, 0),
-        (4, 4, 0),
-        (5, 5, 0),
-        (50, 50, 0),
-        (-1, -1.8, 0),
-        (-2, -2.8, 0),
-        (-3, -3.8, 0),
-        (-4, -4.8, 0),
-        (-5, -5.8, 0),
-        (-50, -50, 0),
+        (0, 0),
+        (1, 0),
+        (2, 0),
+        (3, 0),
+        (4, 0),
+        (5, 0),
+        (50, 0),
+        (-1, 0),
+        (-2, 0),
+        (-3, 0),
+        (-4, 0),
+        (-5, 0),
+        (-50, 0),
     ],
 )
-def test_antiwarp_management(param, x, y, expected) -> None:
+def test_antiwarp_management(param, xy, expected) -> None:
     from pathlib import Path
 
     function_pickle = Path.cwd() / 'fwarp.pkl'
     G = PGMCompiler(**param)
     f = G.warp_management(opt=False)
-    assert f(x, y) == expected
+    assert f(xy) == expected
     if function_pickle.is_file():
         function_pickle.unlink()
 
@@ -496,23 +513,22 @@ def test_header(param) -> None:
     param['laser'] = 'ant'
     G = PGMCompiler(**param)
     G.header()
-    assert G._instructions[8] == 'PSOOUTPUT Z CONTROL 0 1\n'
+    assert G._instructions[4] == 'PSOOUTPUT Z CONTROL 0 1\n'
 
     param['laser'] = 'carbide'
     G = PGMCompiler(**param)
     G.header()
-    assert G._instructions[8] == 'PSOOUTPUT X CONTROL 2 0\n'
+    assert G._instructions[4] == 'PSOOUTPUT X CONTROL 2 0\n'
 
     param['laser'] = 'pharos'
     G = PGMCompiler(**param)
     G.header()
-    assert G._instructions[8] == 'PSOOUTPUT X CONTROL 3 0\n'
-    del G
+    assert G._instructions[4] == 'PSOOUTPUT X CONTROL 3 0\n'
 
     param['laser'] = 'uwe'
     G = PGMCompiler(**param)
     G.header()
-    assert G._instructions[5] == 'WAIT MODE NOWAIT\n'
+    assert G._instructions[9] == 'G359    ; WAIT MODE NOWAIT\n'
 
 
 @pytest.mark.parametrize('v', [['V1'], ['V1', 'V2', 'V3'], [], 'VAR', ['V1', 'V2', ['V3', ['V4', 'V5']], 'V6']])
@@ -543,14 +559,14 @@ def test_mode(param, mode, expectation) -> None:
 def test_mode_abs(param) -> None:
     G = PGMCompiler(**param)
     G.mode(mode='abs')
-    assert G._instructions[-1] == 'ABSOLUTE\n'
+    assert G._instructions[-1] == 'G90 ; ABSOLUTE\n'
     assert G._mode_abs is True
 
 
 def test_mode_inc(param) -> None:
     G = PGMCompiler(**param)
     G.mode(mode='inc')
-    assert G._instructions[-1] == 'INCREMENTAL\n'
+    assert G._instructions[-1] == 'G91 ; INCREMENTAL\n'
     assert G._mode_abs is False
 
 
@@ -716,7 +732,7 @@ def test_move_to_values(param, speedp, pos, speed) -> None:
         args += f'Z{z:.6f} '
     args += f'F{speed_pos:.6f}'
 
-    assert G._instructions[-2] == f'DWELL {G.long_pause}\n'
+    assert G._instructions[-2] == f'G4 P{G.long_pause} ; DWELL\n'
     if all(coord is None for coord in pos):
         assert G._instructions[-3] == f'{args}\n'
     else:
@@ -764,9 +780,7 @@ def test_enter_axis_rotation(param, angle_p, angle) -> None:
 
     a = G.aerotech_angle if angle is None else float(angle % 360)
     if a == 0.0:
-        assert G._instructions[-4] == '\n; ACTIVATE AXIS ROTATION\n'
-        assert G._instructions[-3] == f'G1 X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{G.speed_pos:.6f}\n'
-        assert G._instructions[-2] == 'G84 X Y\n'
+        assert not G._instructions
     else:
         assert G._instructions[-6] == '\n; ACTIVATE AXIS ROTATION\n'
         assert G._instructions[-5] == f'G1 X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{G.speed_pos:.6f}\n'
@@ -1286,20 +1300,20 @@ def test_format_arguments_raise(param, x, y, z, f, expectation) -> None:
                 [
                     'G1 X1.998997 Y0.074899 Z0.031033 F0.500000\n',
                     '\n',
-                    'DWELL 0.025\n',
+                    'G4 P0.025 ; DWELL\n',
                     'PSOCONTROL X ON\n',
-                    'DWELL 1.0\n',
+                    'G4 P1.0 ; DWELL\n',
                     '\n',
-                    'G1 X-1.000546 Y0.022542 Z0.031033 F20.000000\n',
-                    'G1 X-4.000089 Y-0.029816 Z2.691033 F20.000000\n',
-                    'G1 X-7.051989 Y2.917370 Z5.351033 F20.000000\n',
+                    'G1 X-1.000546 Y0.022542 F20.000000\n',
+                    'G1 X-4.000089 Y-0.029816 Z2.691033\n',
+                    'G1 X-7.051989 Y2.917370 Z5.351033\n',
                     '\n',
-                    'DWELL 0.025\n',
+                    'G4 P0.025 ; DWELL\n',
                     'PSOCONTROL X OFF\n',
-                    'DWELL 1.0\n',
+                    'G4 P1.0 ; DWELL\n',
                     '\n',
                     'G1 X1.998997 Y0.074899 Z0.031033 F5.000000\n',
-                    'DWELL 1.0\n',
+                    'G4 P1.0 ; DWELL\n',
                     '\n',
                 ]
             ),
@@ -1316,6 +1330,7 @@ def test_write(param, pts, expected) -> None:
 def test_close_dir(param) -> None:
     exp_dir = './src/femto/test/'
     param['export_dir'] = exp_dir
+    param['verbose'] = True
 
     # add some istructions
     G = PGMCompiler(**param)
@@ -1328,7 +1343,7 @@ def test_close_dir(param) -> None:
     assert G._instructions != deque([])
 
     # close and write to file
-    G.close(verbose=True)
+    G.close()
     assert G._instructions == deque([])
 
     # assert the exp directory has been created
