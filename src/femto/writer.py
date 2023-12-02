@@ -859,6 +859,7 @@ class TrenchWriter(Writer):
             xt, yt = tr.border
             xt, yt, *_ = self.transform_points(xt, yt, np.zeros_like(xt, dtype=np.float32))
 
+            # Wall surface
             x = np.array([xt, xt])
             y = np.array([yt, yt])
             z = np.array([np.zeros_like(xt), tr.height * np.ones_like(xt)])
@@ -874,6 +875,34 @@ class TrenchWriter(Writer):
                     opacity=0.6,
                 )
             )
+
+            # Floor surface
+            if len(xt) % 2:
+                xt = np.append(xt, xt[0])
+                yt = np.append(yt, yt[0])
+
+            n = len(xt) // 2
+            v = np.linspace(0, 1, 10)
+            x_c1, x_c2 = xt[:n], xt[n:]
+            y_c1, y_c2 = yt[:n], yt[n:]
+
+            # surface points (xs, ys, zs):
+            xs = np.outer(1 - v, x_c1) + np.outer(v, x_c2)
+            ys = np.outer(1 - v, y_c1) + np.outer(v, y_c2)
+            zs = tr.height * np.ones(xs.shape)
+            fig.add_trace(
+                go.Surface(
+                    x=xs,
+                    y=ys,
+                    z=zs,
+                    colorscale=[[0, 'grey'], [1, 'grey']],
+                    showlegend=False,
+                    hoverinfo='skip',
+                    showscale=False,
+                )
+            )
+
+            # Perimeter points
             for zval in [0.0, tr.height]:
                 fig.add_trace(
                     go.Scatter3d(
@@ -1162,6 +1191,7 @@ class UTrenchWriter(TrenchWriter):
             xt, yt = tr.border
             xt, yt, *_ = self.transform_points(xt, yt, np.zeros_like(xt, dtype=np.float32))
 
+            # Wall surface
             x = np.array([xt, xt])
             y = np.array([yt, yt])
             z = np.array([np.zeros_like(xt), tr.height * np.ones_like(xt)])
@@ -1177,18 +1207,44 @@ class UTrenchWriter(TrenchWriter):
                     opacity=0.6,
                 )
             )
-            for zval in [0.0, tr.height]:
-                fig.add_trace(
-                    go.Scatter3d(
-                        x=xt,
-                        y=yt,
-                        z=zval * np.ones_like(xt),
-                        mode='lines',
-                        line=utcargs,
-                        showlegend=False,
-                        hovertemplate='(%{x:.4f}, %{y:.4f})<extra>TR</extra>',
-                    )
+
+            # Floor surface
+            if len(xt) % 2:
+                xt = np.append(xt, xt[0])
+                yt = np.append(yt, yt[0])
+
+            n = len(xt) // 2
+            v = np.linspace(0, 1, 10)
+            x_c1, x_c2 = xt[:n], xt[n:]
+            y_c1, y_c2 = yt[:n], yt[n:]
+
+            # Surface points (xs, ys, zs):
+            xs = np.outer(1 - v, x_c1) + np.outer(v, x_c2)
+            ys = np.outer(1 - v, y_c1) + np.outer(v, y_c2)
+            zs = tr.height * np.ones(xs.shape)
+            fig.add_trace(
+                go.Surface(
+                    x=xs,
+                    y=ys,
+                    z=zs,
+                    colorscale=[[0, 'grey'], [1, 'grey']],
+                    showlegend=False,
+                    hoverinfo='skip',
+                    showscale=False,
+                ))
+
+            # Perimeter points
+            fig.add_trace(
+                go.Scatter3d(
+                    x=xt,
+                    y=yt,
+                    z=np.zeros_like(xt),
+                    mode='lines',
+                    line=utcargs,
+                    showlegend=False,
+                    hovertemplate='(%{x:.4f}, %{y:.4f})<extra>TR</extra>',
                 )
+            )
 
         logger.debug('Add trenches beds 3D shapes to figure.')
         tr = self._trenches[0]
@@ -1196,20 +1252,58 @@ class UTrenchWriter(TrenchWriter):
             xt, yt = bd.border
             xt, yt, *_ = self.transform_points(xt, yt, np.zeros_like(xt, dtype=np.float32))
 
+            # Bed wall surface
             x = np.array([xt, xt])
             y = np.array([yt, yt])
-            z = np.array([tr.height * np.ones_like(xt), (tr.height + 0.01) * np.ones_like(xt)])
+            z = tr.height*np.array([np.ones_like(xt) - 0.015, np.ones_like(xt)])
+            fig.add_trace(
+                    go.Surface(
+                            x=x,
+                            y=y,
+                            z=z,
+                            colorscale=[[0, 'grey'], [1, 'grey']],
+                            showlegend=False,
+                            hoverinfo='skip',
+                            showscale=False,
+                            opacity=0.6,
+                    )
+            )
+            # Bed floor surface
+            if len(xt) % 2:
+                xt = np.append(xt, xt[0])
+                yt = np.append(yt, yt[0])
+
+            n = len(xt) // 2
+            v = np.linspace(0, 1, 10)
+            x_c1, x_c2 = xt[:n], xt[n:]
+            y_c1, y_c2 = yt[:n], yt[n:]
+
+            # Surface points (xs, ys, zs):
+            xs = np.outer(1 - v, x_c1) + np.outer(v, x_c2)
+            ys = np.outer(1 - v, y_c1) + np.outer(v, y_c2)
+            zs = tr.height * np.ones(xs.shape)
             fig.add_trace(
                 go.Surface(
-                    x=x,
-                    y=y,
-                    z=z,
+                    x=xs,
+                    y=ys,
+                    z=zs,
                     colorscale=[[0, 'grey'], [1, 'grey']],
                     showlegend=False,
                     hoverinfo='skip',
                     showscale=False,
-                    opacity=0.6,
                 )
+            )
+            # Bed perimeter points
+            fig.add_trace(
+                    go.Scatter3d(
+                            x=xt,
+                            y=yt,
+                            z=tr.height*np.ones_like(xt),
+                            mode='lines',
+                            line=utcargs,
+                            showlegend=False,
+                            hovertemplate='(%{x:.4f}, %{y:.4f})<extra>TR</extra>',
+                    )
             )
         return fig
 
