@@ -2,13 +2,12 @@ from __future__ import annotations
 
 from femto.curves import sin
 from femto.device import Device
-from femto.helpers import dotdict
 from femto.marker import Marker
-from femto.trench import TrenchColumn
+from femto.trench import UTrenchColumn
 from femto.waveguide import Waveguide
 
 # WAVEGUIDE PARAMETERS
-PARAM_WG = dotdict(
+PARAM_WG = dict(
     scan=6,
     speed=20,
     depth=0.035,
@@ -26,7 +25,7 @@ PARAM_WG = dotdict(
 )
 
 # MARKER PARAMETERS
-PARAM_MK = dotdict(
+PARAM_MK = dict(
     scan=1,
     speed=4,
     depth=0.001,
@@ -36,7 +35,8 @@ PARAM_MK = dotdict(
 )
 
 # TRENCH PARAMETERS
-PARAM_TC = dotdict(
+PARAM_TC = dict(
+    n_pillars=3,
     length=1.0,
     nboxz=4,
     deltaz=0.0015,
@@ -45,7 +45,7 @@ PARAM_TC = dotdict(
 )
 
 # G-CODE PARAMETERS
-PARAM_GC = dotdict(
+PARAM_GC = dict(
     filename='MZI.pgm',
     laser='pharos',
     samplesize=(25, 10),
@@ -61,12 +61,12 @@ wgs = []
 
 # SWG
 wg = Waveguide(**PARAM_WG)
-wg.start().linear([PARAM_WG.samplesize[0] + 4, 0.0, 0.0], mode='INC').end()
+wg.start().linear([PARAM_WG['samplesize'][0] + 4, 0.0, 0.0], mode='INC').end()
 wgs.append(wg)
 
 # MZIs
 delta_x = wg.dx_bend
-l_x = (PARAM_WG.samplesize[0] + 4 - delta_x * 4) / 2
+l_x = (PARAM_WG['samplesize'][0] + 4 - delta_x * 4) / 2
 for i in range(6):
     wg = Waveguide(**PARAM_WG)
     wg.start([wg.x_init, wg.y_init + (i + 1) * wg.pitch, wg.z_init])
@@ -81,14 +81,14 @@ circ.extend(wgs)
 
 # MARKER
 c = Marker(**PARAM_MK)
-c.cross([PARAM_GC.samplesize[0] / 2, 4.0])
+c.cross([PARAM_GC['samplesize'][0] / 2, 4.0])
 circ.append(c)
 
 # TRENCH
-xc = PARAM_GC.samplesize[0] / 2
+xc = PARAM_GC['samplesize'][0] / 2
 ymin = wg.y_init
 ymax = wg.y_init + 6 * wg.pitch
-col = TrenchColumn(x_center=xc, y_min=ymin, y_max=ymax, **PARAM_TC)
+col = UTrenchColumn(x_center=xc, y_min=ymin, y_max=ymax, **PARAM_TC)
 col.dig_from_waveguide(wgs)
 circ.append(col)
 
