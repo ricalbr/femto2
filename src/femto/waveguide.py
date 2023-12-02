@@ -113,6 +113,7 @@ class Waveguide(LaserPath):
         disp_x: float | None = None,
         radius: float | None = None,
         num_points: int | None = None,
+        reverse: bool = False,
         speed: float | None = None,
         shutter: int = 1,
         **kwargs,
@@ -138,6 +139,8 @@ class Waveguide(LaserPath):
             Curvature radius [mm]. The default value is `self.radius`.
         num_points: int, optional
             Number of points of the S-bend. The default value is computed using `self.speed` and `self.cmd_rate_max`.
+        reverse: bool, optional
+            Flag to compute the bend's coordinate in reverse order.
         speed: float, optional
             Translation speed [mm/s]. The default value is `self.speed`.
         shutter: int, optional
@@ -180,9 +183,22 @@ class Waveguide(LaserPath):
         logger.debug(f'Computed (x, y, z) using {fx} function.')
 
         # update coordinates
-        self.add_path(
-            x + self._x[-1], y + self._y[-1], z + self._z[-1], np.repeat(f, len(x)), np.repeat(shutter, len(x))
-        )
+        if reverse:
+            self.add_path(
+                np.flip(x) - x[-1] + self._x[-1],
+                -np.flip(y) + y[-1] + self._y[-1],
+                z + self._z[-1],
+                np.repeat(f, len(x)),
+                np.repeat(shutter, len(x)),
+            )
+        else:
+            self.add_path(
+                x + self._x[-1],
+                y + self._y[-1],
+                z + self._z[-1],
+                np.repeat(f, len(x)),
+                np.repeat(shutter, len(x)),
+            )
         return self
 
     def coupler(
@@ -194,6 +210,7 @@ class Waveguide(LaserPath):
         disp_x: float | None = None,
         radius: float | None = None,
         num_points: int | None = None,
+        reverse: bool = False,
         speed: float | None = None,
         shutter: int = 1,
         **kwargs,
@@ -219,6 +236,8 @@ class Waveguide(LaserPath):
             Curvature radius [mm]. The default value is `self.radius`.
         num_points: int, optional
             Number of points of the S-bend. The default value is computed using `self.speed` and `self.cmd_rate_max`.
+        reverse: bool, optional
+            Flag to compute the coupler's coordinate in reverse order.
         speed: float, optional
             Translation speed [mm/s]. The default value is `self.speed`.
         shutter: int
@@ -241,9 +260,32 @@ class Waveguide(LaserPath):
         int_length = int_length if int_length is not None else self.int_length
         logger.debug(f'Interaction lenght set to int_length = {int_length}.')
 
-        self.bend(dy=dy, dz=dz, fx=fx, disp_x=disp_x, radius=radius, num_points=num_points, speed=speed, **kwargs)
-        self.linear([np.fabs(int_length), 0, 0], speed=speed, shutter=shutter)
-        self.bend(dy=-dy, dz=dz, fx=fx, disp_x=disp_x, radius=radius, num_points=num_points, speed=speed, **kwargs)
+        self.bend(
+            dy=dy,
+            dz=dz,
+            fx=fx,
+            disp_x=disp_x,
+            radius=radius,
+            num_points=num_points,
+            reverse=reverse,
+            speed=speed,
+            **kwargs,
+        )
+        if reverse:
+            self.linear([-np.fabs(int_length), 0, 0], speed=speed, shutter=shutter, mode='INC')
+        else:
+            self.linear([np.fabs(int_length), 0, 0], speed=speed, shutter=shutter)
+        self.bend(
+            dy=-dy,
+            dz=dz,
+            fx=fx,
+            disp_x=disp_x,
+            radius=radius,
+            num_points=num_points,
+            reverse=reverse,
+            speed=speed,
+            **kwargs,
+        )
         return self
 
     def mzi(
@@ -256,6 +298,7 @@ class Waveguide(LaserPath):
         disp_x: float | None = None,
         radius: float | None = None,
         num_points: int | None = None,
+        reverse: bool = False,
         speed: float | None = None,
         shutter: int = 1,
         **kwargs,
@@ -275,12 +318,14 @@ class Waveguide(LaserPath):
         arm_length: float, optional
             Length of the Mach-Zehnder Interferometer's straight arm [mm]. The default is `self.arm_length`.
         disp_x: float, optional
-            `x`-displacement  for the sinusoidal bend. If the value is ``None`` (the default value),
-            the `x`-displacement is computed with the formula for the circular `S`-bend.
+            `x`-displacement  for the bend. If the value is ``None`` (the default value), the `x`-displacement is
+            computed with the formula for the circular `S`-bend.
         radius: float, optional
             Curvature radius [mm]. The default value is `self.radius`.
         num_points: int, optional
             Number of points of the S-bend. The default value is computed using `self.speed` and `self.cmd_rate_max`.
+        reverse: bool, optional
+            Flag to compute the MZI's coordinate in reverse order.
         speed: float, optional
             Translation speed [mm/s]. The default value is `self.speed`.
         shutter: int
@@ -310,10 +355,14 @@ class Waveguide(LaserPath):
             radius=radius,
             num_points=num_points,
             int_length=int_length,
+            reverse=reverse,
             speed=speed,
             **kwargs,
         )
-        self.linear([np.fabs(arm_length), 0, 0], shutter=shutter, speed=speed)
+        if reverse:
+            self.linear([-np.fabs(arm_length), 0, 0], shutter=shutter, speed=speed, mode='INC')
+        else:
+            self.linear([np.fabs(arm_length), 0, 0], shutter=shutter, speed=speed)
         self.coupler(
             dy=dy,
             dz=dz,
@@ -322,6 +371,7 @@ class Waveguide(LaserPath):
             radius=radius,
             num_points=num_points,
             int_length=int_length,
+            reverse=reverse,
             speed=speed,
             **kwargs,
         )
