@@ -175,13 +175,13 @@ class PGMCompiler:
         self.instruction('\n')
 
         if self.rotation_angle:
-            msg = f' BEWARE, ANGLE MUST BE IN DEGREE! Rotation angle is {self.rotation_angle:.3f} deg. '.center(69, '*')
+            msg = f'Rotation angle is {math.degrees(self.rotation_angle):.3f} deg.'
             if self.verbose:
                 logger.warning(msg)
             else:
                 logger.debug(msg)
         if self.aerotech_angle:
-            msg = f' BEWARE, ANGLE MUST BE IN DEGREE! G84 angle is {self.aerotech_angle:.3f} deg. '.center(69, '*')
+            msg = f'Part rotation angle (G84) is {self.aerotech_angle:.3f} deg.'
             if self.verbose:
                 logger.warning(msg)
             else:
