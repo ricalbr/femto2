@@ -185,7 +185,7 @@ class Waveguide(LaserPath):
         if reverse:
             x = np.flip(x) - x[-1]
             y = -(np.flip(y) - y[-1])
-            z = -(np.flip(z) - z[-1])
+            z = np.flip(z) - z[-1]
 
         # update coordinates
         self.add_path(
