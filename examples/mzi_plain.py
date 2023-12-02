@@ -32,7 +32,7 @@ PARAM_GC = dict(
 mzi = []
 for i in range(2):
     wg = Waveguide(**PARAM_WG)
-    wg.start([wg.x_init, wg.y_init - (0.5 - i) * PARAM_WG.pitch, wg.depth])
+    wg.start([wg.x_init, wg.y_init - (0.5 - i) * PARAM_WG['pitch'], wg.depth])
     wg.linear([5, 0, 0])
     wg.mzi(dy=(-1) ** i * wg.dy_bend, dz=0, arm_length=wg.arm_length, fx=sin)
     wg.linear([wg.x_end, None, None], mode='ABS')
