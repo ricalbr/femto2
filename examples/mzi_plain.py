@@ -2,12 +2,11 @@ from __future__ import annotations
 
 from femto.curves import sin
 from femto.device import Device
-from femto.helpers import dotdict
 from femto.pgmcompiler import PGMCompiler
 from femto.waveguide import Waveguide
 
 # WAVEGUIDE PARAMETERS
-PARAM_WG = dotdict(
+PARAM_WG = dict(
     scan=6,
     speed=20,
     radius=15,
@@ -22,7 +21,7 @@ PARAM_WG = dotdict(
 )
 
 # G-CODE PARAMETERS
-PARAM_GC = dotdict(
+PARAM_GC = dict(
     filename='MZI_multiscan.pgm',
     laser='pharos',
     samplesize=(25, 2),
@@ -45,14 +44,14 @@ dev = Device(**PARAM_GC)
 dev.extend(mzi)
 
 # Plot and pgm
-dev.plot2d()
+dev.plot3d()
 # dev.pgm() -> Device's built-in .pgm generation method
 
 # Compilation
 # Custom .pgm files can be exported using the methods of PGMCompiler
 with PGMCompiler(**PARAM_GC) as G:
     G.tic()  # print start time
-    with G.repeat(PARAM_WG.scan):
+    with G.repeat(PARAM_WG['scan']):
         for i, wg in enumerate(mzi):
             G.comment(f'Mode: {i + 1}')
             G.write(wg.points)
