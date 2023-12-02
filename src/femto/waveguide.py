@@ -182,23 +182,19 @@ class Waveguide(LaserPath):
         x, y, z = fx(dx=dx, dy=dy, dz=dzb, num_points=num, **dict(kwargs, radius=r))
         logger.debug(f'Computed (x, y, z) using {fx} function.')
 
-        # update coordinates
         if reverse:
-            self.add_path(
-                np.flip(x) - x[-1] + self._x[-1],
-                -np.flip(y) + y[-1] + self._y[-1],
-                z + self._z[-1],
-                np.repeat(f, len(x)),
-                np.repeat(shutter, len(x)),
-            )
-        else:
-            self.add_path(
-                x + self._x[-1],
-                y + self._y[-1],
-                z + self._z[-1],
-                np.repeat(f, len(x)),
-                np.repeat(shutter, len(x)),
-            )
+            x = np.flip(x) - x[-1]
+            y = -(np.flip(y) - y[-1])
+            z = -(np.flip(z) - z[-1])
+
+        # update coordinates
+        self.add_path(
+            x + self._x[-1],
+            y + self._y[-1],
+            z + self._z[-1],
+            np.repeat(f, len(x)),
+            np.repeat(shutter, len(x)),
+        )
         return self
 
     def coupler(
@@ -277,7 +273,7 @@ class Waveguide(LaserPath):
             self.linear([np.fabs(int_length), 0, 0], speed=speed, shutter=shutter)
         self.bend(
             dy=-dy,
-            dz=dz,
+            dz=-dz,
             fx=fx,
             disp_x=disp_x,
             radius=radius,
