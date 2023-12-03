@@ -1327,6 +1327,49 @@ def test_write(param, pts, expected) -> None:
     assert G._instructions == expected
 
 
+@pytest.mark.parametrize(
+    'list_instr, expected',
+    [
+        (
+            [
+                'G01 F255\n',
+                'G9 G1 X0.01 F20\n',
+                'G9 G1 F20\n',
+                'G01 F255\n',
+                'G1 F12\n',
+                'G01 F 0.88\n',
+                'G09 G01 X1 F 12\n',
+                'G09G01 F81\n',
+            ],
+            [
+                'F255\n',
+                'G9 G1 X0.01 F20\n',
+                'F20\n',
+                'F255\n',
+                'F12\n',
+                'F 0.88\n',
+                'G09 G01 X1 F 12\n',
+                'F81\n',
+            ],
+        )
+    ],
+)
+def test_re_filtering(param, list_instr, expected) -> None:
+    G = PGMCompiler(**param)
+    G._instructions.extend(list_instr)
+    G.close()
+
+    file = Path(param['export_dir']) / param['filename']
+    with open(file) as f:
+        exp_instr = f.readlines()
+
+    assert exp_instr == expected
+
+    dire = Path(param['export_dir'])
+    file.unlink()
+    dire.rmdir()
+
+
 def test_close_dir(param) -> None:
     exp_dir = './src/femto/test/'
     param['export_dir'] = exp_dir

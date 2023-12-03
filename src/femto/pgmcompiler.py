@@ -6,6 +6,7 @@ import copy
 import itertools
 import math
 import pathlib
+import re
 from types import TracebackType
 from typing import Any
 from typing import Callable
@@ -944,7 +945,8 @@ class PGMCompiler:
 
         # write instructions to file
         with open(pgm_filename, 'w') as f:
-            f.write(''.join(self._instructions))
+            # merge and filter (G9) G1 Fxx.xx commands, commands with leading 0s are accepted e.g. G01.
+            f.write(re.sub(r'(G(0?[19])?\s?)+(?=F)', '', ''.join(self._instructions)))
         self._instructions.clear()
         if self.verbose:
             logger.info('G-code compilation completed.')
