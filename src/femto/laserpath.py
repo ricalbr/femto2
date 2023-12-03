@@ -644,21 +644,21 @@ class LaserPath:
 
         if mode.lower() == 'abs':
             # If increment is None use the last value on the coordinate-array
-            x_inc = self._x[-1] if increment[0] is None else np.array([increment[0]])
-            y_inc = self._y[-1] if increment[1] is None else np.array([increment[1]])
-            z_inc = self._z[-1] if increment[2] is None else np.array([increment[2]])
+            x_inc = self._x[-1] if increment[0] is None else increment[0]
+            y_inc = self._y[-1] if increment[1] is None else increment[1]
+            z_inc = self._z[-1] if increment[2] is None else increment[2]
         else:
             x, y, z = map(lambda k: k or 0, increment)
-            x_inc = np.array([self._x[-1] + x])
-            y_inc = np.array([self._y[-1] + y])
-            z_inc = np.array([self._z[-1] + z])
+            x_inc = self._x[-1] + x
+            y_inc = self._y[-1] + y
+            z_inc = self._z[-1] + z
 
         l_curve = np.sqrt((x_inc - self._x[-1]) ** 2 + (y_inc - self._y[-1]) ** 2 + (z_inc - self._z[-1]) ** 2)
         f_val = self.speed if speed is None else speed
         if l_curve <= 1e-6 or self.warp_flag is False:
-            x_arr = np.array([x_inc])
-            y_arr = np.array([y_inc])
-            z_arr = np.array([z_inc])
+            x_arr = np.array(x_inc)
+            y_arr = np.array(y_inc)
+            z_arr = np.array(z_inc)
         else:
             num = self.num_subdivisions(l_curve=l_curve, speed=f_val)
             x_arr = np.linspace(self._x[-1], x_inc, num)

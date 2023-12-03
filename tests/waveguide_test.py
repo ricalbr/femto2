@@ -4,9 +4,14 @@ from contextlib import nullcontext as does_not_raise
 
 import numpy as np
 import pytest
+from femto.curves import abv
 from femto.curves import arc
+from femto.curves import arctan
 from femto.curves import circ
+from femto.curves import erf
+from femto.curves import euler_S2
 from femto.curves import euler_S4
+from femto.curves import rad
 from femto.curves import sin
 from femto.curves import spline
 from femto.curves import spline_bridge
@@ -955,3 +960,92 @@ def test_coupler_d_int(d_input) -> None:
     assert pytest.approx(np.min(mode2.y) - np.max(mode1.y), abs=1e-6) == d_input
     # test the point of min distance is at the same x value
     assert pytest.approx(mode2.x[np.where(mode2.y == np.min(mode2.y))]) == mode1.x[np.where(mode1.y == np.max(mode1.y))]
+
+
+def test_reverse_bend(param) -> None:
+
+    dx = 9
+    dz = 0.1
+    wg = Waveguide(**param)
+    wg.start([0, 0, 0])
+    wg.bend(dy=wg.dy_bend, dz=dz, disp_x=dx, fx=sin, reverse=True)
+
+    assert pytest.approx(wg.lastx) == -dx
+    assert pytest.approx(wg.lasty) == wg.dy_bend
+    assert pytest.approx(wg.lastz) == -dz
+
+    wg_reg = Waveguide(**param)
+    wg_reg.start([0, 0, 0])
+    wg_reg.bend(dy=wg.dy_bend, dz=dz, disp_x=dx, fx=sin)
+
+    for xr, x in zip(wg_reg.x, wg.x):
+        assert pytest.approx(np.abs(xr)) == np.abs(x)
+        assert np.sign(xr) == np.sign(-x)
+
+    for yr, y in zip(wg_reg.y, wg.y):
+        assert pytest.approx(np.abs(yr)) == np.abs(y)
+        assert np.sign(yr) == np.sign(y)
+
+    for zr, z in zip(wg_reg.z, wg.z):
+        assert pytest.approx(np.abs(zr)) == np.abs(z)
+        assert np.sign(zr) == -np.sign(z)
+
+
+@pytest.mark.parametrize('f', [euler_S4, sin, spline, arctan, rad, abv, euler_S2, erf])
+def test_reverse_bend_curves(f, param) -> None:
+
+    dx = 9
+    dz = 0.1
+    x0, y0, z0 = 3, 4, 5
+    wg = Waveguide(**param)
+    wg.start([x0, y0, z0])
+    wg.bend(dy=wg.dy_bend, dz=dz, disp_x=dx, fx=f, reverse=True)
+
+    assert pytest.approx(wg.lastx) == -dx + x0
+    assert pytest.approx(wg.lasty) == wg.dy_bend + y0
+    assert pytest.approx(wg.lastz) == z0 - dz
+
+    wg_reg = Waveguide(**param)
+    wg_reg.start([x0, y0, z0])
+    wg_reg.bend(dy=wg.dy_bend, dz=dz, disp_x=dx, fx=f)
+
+    for xr, x in zip(wg_reg.x, wg.x):
+        assert pytest.approx(np.abs(xr - x0)) == np.abs(x - x0)
+        assert np.sign(xr - x0) == np.sign(-(x - x0))
+
+    for yr, y in zip(wg_reg.y, wg.y):
+        assert pytest.approx(np.abs(yr - y0)) == np.abs(y - y0)
+        assert np.sign(yr - y0) == np.sign(y - y0)
+
+    for zr, z in zip(wg_reg.z, wg.z):
+        assert pytest.approx(np.abs(zr - z0)) == np.abs(z - z0)
+        assert np.sign(zr - z0) == -np.sign(z - z0)
+
+
+def test_reverse_bend_circ(param) -> None:
+
+    dz = 0.1
+    x0, y0, z0 = 3, 4, 5
+    wg = Waveguide(**param)
+    wg.start([x0, y0, z0])
+    wg.bend(dy=wg.dy_bend, dz=dz, fx=circ, reverse=True)
+
+    assert pytest.approx(wg.lastx) == -wg.dx_bend + x0
+    assert pytest.approx(wg.lasty) == wg.dy_bend + y0
+    assert pytest.approx(wg.lastz) == z0 - dz
+
+    wg_reg = Waveguide(**param)
+    wg_reg.start([x0, y0, z0])
+    wg_reg.bend(dy=wg.dy_bend, dz=dz, fx=circ)
+
+    for xr, x in zip(wg_reg.x, wg.x):
+        assert pytest.approx(np.abs(xr - x0)) == np.abs(x - x0)
+        assert np.sign(xr - x0) == np.sign(-(x - x0))
+
+    for yr, y in zip(wg_reg.y, wg.y):
+        assert pytest.approx(np.abs(yr - y0)) == np.abs(y - y0)
+        assert np.sign(yr - y0) == np.sign(y - y0)
+
+    for zr, z in zip(wg_reg.z, wg.z):
+        assert pytest.approx(np.abs(zr - z0)) == np.abs(z - z0)
+        assert np.sign(zr - z0) == -np.sign(z - z0)

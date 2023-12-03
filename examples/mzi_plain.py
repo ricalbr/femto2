@@ -44,7 +44,7 @@ dev = Device(**PARAM_GC)
 dev.extend(mzi)
 
 # Plot and pgm
-dev.plot2d()
+dev.plot3d()
 # dev.pgm() -> Device's built-in .pgm generation method
 
 # Compilation
