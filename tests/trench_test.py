@@ -311,7 +311,7 @@ def test_trenchcol_default() -> None:
     assert tcol.speed_pos == float(2.0)
 
     assert tcol.CWD == Path.cwd()
-    assert tcol._trench_list == []
+    assert tcol.trench_list == []
 
 
 def test_trenchcol_param(param) -> None:
@@ -338,7 +338,7 @@ def test_trenchcol_param(param) -> None:
     assert tcol.speed_pos == float(0.5)
 
     assert tcol.CWD == Path.cwd()
-    assert tcol._trench_list == []
+    assert tcol.trench_list == []
 
 
 def test_trenchcol_from_dict(param) -> None:
@@ -365,7 +365,7 @@ def test_trenchcol_from_dict(param) -> None:
     assert tcol.speed_pos == float(0.5)
 
     assert tcol.CWD == Path.cwd()
-    assert tcol._trench_list == []
+    assert tcol.trench_list == []
 
 
 def test_load(param) -> None:
@@ -478,7 +478,7 @@ def test_trenchcol_fabtime(tc, param) -> None:
     tc._trench_list.extend([t1, t2, t3])
 
     assert pytest.approx(tc.fabrication_time) == sum(
-        param['nboxz'] * (tc.n_repeat * t.wall_length + t.floor_length) for t in tc._trench_list
+        param['nboxz'] * (tc.n_repeat * t.wall_length + t.floor_length) for t in tc.trench_list
     )
 
 
@@ -521,7 +521,7 @@ def test_trenchcol_dig_remove() -> None:
 
     tc._dig(coords, remove=[1])
 
-    for (t, c) in zip(tc._trench_list, comp_box):
+    for (t, c) in zip(tc.trench_list, comp_box):
         assert normalize_polygon(c).equals_exact(t.block, tolerance=1e-8)
 
 
@@ -540,7 +540,7 @@ def test_trenchcol_dig_remove_all() -> None:
     coords = [[(-5.0, 3.0), (5.0, 3.0)], [(-5.0, 6.0), (5.0, 6.0)]]
 
     tc._dig(coords, remove=[0, 1, 2])
-    assert tc._trench_list == []
+    assert tc.trench_list == []
 
 
 def test_dig_from_waveguide(tc):
@@ -558,7 +558,7 @@ def test_dig_from_waveguide(tc):
     wgs.append(wg)
 
     assert tc.dig_from_waveguide(wgs) is None
-    assert bool(tc._trench_list)
+    assert bool(tc.trench_list)
 
 
 def test_dig_from_waveguide_empty(tc):
@@ -566,7 +566,7 @@ def test_dig_from_waveguide_empty(tc):
 
     wg_list = [Waveguide() for _ in range(4)]
     assert tc.dig_from_waveguide(wg_list) is None
-    assert not bool(tc._trench_list)
+    assert not bool(tc.trench_list)
 
 
 def test_dig_from_waveguide_raise(tc):
@@ -586,7 +586,7 @@ def test_dig_from_array(tc):
         np.array([[-5, 9], [1.5, 1.5]]).T,
     ]
     assert tc.dig_from_array(arr_list) is None
-    assert bool(tc._trench_list)
+    assert bool(tc.trench_list)
 
     arr_list = [
         np.array([[-5, 1.2], [0, 1.2], [5, 1.2], [9, 1.2]]).T,
@@ -594,13 +594,13 @@ def test_dig_from_array(tc):
     ]
     print(arr_list[0])
     assert tc.dig_from_array(arr_list) is None
-    assert bool(tc._trench_list)
+    assert bool(tc.trench_list)
 
 
 def test_dig_from_array_empty(tc):
     arr_list = [np.array([[1, 2, 3, 4], [9, 9, 9, 9]]).T for _ in range(4)]
     assert tc.dig_from_array(arr_list) is None
-    assert not bool(tc._trench_list)
+    assert not bool(tc.trench_list)
 
 
 def test_dig_from_array_raise(tc):
@@ -654,7 +654,7 @@ def test_utrenchcol_default() -> None:
 
     assert tcol._trenchbed == []
     assert tcol.CWD == Path.cwd()
-    assert tcol._trench_list == []
+    assert tcol.trench_list == []
 
 
 def test_utrenchcol_param(uparam) -> None:
@@ -684,7 +684,7 @@ def test_utrenchcol_param(uparam) -> None:
 
     assert tcol._trenchbed == []
     assert tcol.CWD == Path.cwd()
-    assert tcol._trench_list == []
+    assert tcol.trench_list == []
 
 
 def test_adj_pillar_width(utc, uparam) -> None:
@@ -709,7 +709,7 @@ def test_u_dig() -> None:
 
     utc._dig(coords)
 
-    for (t, c) in zip(utc._trench_list, comp_box):
+    for (t, c) in zip(utc.trench_list, comp_box):
         assert normalize_polygon(c).equals_exact(t.block, tolerance=1e-8)
         assert almost_equal(normalize_polygon(c), t.block)
     assert utc.trench_bed is not []
@@ -735,7 +735,7 @@ def test_u_dig_no_pillars() -> None:
 
     utc._dig(coords)
 
-    for (t, c) in zip(utc._trench_list, comp_box):
+    for (t, c) in zip(utc.trench_list, comp_box):
         assert normalize_polygon(c).equals_exact(t.block, tolerance=1e-8)
         assert almost_equal(normalize_polygon(c), t.block)
     assert utc.trench_bed is not []

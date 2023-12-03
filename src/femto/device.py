@@ -178,7 +178,6 @@ class Device:
         logger.info('Plotting 2D objects...')
         self.fig = go.Figure()
         for writer in self.writers.values():
-            # TODO: fix standard fig update
             logger.debug(f'Plot 2D object from {writer}.')
             self.fig = writer.plot2d(self.fig, show_shutter_close=show_shutter_close)
             logger.debug('Update 2D figure.')

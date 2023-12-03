@@ -172,23 +172,46 @@ def test_dy_bend(param) -> None:
     assert wg.dy_bend == 0.061
 
 
-# TODO: add test cases
-def test_dx_bend_radius_error(param) -> None:
+@pytest.mark.parametrize(
+    'r, exp',
+    [
+        (0, pytest.raises(ValueError)),
+        (10, does_not_raise()),
+        (None, pytest.raises(ValueError)),
+        (16, does_not_raise()),
+        (None, pytest.raises(ValueError)),
+    ],
+)
+def test_dx_bend_radius_error(param, r, exp) -> None:
     wg = Waveguide(**param)
-    wg.radius = None
-    with pytest.raises(ValueError):
+    wg.radius = r
+    with exp:
         print(wg.dx_bend)
 
-    param['radius'] = None
+    param['radius'] = r
     wg = Waveguide(**param)
-    with pytest.raises(ValueError):
+    with exp:
         print(wg.dx_bend)
 
 
-# TODO: add test cases
-def test_dx_bend(param) -> None:
+# dy = 0.5 * (self.pitch - self.int_dist)
+# dx = np.sqrt(4 * np.abs(dy1) * radius - dy1 ** 2)
+@pytest.mark.parametrize(
+    'r, intd, p, exp',
+    [
+        (1, 0.001, 0.080, np.sqrt(2 * abs(0.080 - 0.001) * 1 - (0.5 * (0.08 - 0.001)) ** 2)),
+        (10, 0.005, 0.069, np.sqrt(2 * abs(0.069 - 0.005) * 10 - (0.5 * (0.069 - 0.005)) ** 2)),
+        (5.555, 0.01, 0.080, np.sqrt(2 * abs(0.080 - 0.01) * 5.555 - (0.5 * (0.08 - 0.01)) ** 2)),
+        (16, 0.006, 0.300, np.sqrt(2 * abs(0.300 - 0.006) * 16 - (0.5 * (0.300 - 0.006)) ** 2)),
+        (0.5, 0.1, 0.80, np.sqrt(2 * abs(0.80 - 0.1) * 0.5 - (0.5 * (0.8 - 0.1)) ** 2)),
+    ],
+)
+def test_dx_bend(param, r, intd, p, exp) -> None:
+    param['radius'] = r
+    param['int_dist'] = intd
+    param['pitch'] = p
     wg = Waveguide(**param)
-    assert pytest.approx(wg.dx_bend) == 2.469064
+    assert pytest.approx(wg.dx_bend) == exp
 
 
 def test_dx_acc_none(param) -> None:
@@ -198,16 +221,23 @@ def test_dx_acc_none(param) -> None:
         print(wg.dx_coupler)
 
 
-# TODO: add test cases
-def test_dx_acc(param) -> None:
+@pytest.mark.parametrize(
+    'r, intd, intl, p, exp',
+    [
+        (1, 0.001, 1, 0.080, 2 * np.sqrt(2 * abs(0.080 - 0.001) * 1 - (0.5 * (0.08 - 0.001)) ** 2) + 1),
+        (10, 0.005, 2, 0.069, 2 * np.sqrt(2 * abs(0.069 - 0.005) * 10 - (0.5 * (0.069 - 0.005)) ** 2) + 2),
+        (5.555, 0.01, 4, 0.080, 2 * np.sqrt(2 * abs(0.080 - 0.01) * 5.555 - (0.5 * (0.08 - 0.01)) ** 2) + 4),
+        (16, 0.006, 6.6666, 0.300, 2 * np.sqrt(2 * abs(0.300 - 0.006) * 16 - (0.5 * (0.300 - 0.006)) ** 2) + 6.6666),
+        (0.5, 0.1, 0.0001, 0.80, 2 * np.sqrt(2 * abs(0.80 - 0.1) * 0.5 - (0.5 * (0.8 - 0.1)) ** 2) + 0.0001),
+    ],
+)
+def test_dx_coupler(param, r, intd, intl, p, exp) -> None:
+    param['radius'] = r
+    param['int_dist'] = intd
+    param['int_length'] = intl
+    param['pitch'] = p
     wg = Waveguide(**param)
-    assert pytest.approx(wg.dx_coupler) == 4.938129
-
-
-def test_dx_acc_int_l(param) -> None:
-    param['int_length'] = 2
-    wg = Waveguide(**param)
-    assert pytest.approx(wg.dx_coupler) == 6.938129
+    assert pytest.approx(wg.dx_coupler) == exp
 
 
 def test_dx_mzi_none_intl(param) -> None:
@@ -224,21 +254,52 @@ def test_dx_mzi_none_arml(param) -> None:
         print(wg.dx_mzi)
 
 
-def test_dx_mzi(param) -> None:
+@pytest.mark.parametrize(
+    'r, intd, intl, arml, p, exp',
+    [
+        (1, 0.001, 1, 55, 0.080, 4 * np.sqrt(2 * abs(0.080 - 0.001) * 1 - (0.5 * (0.08 - 0.001)) ** 2) + 1 * 2 + 55),
+        (
+            10,
+            0.005,
+            2,
+            0.9,
+            0.069,
+            4 * np.sqrt(2 * abs(0.069 - 0.005) * 10 - (0.5 * (0.069 - 0.005)) ** 2) + 2 * 2 + 0.9,
+        ),
+        (
+            5.555,
+            0.01,
+            4,
+            33.3333,
+            0.080,
+            4 * np.sqrt(2 * abs(0.080 - 0.01) * 5.555 - (0.5 * (0.08 - 0.01)) ** 2) + 4 * 2 + 33.3333,
+        ),
+        (
+            16,
+            0.006,
+            6.6666,
+            0.123456,
+            0.300,
+            4 * np.sqrt(2 * abs(0.300 - 0.006) * 16 - (0.5 * (0.300 - 0.006)) ** 2) + 6.6666 * 2 + 0.123456,
+        ),
+        (
+            0.5,
+            0.1,
+            0.0001,
+            9.876543,
+            0.80,
+            4 * np.sqrt(2 * abs(0.80 - 0.1) * 0.5 - (0.5 * (0.8 - 0.1)) ** 2) + 0.0001 * 2 + 9.876543,
+        ),
+    ],
+)
+def test_dx_mzi(param, r, intd, intl, arml, p, exp) -> None:
+    param['radius'] = r
+    param['int_dist'] = intd
+    param['int_length'] = intl
+    param['arm_length'] = arml
+    param['pitch'] = p
     wg = Waveguide(**param)
-    assert pytest.approx(wg.dx_mzi) == 10.876258
-
-
-def test_dx_mzi_int_l(param) -> None:
-    param['int_length'] = 2
-    wg = Waveguide(**param)
-    assert pytest.approx(wg.dx_mzi) == 14.876258
-
-
-def test_dx_mzi_arml(param) -> None:
-    param['arm_length'] = 3
-    wg = Waveguide(**param)
-    assert pytest.approx(wg.dx_mzi) == 12.876258
+    assert pytest.approx(wg.dx_mzi) == exp
 
 
 @pytest.mark.parametrize(
