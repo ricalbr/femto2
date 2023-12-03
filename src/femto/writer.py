@@ -419,7 +419,6 @@ class TrenchWriter(Writer):
 
     @property
     def trench_list(self) -> list[Any]:
-        # TODO: test this
         """Trench objects.
 
         Property for returning the Trench objects contained inside a TrenchWriter.
@@ -1231,7 +1230,8 @@ class UTrenchWriter(TrenchWriter):
                     showlegend=False,
                     hoverinfo='skip',
                     showscale=False,
-                ))
+                )
+            )
 
             # Perimeter points
             fig.add_trace(
@@ -1255,18 +1255,18 @@ class UTrenchWriter(TrenchWriter):
             # Bed wall surface
             x = np.array([xt, xt])
             y = np.array([yt, yt])
-            z = tr.height*np.array([np.ones_like(xt) - 0.015, np.ones_like(xt)])
+            z = tr.height * np.array([np.ones_like(xt) - 0.015, np.ones_like(xt)])
             fig.add_trace(
-                    go.Surface(
-                            x=x,
-                            y=y,
-                            z=z,
-                            colorscale=[[0, 'grey'], [1, 'grey']],
-                            showlegend=False,
-                            hoverinfo='skip',
-                            showscale=False,
-                            opacity=0.6,
-                    )
+                go.Surface(
+                    x=x,
+                    y=y,
+                    z=z,
+                    colorscale=[[0, 'grey'], [1, 'grey']],
+                    showlegend=False,
+                    hoverinfo='skip',
+                    showscale=False,
+                    opacity=0.6,
+                )
             )
             # Bed floor surface
             if len(xt) % 2:
@@ -1295,15 +1295,15 @@ class UTrenchWriter(TrenchWriter):
             )
             # Bed perimeter points
             fig.add_trace(
-                    go.Scatter3d(
-                            x=xt,
-                            y=yt,
-                            z=tr.height*np.ones_like(xt),
-                            mode='lines',
-                            line=utcargs,
-                            showlegend=False,
-                            hovertemplate='(%{x:.4f}, %{y:.4f})<extra>TR</extra>',
-                    )
+                go.Scatter3d(
+                    x=xt,
+                    y=yt,
+                    z=tr.height * np.ones_like(xt),
+                    mode='lines',
+                    line=utcargs,
+                    showlegend=False,
+                    hovertemplate='(%{x:.4f}, %{y:.4f})<extra>TR</extra>',
+                )
             )
         return fig
 
