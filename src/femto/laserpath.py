@@ -694,7 +694,7 @@ class LaserPath:
         dl = f / self.cmd_rate_max
         num = int(np.ceil(l_curve / dl))
         if num <= 1:
-            logger.critical('I had to add use an higher instruction rate.\n')
+            logger.critical('I had to add use an higher instruction rate.')
             return 3
         else:
             return num
