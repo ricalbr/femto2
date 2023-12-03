@@ -187,13 +187,56 @@ class Waveguide(LaserPath):
             y = -(np.flip(y) - y[-1])
             z = np.flip(z) - z[-1]
 
-        # update coordinates
+        # Update coordinates
         self.add_path(
             x + self._x[-1],
             y + self._y[-1],
             z + self._z[-1],
             np.repeat(f, len(x)),
             np.repeat(shutter, len(x)),
+        )
+        return self
+
+    def double_bend(
+        self,
+        dy1: float,
+        dz1: float,
+        dy2: float,
+        dz2: float,
+        fx: Callable[..., tuple[nparray, nparray, nparray]],
+        disp_x1: float | None = None,
+        disp_x2: float | None = None,
+        radius: float | None = None,
+        num_points: int | None = None,
+        speed: float | None = None,
+        shutter: int = 1,
+        **kwargs,
+    ) -> Waveguide:
+        self.bend(
+            dy=dy1,
+            dz=dz1,
+            fx=fx,
+            disp_x=disp_x1,
+            radius=radius,
+            num_points=num_points,
+            speed=speed,
+            shutter=shutter,
+            **kwargs,
+        )
+        if disp_x2 is None and str(fx.__name__) == 'sin':
+            # If the f-profile is sinusoidal match the curvature of the two S-bends portions.
+            r = radius if radius is not None else self.radius
+            disp_x2 = np.sqrt(4 * np.abs(dy2) * r - np.abs(dy1 * dy2))
+        self.bend(
+            dy=dy2,
+            dz=dz2,
+            fx=fx,
+            disp_x=disp_x2,
+            radius=radius,
+            num_points=num_points,
+            speed=speed,
+            shutter=shutter,
+            **kwargs,
         )
         return self
 
@@ -370,6 +413,58 @@ class Waveguide(LaserPath):
             reverse=reverse,
             speed=speed,
             **kwargs,
+        )
+        return self
+
+    def add_curve_points(
+        self,
+        points: tuple[nparray, nparray, nparray] | np.ndarray,
+        speed: float | None = None,
+        shutter: int = 1,
+        **kwargs,
+    ) -> Waveguide:
+        """Add custom curve segment defined by points.
+
+        Add a curve segment to the current waveguide with a custum shape.
+        Differently from the ``bend``, ``coupler`` and ``mzi`` methods, this method allows to add to the waveguide an
+        arbitrary serie of points without relying on a profile function with the structure ``f(dx, dy, dz,
+        num_points)``.
+
+        Parameters
+        ----------
+        points: tuple[numpy.ndarray, numpy.ndarray, numpy.nparray] or np.ndarray
+            Collection of ``x-``, ``y-`` and ``z-``coordinates points.
+        speed: float, optional
+            Translation speed [mm/s]. The default value is `self.speed`.
+        shutter: int, optional
+            State of the shutter during the transition (0: 'OFF', 1: 'ON'). The default value is 1.
+        kwargs: optional
+            Additional arguments for the `fx` function.
+
+        Returns
+        -------
+        The object itself.
+        """
+
+        if speed is None and self.speed is None:
+            logger.error('Speed is None.')
+            raise ValueError('Speed is None. Set Waveguide\'s "speed" attribute or give a speed as input.')
+
+        f = speed if speed is not None else self.speed
+        logger.debug(f'Speed set to f = {f}.')
+
+        points = np.array(points)
+        if not any([dim == 3 for dim in points.shape]):
+            logger.error(f'Wrong points dimension. Expected 3xN or Nx3, given {points.shape[0]}x{points.shape[1]}.')
+            raise ValueError(f'Wrong points dimension. Expected 3xN or Nx3, given {points.shape[0]}x{points.shape[1]}.')
+        if points.shape[0] == 3:
+            x, y, z = points
+        else:
+            x, y, z = points.T
+
+        # Update coordinates
+        self.add_path(
+            x + self._x[-1], y + self._y[-1], z + self._z[-1], np.repeat(f, len(x)), np.repeat(shutter, len(x))
         )
         return self
 
