@@ -2,26 +2,28 @@ from __future__ import annotations
 
 import logging
 
-CONSOLEFORMATTER = '%(filename)16s:  [%(levelname)-.3s]  %(message)s'
 DEBUGFORMATTER = '[%(asctime)s] [%(levelname)s] (%(filename)s:%(lineno)s) \t- %(message)s'
 
 
 class CustomConsoleFormatter(logging.Formatter):
 
-    grey = '\x1b[38;20m'
-    yellow = '\x1b[33;20m'
-    bold_yellow = '\033[1;33m'
-    red = '\x1b[31;20m'
-    bold_red = '\x1b[31;1m'
-    reset = '\x1b[0m'
-    format = CONSOLEFORMATTER
+    white = '\033[0;97m'
+    cyan = '\033[0;96m'
+    yellow = '\033[0;93m'
+    bold_yellow = '\033[1;93m'
+    blue = '\033[0;94m'
+    red = '\033[0;91m'
+    bold_red = '\033[1;91m'
+    reset = '\033[0m'
+
+    CONSOLEFORMATTER = '{}%(filename)16s:  {}[%(levelname)-.3s]  {}%(message)s{}'
 
     FORMATS = {
-        logging.DEBUG: grey + format + reset,
-        logging.INFO: grey + format + reset,
-        logging.WARNING: bold_yellow + format + reset,
-        logging.ERROR: red + format + reset,
-        logging.CRITICAL: bold_red + format + reset,
+        logging.DEBUG: CONSOLEFORMATTER.format(white, white, white, reset),
+        logging.INFO: CONSOLEFORMATTER.format(white, white, white, reset),
+        logging.WARNING: CONSOLEFORMATTER.format(yellow, bold_yellow, yellow, reset),
+        logging.ERROR: CONSOLEFORMATTER.format(white, bold_red, red, reset),
+        logging.CRITICAL: CONSOLEFORMATTER.format(white, bold_red, bold_red, reset),
     }
 
     def format(self, record):
