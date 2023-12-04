@@ -248,7 +248,7 @@ class Device:
 
         logger.info('\b' * 20)
         if verbose:
-            logger.info('Export .pgm files completed.\n')
+            logger.info('Export .pgm files completed.')
 
     def export(self, export_dir: str = 'EXPORT', verbose: bool = False, **kwargs) -> None:
         """Export objects to pickle files.
@@ -274,10 +274,9 @@ class Device:
 
             writer = cast(Union[WaveguideWriter, NasuWriter, TrenchWriter, UTrenchWriter, MarkerWriter], writer)
             writer.export(export_dir=export_dir)
-        if verbose:
-            logger.info('Export objects completed.\n')
+        logger.info('Export completed.')
 
-    def xlsx(self, metadata: dict[str, Any] | None = None, verbose: bool = True, **kwargs) -> None:
+    def xlsx(self, metadata: dict[str, Any] | None = None, **kwargs) -> None:
         """Generate the spreadsheet.
 
         Add all waveguides and markers of the ``Device`` to the spreadsheet.
@@ -299,12 +298,10 @@ class Device:
                 objs.extend(writer.objs)
 
         # Generate Spreadsheet
+        logger.info('Generating spreadsheet...')
         with Spreadsheet(**kwargs, metadata=metadata) as S:
-            if verbose:
-                logger.info('Generating spreadsheet...')
             S.write(objs)
-            if verbose:
-                logger.info('Create .xlsx file completed.')
+        logger.info('Excel file created.')
 
     def save(self, filename: str = 'scheme.html', opt: dict[str, Any] | None = None) -> None:
         """Save figure.
@@ -365,6 +362,7 @@ class Device:
         dev = Device(**param)
         objs = []
 
+        logger.info('Loading objects...')
         for root, dirs, files in os.walk(folder):
             if not files:
                 logger.warning(f'No file is present in the given directory {folder}.')
@@ -376,8 +374,7 @@ class Device:
                     objs.append(dill.load(f))
 
         dev.append(objs)
-        if verbose:
-            logger.info('Objects loaded.\n')
+        logger.info('Loading complete.')
         return dev
 
 
