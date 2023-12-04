@@ -578,7 +578,9 @@ class TrenchWriter(Writer):
             self._export_trench_column(column=col, column_path=col_dir)
 
             # Create FARCALL.pgm file for all trenches in current column
-            self._farcall_trench_column(column=col, index=i_col)
+            self._farcall_trench_column(column=col, index=i_col, verbose=verbose)
+            if verbose is True:
+                verbose = False
 
         if len(self._obj_list) > 1:
             # Create a MAIN farcall file, calls all columns .pgm scripts
@@ -593,7 +595,7 @@ class TrenchWriter(Writer):
                 str(pathlib.Path(col.base_folder) / f'FARCALL{i + 1:03}.pgm') for i, col in enumerate(self._obj_list)
             ]
             fn = self._export_path / 'MAIN.pgm'
-            with PGMCompiler.from_dict(self._param, filename=fn, aerotech_angle=None, rotation_angle=None) as G:
+            with PGMCompiler.from_dict(self._param, filename=fn, aerotech_angle=None, rotation_angle=None, verbose=verbose) as G:
                 G.farcall_list(farcall_list)
 
         _tc_fab_time = self._fabtime
@@ -727,7 +729,7 @@ class TrenchWriter(Writer):
                 forced_deceleration=f_decel,
             )
 
-    def _farcall_trench_column(self, column: TrenchColumn, index: int) -> None:
+    def _farcall_trench_column(self, column: TrenchColumn, index: int, verbose:bool = False) -> None:
         """Trench Column FARCALL generator
 
         The function compiles a Trench Column by loading the wall and floor scripts, and then calling them with the
@@ -749,7 +751,7 @@ class TrenchWriter(Writer):
         logger.debug('Generate Trench columns FARCALL.pgm file.')
         column_param = dict(self._param.copy())
         column_param['filename'] = self._export_path / f'FARCALL{index + 1:03}.pgm'
-        with PGMCompiler.from_dict(column_param) as G:
+        with PGMCompiler.from_dict(column_param, verbose=verbose) as G:
             G.dvar(['ZCURR'])
 
             for nbox, (i_trc, trench) in list(itertools.product(range(column.nboxz), list(enumerate(column)))):
@@ -1029,7 +1031,7 @@ class UTrenchWriter(TrenchWriter):
                 forced_deceleration=f_decel,
             )
 
-    def _farcall_trench_column(self, column: UTrenchColumn, index: int) -> None:
+    def _farcall_trench_column(self, column: UTrenchColumn, index: int, verbose:bool=False) -> None:
         """Trench Column FARCALL generator
 
         The function compiles a Trench Column by loading the wall and floor scripts, and then calling them with the
@@ -1051,7 +1053,7 @@ class UTrenchWriter(TrenchWriter):
         logger.debug('Generate U-Trench columns FARCALL.pgm file.')
         column_param = dict(self._param.copy())
         column_param['filename'] = self._export_path / f'FARCALL{index + 1:03}.pgm'
-        with PGMCompiler.from_dict(column_param) as G:
+        with PGMCompiler.from_dict(column_param, verbose=verbose) as G:
             G.dvar(['ZCURR'])
 
             for nbox, (i_trc, trench) in list(itertools.product(range(column.nboxz), list(enumerate(column)))):
@@ -1500,7 +1502,7 @@ class WaveguideWriter(Writer):
         _wg_fab_time = 0.0
         fn = pathlib.Path(self.filename).stem + '_WG.pgm'
 
-        with PGMCompiler.from_dict(self._param, filename=fn) as G:
+        with PGMCompiler.from_dict(self._param, filename=fn, verbose=verbose) as G:
             for bunch in self.objs:
                 with G.repeat(listcast(bunch)[0].scan):
                     for wg in listcast(bunch):
@@ -1852,7 +1854,7 @@ class NasuWriter(Writer):
         _nwg_fab_time = 0.0
         fn = pathlib.Path(self.filename).stem + '_NASU.pgm'
 
-        with PGMCompiler.from_dict(self._param, filename=fn) as G:
+        with PGMCompiler.from_dict(self._param, filename=fn, verbose=verbose) as G:
             for nwg in self._obj_list:
                 for shift in nwg.adj_scan_order:
                     _nwg_fab_time += nwg.fabrication_time
@@ -2202,7 +2204,7 @@ class MarkerWriter(Writer):
         _mk_fab_time = 0.0
         fn = pathlib.Path(self.filename).stem + '_MK.pgm'
 
-        with PGMCompiler.from_dict(self._param, filename=fn) as G:
+        with PGMCompiler.from_dict(self._param, filename=fn, verbose=verbose) as G:
             for idx, mk in enumerate(flatten(self._obj_list)):
                 logger.debug(f'Export {mk}.')
                 with G.repeat(mk.scan):

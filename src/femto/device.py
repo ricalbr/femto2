@@ -59,7 +59,7 @@ class Device:
         }
 
         self._param: dict[str, Any] = dict(**param)
-        self._printed_angle_warning: bool = False
+        self._print_angle_warning: bool = True
         logger.info(f'Instantiate device {self._param["filename"].rsplit(".", 1)[0]}.')
 
     @classmethod
@@ -237,11 +237,12 @@ class Device:
 
         for key, writer in self.writers.items():
             if verbose and writer.objs:
-                logger.info(f'Exporting {key.__name__} objects...')
+                logger.info(f'Exporting G-Code of {key.__name__} objects...')
 
             # writer = cast(Union[WaveguideWriter, NasuWriter, TrenchWriter, UTrenchWriter, MarkerWriter], writer)
-            writer.pgm(verbose=self._printed_angle_warning)
-            self._printed_angle_warning = True
+            if writer.objs:
+                writer.pgm(verbose=self._print_angle_warning)
+                self._print_angle_warning = False
 
             self.fabrication_time += writer.fab_time
 
@@ -266,6 +267,7 @@ class Device:
         None
         """
 
+        logger.info('Exporting objects...')
         for key, writer in self.writers.items():
             if verbose and writer.objs:
                 logger.info(f'Exporting {key.__name__} objects...')
@@ -334,12 +336,11 @@ class Device:
             return None
 
         fn = pathlib.Path(filename)
-        logger.info(f'Saving plot to "{fn}".')
-
         if fn.suffix.lower() in ['.html', '']:
             self.fig.write_html(str(fn.with_suffix('.html')))
         else:
             self.fig.write_image(str(fn), **opt)
+        logger.info(f'Plot saved to "{fn}".')
 
     @staticmethod
     def load_objects(folder: str | pathlib.Path, param: dict[str, Any], verbose: bool = False) -> Device:
@@ -376,7 +377,7 @@ class Device:
 
         dev.append(objs)
         if verbose:
-            logger.info('Loading objects completed.\n')
+            logger.info('Objects loaded.\n')
         return dev
 
 

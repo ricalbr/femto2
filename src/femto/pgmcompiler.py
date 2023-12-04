@@ -948,8 +948,6 @@ class PGMCompiler:
             # merge and filter (G9) G1 Fxx.xx commands, commands with leading 0s are accepted e.g. G01.
             f.write(re.sub(r'(G(0?[19])?\s?)+(?=F)', '', ''.join(self._instructions)))
         self._instructions.clear()
-        if self.verbose:
-            logger.info('G-code compilation completed.')
         logger.debug('G-code compilation completed.')
 
     # Geometrical transformations
