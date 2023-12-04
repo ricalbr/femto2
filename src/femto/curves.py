@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Tuple
+
 import numpy as np
 import numpy.typing as npt
 import scipy.integrate as integrate
@@ -8,7 +10,7 @@ from scipy.interpolate import BPoly
 
 # Define array types
 nparray = npt.NDArray[np.float32]
-ptarray = tuple[npt.NDArray[np.float32], npt.NDArray[np.float32], npt.NDArray[np.float32]]
+ptarray = Tuple[nparray, nparray, nparray]
 
 
 def euler(radius: float, theta: float, dz: float, num_points: int, **kwargs) -> ptarray:
