@@ -568,6 +568,7 @@ class TrenchWriter(Writer):
             return None
 
         # Export each Trench for each TrenchColumn
+        vv = verbose
         for i_col, col in enumerate(self._obj_list):
             # Prepare PGM files export directory
             col_dir = self._export_path / f'trenchCol{i_col + 1:03}'
@@ -578,9 +579,8 @@ class TrenchWriter(Writer):
             self._export_trench_column(column=col, column_path=col_dir)
 
             # Create FARCALL.pgm file for all trenches in current column
-            self._farcall_trench_column(column=col, index=i_col, verbose=verbose)
-            if verbose is True:
-                verbose = False
+            self._farcall_trench_column(column=col, index=i_col, verbose=vv)
+            vv = False
 
         if len(self._obj_list) > 1:
             # Create a MAIN farcall file, calls all columns .pgm scripts
@@ -595,7 +595,9 @@ class TrenchWriter(Writer):
                 str(pathlib.Path(col.base_folder) / f'FARCALL{i + 1:03}.pgm') for i, col in enumerate(self._obj_list)
             ]
             fn = self._export_path / 'MAIN.pgm'
-            with PGMCompiler.from_dict(self._param, filename=fn, aerotech_angle=None, rotation_angle=None, verbose=verbose) as G:
+            with PGMCompiler.from_dict(
+                self._param, filename=fn, aerotech_angle=None, rotation_angle=None, verbose=verbose
+            ) as G:
                 G.farcall_list(farcall_list)
 
         _tc_fab_time = self._fabtime
@@ -729,7 +731,7 @@ class TrenchWriter(Writer):
                 forced_deceleration=f_decel,
             )
 
-    def _farcall_trench_column(self, column: TrenchColumn, index: int, verbose:bool = False) -> None:
+    def _farcall_trench_column(self, column: TrenchColumn, index: int, verbose: bool = False) -> None:
         """Trench Column FARCALL generator
 
         The function compiles a Trench Column by loading the wall and floor scripts, and then calling them with the
@@ -1031,7 +1033,7 @@ class UTrenchWriter(TrenchWriter):
                 forced_deceleration=f_decel,
             )
 
-    def _farcall_trench_column(self, column: UTrenchColumn, index: int, verbose:bool=False) -> None:
+    def _farcall_trench_column(self, column: UTrenchColumn, index: int, verbose: bool = False) -> None:
         """Trench Column FARCALL generator
 
         The function compiles a Trench Column by loading the wall and floor scripts, and then calling them with the
