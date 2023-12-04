@@ -50,8 +50,25 @@ def double_sin(dy1: float, dy2: float, radius: float, num_points: int = 100, **k
     return x, y, z
 
 
-def jack_curve() -> ptarray:
-    pass
+def jack_curve(
+        dx: float,
+        dy: float,
+        dz: float,
+        num_points: int,
+        **kwargs
+) -> ptarray:
+
+    dx1 = dx
+    dx2 = kwargs['dx2'] or dx1
+
+    k = np.pi/(2*dx1 + dx2)
+    C = np.sqrt(2/3)
+    A = dy/(np.cos(np.arcsin(C)) - np.cos(3*np.arcsin(C)))
+    x = np.linspace(0, dx, num_points)
+    y = A*(np.cos(k*x) - np.cos(3*k*x))
+    z = np.linspace(0, dz, x.size)
+    return x, y, z
+
 
 
 def spline(
