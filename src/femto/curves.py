@@ -8,7 +8,7 @@ from scipy.interpolate import BPoly
 
 # Define array types
 nparray = npt.NDArray[np.float32]
-ptarray = tuple[nparray, nparray, nparray]
+ptarray = tuple[npt.NDArray[np.float32], npt.NDArray[np.float32], npt.NDArray[np.float32]]
 
 
 def euler(radius: float, theta: float, dz: float, num_points: int, **kwargs) -> ptarray:
