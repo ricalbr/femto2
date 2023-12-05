@@ -578,9 +578,9 @@ def main() -> None:
     test.add_to_layer(2, wg)
 
     test.plot2d()
-    test.plot3d()
-    test.pgm()
-    test.xlsx()
+    # test.plot3d()
+    # test.pgm()
+    # test.xlsx()
 
     # Export
     # dev.plot2d()
