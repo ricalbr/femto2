@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from femto.curves import sin
-from femto.device import Device
+from femto.device import Layer
 from femto.marker import Marker
 from femto.trench import UTrenchColumn
 from femto.waveguide import Waveguide
@@ -53,7 +53,7 @@ PARAM_GC = dict(
 )
 
 # Create Device object that will contain waveguides, markers and trenches
-circ = Device(**PARAM_GC)
+circ = Layer(**PARAM_GC)
 
 # WAVEGUIDES
 # Collect all the waveguides in a list

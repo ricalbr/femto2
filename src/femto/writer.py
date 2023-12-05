@@ -517,7 +517,7 @@ class TrenchWriter(Writer):
         fig = go.Figure()
         logger.debug('Update figure.')
         fig = self._plot2d_trench(fig=fig, style=style)
-        fig = super().standard_2d_figure_update(fig)  # Add glass, shift_origin and axis elements
+        # fig = super().standard_2d_figure_update(fig)  # Add glass, shift_origin and axis elements
         return fig
 
     def plot3d(
@@ -537,7 +537,7 @@ class TrenchWriter(Writer):
         fig = go.Figure()
         logger.debug('Update figure.')
         fig = self._plot3d_trench(fig=fig, style=style)
-        fig = super().standard_2d_figure_update(fig)  # Add glass, shift_origin and axis elements
+        # fig = super().standard_2d_figure_update(fig)  # Add glass, shift_origin and axis elements
         return fig
 
     def pgm(self, verbose: bool = False) -> None:
@@ -1429,7 +1429,7 @@ class WaveguideWriter(Writer):
         fig = go.Figure()
         logger.debug('Update figure.')
         fig = self._plot2d_wg(fig=fig, show_shutter_close=show_shutter_close, style=style)
-        fig = super().standard_2d_figure_update(fig)  # Add glass, shift_origin and axis elements
+        # fig = super().standard_2d_figure_update(fig)  # Add glass, shift_origin and axis elements
         return fig
 
     def plot3d(
@@ -1466,7 +1466,7 @@ class WaveguideWriter(Writer):
         fig = go.Figure()
         logger.debug('Update figure.')
         fig = self._plot3d_wg(fig=fig, show_shutter_close=show_shutter_close, style=style)
-        fig = super().standard_3d_figure_update(fig)  # Add glass, shift_origin and axis elements
+        # fig = super().standard_3d_figure_update(fig)  # Add glass, shift_origin and axis elements
         return fig
 
     def pgm(self, verbose: bool = False) -> None:
@@ -1781,7 +1781,7 @@ class NasuWriter(Writer):
         fig = go.Figure()
         logger.debug('Update figure.')
         fig = self._plot2d_nwg(fig=fig, show_shutter_close=show_shutter_close, style=style)
-        fig = super().standard_2d_figure_update(fig)  # Add glass, shift_origin and axis elements
+        # fig = super().standard_2d_figure_update(fig)  # Add glass, shift_origin and axis elements
         return fig
 
     def plot3d(
@@ -1818,7 +1818,7 @@ class NasuWriter(Writer):
         fig = go.Figure()
         logger.debug('Update figure.')
         fig = self._plot3d_nwg(fig=fig, show_shutter_close=show_shutter_close, style=style)
-        fig = super().standard_3d_figure_update(fig)  # Add glass, shift_origin and axis elements
+        # fig = super().standard_3d_figure_update(fig)  # Add glass, shift_origin and axis elements
         return fig
 
     def pgm(self, verbose: bool = False) -> None:
@@ -2131,7 +2131,7 @@ class MarkerWriter(Writer):
         fig = go.Figure()
         logger.debug('Update figure.')
         fig = self._plot2d_mk(fig=fig, style=style)
-        fig = super().standard_2d_figure_update(fig)  # Add glass, shift_origin and axis elements
+        # fig = super().standard_2d_figure_update(fig)  # Add glass, shift_origin and axis elements
         return fig
 
     def plot3d(
@@ -2168,7 +2168,7 @@ class MarkerWriter(Writer):
         fig = go.Figure()
         logger.debug('Update figure.')
         fig = self._plot3d_mk(fig=fig, style=style)
-        fig = super().standard_3d_figure_update(fig)  # Add glass, shift_origin and axis elements
+        # fig = super().standard_3d_figure_update(fig)  # Add glass, shift_origin and axis elements
         return fig
 
     def pgm(self, verbose: bool = False) -> None:
