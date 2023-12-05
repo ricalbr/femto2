@@ -27,6 +27,11 @@ from femto.writer import TrenchWriter
 from femto.writer import UTrenchWriter
 from femto.writer import WaveguideWriter
 
+import dash
+
+app = dash.Dash(__name__)
+port = 5000
+
 # List of femto objects
 types = dict(
     WG=Waveguide,
@@ -184,7 +189,19 @@ class Device:
             self.fig = writer.standard_2d_figure_update(self.fig)
         if show:
             logger.debug('Show 2D plot.')
-            self.fig.show()
+            # self.fig.show()
+            app.layout = dash.html.Div(
+                [
+                    dash.dcc.Graph(
+                        figure=self.fig,
+                        responsive=True,
+                        style={'width': '100vw', 'height': '90vh'},
+                    )
+                ]
+            )
+            app.run(debug=True, port=port)
+            logger.info(f'Plot is running on http://127.0.0.1:{port}/')
+
         if save:
             self.save()
 
