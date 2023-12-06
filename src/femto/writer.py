@@ -1542,7 +1542,7 @@ class WaveguideWriter(Writer):
         """
 
         if style is None:
-            style = dict()
+            style = {}
         default_wgargs = {'dash': 'solid', 'color': '#0000FF', 'width': 1.75}
         wg_args = {**default_wgargs, **style}
         sc_args = {'dash': 'dot', 'color': '#0000FF', 'width': 0.5}
