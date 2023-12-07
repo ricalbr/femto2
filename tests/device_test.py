@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 from femto.curves import sin
-from femto.device import Layer
+from femto.device import Cell
 from femto.helpers import dotdict
 from femto.helpers import flatten
 from femto.marker import Marker
@@ -82,8 +82,8 @@ def list_tcol(list_wg) -> list[TrenchColumn]:
 
 
 @pytest.fixture
-def device(gc_param) -> Layer:
-    return Layer(**gc_param)
+def device(gc_param) -> Cell:
+    return Cell(**gc_param)
 
 
 def test_device_init(device, gc_param) -> None:
@@ -96,7 +96,7 @@ def test_device_init(device, gc_param) -> None:
 
 
 def test_device_from_dict(device, gc_param) -> None:
-    dev = Layer.from_dict(gc_param)
+    dev = Cell.from_dict(gc_param)
     assert dev.unparsed_objects == device.unparsed_objects
     assert dev._param == device._param
     assert dev.fig is device.fig
@@ -120,7 +120,7 @@ def test_device_parse_objects_raise(device, inp, expectation) -> None:
 
 
 def test_device_append(gc_param, list_wg, list_mk, list_tcol) -> None:
-    device = Layer(**gc_param)
+    device = Cell(**gc_param)
     for wg in list_wg:
         device.append(wg)
 
@@ -129,7 +129,7 @@ def test_device_append(gc_param, list_wg, list_mk, list_tcol) -> None:
     assert device.writers[Marker]._obj_list == []
     del device
 
-    device = Layer(**gc_param)
+    device = Cell(**gc_param)
     for wg in list_wg:
         device.append(wg)
 
@@ -152,7 +152,7 @@ def test_device_append(gc_param, list_wg, list_mk, list_tcol) -> None:
     assert device.writers[Marker]._obj_list == list_mk
     del device
 
-    device = Layer(**gc_param)
+    device = Cell(**gc_param)
     for wg in list_wg:
         device.append(wg)
     for mk in list_mk:
@@ -165,7 +165,7 @@ def test_device_append(gc_param, list_wg, list_mk, list_tcol) -> None:
     assert device.writers[Marker]._obj_list == list_mk
     del device
 
-    device = Layer(**gc_param)
+    device = Cell(**gc_param)
     for wg in list_wg:
         device.append(wg)
     for mk in list_mk:
@@ -183,7 +183,7 @@ def test_device_append(gc_param, list_wg, list_mk, list_tcol) -> None:
 
 
 def test_device_extend(gc_param, list_wg, list_mk, list_tcol) -> None:
-    device = Layer(**gc_param)
+    device = Cell(**gc_param)
     device.extend(list_wg)
 
     assert device.writers[Waveguide]._obj_list == list_wg
@@ -191,7 +191,7 @@ def test_device_extend(gc_param, list_wg, list_mk, list_tcol) -> None:
     assert device.writers[Marker]._obj_list == []
     del device
 
-    device = Layer(**gc_param)
+    device = Cell(**gc_param)
     device.extend(list_wg)
 
     assert device.writers[Waveguide]._obj_list == list_wg
@@ -211,7 +211,7 @@ def test_device_extend(gc_param, list_wg, list_mk, list_tcol) -> None:
     assert device.writers[Marker]._obj_list == list_mk
     del device
 
-    device = Layer(**gc_param)
+    device = Cell(**gc_param)
     device.extend(list_tcol)
     device.extend(list_wg)
     device.extend(list_mk)
@@ -221,7 +221,7 @@ def test_device_extend(gc_param, list_wg, list_mk, list_tcol) -> None:
     assert device.writers[Marker]._obj_list == list_mk
     del device
 
-    device = Layer(**gc_param)
+    device = Cell(**gc_param)
     device.extend(list_tcol)
     device.extend(list_wg)
     device.extend(list_mk)
@@ -235,7 +235,7 @@ def test_device_extend(gc_param, list_wg, list_mk, list_tcol) -> None:
     assert device.writers[Marker]._obj_list == list_mk * 3
     del device
 
-    device = Layer(**gc_param)
+    device = Cell(**gc_param)
     device.extend([])
 
     assert device.writers[Waveguide]._obj_list == []
@@ -400,7 +400,7 @@ def test_device_load_verbose(device, list_wg, list_mk, gc_param) -> None:
 
     fn = Path().cwd() / 'EXPORT' / 'testCell'
 
-    d2 = Layer.load_objects(fn, gc_param, verbose=True)
+    d2 = Cell.load_objects(fn, gc_param, verbose=True)
     assert d2.writers[Waveguide].objs
     assert not d2.writers[TrenchColumn].objs
     assert d2.writers[Marker].objs
@@ -418,7 +418,7 @@ def test_device_load_verbose(device, list_wg, list_mk, gc_param) -> None:
 
 def test_device_load_empty(list_wg, list_mk, list_tcol, gc_param) -> None:
 
-    device = Layer(**gc_param)
+    device = Cell(**gc_param)
     device.extend(list_tcol)
     device.extend(list_wg)
     device.extend(list_mk)
@@ -427,7 +427,7 @@ def test_device_load_empty(list_wg, list_mk, list_tcol, gc_param) -> None:
 
     fn = Path().cwd() / 'EXPORT' / 'testCell'
 
-    d2 = Layer.load_objects(fn, gc_param, verbose=True)
+    d2 = Cell.load_objects(fn, gc_param, verbose=True)
     assert d2.writers[Waveguide].objs
     assert d2.writers[TrenchColumn].objs
     assert d2.writers[Marker].objs
