@@ -200,13 +200,13 @@ class Spreadsheet:
 
         """
 
-        if not all([isinstance(obj, (Waveguide, NasuWaveguide, Marker)) for obj in obj_list]):
+        if not all([isinstance(obj, (Waveguide, NasuWaveguide)) for obj in obj_list]):
             logger.error(
-                'Objects for Spreasheet files must be of type Waveguide, NasuWaveguide or Marker.'
+                'Objects for Spreasheet files must be of type Waveguide or NasuWaveguide.'
                 f'Given {[type(obj) for obj in obj_list]}.'
             )
             raise ValueError(
-                'Objects for Spreasheet files must be of type Waveguide, NasuWaveguide or Marker.'
+                'Objects for Spreasheet files must be of type Waveguide, NasuWaveguide.'
                 f'Given {[type(obj) for obj in obj_list]}.'
             )
         cols_info, numerical_data = self._extract_data(obj_list)
@@ -400,7 +400,7 @@ class Spreadsheet:
                 continue
 
             # Ignore redundant columns (same value on all the rows) if explicitly requested
-            if not self.redundant_cols and np.all(table_lines[t] == table_lines[t][0]):
+            if not self.redundant_cols and np.all(table_lines[t] == table_lines[t][0]) and table_lines.shape[0] != 1:
                 ignored_fields.append(t)
             # Ignore columns with all the values greater than 1e5
             elif np.all(table_lines[t] >= 1e5):
