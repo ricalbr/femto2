@@ -413,7 +413,7 @@ def lookahead(iterable):
 
 
 # TODO: test
-def walklevel(path, depth=1):
+def walklevel(path: str | pathlib.Path, depth: int = 1):
     """Walklevel
 
     It works just like os.walk, but you can pass it a level parameter that indicates how deep the recursion will go.
@@ -429,7 +429,7 @@ def walklevel(path, depth=1):
         return
     elif depth == 0:
         return
-    base_depth = path.rstrip(os.path.sep).count(os.path.sep)
+    base_depth = str(path).rstrip(os.path.sep).count(os.path.sep)
     for root, dirs, files in os.walk(path):
         yield root, dirs[:], files
         cur_depth = root.count(os.path.sep)
