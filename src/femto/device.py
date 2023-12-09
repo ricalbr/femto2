@@ -188,7 +188,7 @@ class Device:
         if cell.name.lower() in self.cells:
             logger.error(f'Cell ID "{cell.name}" already present in layer  dict, give another value.')
             raise ValueError(f'Cell ID "{cell.name}" already present in layer  dict, give another value.')
-        self.cells[cell.name.lower()] = cell
+        self.cells[cell.name] = cell
 
     def add_to_cell(self, key: str, obj: femtobj | list[femtobj]) -> None:
         """Adds a femto object to a the cell.
@@ -205,7 +205,7 @@ class Device:
         None
         """
         key = key.lower()
-        if key not in self.cells:
+        if key not in self.cells.keys():
             self.cells[key] = Cell(name=key)
         self.cells[key].add(obj)
 
