@@ -66,6 +66,7 @@ class Cell:
             Waveguide: [],
             NasuWaveguide: [],
         }
+        self.name = self.name.lower()
         if self.name != self.name.split(' '):
             self.name = self.name.replace(' ', '-')
         logger.info(f'Cell {self.name.replace("-", " ").upper()}.')
@@ -133,8 +134,35 @@ class Device:
 
         self._param: dict[str, Any] = copy.deepcopy(param)
         self._print_angle_warning: bool = True
-        self._print_base_cell_warning = True
+        self._print_base_cell_warning: bool = True
         logger.info(f'Instantiate device {self._param["filename"].rsplit(".", 1)[0].upper()}.')
+
+    @classmethod
+    def from_dict(cls, param: dict[str, Any], **kwargs):
+        """Create an instance of the class from a dictionary.
+
+        It takes a class and a dictionary, and returns an instance of the class with the dictionary's keys as the
+        instance's attributes.
+
+        Parameters
+        ----------
+        param: dict()
+           Dictionary mapping values to class attributes.
+        kwargs: optional
+           Series of keyword arguments that will be used to update the param file before the instantiation of the
+           class.
+
+        Returns
+        -------
+        Instance of class
+        """
+        # Update parameters with kwargs
+        p = copy.deepcopy(param)
+        if kwargs:
+            p.update(kwargs)
+
+        logger.debug(f'Create {cls.__name__} object from dictionary.')
+        return cls(**p)
 
     def add(self, objs: Cell | list[Cell] | femtobj | list[femtobj]) -> None:
         objs = flatten([objs])
