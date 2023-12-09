@@ -8,11 +8,14 @@ from pathlib import Path
 import pytest
 from femto.curves import sin
 from femto.device import Cell
+from femto.device import Device
 from femto.helpers import dotdict
 from femto.helpers import flatten
 from femto.marker import Marker
 from femto.trench import Trench
 from femto.trench import TrenchColumn
+from femto.trench import UTrenchColumn
+from femto.waveguide import NasuWaveguide
 from femto.waveguide import Waveguide
 from shapely.geometry import Polygon
 
@@ -82,27 +85,82 @@ def list_tcol(list_wg) -> list[TrenchColumn]:
 
 
 @pytest.fixture
-def device(gc_param) -> Cell:
-    return Cell(**gc_param)
+def device(gc_param) -> Device:
+    return Device(**gc_param)
 
 
-def test_device_init(device, gc_param) -> None:
-    assert device.unparsed_objects == []
-    assert device._param == gc_param
-    assert device.fig is None
-    assert device.writers
-    for wr in device.writers.values():
-        assert wr.objs == []
+@pytest.fixture
+def cell() -> Cell:
+    return Cell()
 
 
-def test_device_from_dict(device, gc_param) -> None:
-    dev = Cell.from_dict(gc_param)
-    assert dev.unparsed_objects == device.unparsed_objects
-    assert dev._param == device._param
-    assert dev.fig is device.fig
-    assert dev.writers
-    for (wr, wr_exp) in zip(dev.writers.values(), device.writers.values()):
-        assert wr.objs == wr_exp.objs
+# Cell
+def test_cell_init(cell) -> None:
+    assert cell.name == 'base'
+    assert cell.description is None
+    assert type(cell._objs) == dict
+    assert cell._objs == {
+        TrenchColumn: [],
+        UTrenchColumn: [],
+        Marker: [],
+        Waveguide: [],
+        NasuWaveguide: [],
+    }
+
+
+@pytest.mark.parametrize(
+    'name, exp',
+    [
+        ('base', 'base'),
+        ('base test', 'base-test'),
+        ('TEST-TEST', 'test-test'),
+        ('test_test', 'test_test'),
+        ('A B C', 'a-b-c'),
+        ('ab C', 'ab-c'),
+    ],
+)
+def test_cell_rename(name, exp) -> None:
+    cell = Cell(name=name)
+    assert cell.name == exp
+
+
+@pytest.mark.parametrize(
+    'name, exp',
+    [
+        ('base', 'base'),
+        ('base test', 'base-test'),
+        ('TEST-TEST', 'test-test'),
+        ('test_test', 'test_test'),
+        ('A B C', 'a-b-c'),
+        ('ab C', 'ab-c'),
+    ],
+)
+def test_cell_repr(name, exp) -> None:
+    cell = Cell(name=name)
+    assert cell.__repr__() == f'Cell {exp}'
+
+
+def test_cell_objects_empty(cell) -> None:
+    assert type(cell.objects) == dict
+    assert cell.objects == {
+        TrenchColumn: [],
+        UTrenchColumn: [],
+        Marker: [],
+        Waveguide: [],
+        NasuWaveguide: [],
+    }
+
+
+def test_cell_objects(cell, list_wg, list_mk) -> None:
+    cell.add(list_wg)
+    cell.add(list_mk)
+    cell.add([list_wg, list_mk])
+    obj = cell.objects
+    assert obj[UTrenchColumn] == []
+    assert obj[TrenchColumn] == []
+    assert obj[NasuWaveguide] == []
+    assert obj[Waveguide] == flatten([list_wg, list_wg])
+    assert obj[Marker] == flatten([list_mk, list_mk])
 
 
 @pytest.mark.parametrize(
@@ -114,158 +172,93 @@ def test_device_from_dict(device, gc_param) -> None:
         ([], does_not_raise()),
     ],
 )
-def test_device_parse_objects_raise(device, inp, expectation) -> None:
+def test_cell_parse_objects_raise(cell, inp, expectation) -> None:
     with expectation:
-        device.extend(inp)
+        cell.add(inp)
 
 
-def test_device_append(gc_param, list_wg, list_mk, list_tcol) -> None:
-    device = Cell(**gc_param)
-    for wg in list_wg:
-        device.append(wg)
+def test_cell_add(list_wg, list_mk, list_tcol) -> None:
+    cell = Cell()
+    cell.add(list_wg)
+    assert cell.objects[Waveguide] == list_wg
+    assert cell.objects[TrenchColumn] == []
+    assert cell.objects[Marker] == []
+    assert cell.objects[UTrenchColumn] == []
+    assert cell.objects[TrenchColumn] == []
+    assert cell.objects[NasuWaveguide] == []
+    del cell
 
-    assert device.writers[Waveguide]._obj_list == list_wg
-    assert device.writers[TrenchColumn]._obj_list == []
-    assert device.writers[Marker]._obj_list == []
-    del device
+    cell = Cell()
+    cell.add(list_wg)
+    assert cell.objects[Waveguide] == list_wg
+    assert cell.objects[TrenchColumn] == []
+    assert cell.objects[Marker] == []
+    assert cell.objects[UTrenchColumn] == []
+    assert cell.objects[NasuWaveguide] == []
 
-    device = Cell(**gc_param)
-    for wg in list_wg:
-        device.append(wg)
+    cell.add(list_mk)
+    assert cell.objects[Waveguide] == list_wg
+    assert cell.objects[TrenchColumn] == []
+    assert cell.objects[Marker] == list_mk
+    assert cell.objects[UTrenchColumn] == []
+    assert cell.objects[NasuWaveguide] == []
 
-    assert device.writers[Waveguide]._obj_list == list_wg
-    assert device.writers[TrenchColumn]._obj_list == []
-    assert device.writers[Marker]._obj_list == []
+    cell.add(list_tcol)
+    assert cell.objects[Waveguide] == list_wg
+    assert cell.objects[TrenchColumn] == list_tcol
+    assert cell.objects[Marker] == list_mk
+    assert cell.objects[UTrenchColumn] == []
+    assert cell.objects[NasuWaveguide] == []
+    del cell
 
-    for mk in list_mk:
-        device.append(mk)
+    cell = Cell()
+    cell.add(list_wg)
+    cell.add(list_mk)
+    cell.add(list_tcol)
+    assert cell.objects[Waveguide] == list_wg
+    assert cell.objects[TrenchColumn] == list_tcol
+    assert cell.objects[Marker] == list_mk
+    assert cell.objects[UTrenchColumn] == []
+    assert cell.objects[NasuWaveguide] == []
+    del cell
 
-    assert device.writers[Waveguide]._obj_list == list_wg
-    assert device.writers[TrenchColumn]._obj_list == []
-    assert device.writers[Marker]._obj_list == list_mk
-
-    for tc in list_tcol:
-        device.append(tc)
-
-    assert device.writers[Waveguide]._obj_list == list_wg
-    assert device.writers[TrenchColumn]._obj_list == list_tcol
-    assert device.writers[Marker]._obj_list == list_mk
-    del device
-
-    device = Cell(**gc_param)
-    for wg in list_wg:
-        device.append(wg)
-    for mk in list_mk:
-        device.append(mk)
-    for tc in list_tcol:
-        device.append(tc)
-
-    assert device.writers[Waveguide]._obj_list == list_wg
-    assert device.writers[TrenchColumn]._obj_list == list_tcol
-    assert device.writers[Marker]._obj_list == list_mk
-    del device
-
-    device = Cell(**gc_param)
-    for wg in list_wg:
-        device.append(wg)
-    for mk in list_mk:
-        device.append(mk)
-    for tc in list_tcol:
-        device.append(tc)
-
-    for tc in list_tcol:
-        device.append(tc)
-
-    assert device.writers[Waveguide]._obj_list == list_wg
-    assert device.writers[TrenchColumn]._obj_list == list_tcol * 2
-    assert device.writers[Marker]._obj_list == list_mk
-    del device
+    cell = Cell()
+    cell.add(list_wg)
+    cell.add(list_mk)
+    cell.add(list_wg)
+    cell.add(list_tcol)
+    cell.add(list_tcol)
+    cell.add(list_wg)
+    assert cell.objects[Waveguide] == list_wg * 3
+    assert cell.objects[TrenchColumn] == list_tcol * 2
+    assert cell.objects[Marker] == list_mk
+    assert cell.objects[UTrenchColumn] == []
+    assert cell.objects[NasuWaveguide] == []
+    del cell
 
 
-def test_device_extend(gc_param, list_wg, list_mk, list_tcol) -> None:
-    device = Cell(**gc_param)
-    device.extend(list_wg)
+# Device
+def test_device_init(device, gc_param) -> None:
+    assert device.cells == {}
+    assert device.fig is None
+    assert device.fabrication_time == 0.0
 
-    assert device.writers[Waveguide]._obj_list == list_wg
-    assert device.writers[TrenchColumn]._obj_list == []
-    assert device.writers[Marker]._obj_list == []
-    del device
-
-    device = Cell(**gc_param)
-    device.extend(list_wg)
-
-    assert device.writers[Waveguide]._obj_list == list_wg
-    assert device.writers[TrenchColumn]._obj_list == []
-    assert device.writers[Marker]._obj_list == []
-
-    device.extend(list_mk)
-
-    assert device.writers[Waveguide]._obj_list == list_wg
-    assert device.writers[TrenchColumn]._obj_list == []
-    assert device.writers[Marker]._obj_list == list_mk
-
-    device.extend(list_tcol)
-
-    assert device.writers[Waveguide]._obj_list == list_wg
-    assert device.writers[TrenchColumn]._obj_list == list_tcol
-    assert device.writers[Marker]._obj_list == list_mk
-    del device
-
-    device = Cell(**gc_param)
-    device.extend(list_tcol)
-    device.extend(list_wg)
-    device.extend(list_mk)
-
-    assert device.writers[Waveguide]._obj_list == list_wg
-    assert device.writers[TrenchColumn]._obj_list == list_tcol
-    assert device.writers[Marker]._obj_list == list_mk
-    del device
-
-    device = Cell(**gc_param)
-    device.extend(list_tcol)
-    device.extend(list_wg)
-    device.extend(list_mk)
-    device.extend(list_wg)
-    device.extend(list_mk)
-    device.extend(list_wg)
-    device.extend(list_mk)
-
-    assert device.writers[Waveguide]._obj_list == list_wg * 3
-    assert device.writers[TrenchColumn]._obj_list == list_tcol
-    assert device.writers[Marker]._obj_list == list_mk * 3
-    del device
-
-    device = Cell(**gc_param)
-    device.extend([])
-
-    assert device.writers[Waveguide]._obj_list == []
-    assert device.writers[TrenchColumn]._obj_list == []
-    assert device.writers[Marker]._obj_list == []
-    del device
+    assert device._param == gc_param
+    assert device._print_angle_warning is True
+    assert device._print_base_cell_warning is True
 
 
-@pytest.mark.parametrize(
-    'inp, expectation',
-    [
-        ([Waveguide(), Waveguide()], does_not_raise()),
-        ([Marker(), [Waveguide(), Waveguide()]], does_not_raise()),
-        (
-            [[[Waveguide(), Waveguide()], Waveguide()], Waveguide()],
-            pytest.raises(TypeError),
-        ),
-        ([], does_not_raise()),
-        (Waveguide(), pytest.raises(TypeError)),
-    ],
-)
-def test_device_extend_raise(device, inp, expectation) -> None:
-    with expectation:
-        device.extend(inp)
+def test_device_from_dict(device, gc_param) -> None:
+    dev = Device.from_dict(gc_param)
+    assert dev.cells == device.cells
+    assert dev._param == device._param
+    assert dev._param == gc_param
+    assert dev.fig is device.fig
+    assert dev.fabrication_time == dev.fabrication_time
 
 
 def test_plot2d_save(device, list_wg, list_mk, list_tcol) -> None:
-    device.extend(list_wg)
-    device.extend(list_mk)
-    device.extend(list_tcol)
+    device.add([list_wg, list_mk, list_tcol])
 
     device.plot2d(save=False)
     assert not (Path('.').cwd() / 'scheme.html').is_file()
@@ -273,9 +266,7 @@ def test_plot2d_save(device, list_wg, list_mk, list_tcol) -> None:
 
 
 def test_plot2d_save_true(device, list_wg, list_mk, list_tcol) -> None:
-    device.extend(list_wg)
-    device.extend(list_mk)
-    device.extend(list_tcol)
+    device.add([list_wg, list_mk, list_tcol])
 
     device.plot2d(show=False, save=True)
     assert (Path('.').cwd() / 'scheme.html').is_file()
@@ -284,9 +275,7 @@ def test_plot2d_save_true(device, list_wg, list_mk, list_tcol) -> None:
 
 
 def test_plot3d_save(device, list_wg, list_mk, list_tcol) -> None:
-    device.extend(list_wg)
-    device.extend(list_mk)
-    device.extend(list_tcol)
+    device.add([list_wg, list_mk, list_tcol])
 
     device.plot3d(save=False)
     assert not (Path('.').cwd() / 'scheme.html').is_file()
@@ -294,9 +283,7 @@ def test_plot3d_save(device, list_wg, list_mk, list_tcol) -> None:
 
 
 def test_plot3d_save_true(device, list_wg, list_mk, list_tcol) -> None:
-    device.extend(list_wg)
-    device.extend(list_mk)
-    device.extend(list_tcol)
+    device.add([list_wg, list_mk, list_tcol])
 
     device.plot3d(show=False, save=True)
     assert (Path('.').cwd() / 'scheme.html').is_file()
@@ -305,9 +292,7 @@ def test_plot3d_save_true(device, list_wg, list_mk, list_tcol) -> None:
 
 
 def test_device_pgm(device, list_wg, list_mk) -> None:
-
-    device.extend(list_wg)
-    device.extend(list_mk)
+    device.add([list_wg, list_mk])
     device.pgm()
     assert (Path().cwd() / 'testCell_WG.pgm').is_file()
     assert (Path().cwd() / 'testCell_MK.pgm').is_file()
@@ -317,8 +302,7 @@ def test_device_pgm(device, list_wg, list_mk) -> None:
 
 def test_device_pgm_verbose(device, list_wg, list_mk) -> None:
 
-    device.extend(list_wg)
-    device.extend(list_mk)
+    device.add([list_wg, list_mk])
     device.pgm(verbose=True)
     assert (Path().cwd() / 'testCell_WG.pgm').is_file()
     assert (Path().cwd() / 'testCell_MK.pgm').is_file()
@@ -327,8 +311,7 @@ def test_device_pgm_verbose(device, list_wg, list_mk) -> None:
 
 
 def test_device_xlsx(device, list_wg, list_mk, ss_param) -> None:
-    device.extend(list_wg)
-    device.extend(list_mk)
+    device.add([list_wg, list_mk])
     device.xlsx(**ss_param)
     assert (Path().cwd() / 'custom_book_name.xlsx').is_file()
     (Path().cwd() / 'custom_book_name.xlsx').unlink()
@@ -360,50 +343,49 @@ def test_device_save(device, fn, expected) -> None:
 
 
 def test_device_export(device, list_wg, list_mk) -> None:
-    device.extend(list_wg)
-    device.extend(list_mk)
+    device.add([list_wg, list_mk])
     device.export()
     for i, _ in enumerate(list_wg):
-        fn = Path().cwd() / 'EXPORT' / 'testCell' / f'WG_{i + 1:02}.pkl'
+        fn = Path().cwd() / 'EXPORT' / 'base' / f'WG_{i + 1:02}.pkl'
         assert fn.is_file()
         fn.unlink()
     for i, _ in enumerate(list_mk):
-        fn = Path().cwd() / 'EXPORT' / 'testCell' / f'MK_{i + 1:02}.pkl'
+        fn = Path().cwd() / 'EXPORT' / 'base' / f'MK_{i + 1:02}.pkl'
         assert fn.is_file()
         fn.unlink()
 
-    (Path().cwd() / 'EXPORT' / 'testCell').rmdir()
+    (Path().cwd() / 'EXPORT' / 'base').rmdir()
     (Path().cwd() / 'EXPORT').rmdir()
 
 
 def test_device_export_verbose(device, list_wg, list_mk) -> None:
-    device.extend(list_wg)
-    device.extend(list_mk)
-    device.export(verbose=True)
+    device.add([list_wg, list_mk])
+    device.export()
     for i, _ in enumerate(list_wg):
-        fn = Path().cwd() / 'EXPORT' / 'testCell' / f'WG_{i + 1:02}.pkl'
+        fn = Path().cwd() / 'EXPORT' / 'base' / f'WG_{i + 1:02}.pkl'
         assert fn.is_file()
         fn.unlink()
     for i, _ in enumerate(list_mk):
-        fn = Path().cwd() / 'EXPORT' / 'testCell' / f'MK_{i + 1:02}.pkl'
+        fn = Path().cwd() / 'EXPORT' / 'base' / f'MK_{i + 1:02}.pkl'
         assert fn.is_file()
         fn.unlink()
 
-    (Path().cwd() / 'EXPORT' / 'testCell').rmdir()
+    (Path().cwd() / 'EXPORT' / 'base').rmdir()
     (Path().cwd() / 'EXPORT').rmdir()
 
 
 def test_device_load_verbose(device, list_wg, list_mk, gc_param) -> None:
-    device.extend(list_wg)
-    device.extend(list_mk)
-    device.export(verbose=True)
+    device.add([list_wg, list_mk])
+    device.export()
 
-    fn = Path().cwd() / 'EXPORT' / 'testCell'
+    fn = Path().cwd() / 'EXPORT' / 'base'
 
-    d2 = Cell.load_objects(fn, gc_param, verbose=True)
-    assert d2.writers[Waveguide].objs
-    assert not d2.writers[TrenchColumn].objs
-    assert d2.writers[Marker].objs
+    d2 = Device.load_objects(fn, gc_param, verbose=True)
+    assert d2.cells['base'].objects[Waveguide]
+    assert d2.cells['base'].objects[Marker]
+    assert not d2.cells['base'].objects[TrenchColumn]
+    assert not d2.cells['base'].objects[UTrenchColumn]
+    assert not d2.cells['base'].objects[NasuWaveguide]
 
     objs = []
     objs.extend(list_wg)
@@ -412,25 +394,25 @@ def test_device_load_verbose(device, list_wg, list_mk, gc_param) -> None:
         for file in files:
             (pathlib.Path(root) / file).unlink()
 
-    (Path().cwd() / 'EXPORT' / 'testCell').rmdir()
+    (Path().cwd() / 'EXPORT' / 'base').rmdir()
     (Path().cwd() / 'EXPORT').rmdir()
 
 
 def test_device_load_empty(list_wg, list_mk, list_tcol, gc_param) -> None:
 
-    device = Cell(**gc_param)
-    device.extend(list_tcol)
-    device.extend(list_wg)
-    device.extend(list_mk)
-    device.export(verbose=True)
+    device = Device(**gc_param)
+    device.add([list_tcol, list_wg, list_mk])
+    device.export()
     del device
 
-    fn = Path().cwd() / 'EXPORT' / 'testCell'
+    fn = Path().cwd() / 'EXPORT' / 'base'
 
-    d2 = Cell.load_objects(fn, gc_param, verbose=True)
-    assert d2.writers[Waveguide].objs
-    assert d2.writers[TrenchColumn].objs
-    assert d2.writers[Marker].objs
+    d2 = Device.load_objects(fn, gc_param, verbose=True)
+    assert d2.cells['base'].objects[Waveguide]
+    assert d2.cells['base'].objects[Marker]
+    assert d2.cells['base'].objects[TrenchColumn]
+    assert not d2.cells['base'].objects[UTrenchColumn]
+    assert not d2.cells['base'].objects[NasuWaveguide]
     # assert d2.writers[Waveguide].objs == list_wg
     # assert d2.writers[TrenchColumn].objs == list_tcol
     # assert d2.writers[Marker].objs == list_mk
@@ -439,5 +421,5 @@ def test_device_load_empty(list_wg, list_mk, list_tcol, gc_param) -> None:
         for file in files:
             (pathlib.Path(root) / file).unlink()
 
-    (Path().cwd() / 'EXPORT' / 'testCell').rmdir()
+    (Path().cwd() / 'EXPORT' / 'base').rmdir()
     (Path().cwd() / 'EXPORT').rmdir()
