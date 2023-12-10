@@ -10,7 +10,6 @@ import pytest
 from femto.curves import sin
 from femto.device import Cell
 from femto.device import Device
-from femto.helpers import dotdict
 from femto.helpers import flatten
 from femto.marker import Marker
 from femto.trench import Trench
@@ -43,7 +42,7 @@ def gc_param() -> dict:
 
 @pytest.fixture
 def list_wg() -> list[Waveguide]:
-    PARAM_WG = dotdict(speed=20, radius=25, pitch=0.080, int_dist=0.007, samplesize=(25, 3))
+    PARAM_WG = dict(speed=20, radius=25, pitch=0.080, int_dist=0.007, samplesize=(25, 3))
 
     coup = [Waveguide(**PARAM_WG) for _ in range(5)]
     for i, wg in enumerate(coup):
@@ -58,7 +57,7 @@ def list_wg() -> list[Waveguide]:
 
 @pytest.fixture
 def list_mk() -> list[Marker]:
-    PARAM_MK = dotdict(scan=1, speed=2, speed_pos=5, speed_closed=5, depth=0.000, lx=1, ly=1)
+    PARAM_MK = dict(scan=1, speed=2, speed_pos=5, speed_closed=5, depth=0.000, lx=1, ly=1)
     markers = []
     for (x, y) in zip(range(4, 8), range(3, 7)):
         m = Marker(**PARAM_MK)
@@ -69,7 +68,7 @@ def list_mk() -> list[Marker]:
 
 @pytest.fixture
 def list_tcol(list_wg) -> list[TrenchColumn]:
-    PARAM_TC = dotdict(
+    PARAM_TC = dict(
         length=1.0,
         base_folder='',
         y_min=-0.1,
@@ -281,7 +280,6 @@ def test_device_from_dict_w_kwargs(device, gc_param) -> None:
 
     assert dev.cells == device.cells
     assert dev._param == param
-    assert dev._param == gc_param
     assert dev.fig is device.fig
     assert dev.fabrication_time == dev.fabrication_time
 

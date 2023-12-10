@@ -544,11 +544,10 @@ def test_trenchcol_dig_remove_all() -> None:
 
 
 def test_dig_from_waveguide(tc):
-    from femto.helpers import dotdict
     from femto.waveguide import Waveguide
 
     wgs = []
-    PARAM_WG = dotdict(speed=20, radius=25, pitch=0.080, int_dist=0.007)
+    PARAM_WG = dict(speed=20, radius=25, pitch=0.080, int_dist=0.007)
     wg = Waveguide(**PARAM_WG)
     wg.start([0, 1.25, 0]).linear([9, 1.75, 0], mode='ABS').end()
     wgs.append(wg)

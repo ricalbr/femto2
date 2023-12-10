@@ -4,9 +4,7 @@ import functools
 import itertools
 import os
 import pathlib
-import warnings
 from typing import Any
-from typing import Dict
 from typing import Iterable
 from typing import Iterator
 
@@ -16,16 +14,25 @@ from shapely import geometry
 
 
 def grouped(iterable: Iterable[Any], n: int) -> Iterable[Any]:
-    """
-    Gruoup an iterable in sub-groups of n elements.
+    """Group an iterable in sub-groups of n elements.
+
     The returned iterable have `len(iterable)//n` tuples containing n elements. If the number of elements of the input
     iterable are not a multiple of n, the remaining elements will not be returned.
 
     ``s -> (s0,s1,s2,...sn-1), (sn,sn+1,sn+2,...s2n-1), (s2n,s2n+1,s2n+2,...s3n-1), ...``
 
-    :param iterable: iterable to group
-    :param n: size of the sub-groups
-    :return: grouped iterable
+    Parameters
+    ----------
+    iterable: iterable
+        Iterable to group in subset.
+
+    n: int
+        Size of the sub-groups.
+
+    Returns
+    -------
+    iterable
+        Grouped iterable in n-sized subsets.
     """
     return zip(*[iter(iterable)] * n)
 
@@ -35,15 +42,24 @@ pairwise = functools.partial(grouped, n=2)
 
 
 def swap(
-    array: list[Any],
+    array: list[Any] | npt.NDArray[Any],
     swap_pos: list[tuple[int, int]],
 ) -> list[Any]:
-    """
-    Swaps elements
+    """Swaps elements.
 
-    :param array:
-    :param swap_pos:
-    :return:
+    Swap elements of an array given as input.
+
+    Parameters
+    ----------
+    array: list, numpy.ndarray
+        Input array.
+    swap_pos: list[tuple[int, int]]
+        List of tuple containing indexes of the element of the array to swap.
+
+    Returns
+    -------
+    list, numpy.ndarray
+        Swapped array.
     """
     # in case of a single swap, swap_pos can be (pos1, pos2).
 
@@ -53,19 +69,26 @@ def swap(
 
 
 def listcast(x: Any) -> list[Any]:
-    """
+    """Cast to list.
+
     Cast any input object to a list.
     If `x` is a Python dictionary, the output will be the list of all the dict-keys.
 
-    Code example
-
+    Code example:
     >>> d = {'a': 1, 'b': 2, 'c': 3}
     >>> e = listcast(d)
     >>> e
     >>> ['a', 'b', 'c']
 
-    :param x: input object
-    :return: list
+    Parameters
+    ----------
+    x: Any
+        Input element to be casted.
+
+    Returns
+    -------
+    list
+        x input casted to list.
     """
     if isinstance(x, list):
         return x
@@ -77,50 +100,20 @@ def listcast(x: Any) -> list[Any]:
         return [x]
 
 
-class dotdict(Dict[Any, Any]):
-    """dot.notation access to dictionary attributes"""
-
-    def __init__(self, *args, **kwargs) -> None:
-        warnings.warn(
-            f'{self.__class__.__name__} is deprecated and it will be removed in future versions of the library. Use '
-            'Dict() from the addict library instead.',
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        super().__init__(*args, **kwargs)
-        for arg in args:
-            if isinstance(arg, dict):
-                for k, v in arg.items():
-                    self[k] = v
-
-        if kwargs:
-            for k, v in kwargs.items():
-                self[k] = v
-
-    def __getattr__(self, attr):
-        return self.get(attr)
-
-    def __setattr__(self, key, value):
-        self.__setitem__(key, value)
-
-    def __setitem__(self, key, value):
-        super().__setitem__(key, value)
-        self.__dict__.update({key: value})
-
-    def __delattr__(self, item):
-        self.__delitem__(item)
-
-    def __delitem__(self, key):
-        super().__delitem__(key)
-        del self.__dict__[key]
-
-
 def nest_level(lst: list[Any]) -> int:
-    """
+    """Nest level.
+
     Compute the neseting level of a list.
 
-    :param lst: input object
-    :return: number of nested lists, a flatten list has nest_level of 1.
+    Parameters
+    ----------
+    lst: list[Any]
+        Input list with a certain nested level.
+
+    Returns
+    -------
+    int
+        Number of nested lists, a flatten list has ``nest_level`` of 1.
     """
     if not isinstance(lst, list):
         return 0
@@ -130,7 +123,7 @@ def nest_level(lst: list[Any]) -> int:
 
 
 def flatten(items):
-    """Flatten list
+    """Flatten list.
 
     A recursive function that flattens a list.
 
@@ -155,12 +148,11 @@ def flatten(items):
 
 
 def sign() -> Iterator[int]:
-    """Sign iterator
+    """Sign iterator.
 
     A generator that cycles through +1 and -1.
 
     Code example:
-
     >>> s = sign()
     >>> next(s)
     1
@@ -175,13 +167,13 @@ def sign() -> Iterator[int]:
     Returns
     -------
     Iterator
-        Iterator cycling through +1 and -1
+        Iterator cycling through +1 and -1.
     """
     return itertools.cycle([1, -1])
 
 
 def remove_repeated_coordinates(array: npt.NDArray[np.float32]) -> npt.NDArray[np.float32]:
-    """Remove repeated coordinates
+    """Remove repeated coordinates.
 
     Parameters
     ----------
@@ -202,7 +194,7 @@ def remove_repeated_coordinates(array: npt.NDArray[np.float32]) -> npt.NDArray[n
 
 # Filtering adjacent identical points from a list of arrays.
 def unique_filter(arrays: list[npt.NDArray[np.float32]]) -> npt.NDArray[np.float32]:
-    """Remove duplicate subsequent points
+    """Remove duplicate subsequent points.
 
     Filtering adjacent identical points from a list of arrays.
     The function is different from other unique functions such as numpy's `unique` function. Indeed, `unique` return
@@ -271,7 +263,7 @@ def unique_filter(arrays: list[npt.NDArray[np.float32]]) -> npt.NDArray[np.float
 
 
 def split_mask(arr: npt.NDArray[Any], mask: npt.NDArray[np.generic]) -> list[npt.NDArray[Any]]:
-    """Split maks
+    """Split maks.
 
     Splits an array into sub-arrays based on a mask.
     The function return the list of sub-arrays correspoding to True values.
@@ -343,10 +335,10 @@ def normalize_polygon(poly: geometry.Polygon) -> geometry.Polygon:
     """
 
     def normalize_ring(ring: geometry.polygon.LinearRing):
-        """Normalize ring
+        """Normalize ring.
+
         It takes the exterior ring (a list of coordinates) of a ``Polygon`` object and returns the same ring,
         but with the sorted coordinates.
-
 
         Parameters
         ----------
@@ -373,9 +365,21 @@ def normalize_polygon(poly: geometry.Polygon) -> geometry.Polygon:
 
 def lookahead(iterable):
     """Lookahead.
-    Pass through all values from the given iterable, augmented by the
-    information if there are more values to come after the current one
-    (False), or if it is the last value (True).
+
+    Pass through all values from the given iterable, augmented by the information if there are more values to come
+    after the current one (False), or if it is the last value (True).
+
+    Parameters
+    ----------
+    iterable: iterable[Any]
+        Any iterable.
+
+    Returns
+    -------
+    Generator[tuple[Any, bool]]
+        Returns a tuple of values, the i-th element of the iterable and a boolean value, if True the i-th element is
+        the last element of the iterable.
+
     """
     # Get an iterator and pull the first value.
     it = iter(iterable)
@@ -393,7 +397,7 @@ def lookahead(iterable):
 
 # TODO: test
 def walklevel(path: str | pathlib.Path, depth: int = 1):
-    """Walklevel
+    """Walklevel.
 
     It works just like os.walk, but you can pass it a level parameter that indicates how deep the recursion will go.
     If depth is 1, the current directory is listed.
@@ -410,7 +414,7 @@ def walklevel(path: str | pathlib.Path, depth: int = 1):
     Returns
     -------
     Generator[tuple]
-        root, subdirectories, files
+        root, subdirectories, files.
     """
 
     # If depth is negative, just walk
