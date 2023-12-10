@@ -153,7 +153,7 @@ class Cell:
 
 class Device:
     def __init__(self, **param) -> None:
-        self.cell_list: dict[str, Cell] = dict()
+        self.cells_collection: dict[str, Cell] = collections.defaultdict(Cell)
         self.fig: go.Figure | None = None
         self.fabrication_time: float = 0.0
 
@@ -191,21 +191,21 @@ class Device:
         return cls(**p)
 
     @property
-    def cells_names(self) -> list[str]:
-        """Cells names.
+    def keys(self) -> list[str]:
+        """Cells keys.
 
         Returns
         -------
         list[str]
-            Return the list of cells added to current device.
+            Return the list of cell's keys added to current device.
         """
-        return list(self.cell_list.keys())
+        return list(self.cells_collection.keys())
 
     def add(self, objs: Cell | list[Cell] | femto_objects | list[femto_objects]) -> None:
         """Add.
 
         The method allows to add to the current Cell either femto objects, cells or lists of both.
-        If a cell is given, it is added to the ``self.cell_list`` dictionary, if femto objects (or lists of femto
+        If a cell is given, it is added to the ``self.cells_collection`` dictionary, if femto objects (or lists of femto
         objects) are given these structures will be first added to a common cell (named ``base``) and then the
         ``base`` cell is added to the cell dictionary.
         If a ``base`` cell is already present, the objects will be simply added to it.
@@ -257,10 +257,10 @@ class Device:
         ------
         ValueError for cells with the same name.
         """
-        if cell.name.lower() in self.cell_list:
+        if cell.name.lower() in self.cells_collection:
             logger.error(f'Cell ID "{cell.name}" already present in layer  dict, give another value.')
             raise ValueError(f'Cell ID "{cell.name}" already present in layer  dict, give another value.')
-        self.cell_list[cell.name] = cell
+        self.cells_collection[cell.name] = cell
 
     def add_to_cell(self, key: str, obj: femto_objects | list[femto_objects]) -> None:
         """Adds a femto object to a the cell.
@@ -277,9 +277,9 @@ class Device:
         None.
         """
         key = key.lower()
-        if key not in self.cell_list.keys():
-            self.cell_list[key] = Cell(name=key)
-        self.cell_list[key].add(obj)
+        if key not in self.cells_collection.keys():
+            self.cells_collection[key] = Cell(name=key)
+        self.cells_collection[key].add(obj)
 
     def plot2d(self, show: bool = True, save: bool = False, show_shutter_close: bool = True) -> None:
         """Plot 2D.
@@ -302,7 +302,7 @@ class Device:
         """
         logger.info('Plotting 2D objects...')
         self.fig = go.Figure()
-        for layer in self.cell_list.values():
+        for layer in self.cells_collection.values():
             logger.debug(f'2D plot of layer {layer}.')
             wrs = writers
             for typ, list_objs in layer.objects.items():
@@ -338,7 +338,7 @@ class Device:
         """
         logger.info('Plotting 3D objects...')
         self.fig = go.Figure()
-        for layer in self.cell_list.values():
+        for layer in self.cells_collection.values():
             logger.debug(f'3D plot of layer {layer}.')
             wrs = writers
             for typ, list_objs in layer.objects.items():
@@ -403,7 +403,7 @@ class Device:
         -------
         None.
         """
-        for layer in self.cell_list.values():
+        for layer in self.cells_collection.values():
             logger.debug(f'Compile G-Code of {layer} layer.')
             wrs = writers
             for typ, list_objs in layer.objects.items():
@@ -428,7 +428,7 @@ class Device:
         None.
         """
         logger.info('Exporting layer objects...')
-        for layer in self.cell_list.values():
+        for layer in self.cells_collection.values():
             wrs = writers
             for typ, list_objs in layer.objects.items():
                 wr = wrs[typ](self._param, objects=list_objs)
@@ -461,7 +461,7 @@ class Device:
 
         # Fetch all objects from writers
         objs = []
-        for layer in self.cell_list.values():
+        for layer in self.cells_collection.values():
             objs.extend(layer.objects[Waveguide])
             objs.extend(layer.objects[NasuWaveguide])
 
