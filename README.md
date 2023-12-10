@@ -49,7 +49,7 @@ First, import all the required modules
 
 ```python
 from femto.curves import sin
-from femto.device import Device
+from femto.device import Layer
 from femto.pgmcompiler import PGMCompiler
 from femto.waveguide import Waveguide
 ```
