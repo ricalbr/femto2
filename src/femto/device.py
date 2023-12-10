@@ -28,10 +28,6 @@ from femto.writer import TrenchWriter
 from femto.writer import UTrenchWriter
 from femto.writer import WaveguideWriter
 
-import dash
-
-app = dash.Dash(__name__)
-port = 5000
 
 # List of femto objects
 types = dict(
@@ -103,14 +99,10 @@ class Cell:
         # split the unparsed_object list based on the type of each element
         unparsed_objects = flatten([unparsed_objects])
         d = collections.defaultdict(list)
-        while unparsed_objects:
-            obj = unparsed_objects.pop(0)
-            if isinstance(obj, list):
-                d[type(obj[0])].append(obj)
-            else:
-                d[type(obj)].append(obj)
+        for o in unparsed_objects:
+            d[type(o)].append(o)
 
-        # add each element to the type-matching writer
+        # add each element to the type-matching keys in self._objs dictionary
         for k, e in d.items():
             try:
                 logger.debug(f'Assign {e} to {self._objs[k]}.')
@@ -124,10 +116,10 @@ class Cell:
             self.parse_objects(objs)
         else:
             logger.error(
-                'Given objects of the wrong type. Cell objects just accept laserpath- or ' 'trench-derived objects.'
+                'Given objects of the wrong type. Cell objects just accept laserpath- or trench-derived objects.'
             )
             raise ValueError(
-                'Given objects of the wrong type. Cell objects just accept laserpath- or ' 'trench-derived objects.'
+                'Given objects of the wrong type. Cell objects just accept laserpath- or trench-derived objects.'
             )
 
 
@@ -227,18 +219,7 @@ class Device:
         self.fig = plot2d_base_layer(self.fig, x0=x0, y0=y0, x1=x1, y1=y1)
         if show:
             logger.debug('Show 2D plot.')
-            # self.fig.show()
-            app.layout = dash.html.Div(
-                [
-                    dash.dcc.Graph(
-                        figure=self.fig,
-                        responsive=True,
-                        style={'width': '100vw', 'height': '90vh'},
-                    )
-                ]
-            )
-            app.run(debug=True, port=port)
-            logger.info(f'Plot is running on http://127.0.0.1:{port}/')
+            self.fig.show()
 
         if save:
             self.save()

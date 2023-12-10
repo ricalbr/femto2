@@ -55,7 +55,7 @@ class PGMCompiler:
     filename: str  #: Filename of the .pgm file.
     n_glass: float = 1.50  #: Glass refractive index.
     n_environment: float = 1.33  #: Environment refrative index.
-    export_dir: str = ''  #: Name of the directory onto which .pgm files will be exported. Default is current directoru.
+    export_dir: str = ''  #: Name of the directory onto which .pgm files will be exported. Default is current directory.
     laser: str = 'PHAROS'  #: Name of the laser source.
     shift_origin: tuple[float, float] = (0.0, 0.0)  #: Shift the cooordinates of the origin to this new point. `[mm]`.
     samplesize: tuple[float, float] = (100, 50)  #: `(x, y)`-size of the substrate `[mm]`.
@@ -64,11 +64,11 @@ class PGMCompiler:
     long_pause: float = 0.5  #: Long pause value `[s]`.
     short_pause: float = 0.05  #: Short pause value `[s]`.
     speed_pos: float = 5.0  #: Positioning speed `[mm/s]`.
-    output_digits: int = 6  #: Number of output digits for formatting G-Code instructinos.
+    output_digits: int = 6  #: Number of output digits for formatting G-Code instructions.
     home: bool = False  #: Flag, if True the fabrication will finish in `(0,0,0)`.
     warp_flag: bool = False  #: Flag, toggle the warp compensation.
-    flip_x: bool = False  #: Flag, if True the x-coordinates will be flipped
-    flip_y: bool = False  #: Flag, if True the y-coordinates will be flipped
+    flip_x: bool = False  #: Flag, if True the x-coordinates will be flipped.
+    flip_y: bool = False  #: Flag, if True the y-coordinates will be flipped.
     minimal_gcode: bool = False  #: Flag, if True redundant movements are suppressed.
     verbose: bool = True  #: Flag, if True output informations during G-Code compilation.
 
@@ -142,8 +142,9 @@ class PGMCompiler:
 
         Returns
         -------
-        Instance of class
+        Instance of class.
         """
+
         # Update parameters with kwargs
         p = copy.deepcopy(param)
         if kwargs:
@@ -200,7 +201,7 @@ class PGMCompiler:
 
         Returns
         -------
-        None
+        None.
         """
 
         if self.aerotech_angle:
@@ -217,7 +218,8 @@ class PGMCompiler:
 
         Returns
         -------
-        The total waiting time due to pauses (G4, or DWELL commands).
+        float
+            The total waiting time due to pauses (G4, or DWELL commands).
         """
         return self._total_dwell_time
 
@@ -227,7 +229,8 @@ class PGMCompiler:
 
         Returns
         -------
-        The absolute value of the `x` element of the samplesize array.
+        float
+            The absolute value of the `x` element of the samplesize array.
         """
         xsample = float(abs(self.samplesize[0]))
         logger.debug(f'Return xsample = {xsample}')
@@ -239,7 +242,8 @@ class PGMCompiler:
 
         Returns
         -------
-        The absolute value of the `y` element of the samplesize array.
+        float
+            The absolute value of the `y` element of the samplesize array.
         """
         ysample = float(abs(self.samplesize[1]))
         logger.debug(f'Return ysample = {ysample}')
@@ -251,7 +255,8 @@ class PGMCompiler:
 
         Returns
         -------
-        Effective refractive index of the waveguide.
+        float
+            Effective refractive index of the waveguide.
         """
         logger.debug(f'Effective refractive index is {self.n_glass / self.n_environment}')
         return self.n_glass / self.n_environment
@@ -264,7 +269,8 @@ class PGMCompiler:
 
         Returns
         -------
-        Lable for the PSO commands.
+        str
+            Lable for the PSO commands.
         """
         try:
             ax = self._lasers[self.laser.lower()].axis
@@ -282,7 +288,8 @@ class PGMCompiler:
 
         Returns
         -------
-        Delay time [s].
+        float
+            Delay time [s].
         """
         if self.laser.lower() not in ['ant', 'carbide', 'pharos', 'uwe']:
             logger.error(f'Laser can be only ANT, CARBIDE, PHAROS or UWE. Given {self.laser}.')
@@ -302,7 +309,8 @@ class PGMCompiler:
 
         Returns
         -------
-        Total pausing times in the G-code script.
+        float
+            Total pausing times in the G-code script.
         """
         logger.debug(f'Return total dwell time {self._total_dwell_time}.')
         return self._total_dwell_time
@@ -316,7 +324,7 @@ class PGMCompiler:
 
         Returns
         -------
-        None
+        None.
         """
 
         try:
@@ -349,7 +357,7 @@ class PGMCompiler:
 
         Returns
         -------
-        None
+        None.
         """
         variables = listcast(flatten(variables))
         args = ' '.join(['${}'] * len(variables)).format(*variables)
@@ -373,7 +381,7 @@ class PGMCompiler:
 
         Returns
         -------
-        None
+        None.
         """
         if mode is None or mode.lower() not in ['abs', 'inc']:
             logger.error(f'Mode should be either ABSOLUTE (ABS) or INCREMENTAL (INC). {mode} was given.')
@@ -400,7 +408,7 @@ class PGMCompiler:
 
         Returns
         -------
-        None
+        None.
         """
 
         if comstring:
@@ -423,7 +431,7 @@ class PGMCompiler:
 
         Returns
         -------
-        None
+        None.
         """
 
         if state is None or state.lower() not in ['on', 'off']:
@@ -451,7 +459,7 @@ class PGMCompiler:
 
         Returns
         -------
-        None
+        None.
         """
 
         if pause is None or pause == float(0.0):
@@ -473,7 +481,7 @@ class PGMCompiler:
 
         Returns
         -------
-        None
+        None.
         """
 
         if np.size(home_pos) != 3:
@@ -503,7 +511,7 @@ class PGMCompiler:
 
         Returns
         -------
-        None
+        None.
         """
         if len(position) != 3:
             logger.error('Given final position is not valid.')
@@ -535,7 +543,7 @@ class PGMCompiler:
 
         Returns
         -------
-        None
+        None.
         """
         self.comment('HOMING')
         self.move_to([0.0, 0.0, 0.0])
@@ -547,7 +555,7 @@ class PGMCompiler:
 
         Returns
         -------
-        None
+        None.
         """
         self.move_to([-2, 0, 0])
 
@@ -560,11 +568,11 @@ class PGMCompiler:
         Parameters
         ----------
         angle : float
-            Value [deg] of the rotation angle
+            Value [deg] of the rotation angle.
 
         Yields
         ------
-        Current PGMCompiler instance
+        Current PGMCompiler instance.
         """
         self._enter_axis_rotation(angle=angle)
         try:
@@ -587,7 +595,7 @@ class PGMCompiler:
 
         Yields
         ------
-        Current PGMCompiler instance
+        Current PGMCompiler instance.
         """
         if num is None:
             logger.error("Number of iterations is None. Give a valid 'scan' attribute value.")
@@ -628,7 +636,7 @@ class PGMCompiler:
 
         Yields
         ------
-        Current PGMCompiler instance
+        Current PGMCompiler instance.
         """
         if num is None:
             logger.error("Number of iterations is None. Give a valid 'scan' attribute value.")
@@ -657,7 +665,7 @@ class PGMCompiler:
 
         Returns
         -------
-        None
+        None.
         """
         self._instructions.append('MSGDISPLAY 1, "START #TS"\n\n')
         logger.debug('Add starting time string.')
@@ -670,7 +678,7 @@ class PGMCompiler:
 
         Returns
         -------
-        None
+        None.
         """
         self._instructions.append('MSGDISPLAY 1, "END   #TS"\n')
         self._instructions.append('MSGDISPLAY 1, "---------------------"\n')
@@ -689,7 +697,7 @@ class PGMCompiler:
 
         Returns
         -------
-        None
+        None.
         """
         if instr.endswith('\n'):
             self._instructions.append(instr)
@@ -712,7 +720,7 @@ class PGMCompiler:
 
         Returns
         -------
-        None
+        None.
         """
         if task_id is None:
             logger.debug('Set task ID to 2.')
@@ -737,7 +745,7 @@ class PGMCompiler:
 
         Returns
         -------
-        None
+        None.
         """
         file = self._get_filepath(filename=filename, extension='pgm')
         if file.stem not in self._loaded_files:
@@ -763,7 +771,7 @@ class PGMCompiler:
 
         Returns
         -------
-        None
+        None.
         """
         self._instructions.append(f'PROGRAM {int(task_id)} STOP\n')
         self._instructions.append(f'WAIT (TASKSTATUS({int(task_id)}, DATAITEM_TaskState) == TASKSTATE_Idle) -1\n')
@@ -780,7 +788,7 @@ class PGMCompiler:
 
         Returns
         -------
-        None
+        None.
         """
         file = self._get_filepath(filename=filename, extension='.pgm')
         if file.stem not in self._loaded_files:
@@ -806,7 +814,7 @@ class PGMCompiler:
 
         Returns
         -------
-        None
+        None.
         """
         file = self._get_filepath(filename=filename, extension='.pgm')
         if file.stem not in self._loaded_files:
@@ -834,7 +842,7 @@ class PGMCompiler:
 
         Returns
         -------
-        None
+        None.
         """
         task_id = list(filter(None, listcast(task_id)))  # Remove None from task_id
 
@@ -854,7 +862,8 @@ class PGMCompiler:
             self.instruction('\n\n')
 
     def write(self, points: nparray) -> None:
-        """
+        """Write to .pgm file.
+
         The function convert the quintuple (X,Y,Z,F,S) to G-Code instructions. The (X,Y,Z) coordinates are
         transformed using the transformation matrix that takes into account the rotation of a given rotation_angle
         and the homothety to compensate the (effective) refractive index different from 1. Moreover, if the warp_flag
@@ -865,12 +874,12 @@ class PGMCompiler:
 
         Parameters
         ----------
-        points: numpy.ndarray[numpy.float32]
+        points: numpy.ndarray
             Numpy matrix containing the values of the tuple [X,Y,Z,F,S] coordinates.
 
         Returns
         -------
-        None
+        None.
         """
 
         logger.debug('Start writing points to file...')
@@ -927,7 +936,7 @@ class PGMCompiler:
 
         Returns
         -------
-        None
+        None.
         """
 
         # get filename and add the proper file extension
@@ -1099,7 +1108,7 @@ class PGMCompiler:
         return np.array(tm)
 
     def warp_management(self, opt: bool) -> interpolate.RBFInterpolator:
-        """Warp Management
+        """Warp Management.
 
         Fetches warping function describing the surface of the sample.
         If ``opt`` is ``False``, the method load a dummy function representing a flat sample (no warp will be
@@ -1116,16 +1125,16 @@ class PGMCompiler:
         Parameters
         ----------
         opt: bool
-            Flag to bypass the warp compensation
+            Flag to bypass the warp compensation.
 
         Returns
         -------
         interpolate.RBFInterpolator
-            interpolating function S(x, y) of the surface of the sample
+            interpolating function S(x, y) of the surface of the sample.
 
         See Also
         --------
-        femto.pgmcompiler.warp_generation: method that performs the surface interpolation given a POS.txt file
+        femto.pgmcompiler.warp_generation: method that performs the surface interpolation given a POS.txt file.
         """
 
         if not opt:
@@ -1161,7 +1170,7 @@ class PGMCompiler:
         gridsize: tuple[int, int] = (100, 100),
         show: bool = False,
     ) -> interpolate.RBFInterpolator:
-        """Warp Generation
+        """Warp Generation.
 
         The method load the smapled points contained in the POS.txt file and finds a surface that interpolates them
         using the RBF interpolator.
@@ -1179,7 +1188,7 @@ class PGMCompiler:
         Returns
         -------
         scipy.interpolate.RBFInterpolator
-            Warp function, `f(x, y)`
+            Warp function, `f(x, y)`.
 
         See Also
         --------
@@ -1217,23 +1226,29 @@ class PGMCompiler:
     def _format_args(
         self, x: float | None = None, y: float | None = None, z: float | None = None, f: float | None = None
     ) -> str:
-        """
+        """Format arguments.
+
         Utility function that creates a string prepending the coordinate name to the given value for all the given
         the coordinates ``[X,Y,Z]`` and feed rate ``F``.
         The decimal precision can be set by the user by setting the output_digits attribute.
 
-        :param x: Value of the x-coordinate [mm]. The default is None.
-        :type x: float
-        :param y: Value of the y-coordinate [mm]. The default is None.
-        :type y: float
-        :param z: Value of the z-coordinate [mm]. The default is None.
-        :type z: float
-        :param f: Value of the f-coordinate [mm]. The default is None.
-        :type f: float
-        :return: Formatted string of the type: 'X<value> Y<value> Z<value> F<value>'.
-        :rtype: str
+        x: float | None
+            Value of the x-coordinate [mm]. The default is None.
+        y: float | None
+            Value of the y-coordinate [mm]. The default is None.
+        z: float | None
+            Value of the z-coordinate [mm]. The default is None.
+        f: float | None
+            Value of the f-coordinate [mm]. The default is None.
 
-        :raise ValueError: Try to move null speed.
+        Returns
+        -------
+        str
+            Formatted string of the type: 'X<value> Y<value> Z<value> F<value>'.
+
+        Raises
+        ------
+        ValueError: Try to move null speed.
         """
         args = []
 
@@ -1255,19 +1270,25 @@ class PGMCompiler:
 
     @staticmethod
     def _get_filepath(filename: str, filepath: str | None = None, extension: str | None = None) -> pathlib.Path:
-        """
+        """Get filepath.
+
         The function takes a filename and (optional) filepath, it merges the two and return a filepath.
         An extension parameter can be given as input. In that case the function also checks if the filename has
         the correct extension.
 
-        :param filename: Name of the file that have to be loaded.
-        :type filename: str
-        :param filepath: Path of the folder containing the file. The default is None.
-        :type filepath: str
-        :param extension: File extension. The default is None.
-        :type extension: str
-        :return: Complete path of the file (filepath + filename).
-        :rtype: pathlib.Path
+        Parameters
+        ----------
+        filename: str
+            Name of the file that have to be loaded.
+        filepath: str, optional
+            Path of the folder containing the file. The default is None.
+        extension: str, optional
+            File extension. The default is None.
+
+        Returns
+        -------
+        pathlib.Path
+            Complete path of the file (filepath + filename).
         """
 
         if filename is None:
@@ -1287,6 +1308,19 @@ class PGMCompiler:
         return path
 
     def _enter_axis_rotation(self, angle: float | None = None) -> None:
+        """Enter axis rotiation.
+
+        Add G-Code instructions to initialize part rotation (G84 command).
+
+        Parameters
+        ----------
+        angle: float, optional
+            Rotation angle [deg], from 0 to 360.
+
+        Returns
+        -------
+        None.
+        """
 
         if angle is None and self.aerotech_angle == 0.0:
             return
@@ -1301,6 +1335,14 @@ class PGMCompiler:
         logger.debug(f'Activate axis rotation with angle = {angle}.')
 
     def _exit_axis_rotation(self) -> None:
+        """Exit axis rotiation.
+
+        Add G-Code instructions to deactivate part rotation (G84 command).
+
+        Returns
+        -------
+        None.
+        """
         self.comment('DEACTIVATE AXIS ROTATION')
         self._instructions.append(f'G1 X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{self.speed_pos:.6f}\n')
         self._instructions.append('G84 X Y\n')
@@ -1309,7 +1351,7 @@ class PGMCompiler:
 
 
 def sample_warp(pts_x: int, pts_y: int, margin: float, parameters: dict[str, Any]) -> None:
-    """Generate sampling script
+    """Generate sampling script.
 
     The function compile a PGM file that automatically reads the G-Code parameters (namely, angle and sample size)
     and some user-input parameters for measuring the z-coordinate of the focused laser beam on the sample surface.
@@ -1324,17 +1366,17 @@ def sample_warp(pts_x: int, pts_y: int, margin: float, parameters: dict[str, Any
     Parameters
     ----------
     pts_x: int
-        Number of grid points along the `x`-direction
+        Number of grid points along the `x`-direction.
     pts_y: int
-        Number of grid points along the `y`-direction
+        Number of grid points along the `y`-direction.
     margin: float
         Distance between the edge of the points-grid and the edges of the sample.
-    parameters: dict(str, Any)
+    parameters: dict[str, Any]
         Dictionary of the the parameters for a G-Code file.
 
     Returns
     -------
-    None
+    None.
     """
 
     parameters['filename'] = 'SAMPLE_WARP.pgm'

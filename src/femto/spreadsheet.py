@@ -108,7 +108,7 @@ class Spreadsheet:
         self.close()
 
     def header(self, desc_size: int = 8) -> None:
-        """Header
+        """Header.
 
         Write the header info to xlsx file.
 
@@ -119,7 +119,7 @@ class Spreadsheet:
 
         Returns
         -------
-        None
+        None.
         """
 
         # Set columns properties
@@ -151,7 +151,7 @@ class Spreadsheet:
         )
 
     def fabbrication_info(self, row: int = 8) -> None:
-        """Fabrication information
+        """Fabrication information.
 
         Write the fabrication info to xlsx file.
 
@@ -162,7 +162,7 @@ class Spreadsheet:
 
         Returns
         -------
-        None
+        None.
         """
 
         for pre_title, parameters in self._preamble_data.items():
@@ -461,7 +461,7 @@ class Spreadsheet:
 
         Returns
         -------
-        dt: type
+        type
             Type of the data.
 
         """
@@ -479,11 +479,11 @@ class Spreadsheet:
 class ColumnData:
     """Class that handles column data."""
 
-    tagname: str
-    name: str
-    unit: str
-    width: str
-    format: str
+    tagname: str  #: Tag of the data represented in the column.
+    name: str  #: Name of the column.
+    unit: str  #: Unit of measurement for the data in the column.
+    width: str  #: With of the column cells.
+    format: str  #: Formatting information for the data in the column.
 
     def __repr__(self):
         return self.name

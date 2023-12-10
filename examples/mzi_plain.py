@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from femto.curves import sin
-from femto.device import Layer
+from femto.device import Device
 from femto.pgmcompiler import PGMCompiler
 from femto.waveguide import Waveguide
 
@@ -40,8 +40,8 @@ for i in range(2):
     mzi.append(wg)
 
 # Create a device
-dev = Layer(**PARAM_GC)
-dev.extend(mzi)
+dev = Device(**PARAM_GC)
+dev.add(mzi)
 
 # Plot and pgm
 dev.plot3d()

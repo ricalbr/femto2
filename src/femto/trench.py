@@ -7,7 +7,6 @@ from functools import cached_property
 from typing import Any
 from typing import Generator
 from typing import Iterator
-from typing import TypeVar
 
 import attrs
 import dill
@@ -17,7 +16,6 @@ import numpy.typing as npt
 from femto import logger
 from femto.curves import sin
 from femto.helpers import almost_equal
-from femto.helpers import dotdict
 from femto.helpers import flatten
 from femto.helpers import listcast
 from femto.helpers import normalize_polygon
@@ -249,6 +247,7 @@ class Trench:
 
     def zigzag_mask(self) -> geometry.MultiLineString:
         """Zig-zag mask.
+
         The function returns a Shapely geometry (MultiLineString, or more rarely, GeometryCollection) for a simple
         hatched rectangle. The spacing between the lines is given by ``self.delta_floor`` while the rectangle is the
         minimum rotated rectangle containing the trench block.
@@ -282,6 +281,7 @@ class Trench:
 
     def zigzag(self, poly: geometry.Polygon) -> nparray:
         """Zig-zag filling pattern.
+
         The function `zigzag` takes a polygon as input, applies a zig-zag filling pattern to it, and returns the
         coordinates of the resulting zigzag pattern.
 
@@ -464,7 +464,7 @@ class TrenchColumn:
 
         Returns
         -------
-        Instance of class
+        Instance of class.
         """
         # Update parameters with kwargs
         p = copy.deepcopy(param)
@@ -488,7 +488,7 @@ class TrenchColumn:
 
         Returns
         -------
-        Instance of class
+        Instance of class.
         """
 
         logger.info(f'Load {cls.__name__} object from pickle file.')
@@ -631,7 +631,7 @@ class TrenchColumn:
 
         Returns
         -------
-        None
+        None.
         """
 
         if not all(isinstance(wg, Waveguide) for wg in waveguides):
@@ -669,7 +669,7 @@ class TrenchColumn:
 
         Returns
         -------
-        None
+        None.
         """
         if not all(isinstance(wg, np.ndarray) for wg in waveguides):
             logger.debug(f'All the input objects must be numpy arrays. Given {[type(wg) for wg in waveguides]}')
@@ -707,7 +707,7 @@ class TrenchColumn:
 
         Returns
         -------
-        None
+        None.
         """
         if remove is None:
             remove = []
@@ -753,7 +753,7 @@ class UTrenchColumn(TrenchColumn):
 
     @property
     def trench_bed(self) -> list[Trench]:
-        """Trench bed list
+        """Trench bed list.
 
         Returns
         -------
@@ -800,6 +800,7 @@ class UTrenchColumn(TrenchColumn):
 
     def define_trench_bed(self) -> None:
         """Trenchbed shape.
+
         This method is used to calculate the shape of the plane beneath the column of trenches based on a list of
         trenches.
 
@@ -810,10 +811,9 @@ class UTrenchColumn(TrenchColumn):
 
         This method populated the ``self._trenchbed`` attribute of the ``UTrenchColumn`` object.
 
-
         Returns
         -------
-        None
+        None.
         """
         if not self._trench_list:
             logger.critical('No trench is present. Trenchbed cannot be defined.')

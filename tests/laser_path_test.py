@@ -566,7 +566,7 @@ def test_subs_num_empty_base_case(empty_path) -> None:
 
 
 def test_pickle(laser_path) -> None:
-    filename = Path('test.pkl')
+    filename = Path('test.pickle')
     laser_path.export(filename.name)
     assert filename.is_file()
 
@@ -577,7 +577,7 @@ def test_pickle(laser_path) -> None:
 
 
 def test_pickle_as_dict(laser_path) -> None:
-    filename = Path('test.pkl')
+    filename = Path('test.pickle')
     laser_path.export(filename.name, as_dict=True)
     assert filename.is_file()
 

@@ -507,8 +507,26 @@ class TrenchWriter(Writer):
         show_shutter_close: bool = True,
         style: dict[str, Any] | None = None,
     ) -> go.Figure:
-        """Plot 3D - Not implemented."""
-        # raise NotImplementedError()
+        """Plot 3D.
+
+        3D plot of the Trench objects contained in ``self._obj_list``.
+
+        Parameters
+        ----------
+        fig : go.Figure, optional
+            Optional plotly figure object, if no figure is provided a new one is created and updated with the Trench
+            objects stored in the Writer class. If a figure is provided it is updated by adding the stored objects. The
+            default behaviour is creating a new figure.
+        show_shutter_close : bool, optional
+            Boolean flag, if ``True`` the movements with closed shutter are represented. The default value is ``False``.
+        style: dict(str, Any)
+            Plotly compatible styles options for representing the objects.
+
+        Returns
+        -------
+        go.Figure
+            Plotly figure with the 3D plot of the stored Trench.
+        """
         if fig is not None:
             logger.debug('Update figure.')
             return self._plot3d_trench(fig=fig, style=style)
@@ -537,7 +555,7 @@ class TrenchWriter(Writer):
 
         Returns
         -------
-        None
+        None.
 
         See Also
         --------
@@ -614,7 +632,7 @@ class TrenchWriter(Writer):
 
         Returns
         -------
-        None
+        None.
 
         See Also
         --------
@@ -662,7 +680,7 @@ class TrenchWriter(Writer):
 
         Returns
         -------
-        None
+        None.
 
         See Also
         --------
@@ -721,7 +739,7 @@ class TrenchWriter(Writer):
 
         Returns
         -------
-        None
+        None.
         """
 
         logger.debug('Generate Trench columns FARCALL.pgm file.')
@@ -944,7 +962,7 @@ class UTrenchWriter(TrenchWriter):
 
         Returns
         -------
-        None
+        None.
         """
 
         objs = flatten([objs])
@@ -973,7 +991,7 @@ class UTrenchWriter(TrenchWriter):
 
         Returns
         -------
-        None
+        None.
 
         See Also
         --------
@@ -1025,7 +1043,7 @@ class UTrenchWriter(TrenchWriter):
 
         Returns
         -------
-        None
+        None.
         """
 
         logger.debug('Generate U-Trench columns FARCALL.pgm file.')
@@ -1338,7 +1356,7 @@ class WaveguideWriter(Writer):
 
         Returns
         -------
-        None
+        None.
         """
 
         objs = flatten(listcast(objs))
@@ -1408,7 +1426,7 @@ class WaveguideWriter(Writer):
         Returns
         -------
         go.Figure
-            Plotly figure with the 2D plot of the stored Waveguide.
+            Plotly figure with the 3D plot of the stored Waveguide.
         """
 
         # If existing figure is given as input parameter append to the figure and return it
@@ -1438,7 +1456,7 @@ class WaveguideWriter(Writer):
 
         Returns
         -------
-        None
+        None.
 
         See Als*o
         --------
@@ -1668,7 +1686,7 @@ class NasuWriter(Writer):
 
         Returns
         -------
-        None
+        None.
         """
 
         objs = flatten(listcast(objs))
@@ -1738,7 +1756,7 @@ class NasuWriter(Writer):
         Returns
         -------
         go.Figure
-            Plotly figure with the 2D plot of the stored NasuWaveguide.
+            Plotly figure with the 3D plot of the stored NasuWaveguide.
         """
 
         # If existing figure is given as input parameter append to the figure and return it
@@ -1768,7 +1786,7 @@ class NasuWriter(Writer):
 
         Returns
         -------
-        None
+        None.
 
         See Also
         --------
@@ -2000,7 +2018,7 @@ class MarkerWriter(Writer):
 
         Returns
         -------
-        None
+        None.
         """
 
         objs = flatten(listcast(objs))
@@ -2069,7 +2087,7 @@ class MarkerWriter(Writer):
         Returns
         -------
         go.Figure
-            Plotly figure with the 2D plot of the stored Marker.
+            Plotly figure with the 3D plot of the stored Marker.
         """
 
         # If existing figure is given as input parameter append to the figure and return it
@@ -2099,7 +2117,7 @@ class MarkerWriter(Writer):
 
         Returns
         -------
-        None
+        None.
 
         See Also
         --------
