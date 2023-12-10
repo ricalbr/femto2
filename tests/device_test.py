@@ -5,6 +5,7 @@ import pathlib
 from contextlib import nullcontext as does_not_raise
 from pathlib import Path
 
+import openpyxl
 import pytest
 from femto.curves import sin
 from femto.device import Cell
@@ -174,7 +175,7 @@ def test_cell_objects(cell, list_wg, list_mk) -> None:
 )
 def test_cell_parse_objects_raise(cell, inp, expectation) -> None:
     with expectation:
-        cell.add(inp)
+        cell.parse_objects(inp)
 
 
 def test_cell_add(list_wg, list_mk, list_tcol) -> None:
@@ -237,6 +238,21 @@ def test_cell_add(list_wg, list_mk, list_tcol) -> None:
     del cell
 
 
+@pytest.mark.parametrize(
+    'inp, expectation',
+    [
+        ([Waveguide(), Waveguide()], does_not_raise()),
+        ([Marker(), [Waveguide(), Waveguide()]], does_not_raise()),
+        ([Trench(Polygon()), Waveguide()], pytest.raises(TypeError)),
+        ([], does_not_raise()),
+        ([1, 2, Waveguide(), Marker], pytest.raises(ValueError)),
+    ],
+)
+def test_cell_ass_raise(cell, inp, expectation) -> None:
+    with expectation:
+        cell.add(inp)
+
+
 # Device
 def test_device_init(device, gc_param) -> None:
     assert device.cells == {}
@@ -255,6 +271,26 @@ def test_device_from_dict(device, gc_param) -> None:
     assert dev._param == gc_param
     assert dev.fig is device.fig
     assert dev.fabrication_time == dev.fabrication_time
+
+
+def test_device_from_dict_w_kwargs(device, gc_param) -> None:
+    dev = Device.from_dict(gc_param, filename='test_kwargs', flip_x=True)
+
+    param = device._param
+    param.update({'filename': 'test_kwargs', 'flip_x': True})
+
+    assert dev.cells == device.cells
+    assert dev._param == param
+    assert dev._param == gc_param
+    assert dev.fig is device.fig
+    assert dev.fabrication_time == dev.fabrication_time
+
+
+def test_device_add_cell_dame_name(device, cell) -> None:
+    c2 = cell
+    with pytest.raises(ValueError):
+        device.add_cell(cell)
+        device.add_cell(c2)
 
 
 def test_device_add_cell(device, cell, list_tcol, list_wg) -> None:
@@ -502,6 +538,16 @@ def test_device_xlsx(device, list_wg, list_mk, ss_param) -> None:
     device.add([list_wg, list_mk])
     device.xlsx(**ss_param)
     assert (Path().cwd() / 'custom_book_name.xlsx').is_file()
+    (Path().cwd() / 'custom_book_name.xlsx').unlink()
+
+
+def test_device_xlsx_meta(device, list_wg, list_mk, ss_param) -> None:
+    device.add([list_wg, list_mk])
+    ss_param['metadata'] = {'laser': 'UWE'}
+    device.xlsx(**ss_param)
+    assert (Path().cwd() / 'custom_book_name.xlsx').is_file()
+    wb = openpyxl.load_workbook(Path().cwd() / 'custom_book_name.xlsx')
+    assert wb['custom_sheet_name'].cell(row=25, column=3).value == 'UWE'
     (Path().cwd() / 'custom_book_name.xlsx').unlink()
 
 
