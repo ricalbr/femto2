@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from femto.curves import sin
-from femto.device import Layer
+from femto.device import Device
 from femto.pgmcompiler import PGMCompiler
 from femto.waveguide import Waveguide
 
@@ -40,10 +40,10 @@ PARAM_GC = dict(
 )
 
 # CIRCUIT
-circuit = Layer(**PARAM_GC)
+circuit = Device(**PARAM_GC)
 
 # Add waveguides to circuit
-circuit.extend(wgs)
+circuit.add(wgs)
 
 # Make a plot of the circuit
 circuit.plot2d()
