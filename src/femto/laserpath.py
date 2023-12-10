@@ -73,7 +73,7 @@ class LaserPath:
 
         Returns
         -------
-        Instance of class
+        Instance of class.
         """
 
         # Update parameters with kwargs
@@ -98,7 +98,7 @@ class LaserPath:
 
         Returns
         -------
-        Instance of class
+        Instance of class.
         """
         logger.info(f'Load {cls.__name__} object from pickle file.')
         with open(pickle_file, 'rb') as f:
@@ -158,7 +158,7 @@ class LaserPath:
         Returns
         -------
         float
-            The minimum separation between two points [mm]
+            The minimum separation between two points [mm].
         """
 
         logger.debug(f'Return minimum spatial separation between two points dl = {self.speed / self.cmd_rate_max}.')
@@ -216,7 +216,7 @@ class LaserPath:
         Returns
         -------
         numpy.ndarray
-            The `x`-coordinates of the points in the laser path
+            The `x`-coordinates of the points in the laser path.
         """
 
         coords = unique_filter([self._x, self._y, self._z, self._f, self._s])
@@ -252,7 +252,7 @@ class LaserPath:
         Returns
         -------
         numpy.ndarray
-            The `y`-coordinates of the points in the laser path
+            The `y`-coordinates of the points in the laser path.
 
         See Also
         --------
@@ -292,7 +292,7 @@ class LaserPath:
         Returns
         -------
         numpy.ndarray
-            The `z`-coordinates of the points in the laser path
+            The `z`-coordinates of the points in the laser path.
 
         See Also
         --------
@@ -493,7 +493,7 @@ class LaserPath:
         dy: float, optional
             Displacement along `y`-direction [mm].
         radius: float, optional
-            Curvature radius of the S-bend [mm]. The default value is `self.radius`
+            Curvature radius of the S-bend [mm]. The default value is `self.radius`.
 
         Returns
         -------
@@ -527,7 +527,7 @@ class LaserPath:
 
         Returns
         -------
-        None
+        None.
         """
 
         if self._x.size != 0:
@@ -560,7 +560,7 @@ class LaserPath:
 
         Returns
         -------
-        None
+        None.
         """
 
         if not self._x.size:
@@ -599,7 +599,7 @@ class LaserPath:
 
         Returns
         -------
-        None
+        None.
         """
         self._x = np.append(self._x, x.astype(np.float32))
         self._y = np.append(self._y, y.astype(np.float32))
@@ -711,12 +711,12 @@ class LaserPath:
 
         Returns
         -------
-        None
+        None.
         """
 
         fn = pathlib.Path(filename)
         if fn.suffix not in ['.pickle', 'pkl']:
-            fn = pathlib.Path(fn.stem + '.pkl')
+            fn = pathlib.Path(fn.stem + '.pickle')
         with open(fn, 'wb') as p:
             if as_dict:
                 dill.dump(attrs.asdict(self), p)

@@ -3,7 +3,6 @@ from __future__ import annotations
 import attrs
 import numpy as np
 from femto import logger
-from femto.helpers import dotdict
 from femto.helpers import split_mask
 from femto.laserpath import LaserPath
 from PIL import Image
@@ -50,8 +49,6 @@ class RasterImage(LaserPath):
         The function takes an image, converts it to a boolean matrix, and create a laser path with ablation lines
         representing  only the black pixels of the image.
 
-        :param img: Image.Image - the image to be converted to a path
-
         Parameters
         ----------
         img : Image.Image
@@ -59,7 +56,7 @@ class RasterImage(LaserPath):
 
         Returns
         -------
-        None
+        None.
         """
         # displaying image information
         self.img_size = img.size  # update of img_size property
