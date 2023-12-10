@@ -6,7 +6,6 @@ DEBUGFORMATTER = '[%(asctime)s] [%(levelname)s] (%(filename)s:%(lineno)s) \t- %(
 
 
 class CustomConsoleFormatter(logging.Formatter):
-
     white = '\033[0;97m'
     cyan = '\033[0;96m'
     yellow = '\033[0;93m'

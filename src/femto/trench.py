@@ -883,7 +883,7 @@ def main() -> None:
     # b = T._trench_list[0]
     # b = T._trenchbed[0]
     for tr in utc.trench_list:
-        for (x, y) in tr.toolpath():
+        for x, y in tr.toolpath():
             plt.plot(x, y)
 
     plt.axis('equal')

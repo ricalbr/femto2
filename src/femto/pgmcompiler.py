@@ -92,7 +92,6 @@ class PGMCompiler:
         self.__attrs_init__(**filtered)
 
     def __attrs_post_init__(self) -> None:
-
         self._lasers = {
             'ant': Laser(name='ANT', lab='DIAMOND', axis='Z', pin=0, mode=1),
             'uwe': Laser(name='UWE', lab='FIRE', axis='X', pin=None, mode=None),
@@ -905,7 +904,7 @@ class PGMCompiler:
 
         # Convert points if G-Code commands
         args = [self._format_args(x, y, z, f) for (x, y, z, f) in zip(x_gc, y_gc, z_gc, f_gc)]
-        for (arg, s) in itertools.zip_longest(args, s_gc):
+        for arg, s in itertools.zip_longest(args, s_gc):
             if s == 0 and self._shutter_on is True:
                 self.instruction('\n')
                 self.dwell(self.short_pause)

@@ -32,7 +32,6 @@ def sin(dx: float, dy: float, dz: float, num_points: int, flat_peaks: float = 0,
 
 
 def double_sin(dy1: float, dy2: float, radius: float, num_points: int = 100, **kwargs) -> ptarray:
-
     # First part of the curve, sinusoidal S-bend with dy1 y-displacement
     dx1 = np.sqrt(4 * np.abs(dy1) * radius - dy1**2)
     x1, y1, _ = sin(dx=dx1, dy=dy1, dz=0, num_points=num_points, flat_peaks=0)
@@ -51,7 +50,6 @@ def double_sin(dy1: float, dy2: float, radius: float, num_points: int = 100, **k
 
 
 def jack_curve(dx: float, dy: float, dz: float, num_points: int, **kwargs) -> ptarray:
-
     dx1 = dx
     dx2 = kwargs['dx2'] or dx1
 
@@ -186,7 +184,6 @@ def euler_S4(
 
 
 def arc(dy: float, dz: float, num_points: int, radius: float, theta_offset: float = 0, **kwargs) -> ptarray:
-
     thetaf = np.arccos(1 - np.abs(dy) / (2 * radius))
     theta = theta_offset + 3 * np.pi / 2 + np.linspace(0, thetaf, num_points)
     x, y = radius * np.cos(theta), (radius * np.sin(theta)) + radius

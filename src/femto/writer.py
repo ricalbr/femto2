@@ -390,7 +390,6 @@ class TrenchWriter(Writer):
         dirname: str = 'TRENCH',
         **kwargs,
     ) -> None:
-
         p = copy.deepcopy(param)
         p.update(kwargs)
 
@@ -655,7 +654,7 @@ class TrenchWriter(Writer):
         ]
 
         gcode_instr = []
-        for (line, dec) in itertools.zip_longest(instr, listcast(forced_deceleration)):
+        for line, dec in itertools.zip_longest(instr, listcast(forced_deceleration)):
             if bool(dec):
                 gcode_instr.append(f'G9 G1 {line}\n')
             else:
@@ -1310,7 +1309,6 @@ class WaveguideWriter(Writer):
     """Waveguide Writer class."""
 
     def __init__(self, param: dict[str, Any], objects: list[Waveguide] | None = None, **kwargs) -> None:
-
         p = copy.deepcopy(param)
         p.update(kwargs)
 
@@ -1640,7 +1638,6 @@ class NasuWriter(Writer):
     """NasuWaveguide Writer class."""
 
     def __init__(self, param: dict[str, Any], objects: list[NasuWaveguide] | None = None, **kwargs) -> None:
-
         p = copy.deepcopy(param)
         p.update(kwargs)
 
@@ -1972,7 +1969,6 @@ class MarkerWriter(Writer):
     """Marker Writer class."""
 
     def __init__(self, param: dict[str, Any], objects: list[Marker] | None = None, **kwargs) -> None:
-
         p = copy.deepcopy(param)
         p.update(kwargs)
 
