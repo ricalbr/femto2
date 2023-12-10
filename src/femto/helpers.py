@@ -12,7 +12,6 @@ from typing import Iterator
 
 import numpy as np
 import numpy.typing as npt
-import yaml
 from shapely import geometry
 
 
@@ -131,11 +130,19 @@ def nest_level(lst: list[Any]) -> int:
 
 
 def flatten(items):
-    """
+    """Flatten list
+
     A recursive function that flattens a list.
 
-    :param items: input list
-    :return: list with the same elements of the input list but a single nesting level.
+    Parameters
+    ----------
+    items: list
+        Input list with an arbitrary nesting level.
+
+    Returns
+    -------
+    list
+        List with the same elements of the input list but a single nesting level.
     """
     try:
         for i, x in enumerate(items):
@@ -148,7 +155,8 @@ def flatten(items):
 
 
 def sign() -> Iterator[int]:
-    """
+    """Sign iterator
+
     A generator that cycles through +1 and -1.
 
     Code example:
@@ -164,7 +172,10 @@ def sign() -> Iterator[int]:
     -1
     ...
 
-    :return: iterator cycling through +1 and -1
+    Returns
+    -------
+    Iterator
+        Iterator cycling through +1 and -1
     """
     return itertools.cycle([1, -1])
 
@@ -191,10 +202,17 @@ def remove_repeated_coordinates(array: npt.NDArray[np.float32]) -> npt.NDArray[n
 
 # Filtering adjacent identical points from a list of arrays.
 def unique_filter(arrays: list[npt.NDArray[np.float32]]) -> npt.NDArray[np.float32]:
-    """Remove duplicate subsequent points.
+    """Remove duplicate subsequent points
 
-    It takes a list of numpy arrays and returns a numpy array of unique rows. At least one coordinate have to
-    change between two consecutive lines of the [X,Y,Z,F,S] matrix.
+    Filtering adjacent identical points from a list of arrays.
+    The function is different from other unique functions such as numpy's `unique` function. Indeed, `unique` return
+    (a sorted list of) the unique elements of the whole array. For example:
+
+    >>> x = np.array([1, 2, 3, 3, 3, 4, 3, 3])
+    >>> np.unique(x)
+    np.array([1, 2, 3, 4])
+    >>> unique_filter([x])
+    np.array([1, 2, 3, 4, 3])
 
     Duplicates can be selected by creating a boolean index mask as follows:
         - make a row-wise diff (`numpy.diff <https://numpy.org/doc/stable/reference/generated/numpy.diff.html>`_)
@@ -204,24 +222,6 @@ def unique_filter(arrays: list[npt.NDArray[np.float32]]) -> npt.NDArray[np.float
     In this way consecutive duplicates correspond to a 0 value in the latter array.
     Converting this array to boolean (all non-zero values are True) the index mask can be retrieved.
     The first element is set to True by default since it is lost by the diff operation.
-
-    Returns
-    -------
-    numpy.ndarray
-        Modified coordinate matrix (x, y, z, f, s) without duplicates.
-
-
-    Filtering adjacent identical points from a list of arrays.
-
-    Filter adjacent identical point from array. The function is different from other unique functions such as numpy's
-    `unique` function. Indeed, `unique` return (a sorted list of) the unique elements of the whole array.
-    For example:
-
-    >>> x = np.array([1, 2, 3, 3, 3, 4, 3, 3])
-    >>> np.unique(x)
-    np.array([1, 2, 3, 4])
-    >>> unique_filter([x])
-    np.array([1, 2, 3, 4, 3])
 
     `unique_filter` works also with multiple arrays. If the input list contains several elements, the arrays are
     stacked together to form a [length_array, length_list] matrix. Each row of this matrix represents the coordinates of
@@ -234,8 +234,15 @@ def unique_filter(arrays: list[npt.NDArray[np.float32]]) -> npt.NDArray[np.float
     >>> unique_filter([x, y])
     np.array([1, 2, 3, 3, 4, 3, 3])
 
-    :param arrays: list of arrays
-    :return: matrix of arrays, each row has the filtered points on a given coordinate-axis.
+    Parameters
+    ----------
+    arrays: list[numpy.ndarray]
+        List of arrays to filter.
+
+    Returns
+    -------
+    numpy.ndarray
+        Modified numpy matrix without adjacent duplicates.
     """
 
     # arrays list is empty
@@ -264,14 +271,23 @@ def unique_filter(arrays: list[npt.NDArray[np.float32]]) -> npt.NDArray[np.float
 
 
 def split_mask(arr: npt.NDArray[Any], mask: npt.NDArray[np.generic]) -> list[npt.NDArray[Any]]:
-    """
+    """Split maks
+
     Splits an array into sub-arrays based on a mask.
+    The function return the list of sub-arrays correspoding to True values.
 
-     The function return the list of sub-arrays correspoding to True values.
+    Parameters
+    ----------
 
-    :param arr: Input array
-    :param mask: Boolean array used as mask to split the input array
-    :return: List of arrays associated to True (1) values of mask.
+    arr: numpy.ndarray
+        Input array.
+    maks: numpy.ndarray[bool]
+        Boolean array used as mask to split the input array.
+
+    Returns
+    -------
+    list[numpy.ndarray]
+        List of arrays associated to True (1) values of mask.
     """
     arr, mask = np.array(arr), np.array(mask)
     indices = np.nonzero(mask[1:] != mask[:-1])[0] + 1
@@ -303,43 +319,6 @@ def almost_equal(
     :return: boolean value True if the polygon are almost equal, False otherwise
     """
     return bool(polygon.symmetric_difference(other).area < tol)
-
-
-def load_parameters(param_file: str | pathlib.Path) -> list[dict[str, Any]]:
-    """
-    The `load_param` function loads a YAML configuration file and returns a list of dictionaries containing the
-    parameters.
-    The function first opens the YAML file in binary mode and uses the `tomli` library to load the configuration into a
-    dictionary. The function then removes the `DEFAULT` dictionary from the configuration and merges its contents
-    with the other dictionaries in the configuration. Finally, the function returns a list of dictionaries,
-    where each dictionary contains the merged contents of the `DEFAULT` dictionary and one of the other dictionaries
-    in the configuration.
-
-    Parameters
-    ----------
-    param_file: str, pathlib.Path
-        Path to the YAML parameter file.
-
-    Returns
-    -------
-    List of the parameters dictionaries.
-    """
-
-    fp = pathlib.Path(param_file).stem + '.yaml'
-    with open(fp, mode='rb') as f:
-        config = yaml.safe_load(f)
-
-    if not config:
-        return []
-
-    # remove the DEFAULT dictionary and merge it to all the other dictionaries
-    try:
-        default_dict = config.pop('DEFAULT')
-    except KeyError:
-        default_dict = {}
-
-    dc = [dict(config[s]) for s in config.keys()]
-    return [{**default_dict, **param_dict} for param_dict in dc]
 
 
 def normalize_polygon(poly: geometry.Polygon) -> geometry.Polygon:
@@ -420,7 +399,20 @@ def walklevel(path: str | pathlib.Path, depth: int = 1):
     If depth is 1, the current directory is listed.
     If depth is 0, nothing is returned.
     If depth is -1 (or less than 0), the full depth is walked.
+
+    Parameters
+    ----------
+    path: str | pathlib.Path
+        Path of the directory to explore.
+    depth: int
+        Number of directory-tree levels to traverse.
+
+    Returns
+    -------
+    Generator[tuple]
+        root, subdirectories, files
     """
+
     # If depth is negative, just walk
     # Not using yield from for python2 compat and copy dirs to keep consistant behavior for depth = -1 and depth = inf
     if depth < 0:

@@ -1,16 +1,15 @@
 from __future__ import annotations
 
-import pathlib
+import os
 
 import numpy as np
 import pytest
-import yaml
 from femto.helpers import almost_equal
 from femto.helpers import dotdict
 from femto.helpers import flatten
 from femto.helpers import grouped
 from femto.helpers import listcast
-from femto.helpers import load_parameters
+from femto.helpers import lookahead
 from femto.helpers import nest_level
 from femto.helpers import pairwise
 from femto.helpers import remove_repeated_coordinates
@@ -18,6 +17,7 @@ from femto.helpers import sign
 from femto.helpers import split_mask
 from femto.helpers import swap
 from femto.helpers import unique_filter
+from femto.helpers import walklevel
 from femto.waveguide import Waveguide
 from shapely.geometry import Point
 from shapely.geometry import Polygon
@@ -269,139 +269,6 @@ def test_dotdict():
     del dd
 
 
-def test_load_param_empty_default():
-
-    PARAM_WG = dict(
-        scan=6,
-        speed=15,
-        speed_closed=60,
-        radius=15,
-        y_init=1.25,
-        depth=0.035,
-        pitch_fa=0.127,
-        shrink_correction_factor=0.9993,
-        pitch=0.080,
-        int_length=0.0,
-        arm_length=0.0,
-        ltrench=0.0,
-        dz_bridge=0.000,
-        lsafe=2,
-    )
-    PARAM_MK = dict(
-        scan=1,
-        speed=1,
-        depth=0.000,
-        speed_pos=5,
-        lx=1.0,
-        ly=0.040,
-    )
-    PARAM_GC = dict(filename='UPP8.pgm', laser='PHAROS', aerotech_angle=0.0, rotation_angle=0.0)
-    p_dicts = {'DEFAULT': {}, 'wg': PARAM_WG, 'mk': PARAM_MK, 'gc': PARAM_GC}
-
-    with open('test.yaml', 'w') as f:
-        yaml.dump(p_dicts, f, sort_keys=False)
-
-    pw, pm, pg = load_parameters('test.yaml')
-    assert pw == PARAM_WG
-    assert pm == PARAM_MK
-    assert pg == PARAM_GC
-    pathlib.Path('test.yaml').unlink()
-
-
-def test_load_param_no_default():
-
-    PARAM_WG = dict(
-        scan=6,
-        speed=15,
-        speed_closed=60,
-        radius=15,
-        y_init=1.25,
-        depth=0.035,
-        pitch_fa=0.127,
-        shrink_correction_factor=0.9993,
-        pitch=0.080,
-        int_length=0.0,
-        arm_length=0.0,
-        ltrench=0.0,
-        dz_bridge=0.000,
-        lsafe=2,
-    )
-    PARAM_MK = dict(
-        scan=1,
-        speed=1,
-        depth=0.000,
-        speed_pos=5,
-        lx=1.0,
-        ly=0.040,
-    )
-    PARAM_GC = dict(
-        filename='UPP8.pgm',
-        laser='PHAROS',
-        aerotech_angle=0.0,
-        rotation_angle=0.0,
-    )
-    p_dicts = {'wg': PARAM_WG, 'mk': PARAM_MK, 'gc': PARAM_GC}
-
-    with open('test.yaml', 'w') as f:
-        yaml.dump(p_dicts, f, sort_keys=False)
-
-    pw, pm, pg = load_parameters('test.yaml')
-    assert pw == PARAM_WG
-    assert pm == PARAM_MK
-    assert pg == PARAM_GC
-    pathlib.Path('test.yaml').unlink()
-
-
-def test_load_param_pathlib():
-
-    PARAM_WG = dict(
-        scan=6,
-        speed=15,
-        speed_closed=60,
-        radius=15,
-        y_init=1.25,
-        depth=0.035,
-        pitch_fa=0.127,
-        shrink_correction_factor=0.9993,
-        pitch=0.080,
-        int_length=0.0,
-        arm_length=0.0,
-        ltrench=0.0,
-        dz_bridge=0.000,
-        lsafe=2,
-    )
-    PARAM_MK = dict(
-        scan=1,
-        speed=1,
-        depth=0.000,
-        speed_pos=5,
-        lx=1.0,
-        ly=0.040,
-    )
-    PARAM_GC = dict(filename='UPP8.pgm', laser='PHAROS', aerotech_angle=0.0, rotation_angle=0.0)
-    p_dicts = {'wg': PARAM_WG, 'mk': PARAM_MK, 'gc': PARAM_GC}
-
-    fp = pathlib.Path('test.yaml')
-    with open(fp, 'w') as f:
-        yaml.dump(p_dicts, f, sort_keys=False)
-
-    pw, pm, pg = load_parameters(fp)
-    assert pw == PARAM_WG
-    assert pm == PARAM_MK
-    assert pg == PARAM_GC
-    pathlib.Path('test.yaml').unlink()
-
-
-def test_load_param_empty():
-    p_dicts = {}
-    fp = pathlib.Path('test.yaml')
-    with open(fp, 'w') as f:
-        yaml.dump(p_dicts, f, sort_keys=False)
-
-    assert load_parameters(fp) == []
-    pathlib.Path('test.yaml').unlink()
-
-
 @pytest.mark.parametrize(
     'arr, exp',
     [
@@ -415,7 +282,19 @@ def test_load_param_empty():
         (np.array([1, 2, 2, 2, 3, 3, 4]), np.array([1, 2, np.nan, np.nan, 3, np.nan, 4])),
     ],
 )
-def test_remove_doubles(arr, exp):
+def test_remove_doubles(arr, exp) -> None:
     a = remove_repeated_coordinates(arr)
     assert len(a) == len(exp)
     np.testing.assert_array_equal(a, exp)
+
+
+def test_look_ahead() -> None:
+    a = [1, 2, 3, 4, 5, 6, 7, 8]
+    last_elem = [False] * 7 + [True]
+
+    assert list(zip(a, last_elem)) == list(lookahead(a))
+
+
+def test_walklevel_0() -> None:
+    res = walklevel(os.getcwd(), depth=0)
+    assert list(res) == []
