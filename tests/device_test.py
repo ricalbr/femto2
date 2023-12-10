@@ -578,15 +578,15 @@ def test_device_export(device, list_wg, list_mk) -> None:
     device.add([list_wg, list_mk])
     device.export()
     for i, _ in enumerate(list_wg):
-        fn = Path().cwd() / 'EXPORT' / 'base' / f'WG_{i + 1:02}.pkl'
+        fn = Path().cwd() / 'EXPORT' / 'BASE' / f'WG_{i + 1:02}.pickle'
         assert fn.is_file()
         fn.unlink()
     for i, _ in enumerate(list_mk):
-        fn = Path().cwd() / 'EXPORT' / 'base' / f'MK_{i + 1:02}.pkl'
+        fn = Path().cwd() / 'EXPORT' / 'BASE' / f'MK_{i + 1:02}.pickle'
         assert fn.is_file()
         fn.unlink()
 
-    (Path().cwd() / 'EXPORT' / 'base').rmdir()
+    (Path().cwd() / 'EXPORT' / 'BASE').rmdir()
     (Path().cwd() / 'EXPORT').rmdir()
 
 
@@ -594,15 +594,15 @@ def test_device_export_verbose(device, list_wg, list_mk) -> None:
     device.add([list_wg, list_mk])
     device.export()
     for i, _ in enumerate(list_wg):
-        fn = Path().cwd() / 'EXPORT' / 'base' / f'WG_{i + 1:02}.pkl'
+        fn = Path().cwd() / 'EXPORT' / 'BASE' / f'WG_{i + 1:02}.pickle'
         assert fn.is_file()
         fn.unlink()
     for i, _ in enumerate(list_mk):
-        fn = Path().cwd() / 'EXPORT' / 'base' / f'MK_{i + 1:02}.pkl'
+        fn = Path().cwd() / 'EXPORT' / 'BASE' / f'MK_{i + 1:02}.pickle'
         assert fn.is_file()
         fn.unlink()
 
-    (Path().cwd() / 'EXPORT' / 'base').rmdir()
+    (Path().cwd() / 'EXPORT' / 'BASE').rmdir()
     (Path().cwd() / 'EXPORT').rmdir()
 
 
@@ -610,7 +610,7 @@ def test_device_load_verbose(device, list_wg, list_mk, gc_param) -> None:
     device.add([list_wg, list_mk])
     device.export()
 
-    fn = Path().cwd() / 'EXPORT' / 'base'
+    fn = Path().cwd() / 'EXPORT' / 'BASE'
 
     d2 = Device.load_objects(fn, gc_param, verbose=True)
     assert d2.cells['base'].objects[Waveguide]
@@ -626,7 +626,7 @@ def test_device_load_verbose(device, list_wg, list_mk, gc_param) -> None:
         for file in files:
             (pathlib.Path(root) / file).unlink()
 
-    (Path().cwd() / 'EXPORT' / 'base').rmdir()
+    (Path().cwd() / 'EXPORT' / 'BASE').rmdir()
     (Path().cwd() / 'EXPORT').rmdir()
 
 
@@ -635,9 +635,8 @@ def test_device_load_empty(list_wg, list_mk, list_tcol, gc_param) -> None:
     device = Device(**gc_param)
     device.add([list_tcol, list_wg, list_mk])
     device.export()
-    del device
 
-    fn = Path().cwd() / 'EXPORT' / 'base'
+    fn = Path().cwd() / 'EXPORT' / 'BASE'
 
     d2 = Device.load_objects(fn, gc_param, verbose=True)
     assert d2.cells['base'].objects[Waveguide]
@@ -653,7 +652,7 @@ def test_device_load_empty(list_wg, list_mk, list_tcol, gc_param) -> None:
         for file in files:
             (pathlib.Path(root) / file).unlink()
 
-    (Path().cwd() / 'EXPORT' / 'base').rmdir()
+    (Path().cwd() / 'EXPORT' / 'BASE').rmdir()
     (Path().cwd() / 'EXPORT').rmdir()
 
 
@@ -663,15 +662,15 @@ def test_device_export_non_base_cell(device, list_wg, list_mk) -> None:
     device.add(cell)
     device.export()
     for i, _ in enumerate(list_wg):
-        fn = Path().cwd() / 'EXPORT' / 'test' / f'WG_{i + 1:02}.pkl'
+        fn = Path().cwd() / 'EXPORT' / 'TEST' / f'WG_{i + 1:02}.pickle'
         assert fn.is_file()
         fn.unlink()
     for i, _ in enumerate(list_mk):
-        fn = Path().cwd() / 'EXPORT' / 'test' / f'MK_{i + 1:02}.pkl'
+        fn = Path().cwd() / 'EXPORT' / 'TEST' / f'MK_{i + 1:02}.pickle'
         assert fn.is_file()
         fn.unlink()
 
-    (Path().cwd() / 'EXPORT' / 'test').rmdir()
+    (Path().cwd() / 'EXPORT' / 'TEST').rmdir()
     (Path().cwd() / 'EXPORT').rmdir()
 
 
@@ -682,7 +681,7 @@ def test_device_load_non_base_cell(device, gc_param, list_wg, list_mk, list_tcol
     device.export()
     del device
 
-    fn = Path().cwd() / 'EXPORT' / 'test'
+    fn = Path().cwd() / 'EXPORT' / 'TEST'
 
     d2 = Device.load_objects(fn, gc_param, verbose=True)
     assert d2.cells['test'].objects[Waveguide]
@@ -698,5 +697,5 @@ def test_device_load_non_base_cell(device, gc_param, list_wg, list_mk, list_tcol
         for file in files:
             (pathlib.Path(root) / file).unlink()
 
-    (Path().cwd() / 'EXPORT' / 'test').rmdir()
+    (Path().cwd() / 'EXPORT' / 'TEST').rmdir()
     (Path().cwd() / 'EXPORT').rmdir()

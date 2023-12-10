@@ -118,7 +118,7 @@ def test_from_dict(param) -> None:
 
 def test_load(param) -> None:
     lp1 = LaserPath(**param)
-    fn = Path('obj.pkl')
+    fn = Path('obj.pickle')
     with open(fn, 'wb') as f:
         dill.dump(attrs.asdict(lp1), f)
 

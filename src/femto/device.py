@@ -4,6 +4,7 @@ import collections
 import copy
 import pathlib
 from typing import Any
+from typing import Union
 
 import attrs
 import dill
@@ -39,7 +40,7 @@ types = dict(
     TC=TrenchColumn,
     UTC=UTrenchColumn,
 )
-femtobj = Waveguide | NasuWaveguide | Marker | Trench | TrenchColumn | UTrenchColumn
+femtobj = Union[Waveguide, NasuWaveguide, Marker, Trench, TrenchColumn, UTrenchColumn]
 
 writers = {
     TrenchColumn: TrenchWriter,
@@ -112,7 +113,7 @@ class Cell:
                 raise TypeError(f'Found unexpected type {err.args}.')
 
     def add(self, objs: femtobj | tuple[femtobj] | list[femtobj]) -> None:
-        if all(isinstance(obj, femtobj) for obj in flatten([objs])):
+        if all(isinstance(obj, femtobj.__args__) for obj in flatten([objs])):
             self.parse_objects(objs)
         else:
             logger.error(
@@ -166,7 +167,7 @@ class Device:
         for elem in objs:
             if isinstance(elem, Cell):
                 self.add_cell(elem)
-            elif isinstance(elem, femtobj):
+            elif isinstance(elem, femtobj.__args__):
                 if self._print_base_cell_warning:
                     logger.warning('femto objects added straight to a Device will be added to a common layer: BASE.')
                     self._print_base_cell_warning = False

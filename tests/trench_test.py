@@ -370,7 +370,7 @@ def test_trenchcol_from_dict(param) -> None:
 
 def test_load(param) -> None:
     tc1 = TrenchColumn(**param)
-    fn = Path('obj.pkl')
+    fn = Path('obj.pickle')
     with open(fn, 'wb') as f:
         dill.dump(attrs.asdict(tc1), f)
 

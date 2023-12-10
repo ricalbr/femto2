@@ -1148,7 +1148,7 @@ class PGMCompiler:
                 raise ValueError(f'Wrong sample size dimensions. Given ({self.samplesize[0]}, {self.samplesize[1]}).')
 
             function_txt = self.CWD / 'POS.txt'
-            function_pickle = self.CWD / 'fwarp.pkl'
+            function_pickle = self.CWD / 'fwarp.pickle'
 
             if function_pickle.is_file():
                 with open(function_pickle, 'rb') as f_read:
