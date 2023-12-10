@@ -578,11 +578,11 @@ def test_device_export(device, list_wg, list_mk) -> None:
     device.add([list_wg, list_mk])
     device.export()
     for i, _ in enumerate(list_wg):
-        fn = Path().cwd() / 'EXPORT' / 'base' / f'WG_{i + 1:02}.pkl'
+        fn = Path().cwd() / 'EXPORT' / 'base' / f'WG_{i + 1:02}.pickle'
         assert fn.is_file()
         fn.unlink()
     for i, _ in enumerate(list_mk):
-        fn = Path().cwd() / 'EXPORT' / 'base' / f'MK_{i + 1:02}.pkl'
+        fn = Path().cwd() / 'EXPORT' / 'base' / f'MK_{i + 1:02}.pickle'
         assert fn.is_file()
         fn.unlink()
 
@@ -594,11 +594,11 @@ def test_device_export_verbose(device, list_wg, list_mk) -> None:
     device.add([list_wg, list_mk])
     device.export()
     for i, _ in enumerate(list_wg):
-        fn = Path().cwd() / 'EXPORT' / 'base' / f'WG_{i + 1:02}.pkl'
+        fn = Path().cwd() / 'EXPORT' / 'base' / f'WG_{i + 1:02}.pickle'
         assert fn.is_file()
         fn.unlink()
     for i, _ in enumerate(list_mk):
-        fn = Path().cwd() / 'EXPORT' / 'base' / f'MK_{i + 1:02}.pkl'
+        fn = Path().cwd() / 'EXPORT' / 'base' / f'MK_{i + 1:02}.pickle'
         assert fn.is_file()
         fn.unlink()
 
@@ -663,11 +663,11 @@ def test_device_export_non_base_cell(device, list_wg, list_mk) -> None:
     device.add(cell)
     device.export()
     for i, _ in enumerate(list_wg):
-        fn = Path().cwd() / 'EXPORT' / 'test' / f'WG_{i + 1:02}.pkl'
+        fn = Path().cwd() / 'EXPORT' / 'test' / f'WG_{i + 1:02}.pickle'
         assert fn.is_file()
         fn.unlink()
     for i, _ in enumerate(list_mk):
-        fn = Path().cwd() / 'EXPORT' / 'test' / f'MK_{i + 1:02}.pkl'
+        fn = Path().cwd() / 'EXPORT' / 'test' / f'MK_{i + 1:02}.pickle'
         assert fn.is_file()
         fn.unlink()
 
