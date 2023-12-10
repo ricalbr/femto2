@@ -375,7 +375,7 @@ class Writer(PGMCompiler, abc.ABC):
         filepath.mkdir(exist_ok=True, parents=True)
 
         for i, el in enumerate(self.objs):
-            objpath = filepath / f'{el.id}_{i + 1:02}.pkl'
+            objpath = filepath / f'{el.id}_{i + 1:02}.pickle'
             with open(objpath, 'wb') as f:
                 dill.dump(el, f)
 

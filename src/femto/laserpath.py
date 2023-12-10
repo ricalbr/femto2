@@ -745,7 +745,7 @@ def main() -> None:
     print(lpath.points.T)
 
     # Export Laserpath
-    lpath.export('LP.pkl')
+    lpath.export('LP.pickle')
 
     # Plot
     fig = plt.figure()

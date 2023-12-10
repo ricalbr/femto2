@@ -323,7 +323,7 @@ def test_dwell_time(param, p, t, expected) -> None:
 def test_antiwarp_management(param, xy, expected) -> None:
     from pathlib import Path
 
-    function_pickle = Path.cwd() / 'fwarp.pkl'
+    function_pickle = Path.cwd() / 'fwarp.pickle'
     G = PGMCompiler(**param)
     f = G.warp_management(opt=False)
     assert f(xy) == expected
@@ -342,7 +342,7 @@ def test_antiwarp_management(param, xy, expected) -> None:
 def test_antiwarp_error(param, samplesize, expectation) -> None:
     from pathlib import Path
 
-    function_pickle = Path.cwd() / 'fwarp.pkl'
+    function_pickle = Path.cwd() / 'fwarp.pickle'
     param['samplesize'] = samplesize
     G = PGMCompiler(**param)
     with expectation:
@@ -359,7 +359,7 @@ def test_fwarp_load(param, x, y) -> None:
     def fun(h, k):
         return h**2 * k
 
-    file = Path.cwd() / 'fwarp.pkl'
+    file = Path.cwd() / 'fwarp.pickle'
     if not file.is_file():
         with open(file, 'wb') as f:
             dill.dump(fun, f)
@@ -374,7 +374,7 @@ def test_antiwarp_creation(param) -> None:
     from pathlib import Path
 
     fn = 'POS.txt'
-    funpath = Path.cwd() / 'fwarp.pkl'
+    funpath = Path.cwd() / 'fwarp.pickle'
     pospath = Path.cwd() / fn
 
     x_in = np.linspace(0, 100, 50)
@@ -1122,7 +1122,7 @@ def test_compensate(param, x, y, z) -> None:
         x, y = h.T
         return (x**2 * y) * 1e-3
 
-    funpath = Path.cwd() / 'fwarp.pkl'
+    funpath = Path.cwd() / 'fwarp.pickle'
     with open(funpath, 'wb') as f:
         dill.dump(fun, f)
 
@@ -1194,7 +1194,7 @@ def test_transform_points_(param, xflip, yflip, warpf, angle, xin, yin, zin, xo,
     def fun(h):
         return -1e-3
 
-    file = Path.cwd() / 'fwarp.pkl'
+    file = Path.cwd() / 'fwarp.pickle'
     if not file.is_file():
         with open(file, 'wb') as f:
             dill.dump(fun, f)
