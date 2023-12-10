@@ -4,6 +4,7 @@ import collections
 import copy
 import pathlib
 from typing import Any
+from typing import Union
 
 import attrs
 import dill
@@ -39,7 +40,7 @@ types = dict(
     TC=TrenchColumn,
     UTC=UTrenchColumn,
 )
-femtobj = Waveguide | NasuWaveguide | Marker | Trench | TrenchColumn | UTrenchColumn
+femtobj = Union[Waveguide, NasuWaveguide, Marker, Trench, TrenchColumn, UTrenchColumn]
 
 writers = {
     TrenchColumn: TrenchWriter,
