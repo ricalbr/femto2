@@ -339,6 +339,7 @@ class Device:
         logger.info('Plotting 3D objects...')
         self.fig = go.Figure()
         for cell in self.cells_collection.values():
+            logger.debug(f'3D plot of cell {cell.name.upper()}.')
             wrs = writers
             for typ, list_objs in cell.objects.items():
                 wr = wrs[typ](self._param, objects=list_objs)
