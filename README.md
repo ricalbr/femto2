@@ -17,6 +17,7 @@
 
 ![Tests](https://github.com/ricalbr/femto/actions/workflows/tests.yml/badge.svg)
 [![Documentation Status](https://readthedocs.org/projects/femto2/badge/?version=latest)](https://femto2.readthedocs.io/en/latest/?badge=latest)
+[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 </div>
 
