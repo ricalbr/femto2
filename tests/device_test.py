@@ -123,6 +123,9 @@ def test_cell_init(cell) -> None:
         ('test_test', 'test_test'),
         ('A B C', 'a-b-c'),
         ('ab C', 'ab-c'),
+        ('ab C  ', 'ab-c'),
+        ('ab C     ', 'ab-c'),
+        ('ab C     d', 'ab-c-----d'),
     ],
 )
 def test_cell_rename(name, exp) -> None:

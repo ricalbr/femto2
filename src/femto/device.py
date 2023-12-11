@@ -74,10 +74,10 @@ class Cell:
             Waveguide: [],
             NasuWaveguide: [],
         }
-        self.name = self.name.lower()
+        self.name = self.name.lower().strip()
         if self.name != self.name.split(' '):
             self.name = self.name.replace(' ', '-')
-        logger.info(f'Cell {self.name.replace("-", " ").upper()}.')
+        logger.info(f'Init Cell {self.name.replace("-", " ").upper()}.')
 
     def __repr__(self) -> str:
         return f'Cell {self.name}'
@@ -302,10 +302,10 @@ class Device:
         """
         logger.info('Plotting 2D objects...')
         self.fig = go.Figure()
-        for layer in self.cells_collection.values():
-            logger.debug(f'2D plot of layer {layer}.')
+        for cell in self.cells_collection.values():
+            logger.debug(f'2D plot of cell {cell.name.upper()}.')
             wrs = writers
-            for typ, list_objs in layer.objects.items():
+            for typ, list_objs in cell.objects.items():
                 wr = wrs[typ](self._param, objects=list_objs)
                 self.fig = wr.plot2d(fig=self.fig, show_shutter_close=show_shutter_close)
         x0, y0, x1, y1 = writers[Waveguide](self._param)._get_glass_borders()
@@ -338,10 +338,9 @@ class Device:
         """
         logger.info('Plotting 3D objects...')
         self.fig = go.Figure()
-        for layer in self.cells_collection.values():
-            logger.debug(f'3D plot of layer {layer}.')
+        for cell in self.cells_collection.values():
             wrs = writers
-            for typ, list_objs in layer.objects.items():
+            for typ, list_objs in cell.objects.items():
                 wr = wrs[typ](self._param, objects=list_objs)
                 self.fig = wr.plot3d(fig=self.fig, show_shutter_close=show_shutter_close)
         self.fig = plot3d_base_layer(self.fig)
@@ -403,10 +402,10 @@ class Device:
         -------
         None.
         """
-        for layer in self.cells_collection.values():
-            logger.debug(f'Compile G-Code of {layer} layer.')
+        for cell in self.cells_collection.values():
+            logger.info(f'Generate G-Code of cell: {cell.name.upper()}.')
             wrs = writers
-            for typ, list_objs in layer.objects.items():
+            for typ, list_objs in cell.objects.items():
                 wr = wrs[typ](self._param, objects=list_objs)
                 wr.pgm(verbose=verbose)
                 self.fabrication_time += wr.fab_time
@@ -428,11 +427,11 @@ class Device:
         None.
         """
         logger.info('Exporting layer objects...')
-        for layer in self.cells_collection.values():
+        for cell in self.cells_collection.values():
             wrs = writers
-            for typ, list_objs in layer.objects.items():
+            for typ, list_objs in cell.objects.items():
                 wr = wrs[typ](self._param, objects=list_objs)
-                wr.export(filename=layer.name.upper(), export_dir=export_dir)
+                wr.export(filename=cell.name.upper(), export_dir=export_dir)
         logger.info('Export completed.')
 
     def xlsx(self, metadata: dict[str, Any] | None = None, **kwargs) -> None:
@@ -555,9 +554,9 @@ def main() -> None:
     test.add_to_cell('2', coup)
 
     # test.plot2d()
-    # test.save('scheme.pdf')
-    # test.pgm()
-    # test.xlsx()
+    test.save('scheme.pdf')
+    test.pgm()
+    test.xlsx()
     # test.export()
 
     # test2 = Device.load_objects('.\EXPORT', param_gc)
