@@ -3,8 +3,8 @@ requires = ["setuptools>=42.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
-addopts = "--cache-clear --lf --last-failed-no-failures all -p no:logging"
-#addopts = "--cache-clear --lf --last-failed-no-failures all -p no:logging --cov=src --cov-report html:tests/covreport_html"
+addopts = "--cache-clear --lf --last-failed-no-failures all -p no:logging --cov=src --cov-report=xml:tests/covreport"
+#addopts = "--cache-clear --lf --last-failed-no-failures all -p no:logging --cov=src --cov-report html:_html"
 filterwarnings = [
     "ignore::DeprecationWarning",
 ]
