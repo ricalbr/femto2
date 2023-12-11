@@ -7,25 +7,28 @@ DEBUGFORMATTER = '[%(asctime)s] [%(levelname)s] (%(filename)s:%(lineno)s) \t- %(
 
 class CustomConsoleFormatter(logging.Formatter):
 
-    bold = '\x1b[1m'
     reset = '\x1b[0m'
+    bold = '\x1b[1m'
+    italic = '\x1b[3m'
+    reverse = '\x1b[7m'
 
     white = f'{reset}\x1b[38;2;255;255;255m'
-    bold_white = f'{bold}\x1b[38;2;255;255;255m'
+    bold_white = f'{reset}{bold}\x1b[38;2;255;255;255m'
     yellow = f'{reset}\x1b[38;2;255;255;95m'
-    bold_yellow = f'{bold}\x1b[38;2;255;255;95m'
-    mintgreen = f'\x1b[38;2;153;255;153m'
-    bold_mintgreen = f'{bold}\x1b[38;2;153;255;153m'
-    red = f'\x1b[38;2;255;127;80m'
-    bold_red = f'{bold}\x1b[38;2;255;127;80m'
-    rev_bold_red = f'\x1b[7m{bold}38;2;255;127;80m'
+    italic_yellow = f'{reset}{italic}\x1b[38;2;255;255;95m'
+    bold_yellow = f'{reset}{bold}\x1b[38;2;255;255;95m'
+    mintgreen = f'{reset}\x1b[38;2;153;255;153m'
+    bold_mintgreen = f'{reset}{bold}\x1b[38;2;153;255;153m'
+    red = f'{reset}\x1b[38;2;255;127;80m'
+    bold_red = f'{reset}{bold}\x1b[38;2;255;127;80m'
+    rev_bold_red = f'{reset}{reverse}{bold}38;2;255;127;80m'
 
     CONSOLEFORMATTER = '{}%(module)12s:  {}[%(levelname)-.3s]  {}%(message)s'
 
     FORMATS = {
         logging.DEBUG: CONSOLEFORMATTER.format(white, white, white),
         logging.INFO: CONSOLEFORMATTER.format(white, bold_mintgreen, white),
-        logging.WARNING: CONSOLEFORMATTER.format(white, bold_yellow, yellow),
+        logging.WARNING: CONSOLEFORMATTER.format(white, bold_yellow, italic_yellow),
         logging.ERROR: CONSOLEFORMATTER.format(white, bold_red, red),
         logging.CRITICAL: CONSOLEFORMATTER.format(white, rev_bold_red, rev_bold_red),
     }
