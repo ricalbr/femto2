@@ -108,7 +108,7 @@ class Spreadsheet:
         self.close()
 
     def header(self, desc_size: int = 8) -> None:
-        """Header
+        """Header.
 
         Write the header info to xlsx file.
 
@@ -119,7 +119,7 @@ class Spreadsheet:
 
         Returns
         -------
-        None
+        None.
         """
 
         # Set columns properties
@@ -151,7 +151,7 @@ class Spreadsheet:
         )
 
     def fabbrication_info(self, row: int = 8) -> None:
-        """Fabrication information
+        """Fabrication information.
 
         Write the fabrication info to xlsx file.
 
@@ -162,7 +162,7 @@ class Spreadsheet:
 
         Returns
         -------
-        None
+        None.
         """
 
         for pre_title, parameters in self._preamble_data.items():
@@ -200,13 +200,13 @@ class Spreadsheet:
 
         """
 
-        if not all([isinstance(obj, (Waveguide, NasuWaveguide, Marker)) for obj in obj_list]):
+        if not all([isinstance(obj, (Waveguide, NasuWaveguide)) for obj in obj_list]):
             logger.error(
-                'Objects for Spreasheet files must be of type Waveguide, NasuWaveguide or Marker.'
+                'Objects for Spreasheet files must be of type Waveguide or NasuWaveguide.'
                 f'Given {[type(obj) for obj in obj_list]}.'
             )
             raise ValueError(
-                'Objects for Spreasheet files must be of type Waveguide, NasuWaveguide or Marker.'
+                'Objects for Spreasheet files must be of type Waveguide, NasuWaveguide.'
                 f'Given {[type(obj) for obj in obj_list]}.'
             )
         cols_info, numerical_data = self._extract_data(obj_list)
@@ -400,7 +400,7 @@ class Spreadsheet:
                 continue
 
             # Ignore redundant columns (same value on all the rows) if explicitly requested
-            if not self.redundant_cols and np.all(table_lines[t] == table_lines[t][0]):
+            if not self.redundant_cols and np.all(table_lines[t] == table_lines[t][0]) and table_lines.shape[0] != 1:
                 ignored_fields.append(t)
             # Ignore columns with all the values greater than 1e5
             elif np.all(table_lines[t] >= 1e5):
@@ -461,7 +461,7 @@ class Spreadsheet:
 
         Returns
         -------
-        dt: type
+        type
             Type of the data.
 
         """
@@ -479,11 +479,11 @@ class Spreadsheet:
 class ColumnData:
     """Class that handles column data."""
 
-    tagname: str
-    name: str
-    unit: str
-    width: str
-    format: str
+    tagname: str  #: Tag of the data represented in the column.
+    name: str  #: Name of the column.
+    unit: str  #: Unit of measurement for the data in the column.
+    width: str  #: With of the column cells.
+    format: str  #: Formatting information for the data in the column.
 
     def __repr__(self):
         return self.name

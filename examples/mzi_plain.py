@@ -41,7 +41,7 @@ for i in range(2):
 
 # Create a device
 dev = Device(**PARAM_GC)
-dev.extend(mzi)
+dev.add(mzi)
 
 # Plot and pgm
 dev.plot3d()

@@ -72,7 +72,7 @@ class Waveguide(LaserPath):
         Returns
         -------
         float
-
+            `x`-displacement for an S-bend.
         """
 
         dx = float(self.get_sbend_parameter(self.dy_bend, self.radius)[1])
@@ -86,7 +86,7 @@ class Waveguide(LaserPath):
         Returns
         -------
         float
-            Sum of two `x`-displacements S-bend segments and the interaction distance straight segment.
+            Sum of two  S-bend `x`-displacements segments and the interaction distance straight segment.
         """
         dx = 2 * self.dx_bend + self.int_length
         logger.debug(f'Return dx for a coupler. dx = {dx}')
@@ -99,7 +99,7 @@ class Waveguide(LaserPath):
         Returns
         -------
         float
-            Sum of two `x`-displacements Directional Coupler segments and the ``arm_length`` distance straight segment.
+            Sum of two Directional Coupler `x`-displacements segments and the ``arm_length`` distance straight segment.
         """
         dx = 4 * self.dx_bend + 2 * self.int_length + self.arm_length
         logger.debug(f'Return dx for a MZI. dx = {dx}')
@@ -133,14 +133,14 @@ class Waveguide(LaserPath):
         fx: Callable
             Custom function that returns a triple of (`x`, `y`, `z`) coordinates describing the profile of the S-bend.
         disp_x: float, optional
-            `x`-displacement  for the sinusoidal bend. If the value is ``None`` (the default value),
-            the `x`-displacement is computed with the formula for the circular `S`-bend.
+            `x`-displacement for the bend. If the value is ``None`` (the default value), the `x`-displacement is
+            computed with the formula for the circular S-bend.
         radius: float, optional
             Curvature radius [mm]. The default value is `self.radius`.
         num_points: int, optional
             Number of points of the S-bend. The default value is computed using `self.speed` and `self.cmd_rate_max`.
         reverse: bool, optional
-            Flag to compute the bend's coordinate in reverse order.
+            Flag to compute the bend's coordinate in reverse order. The default value is `False`.
         speed: float, optional
             Translation speed [mm/s]. The default value is `self.speed`.
         shutter: int, optional
@@ -208,10 +208,49 @@ class Waveguide(LaserPath):
         disp_x2: float | None = None,
         radius: float | None = None,
         num_points: int | None = None,
+        reverse: bool = False,
         speed: float | None = None,
         shutter: int = 1,
         **kwargs,
     ) -> Waveguide:
+        """Double bend.
+
+        Concatenate two bend segments, with the same functional profile. If the profile is sinusoidal and the
+        displacements are not explicitly given by the user the funcion will compute them in order to match the
+        curvature in the junction point.
+
+        Parameters
+        ----------
+        dy1: float
+            `y`-displacement of the waveguide of the first S-bend [mm].
+        dz1: float
+            `z`-displacement of the waveguide of the first S-bend [mm].
+        dy2: float
+            `y`-displacement of the waveguide of the second S-bend [mm].
+        dz2: float
+            `z`-displacement of the waveguide of the second S-bend [mm].
+        fx: Callable
+            Custom function that returns a triple of (`x`, `y`, `z`) coordinates describing the profile of the s-bend.
+        disp_x1: float, optional
+            `x`-displacement for the first S-bend. if the value is ``None`` (the default value),
+            the `x`-displacement is computed with the formula for the circular S-bend.
+        radius: float, optional
+            Curvature radius [mm]. The default value is `self.radius`.
+        num_points: int, optional
+            Number of points of the s-bend. The default value is computed using `self.speed` and `self.cmd_rate_max`.
+        reverse: bool, optional
+            Flag to compute the bend's coordinate in reverse order. The default value is `False`.
+        speed: float, optional
+            Translation speed [mm/s]. The default value is `self.speed`.
+        shutter: int, optional
+            State of the shutter during the transition (0: 'OFF', 1: 'ON'). The default value is 1.
+        kwargs: optional
+            Additional arguments for the `fx` function.
+
+        Returns
+        -------
+        The object itself.
+        """
         self.bend(
             dy=dy1,
             dz=dz1,
@@ -219,6 +258,7 @@ class Waveguide(LaserPath):
             disp_x=disp_x1,
             radius=radius,
             num_points=num_points,
+            reverse=reverse,
             speed=speed,
             shutter=shutter,
             **kwargs,
@@ -234,6 +274,7 @@ class Waveguide(LaserPath):
             disp_x=disp_x2,
             radius=radius,
             num_points=num_points,
+            reverse=reverse,
             speed=speed,
             shutter=shutter,
             **kwargs,
@@ -269,14 +310,14 @@ class Waveguide(LaserPath):
         int_length: float, optional
             Length of the Directional Coupler's straight interaction region [mm]. The default is `self.int_length`.
         disp_x: float, optional
-            `x`-displacement  for the sinusoidal bend. If the value is ``None`` (the default value),
-            the `x`-displacement is computed with the formula for the circular `S`-bend.
+            `x`-displacement for the S-bend. If the value is ``None`` (the default value), the `x`-displacement is
+            computed with the formula for the circular S-bend.
         radius: float, optional
             Curvature radius [mm]. The default value is `self.radius`.
         num_points: int, optional
             Number of points of the S-bend. The default value is computed using `self.speed` and `self.cmd_rate_max`.
         reverse: bool, optional
-            Flag to compute the coupler's coordinate in reverse order.
+            Flag to compute the coupler's coordinate in reverse order. The default value is `False`.
         speed: float, optional
             Translation speed [mm/s]. The default value is `self.speed`.
         shutter: int
@@ -357,14 +398,14 @@ class Waveguide(LaserPath):
         arm_length: float, optional
             Length of the Mach-Zehnder Interferometer's straight arm [mm]. The default is `self.arm_length`.
         disp_x: float, optional
-            `x`-displacement  for the bend. If the value is ``None`` (the default value), the `x`-displacement is
-            computed with the formula for the circular `S`-bend.
+            `x`-displacement for the bend. If the value is ``None`` (the default value), the `x`-displacement is
+            computed with the formula for the circular S-bend.
         radius: float, optional
             Curvature radius [mm]. The default value is `self.radius`.
         num_points: int, optional
             Number of points of the S-bend. The default value is computed using `self.speed` and `self.cmd_rate_max`.
         reverse: bool, optional
-            Flag to compute the MZI's coordinate in reverse order.
+            Flag to compute the coupler's coordinate in reverse order. The default value is `False`.
         speed: float, optional
             Translation speed [mm/s]. The default value is `self.speed`.
         shutter: int
@@ -497,14 +538,8 @@ class NasuWaveguide(Waveguide):
         """Scan order.
 
         Given the number of adjacent scans it computes the list of adjacent scans as:
-
-        * if `self.adj_scan` is odd
-
-            ``[0, 1, -1, 2, -2, ...]``
-
-        * if `self.adj_scan` is even
-
-            ``[0.5, -0.5, 1.5, -1.5, 2.5, -2.5, ...]``
+        * if `self.adj_scan` is odd: ``[0, 1, -1, 2, -2, ...]``
+        * if `self.adj_scan` is even: ``[0.5, -0.5, 1.5, -1.5, 2.5, -2.5, ...]``
 
         Returns
         -------

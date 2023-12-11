@@ -13,7 +13,6 @@ import numpy.typing as npt
 from femto import logger
 from femto.helpers import flatten
 from femto.helpers import listcast
-from femto.helpers import nest_level
 from femto.helpers import split_mask
 from femto.marker import Marker
 from femto.pgmcompiler import PGMCompiler
@@ -23,6 +22,183 @@ from femto.trench import UTrenchColumn
 from femto.waveguide import NasuWaveguide
 from femto.waveguide import Waveguide
 from plotly import graph_objs as go
+
+
+def plot2d_base_layer(fig: go.Figure, x0: float, y0: float, x1: float, y1: float) -> go.Figure:
+    """2D plot base layer.
+
+    Helper function that update a 2D plot by adding the rectangle representing the sample glass, the `(0, 0)`
+    shift_origin point and formats the axis.
+
+    Parameters
+    ----------
+    fig : go.Figure
+        Plotly Figure object to update.
+    x0 : float
+        x-coordinate of the left-lower corner of the glass rectangle.
+    y0 : float
+        y-coordinate of the left-lower corner of the glass rectangle.
+    x1 : float
+        x-coordinate of the right-upper corner of the glass rectangle.
+    y1 : float
+        y-coordinate of the right-upper corner of the glass rectangle.
+
+    Returns
+    -------
+    go.Figure
+        Input figure updated with sample glass shape, shift_origin point and axis.
+    """
+
+    # GLASS
+    logger.debug('Add glass shape.')
+    fig.add_shape(
+        type='rect',
+        x0=x0,
+        y0=y0,
+        x1=x1,
+        y1=y1,
+        fillcolor='#E0F2F1',
+        line_color='#000000',
+        line_width=2,
+        layer='below',
+    )
+
+    # ORIGIN
+    logger.debug('Add origin reference.')
+    fig.add_trace(
+        go.Scattergl(
+            x=[0],
+            y=[0],
+            marker=dict(color='red', size=12),
+            hoverinfo='none',
+            showlegend=False,
+        )
+    )
+
+    logger.debug('Add axis labels.')
+    fig.update_layout(
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        margin=dict(pad=15),
+        xaxis=dict(
+            title='x [mm]',
+            showgrid=False,
+            zeroline=False,
+            showline=True,
+            linewidth=1,
+            linecolor='black',
+            ticklen=10,
+            tick0=0,
+            ticks='outside',
+            fixedrange=False,
+            minor=dict(
+                ticklen=5,
+                tickmode='linear',
+                ticks='outside',
+            ),
+        ),
+        yaxis=dict(
+            title='y [mm]',
+            showgrid=False,
+            zeroline=False,
+            showline=True,
+            linewidth=1,
+            linecolor='black',
+            ticklen=10,
+            tick0=0,
+            ticks='outside',
+            fixedrange=False,
+            minor=dict(
+                ticklen=5,
+                tickmode='linear',
+                ticks='outside',
+            ),
+        ),
+        annotations=[
+            dict(
+                x=0,
+                y=0,
+                text='(0,0)',
+                showarrow=False,
+                xanchor='left',
+                xshift=-25,
+                yshift=-20,
+                font=dict(color='red'),
+            )
+        ],
+    )
+    return fig
+
+
+def plot3d_base_layer(fig: go.Figure) -> go.Figure:
+    """3D plot base layer.
+
+    Helper function that update a 3D plot by adding the sample glass, the `(0, 0, 0)` shift_origin point and formats
+    the axis.
+
+    Parameters
+    ----------
+    fig : go.Figure
+        Plotly Figure object to update.
+
+    Returns
+    -------
+    go.Figure
+        Input figure updated with sample glass shape, shift_origin point and axis.
+    """
+    # ORIGIN
+    logger.debug('Add origin reference.')
+    fig.add_trace(
+        go.Scatter3d(
+            x=[0],
+            y=[0],
+            z=[0],
+            marker=dict(color='red', size=12),
+            hoverinfo='none',
+            showlegend=False,
+        )
+    )
+
+    logger.debug('Add axis labels and fix camera angle.')
+    fig.update_layout(
+        scene_camera=dict(up=dict(x=0, y=np.cos(45), z=np.sin(45)), eye=dict(x=0.0, y=0.0, z=-2.5)),
+        scene=dict(
+            bgcolor='rgba(0,0,0,0)',
+            aspectratio=dict(
+                x=2,
+                y=1,
+                z=0.25,
+            ),
+            xaxis=dict(
+                title='x [mm]',
+                showgrid=False,
+                zeroline=False,
+            ),
+            yaxis=dict(
+                title='y [mm]',
+                showgrid=False,
+                zeroline=False,
+            ),
+            zaxis=dict(
+                title='z [mm]',
+                showgrid=False,
+                zeroline=False,
+            ),
+            annotations=[
+                dict(
+                    x=0,
+                    y=0,
+                    z=0,
+                    text='(0,0,0)',
+                    showarrow=False,
+                    xanchor='left',
+                    xshift=10,
+                    font=dict(color='red'),
+                )
+            ],
+        ),
+    )
+    return fig
 
 
 class Writer(PGMCompiler, abc.ABC):
@@ -61,32 +237,15 @@ class Writer(PGMCompiler, abc.ABC):
         pass
 
     @abc.abstractmethod
-    def append(self, obj: Any) -> None:
-        """Append objects.
+    def add(self, obj: Any) -> None:
+        """Add objects.
 
-        Abstract method for appending objects to a Writer.
+        Abstract method for adding objects to a Writer.
 
         Parameters
         ----------
         obj : Any
-            Object to be appended to current Writer.
-
-        Returns
-        -------
-        None
-        """
-        pass
-
-    @abc.abstractmethod
-    def extend(self, obj: list[Any]) -> None:
-        """Extend objects list.
-
-        Abstract method for extending the object list of a Writer.
-
-        Parameters
-        ----------
-        obj : list(any)
-            List of objects to extend the Writer object list.
+            Object to be added to current Writer.
 
         Returns
         -------
@@ -182,173 +341,13 @@ class Writer(PGMCompiler, abc.ABC):
         """
         pass
 
-    def standard_2d_figure_update(self, fig: go.Figure) -> go.Figure:
-        """2D plot update.
-
-        Helper function that update a 2D plot by adding the rectangle representing the sample glass, the `(0, 0)`
-        shift_origin point and formats the axis.
-
-        Parameters
-        ----------
-        fig : go.Figure
-            Plotly Figure object to update.
-
-        Returns
-        -------
-        go.Figure
-            Input figure updated with sample glass shape, shift_origin point and axis.
-        """
-
-        # GLASS
-        logger.debug('Add glass shape.')
-        fig.add_shape(
-            type='rect',
-            x0=self.shift_origin[0] if self.flip_x else 0 - self.shift_origin[0],
-            y0=self.shift_origin[1] if self.flip_y else 0 - self.shift_origin[1],
-            x1=self.shift_origin[0] - self.xsample if self.flip_x else self.xsample - self.shift_origin[0],
-            y1=self.shift_origin[1] - self.ysample if self.flip_y else self.ysample - self.shift_origin[1],
-            fillcolor='#D0FAF9',
-            line_color='#000000',
-            line_width=2,
-            layer='below',
+    def _get_glass_borders(self) -> tuple[float, float, float, float]:
+        return (
+            self.shift_origin[0] if self.flip_x else 0 - self.shift_origin[0],
+            self.shift_origin[1] if self.flip_y else 0 - self.shift_origin[1],
+            self.shift_origin[0] - self.xsample if self.flip_x else self.xsample - self.shift_origin[0],
+            self.shift_origin[1] - self.ysample if self.flip_y else self.ysample - self.shift_origin[1],
         )
-
-        # ORIGIN
-        logger.debug('Add origin reference.')
-        fig.add_trace(
-            go.Scattergl(
-                x=[0],
-                y=[0],
-                marker=dict(color='red', size=12),
-                hoverinfo='none',
-                showlegend=False,
-            )
-        )
-
-        logger.debug('Add axis labels.')
-        fig.update_layout(
-            paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgba(0,0,0,0)',
-            margin=dict(pad=15),
-            xaxis=dict(
-                title='x [mm]',
-                showgrid=False,
-                zeroline=False,
-                showline=True,
-                linewidth=1,
-                linecolor='black',
-                ticklen=10,
-                tick0=0,
-                ticks='outside',
-                fixedrange=False,
-                minor=dict(
-                    ticklen=5,
-                    tickmode='linear',
-                    ticks='outside',
-                ),
-            ),
-            yaxis=dict(
-                title='y [mm]',
-                showgrid=False,
-                zeroline=False,
-                showline=True,
-                linewidth=1,
-                linecolor='black',
-                ticklen=10,
-                tick0=0,
-                ticks='outside',
-                fixedrange=False,
-                minor=dict(
-                    ticklen=5,
-                    tickmode='linear',
-                    ticks='outside',
-                ),
-            ),
-            annotations=[
-                dict(
-                    x=0,
-                    y=0,
-                    text='(0,0)',
-                    showarrow=False,
-                    xanchor='left',
-                    xshift=-25,
-                    yshift=-20,
-                    font=dict(color='red'),
-                )
-            ],
-        )
-        return fig
-
-    @staticmethod
-    def standard_3d_figure_update(fig: go.Figure) -> go.Figure:
-        """3D plot update.
-
-        Helper function that update a 3D plot by adding the sample glass, the `(0, 0, 0)` shift_origin point and formats
-        the axis.
-
-        Parameters
-        ----------
-        fig : go.Figure
-            Plotly Figure object to update.
-
-        Returns
-        -------
-        go.Figure
-            Input figure updated with sample glass shape, shift_origin point and axis.
-        """
-        # ORIGIN
-        logger.debug('Add origin reference.')
-        fig.add_trace(
-            go.Scatter3d(
-                x=[0],
-                y=[0],
-                z=[0],
-                marker=dict(color='red', size=12),
-                hoverinfo='none',
-                showlegend=False,
-            )
-        )
-
-        logger.debug('Add axis labels and fix camera angle.')
-        fig.update_layout(
-            scene_camera=dict(up=dict(x=0, y=np.cos(45), z=np.sin(45)), eye=dict(x=0.0, y=0.0, z=-2.5)),
-            scene=dict(
-                bgcolor='rgba(0,0,0,0)',
-                aspectratio=dict(
-                    x=2,
-                    y=1,
-                    z=0.25,
-                ),
-                xaxis=dict(
-                    title='x [mm]',
-                    showgrid=False,
-                    zeroline=False,
-                ),
-                yaxis=dict(
-                    title='y [mm]',
-                    showgrid=False,
-                    zeroline=False,
-                ),
-                zaxis=dict(
-                    title='z [mm]',
-                    showgrid=False,
-                    zeroline=False,
-                ),
-                annotations=[
-                    dict(
-                        x=0,
-                        y=0,
-                        z=0,
-                        text='(0,0,0)',
-                        showarrow=False,
-                        xanchor='left',
-                        xshift=10,
-                        font=dict(color='red'),
-                    )
-                ],
-            ),
-        )
-        return fig
 
     def export(
         self,
@@ -376,7 +375,7 @@ class Writer(PGMCompiler, abc.ABC):
         filepath.mkdir(exist_ok=True, parents=True)
 
         for i, el in enumerate(self.objs):
-            objpath = filepath / f'{el.id}_{i + 1:02}.pkl'
+            objpath = filepath / f'{el.id}_{i + 1:02}.pickle'
             with open(objpath, 'wb') as f:
                 dill.dump(el, f)
 
@@ -442,12 +441,12 @@ class TrenchWriter(Writer):
         logger.debug(f'Return fabrication time = {self._fabtime}.')
         return self._fabtime
 
-    def append(self, obj: TrenchColumn) -> None:
-        """Append TrenchColumn objects.
+    def add(self, objs: TrenchColumn) -> None:
+        """Add TrenchColumn objects.
 
         Parameters
         ----------
-        obj: TrenchColumn
+        objs: TrenchColumn
             TrenchColumn object to be added to object list.
 
         Returns
@@ -455,33 +454,14 @@ class TrenchWriter(Writer):
         None
         """
 
-        if not isinstance(obj, TrenchColumn):
-            logger.error(f'The object must be a TrenchColumn. {type(obj).__name__} was given.')
-            raise TypeError(f'The object must be a TrenchColumn. {type(obj).__name__} was given.')
-        self._obj_list.append(obj)
-        self._trenches.extend(obj.trench_list)
-        logger.debug('Append Trench to _obj_list.')
-
-    def extend(self, obj: list[TrenchColumn]) -> None:
-        """Extend trench list.
-
-        Extend the object list with a list of TrenchColumn objects.
-
-        Parameters
-        ----------
-        obj : list(TrenchColumn)
-            List of TrenchColumn objects to be added to object list.
-
-        Returns
-        -------
-        None
-        """
-
-        if not isinstance(obj, list):
-            logger.error(f'The object must be a list. {type(obj).__name__} was given.')
-            raise TypeError(f'The object must be a list. {type(obj).__name__} was given.')
-        for tr_col in flatten(obj):
-            self.append(tr_col)
+        objs = flatten([objs])
+        for obj in objs:
+            if not isinstance(obj, TrenchColumn):
+                logger.error(f'The object must be a TrenchColumn. {type(obj).__name__} was given.')
+                raise TypeError(f'The object must be a TrenchColumn. {type(obj).__name__} was given.')
+            self._obj_list.append(obj)
+            self._trenches.extend(obj.trench_list)
+        logger.debug('Trench added to obj_list.')
 
     def plot2d(
         self, fig: go.Figure | None = None, show_shutter_close: bool = True, style: dict[str, Any] | None = None
@@ -517,7 +497,8 @@ class TrenchWriter(Writer):
         fig = go.Figure()
         logger.debug('Update figure.')
         fig = self._plot2d_trench(fig=fig, style=style)
-        fig = super().standard_2d_figure_update(fig)  # Add glass, shift_origin and axis elements
+        x0, y0, x1, y1 = self._get_glass_borders()
+        fig = plot2d_base_layer(fig, x0=x0, y0=y0, x1=x1, y1=y1)  # Add glass, shift_origin and axis elements
         return fig
 
     def plot3d(
@@ -526,8 +507,26 @@ class TrenchWriter(Writer):
         show_shutter_close: bool = True,
         style: dict[str, Any] | None = None,
     ) -> go.Figure:
-        """Plot 3D - Not implemented."""
-        # raise NotImplementedError()
+        """Plot 3D.
+
+        3D plot of the Trench objects contained in ``self._obj_list``.
+
+        Parameters
+        ----------
+        fig : go.Figure, optional
+            Optional plotly figure object, if no figure is provided a new one is created and updated with the Trench
+            objects stored in the Writer class. If a figure is provided it is updated by adding the stored objects. The
+            default behaviour is creating a new figure.
+        show_shutter_close : bool, optional
+            Boolean flag, if ``True`` the movements with closed shutter are represented. The default value is ``False``.
+        style: dict(str, Any)
+            Plotly compatible styles options for representing the objects.
+
+        Returns
+        -------
+        go.Figure
+            Plotly figure with the 3D plot of the stored Trench.
+        """
         if fig is not None:
             logger.debug('Update figure.')
             return self._plot3d_trench(fig=fig, style=style)
@@ -537,7 +536,7 @@ class TrenchWriter(Writer):
         fig = go.Figure()
         logger.debug('Update figure.')
         fig = self._plot3d_trench(fig=fig, style=style)
-        fig = super().standard_2d_figure_update(fig)  # Add glass, shift_origin and axis elements
+        fig = plot3d_base_layer(fig)  # Add glass, shift_origin and axis elements
         return fig
 
     def pgm(self, verbose: bool = False) -> None:
@@ -556,7 +555,7 @@ class TrenchWriter(Writer):
 
         Returns
         -------
-        None
+        None.
 
         See Also
         --------
@@ -633,7 +632,7 @@ class TrenchWriter(Writer):
 
         Returns
         -------
-        None
+        None.
 
         See Also
         --------
@@ -681,7 +680,7 @@ class TrenchWriter(Writer):
 
         Returns
         -------
-        None
+        None.
 
         See Also
         --------
@@ -740,7 +739,7 @@ class TrenchWriter(Writer):
 
         Returns
         -------
-        None
+        None.
         """
 
         logger.debug('Generate Trench columns FARCALL.pgm file.')
@@ -953,27 +952,29 @@ class UTrenchWriter(TrenchWriter):
         logger.debug(f'Return fabrication time = {self._fabtime}.')
         return self._fabtime
 
-    def append(self, obj: UTrenchColumn) -> None:
+    def add(self, objs: UTrenchColumn) -> None:
         """Append UTrenchColumn objects.
 
         Parameters
         ----------
-        obj: UTrenchColumn
+        objs: UTrenchColumn
             UTrenchColumn object to be added to object list.
 
         Returns
         -------
-        None
+        None.
         """
 
-        if not isinstance(obj, UTrenchColumn):
-            logger.error(f'The object must be a UTrenchColumn. {type(obj).__name__} was given.')
-            raise TypeError(f'The object must be a UTrenchColumn. {type(obj).__name__} was given.')
-        self._obj_list.append(obj)
-        self._trenches.extend(obj.trench_list)
-        logger.debug('Append U-Trench to _obj_list.')
-        self.beds.extend(obj.trench_bed)
-        logger.debug('Append Trench bed to _trenchbed.')
+        objs = flatten([objs])
+        for obj in objs:
+            if not isinstance(obj, UTrenchColumn):
+                logger.error(f'The object must be a UTrenchColumn. {type(obj).__name__} was given.')
+                raise TypeError(f'The object must be a UTrenchColumn. {type(obj).__name__} was given.')
+            self._obj_list.append(obj)
+            self._trenches.extend(obj.trench_list)
+            logger.debug('Append U-Trench to _obj_list.')
+            self.beds.extend(obj.trench_bed)
+            logger.debug('Append Trench bed to _trenchbed.')
 
     # Private interface
     def _export_trench_column(self, column: UTrenchColumn, column_path: pathlib.Path) -> None:
@@ -990,7 +991,7 @@ class UTrenchWriter(TrenchWriter):
 
         Returns
         -------
-        None
+        None.
 
         See Also
         --------
@@ -1042,7 +1043,7 @@ class UTrenchWriter(TrenchWriter):
 
         Returns
         -------
-        None
+        None.
         """
 
         logger.debug('Generate U-Trench columns FARCALL.pgm file.')
@@ -1308,16 +1309,14 @@ class UTrenchWriter(TrenchWriter):
 class WaveguideWriter(Writer):
     """Waveguide Writer class."""
 
-    def __init__(
-        self, param: dict[str, Any], objects: list[Waveguide | list[Waveguide]] | None = None, **kwargs
-    ) -> None:
+    def __init__(self, param: dict[str, Any], objects: list[Waveguide] | None = None, **kwargs) -> None:
 
         p = copy.deepcopy(param)
         p.update(kwargs)
 
         super().__init__(**p)
 
-        self._obj_list: list[Waveguide | list[Waveguide]] = [] if objects is None else flatten(listcast(objects))
+        self._obj_list: list[Waveguide] = [] if objects is None else flatten(listcast(objects))
         self._param: dict[str, Any] = p
         self._export_path = self.CWD / (self.export_dir or '')
         self._fabtime: float = 0.0
@@ -1347,53 +1346,26 @@ class WaveguideWriter(Writer):
         logger.debug(f'Return fabrication time = {self._fabtime}.')
         return self._fabtime
 
-    def append(self, obj: Waveguide) -> None:
+    def add(self, objs: Waveguide | list[Waveguide]) -> None:
         """Append Waveguide objects.
 
         Parameters
         ----------
-        obj: Waveguide
+        objs: Waveguide
             Waveguide object to be added to object list.
 
         Returns
         -------
-        None
+        None.
         """
 
-        if not isinstance(obj, Waveguide):
-            logger.error(f'The object must be a Waveguide. {type(obj).__name__} was given.')
-            raise TypeError(f'The object must be a Waveguide. {type(obj).__name__} was given.')
-        self._obj_list.append(obj)
-        logger.debug('Append Waveguide to _obj_list.')
-
-    def extend(self, obj: list[Waveguide] | list[list[Waveguide]]) -> None:
-        """Extend waveguide list.
-
-        Extend the object list with a list of Waveguide objects.
-
-        Parameters
-        ----------
-        obj : list(Waveguide)
-            List of Waveguide objects to be added to object list.
-
-        Returns
-        -------
-        None
-        """
-
-        if not isinstance(obj, list):
-            logger.debug(f'The object must be a list. {type(obj).__name__} was given.')
-            raise TypeError(f'The object must be a list. {type(obj).__name__} was given.')
-        if nest_level(obj) > 2:
-            logger.error(f'The waveguide list has too many nested levels ({nest_level(obj)}).')
-            raise ValueError(
-                f'The waveguide list has too many nested levels ({nest_level(obj)}). The maximum value is 2.'
-            )
-        if all(isinstance(wg, Waveguide) for wg in flatten(obj)):
-            self._obj_list.extend(obj)
+        objs = flatten(listcast(objs))
+        if all(isinstance(wg, Waveguide) for wg in objs):
+            self._obj_list.extend(objs)
+            logger.debug('Waveguide added to _obj_list.')
         else:
-            logger.error('Not all the objects in the list are type Waveguides.')
-            raise TypeError('All the objects must be of type Waveguide.')
+            logger.error('The objects must be of Waveguide type. Given wrong type.')
+            raise TypeError('The objects must be of Waveguide type. Given wrong type.')
 
     def plot2d(
         self, fig: go.Figure | None = None, show_shutter_close: bool = True, style: dict[str, Any] | None = None
@@ -1429,7 +1401,8 @@ class WaveguideWriter(Writer):
         fig = go.Figure()
         logger.debug('Update figure.')
         fig = self._plot2d_wg(fig=fig, show_shutter_close=show_shutter_close, style=style)
-        fig = super().standard_2d_figure_update(fig)  # Add glass, shift_origin and axis elements
+        x0, y0, x1, y1 = self._get_glass_borders()
+        fig = plot2d_base_layer(fig, x0=x0, y0=y0, x1=x1, y1=y1)  # Add glass, shift_origin and axis elements
         return fig
 
     def plot3d(
@@ -1453,7 +1426,7 @@ class WaveguideWriter(Writer):
         Returns
         -------
         go.Figure
-            Plotly figure with the 2D plot of the stored Waveguide.
+            Plotly figure with the 3D plot of the stored Waveguide.
         """
 
         # If existing figure is given as input parameter append to the figure and return it
@@ -1466,7 +1439,7 @@ class WaveguideWriter(Writer):
         fig = go.Figure()
         logger.debug('Update figure.')
         fig = self._plot3d_wg(fig=fig, show_shutter_close=show_shutter_close, style=style)
-        fig = super().standard_3d_figure_update(fig)  # Add glass, shift_origin and axis elements
+        fig = plot3d_base_layer(fig)  # Add glass, shift_origin and axis elements
         return fig
 
     def pgm(self, verbose: bool = False) -> None:
@@ -1483,7 +1456,7 @@ class WaveguideWriter(Writer):
 
         Returns
         -------
-        None
+        None.
 
         See Als*o
         --------
@@ -1498,12 +1471,11 @@ class WaveguideWriter(Writer):
         fn = pathlib.Path(self.filename).stem + '_WG.pgm'
 
         with PGMCompiler.from_dict(self._param, filename=fn, verbose=verbose) as G:
-            for bunch in self.objs:
-                with G.repeat(listcast(bunch)[0].scan):
-                    for wg in listcast(bunch):
-                        _wg_fab_time += wg.fabrication_time
-                        logger.debug(f'Export {wg}.')
-                        G.write(wg.points)
+            with G.repeat(listcast(self.objs)[0].scan):
+                for wg in listcast(self.objs):
+                    _wg_fab_time += wg.fabrication_time
+                    logger.debug(f'Export {wg}.')
+                    G.write(wg.points)
             G.go_init()
             _wg_fab_time += G.total_dwell_time
         del G
@@ -1542,10 +1514,10 @@ class WaveguideWriter(Writer):
         """
 
         if style is None:
-            style = dict()
-        default_wgargs = {'dash': 'solid', 'color': '#0000ff', 'width': 1.5}
+            style = {}
+        default_wgargs = {'dash': 'solid', 'color': '#0000FF', 'width': 1.75}
         wg_args = {**default_wgargs, **style}
-        sc_args = {'dash': 'dot', 'color': '#0000ff', 'width': 0.5}
+        sc_args = {'dash': 'dot', 'color': '#0000FF', 'width': 0.5}
 
         logger.debug('Add waveguides to figure.')
         for wg in listcast(flatten(self._obj_list)):
@@ -1704,48 +1676,26 @@ class NasuWriter(Writer):
         logger.debug(f'Return fabrication time = {self._fabtime}.')
         return self._fabtime
 
-    def append(self, obj: NasuWaveguide) -> None:
+    def add(self, objs: Waveguide | list[Waveguide]) -> None:
         """Append NasuWaveguide objects.
 
         Parameters
         ----------
-        obj: NasuWaveguide
-            NasuWaveguide object to be added to object list.
+        objs: NasuWaveguide
+            Waveguide object to be added to object list.
 
         Returns
         -------
-        None
+        None.
         """
 
-        if not isinstance(obj, NasuWaveguide):
-            logger.error(f'The object must be a NasuWaveguide. {type(obj).__name__} was given.')
-            raise TypeError(f'The object must be a NasuWaveguide. {type(obj).__name__} was given.')
-        self._obj_list.append(obj)
-        logger.debug('Append Nasu Waveguide to _obj_list.')
-
-    def extend(self, obj: list[NasuWaveguide]) -> None:
-        """Extend Nasu waveguide list.
-
-        Extend the object list with a list of NasuWaveguide objects.
-
-        Parameters
-        ----------
-        obj : list(NasuWaveguide)
-            List of NasuWaveguide objects to be added to object list.
-
-        Returns
-        -------
-        None
-        """
-
-        if not isinstance(obj, list):
-            logger.error(f'The object must be a list. {type(obj).__name__} was given.')
-            raise TypeError(f'The object must be a list. {type(obj).__name__} was given.')
-        if all(isinstance(wg, NasuWaveguide) for wg in flatten(obj)):
-            self._obj_list.extend(obj)
+        objs = flatten(listcast(objs))
+        if all(isinstance(wg, NasuWaveguide) for wg in objs):
+            self._obj_list.extend(objs)
+            logger.debug('Waveguide added to _obj_list.')
         else:
-            logger.error('Not all the objects of the list are type NasuWaveguide.')
-            raise TypeError('All the objects must be of type NasuWaveguide.')
+            logger.error('The objects must be of NasuWaveguide type. Given wrong type.')
+            raise TypeError('The objects must be of NasuWaveguide type. Given wrong type.')
 
     def plot2d(
         self, fig: go.Figure | None = None, show_shutter_close: bool = True, style: dict[str, Any] | None = None
@@ -1781,7 +1731,8 @@ class NasuWriter(Writer):
         fig = go.Figure()
         logger.debug('Update figure.')
         fig = self._plot2d_nwg(fig=fig, show_shutter_close=show_shutter_close, style=style)
-        fig = super().standard_2d_figure_update(fig)  # Add glass, shift_origin and axis elements
+        x0, y0, x1, y1 = self._get_glass_borders()
+        fig = plot2d_base_layer(fig, x0=x0, y0=y0, x1=x1, y1=y1)  # Add glass, shift_origin and axis elements
         return fig
 
     def plot3d(
@@ -1805,7 +1756,7 @@ class NasuWriter(Writer):
         Returns
         -------
         go.Figure
-            Plotly figure with the 2D plot of the stored NasuWaveguide.
+            Plotly figure with the 3D plot of the stored NasuWaveguide.
         """
 
         # If existing figure is given as input parameter append to the figure and return it
@@ -1818,7 +1769,7 @@ class NasuWriter(Writer):
         fig = go.Figure()
         logger.debug('Update figure.')
         fig = self._plot3d_nwg(fig=fig, show_shutter_close=show_shutter_close, style=style)
-        fig = super().standard_3d_figure_update(fig)  # Add glass, shift_origin and axis elements
+        fig = plot3d_base_layer(fig)  # Add glass, shift_origin and axis elements
         return fig
 
     def pgm(self, verbose: bool = False) -> None:
@@ -1835,7 +1786,7 @@ class NasuWriter(Writer):
 
         Returns
         -------
-        None
+        None.
 
         See Also
         --------
@@ -2057,45 +2008,25 @@ class MarkerWriter(Writer):
         logger.debug(f'Return fabrication time = {self._fabtime}.')
         return self._fabtime
 
-    def append(self, obj: Marker) -> None:
-        """Append Marker objects.
+    def add(self, objs: Marker | list[Marker]) -> None:
+        """Add Marker objects.
 
         Parameters
         ----------
-        obj: Marker
+        objs: Marker
             Marker object to be added to object list.
 
         Returns
         -------
-        None
+        None.
         """
 
-        if not isinstance(obj, Marker):
-            logger.error(f'The object must be a Marker. {type(obj).__name__} was given.')
-            raise TypeError(f'The object must be a Marker. {type(obj).__name__} was given.')
-        self._obj_list.append(obj)
-        logger.debug('Append Marker to _obj_list.')
-
-    def extend(self, obj: list[Marker]) -> None:
-        """Extend Marker list.
-
-        Extend the object list with a list of Marker objects.
-
-        Parameters
-        ----------
-        obj : list(Marker)
-            List of Marker objects to be added to object list.
-
-        Returns
-        -------
-        None
-        """
-
-        if not isinstance(obj, list):
-            logger.error(f'The object must be a list. {type(obj).__name__} was given.')
-            raise TypeError(f'The object must be a list. {type(obj).__name__} was given.')
-        for mk in flatten(obj):
-            self.append(mk)
+        objs = flatten(listcast(objs))
+        if not all(isinstance(obj, Marker) for obj in objs):
+            logger.error('The objects must be of Marker type. Given wrong type.')
+            raise TypeError('The objects must be of Marker type. Given wrong type.')
+        self._obj_list.extend(objs)
+        logger.debug('Marker added to _obj_list.')
 
     def plot2d(
         self, fig: go.Figure | None = None, show_shutter_close: bool = True, style: dict[str, Any] | None = None
@@ -2131,7 +2062,8 @@ class MarkerWriter(Writer):
         fig = go.Figure()
         logger.debug('Update figure.')
         fig = self._plot2d_mk(fig=fig, style=style)
-        fig = super().standard_2d_figure_update(fig)  # Add glass, shift_origin and axis elements
+        x0, y0, x1, y1 = self._get_glass_borders()
+        fig = plot2d_base_layer(fig, x0=x0, y0=y0, x1=x1, y1=y1)  # Add glass, shift_origin and axis elements
         return fig
 
     def plot3d(
@@ -2155,7 +2087,7 @@ class MarkerWriter(Writer):
         Returns
         -------
         go.Figure
-            Plotly figure with the 2D plot of the stored Marker.
+            Plotly figure with the 3D plot of the stored Marker.
         """
 
         # If existing figure is given as input parameter append to the figure and return it
@@ -2185,7 +2117,7 @@ class MarkerWriter(Writer):
 
         Returns
         -------
-        None
+        None.
 
         See Also
         --------

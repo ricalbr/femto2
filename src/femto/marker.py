@@ -52,7 +52,7 @@ class Marker(LaserPath):
 
         Returns
         -------
-        None
+        None.
         """
 
         if len(position) == 2:
@@ -102,7 +102,7 @@ class Marker(LaserPath):
         Draws a serie of horizontal ablation lines parallel to the `x` axis. The `y`-coordinates of the ticks are
         given as input.
 
-        y_ticks : array-like, list[float], npt.NDArray[np.float32]
+        y_ticks : array-like, list[float], numpy.ndarray
             List of `y`-coordinate values for each tick in the marker.
         lx : float, optional
             Length of the longer tick marks [mm]. The default value is ``self.lx``.
@@ -113,7 +113,7 @@ class Marker(LaserPath):
 
         Returns
         -------
-        None
+        None.
         """
 
         if y_ticks is None or len(y_ticks) == 0:
@@ -181,7 +181,7 @@ class Marker(LaserPath):
 
         Returns
         -------
-        None
+        None.
         """
 
         if len(init_pos) not in [2, 3]:
@@ -250,10 +250,16 @@ class Marker(LaserPath):
         The line can shifted by a value given as input. Given a shift of `ds` the line is rigidly shifted along `x`
         and `y` of `ds` and `-ds`. In the default behaviour `ds` is set to ``None`` (no shift is applied).
 
+        Parameters
+        ----------
         points: list[list[float]]
             List of points representing the vertices of a polygonal chain line.
         shift: float
             Amount of shift between different lines. The default value is ``None``.
+
+        Returns
+        -------
+        None.
         """
 
         if not points:
@@ -294,12 +300,18 @@ class Marker(LaserPath):
         the rectangle. The `ablation` method is then called with this list of points to create the ablation
         pattern.
 
+        Parameters
+        ----------
         lower_left_corner: list[float]
             List of points representing the lower left corner of the rectangle.
         width: float
             Width of the rectangle [mm]. The default value is 1.0 mm.
         height: float
             Height of the rectangle [mm]. The default value is 0.060 mm.
+
+        Returns
+        -------
+        None.
         """
 
         if not lower_left_corner:
@@ -326,7 +338,7 @@ def main() -> None:
     from addict import Dict as ddict
 
     parameters_mk = ddict(scan=1, speed=2, speed_pos=5, speed_closed=5, depth=0.010, lx=1, ly=1)
-    parameters_gc = ddict(filename='test.pgm', laser='PHAROS', samplesize=(10, 10), flip_x=True, shift_origin=[1, 1])
+    # parameters_gc = ddict(filename='test.pgm', laser='PHAROS', samplesize=(10, 10), flip_x=True, shift_origin=[1, 1])
 
     c = Marker(**parameters_mk)
     # c.cross([2.5, 1], 5, 2)

@@ -6,7 +6,6 @@ from pathlib import Path
 import numpy as np
 import pytest
 from femto.curves import sin
-from femto.helpers import dotdict
 from femto.helpers import flatten
 from femto.helpers import listcast
 from femto.marker import Marker
@@ -37,7 +36,7 @@ def gc_param() -> dict:
 
 @pytest.fixture
 def list_wg() -> list[Waveguide]:
-    PARAM_WG = dotdict(speed=20, radius=25, pitch=0.080, int_dist=0.007, samplesize=(25, 3))
+    PARAM_WG = dict(speed=20, radius=25, pitch=0.080, int_dist=0.007, samplesize=(25, 3))
 
     coup = [Waveguide(**PARAM_WG) for _ in range(20)]
     for i, wg in enumerate(coup):
@@ -52,7 +51,7 @@ def list_wg() -> list[Waveguide]:
 
 @pytest.fixture
 def list_ng() -> list[NasuWaveguide]:
-    PARAM_WG = dotdict(speed=20, radius=25, pitch=0.080, int_dist=0.007, samplesize=(25, 3))
+    PARAM_WG = dict(speed=20, radius=25, pitch=0.080, int_dist=0.007, samplesize=(25, 3))
 
     coup = [NasuWaveguide(**PARAM_WG) for _ in range(20)]
     for i, wg in enumerate(coup):
@@ -67,7 +66,7 @@ def list_ng() -> list[NasuWaveguide]:
 
 @pytest.fixture
 def list_mk() -> list[Marker]:
-    PARAM_MK = dotdict(scan=1, speed=2, speed_pos=5, speed_closed=5, depth=0.000, lx=1, ly=1)
+    PARAM_MK = dict(scan=1, speed=2, speed_pos=5, speed_closed=5, depth=0.000, lx=1, ly=1)
     markers = []
     for (x, y) in zip(range(4, 8), range(3, 7)):
         m = Marker(**PARAM_MK)
@@ -78,7 +77,7 @@ def list_mk() -> list[Marker]:
 
 @pytest.fixture
 def list_tcol(list_wg) -> list[TrenchColumn]:
-    PARAM_TC = dotdict(length=1.0, base_folder='', y_min=-0.1, y_max=19 * 0.08 + 0.1, u=[30.339, 32.825])
+    PARAM_TC = dict(length=1.0, base_folder='', y_min=-0.1, y_max=19 * 0.08 + 0.1, u=[30.339, 32.825])
     x_c = [3, 7.5, 10.5]
     t_col = []
     for x in x_c:
@@ -90,7 +89,7 @@ def list_tcol(list_wg) -> list[TrenchColumn]:
 
 @pytest.fixture
 def list_utcol(list_wg) -> list[UTrenchColumn]:
-    PARAM_TC = dotdict(length=1.0, base_folder='', n_pillars=1, y_min=-0.1, y_max=19 * 0.08 + 0.1, u=[30.339, 32.825])
+    PARAM_TC = dict(length=1.0, base_folder='', n_pillars=1, y_min=-0.1, y_max=19 * 0.08 + 0.1, u=[30.339, 32.825])
     x_c = [3, 7.5, 10.5]
     ut_col = []
     for x in x_c:
@@ -109,8 +108,8 @@ def test_writer(gc_param) -> None:
         pass
 
     d = Dummy(**gc_param)
-    append = d.append(None)
-    extend = d.extend([None])
+    append = d.add(None)
+    extend = d.add([None])
     plot2d = d.plot2d(None)
     plot3d = d.plot3d()
     pgm = d.pgm()
@@ -153,37 +152,31 @@ def test_trench_writer_init(gc_param, list_tcol) -> None:
     assert twr._export_path == expp
 
 
-def test_trench_writer_append(gc_param, list_tcol) -> None:
+def test_trench_writer_append_behaviour(gc_param, list_tcol) -> None:
     twr = TrenchWriter(gc_param, objects=[])
     for col in list_tcol:
-        twr.append(col)
+        twr.add(col)
     assert twr._obj_list == list_tcol
     assert twr._trenches == flatten([tr for col in listcast(list_tcol) for tr in col])
 
 
-def test_trench_writer_append_raise(gc_param, list_tcol) -> None:
+def test_trench_writer_extend_behaviour(gc_param, list_tcol) -> None:
     twr = TrenchWriter(gc_param, objects=[])
-    with pytest.raises(TypeError):
-        twr.append(list_tcol)
-
-
-def test_trench_writer_extend(gc_param, list_tcol) -> None:
-    twr = TrenchWriter(gc_param, objects=[])
-    twr.extend(list_tcol)
+    twr.add(list_tcol)
     assert twr._obj_list == list_tcol
     assert twr._trenches == flatten([tr for col in listcast(list_tcol) for tr in col])
     del twr
 
     twr = TrenchWriter(gc_param, objects=[])
     new_list = [[[list_tcol]]]
-    twr.extend(new_list)
+    twr.add(new_list)
     assert twr._obj_list == list_tcol
     assert twr._trenches == flatten([tr for col in listcast(list_tcol) for tr in col])
     del twr
 
     twr = TrenchWriter(gc_param, objects=[])
     new_list = [[[list_tcol, list_tcol], list_tcol], list_tcol]
-    twr.extend(new_list)
+    twr.add(new_list)
     assert twr._obj_list == flatten([list_tcol, list_tcol, list_tcol, list_tcol])
     assert twr._trenches == flatten([tr for col in flatten([list_tcol, list_tcol, list_tcol, list_tcol]) for tr in col])
     del twr
@@ -193,7 +186,7 @@ def test_trench_writer_extend_raise(gc_param, list_tcol) -> None:
     twr = TrenchWriter(gc_param, objects=[])
     with pytest.raises(TypeError):
         l_t_col = (list_tcol, TrenchColumn(1, 2, 3))
-        twr.extend(l_t_col)
+        twr.add(l_t_col)
 
 
 def test_trench_writer_plot2d(gc_param, list_tcol) -> None:
@@ -287,7 +280,7 @@ def test_utrench_writer_init(gc_param, list_utcol) -> None:
             tcs.append(tr)
         bds.extend(col._trenchbed)
 
-    assert twr._obj_list == list_utcol
+    assert twr.objs == list_utcol
     assert twr._trenches == tcs
     assert twr.beds == bds
     assert twr.dirname == dirname
@@ -310,24 +303,18 @@ def test_utrench_writer_init(gc_param, list_utcol) -> None:
     assert twr._export_path == expp
 
 
-def test_utrench_writer_append(gc_param, list_utcol) -> None:
+def test_utrench_writer_append_behaviour(gc_param, list_utcol) -> None:
     twr = UTrenchWriter(gc_param, objects=[])
     for col in list_utcol:
-        twr.append(col)
+        twr.add(col)
     assert twr._obj_list == list_utcol
     assert twr._trenches == flatten([tr for col in listcast(list_utcol) for tr in col])
     assert twr.beds == flatten([bd for col in listcast(list_utcol) for bd in col._trenchbed])
 
 
-def test_utrench_writer_append_raise(gc_param, list_utcol) -> None:
+def test_utrench_writer_extend_behaviour(gc_param, list_utcol) -> None:
     twr = UTrenchWriter(gc_param, objects=[])
-    with pytest.raises(TypeError):
-        twr.append(list_utcol)
-
-
-def test_utrench_writer_extend(gc_param, list_utcol) -> None:
-    twr = UTrenchWriter(gc_param, objects=[])
-    twr.extend(list_utcol)
+    twr.add(list_utcol)
     assert twr._obj_list == list_utcol
     assert twr._trenches == flatten([tr for col in listcast(list_utcol) for tr in col])
     assert twr.beds == flatten([bd for col in listcast(list_utcol) for bd in col._trenchbed])
@@ -335,7 +322,7 @@ def test_utrench_writer_extend(gc_param, list_utcol) -> None:
 
     twr = UTrenchWriter(gc_param, objects=[])
     new_list = [[[list_utcol]]]
-    twr.extend(new_list)
+    twr.add(new_list)
     assert twr._obj_list == list_utcol
     assert twr._trenches == flatten([tr for col in listcast(list_utcol) for tr in col])
     assert twr.beds == flatten([bd for col in listcast(list_utcol) for bd in col._trenchbed])
@@ -343,7 +330,7 @@ def test_utrench_writer_extend(gc_param, list_utcol) -> None:
 
     twr = UTrenchWriter(gc_param, objects=[])
     new_list = [[[list_utcol, list_utcol], list_utcol], list_utcol]
-    twr.extend(new_list)
+    twr.add(new_list)
     assert twr._obj_list == flatten([list_utcol, list_utcol, list_utcol, list_utcol])
     assert twr._trenches == flatten(
         [tr for col in flatten([list_utcol, list_utcol, list_utcol, list_utcol]) for tr in col]
@@ -358,7 +345,7 @@ def test_utrench_writer_extend_raise(gc_param, list_utcol) -> None:
     twr = UTrenchWriter(gc_param, objects=[])
     with pytest.raises(TypeError):
         l_ut_col = (list_utcol, UTrenchColumn(1, 2, 3))
-        twr.extend(l_ut_col)
+        twr.add(l_ut_col)
 
 
 def test_utrench_writer_plot2d(gc_param, list_utcol) -> None:
@@ -447,28 +434,22 @@ def test_waveguide_writer_init(gc_param, list_wg) -> None:
     assert wwr._export_path == expp
 
 
-def test_waveguide_writer_append(gc_param, list_wg) -> None:
+def test_waveguide_writer_append_behaviour(gc_param, list_wg) -> None:
     wwr = WaveguideWriter(gc_param)
     for wg in list_wg:
-        wwr.append(wg)
+        wwr.add(wg)
     assert wwr._obj_list == list_wg
 
 
-def test_waveguide_writer_append_raise(gc_param, list_wg) -> None:
+def test_waveguide_writer_extend_behaviour(gc_param, list_wg) -> None:
     wwr = WaveguideWriter(gc_param)
-    with pytest.raises(TypeError):
-        wwr.append(list_wg)
-
-
-def test_waveguide_writer_extend(gc_param, list_wg) -> None:
-    wwr = WaveguideWriter(gc_param)
-    wwr.extend(list_wg)
+    wwr.add(list_wg)
     assert wwr._obj_list == list_wg
     del wwr
 
     wwr = WaveguideWriter(gc_param)
     new_list = [list_wg, list_wg, list_wg[0]]
-    wwr.extend(new_list)
+    wwr.add(new_list)
     assert wwr._obj_list == new_list
 
 
@@ -478,17 +459,14 @@ def test_waveguide_writer_extend(gc_param, list_wg) -> None:
         (None, pytest.raises(TypeError)),
         ([Waveguide()], does_not_raise()),
         ([Waveguide(), [Waveguide(), Waveguide()]], does_not_raise()),
-        (
-            [[[Waveguide()]], [[Waveguide(), [Waveguide(), [Waveguide(), Waveguide()]]], Waveguide()]],
-            pytest.raises(ValueError),
-        ),
+        ([[[Waveguide()]], [[Waveguide(), [Waveguide(), [Waveguide(), Waveguide()]]], Waveguide()]], does_not_raise()),
         ([TrenchColumn(x_center=1, y_min=2, y_max=3), [Waveguide(), Waveguide()]], pytest.raises(TypeError)),
     ],
 )
 def test_waveguide_writer_extend_raise(gc_param, l_wg, expectation) -> None:
     wwr = WaveguideWriter(gc_param)
     with expectation:
-        wwr.extend(l_wg)
+        wwr.add(l_wg)
 
 
 def test_waveguide_writer_plot2d(gc_param, list_wg) -> None:
@@ -561,28 +539,22 @@ def test_nasu_writer_init(gc_param, list_ng) -> None:
     assert wwr._export_path == expp
 
 
-def test_nasu_writer_append(gc_param, list_ng) -> None:
+def test_nasu_writer_append_behaviour(gc_param, list_ng) -> None:
     wwr = NasuWriter(gc_param)
     for wg in list_ng:
-        wwr.append(wg)
+        wwr.add(wg)
     assert wwr._obj_list == list_ng
 
 
-def test_nasu_writer_append_raise(gc_param, list_ng) -> None:
+def test_nasu_writer_extend_behaviour(gc_param, list_ng) -> None:
     wwr = NasuWriter(gc_param)
-    with pytest.raises(TypeError):
-        wwr.append(list_ng)
-
-
-def test_nasu_writer_extend(gc_param, list_ng) -> None:
-    wwr = NasuWriter(gc_param)
-    wwr.extend(list_ng)
+    wwr.add(list_ng)
     assert wwr._obj_list == list_ng
     del wwr
 
     wwr = NasuWriter(gc_param)
     new_list = [list_ng, list_ng, list_ng[0]]
-    wwr.extend(new_list)
+    wwr.add(new_list)
     assert wwr._obj_list == new_list
 
 
@@ -591,7 +563,7 @@ def test_nasu_writer_extend(gc_param, list_ng) -> None:
     [
         (None, pytest.raises(TypeError)),
         ([NasuWaveguide()], does_not_raise()),
-        (NasuWaveguide(), pytest.raises(TypeError)),
+        (NasuWaveguide(), does_not_raise()),
         ([NasuWaveguide(), [NasuWaveguide(), NasuWaveguide()]], does_not_raise()),
         ([[[NasuWaveguide()]], [[NasuWaveguide(), [NasuWaveguide(), [NasuWaveguide()]]]]], does_not_raise()),
         ([Waveguide(), [NasuWaveguide(), NasuWaveguide()]], pytest.raises(TypeError)),
@@ -600,7 +572,7 @@ def test_nasu_writer_extend(gc_param, list_ng) -> None:
 def test_nasu_writer_extend_raise(gc_param, l_nw, expectation) -> None:
     wwr = NasuWriter(gc_param)
     with expectation:
-        wwr.extend(l_nw)
+        wwr.add(l_nw)
 
 
 def test_nasu_writer_plot2d(gc_param, list_ng) -> None:
@@ -686,28 +658,22 @@ def test_marker_writer_init(gc_param, list_mk) -> None:
     assert mwr._export_path == expp
 
 
-def test_marker_writer_append(gc_param, list_mk) -> None:
+def test_marker_writer_append_behaviour(gc_param, list_mk) -> None:
     mwr = MarkerWriter(gc_param)
     for mk in list_mk:
-        mwr.append(mk)
+        mwr.add(mk)
     assert mwr._obj_list == list_mk
 
 
-def test_marker_writer_append_raise(gc_param, list_mk) -> None:
+def test_marker_writer_extend_behaviour(gc_param, list_mk) -> None:
     mwr = MarkerWriter(gc_param)
-    with pytest.raises(TypeError):
-        mwr.append(list_mk)
-
-
-def test_marker_writer_extend(gc_param, list_mk) -> None:
-    mwr = MarkerWriter(gc_param)
-    mwr.extend(list_mk)
+    mwr.add(list_mk)
     assert mwr._obj_list == list_mk
     del mwr
 
     mwr = MarkerWriter(gc_param)
     new_list = [[list_mk, list_mk, list_mk[0]]]
-    mwr.extend(new_list)
+    mwr.add(new_list)
     assert mwr._obj_list == flatten(new_list)
 
 
@@ -717,15 +683,15 @@ def test_marker_writer_extend(gc_param, list_mk) -> None:
         (None, pytest.raises(TypeError)),
         ([Waveguide()], pytest.raises(TypeError)),
         ([Marker(), [Marker(), Marker()]], does_not_raise()),
-        ((Marker()), pytest.raises(TypeError)),
-        ((Marker(), Marker()), pytest.raises(TypeError)),
+        ((Marker()), does_not_raise()),
+        ((Marker(), Marker()), does_not_raise()),
         ([[[Marker()]], [[Marker(), [Marker(), [Marker(), Marker()]]], Marker()]], does_not_raise()),
     ],
 )
 def test_marker_writer_extend_raise(gc_param, l_mk, expectation) -> None:
     mwr = MarkerWriter(gc_param)
     with expectation:
-        mwr.extend(l_mk)
+        mwr.add(l_mk)
 
 
 def test_marker_writer_plot2d(gc_param, list_mk) -> None:

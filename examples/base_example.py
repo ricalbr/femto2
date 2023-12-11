@@ -43,7 +43,7 @@ PARAM_GC = dict(
 circuit = Device(**PARAM_GC)
 
 # Add waveguides to circuit
-circuit.extend(wgs)
+circuit.add(wgs)
 
 # Make a plot of the circuit
 circuit.plot2d()
