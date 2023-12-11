@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import functools
 from contextlib import nullcontext as does_not_raise
 from pathlib import Path
 
@@ -21,6 +22,7 @@ from femto.writer import WaveguideWriter
 from femto.writer import Writer
 
 
+@functools.lru_cache
 @pytest.fixture
 def gc_param() -> dict:
     p = dict(
@@ -34,6 +36,7 @@ def gc_param() -> dict:
     return p
 
 
+@functools.lru_cache
 @pytest.fixture
 def list_wg() -> list[Waveguide]:
     PARAM_WG = dict(speed=20, radius=25, pitch=0.080, int_dist=0.007, samplesize=(25, 3))
@@ -49,6 +52,7 @@ def list_wg() -> list[Waveguide]:
     return coup
 
 
+@functools.lru_cache
 @pytest.fixture
 def list_ng() -> list[NasuWaveguide]:
     PARAM_WG = dict(speed=20, radius=25, pitch=0.080, int_dist=0.007, samplesize=(25, 3))
@@ -64,6 +68,7 @@ def list_ng() -> list[NasuWaveguide]:
     return coup
 
 
+@functools.lru_cache
 @pytest.fixture
 def list_mk() -> list[Marker]:
     PARAM_MK = dict(scan=1, speed=2, speed_pos=5, speed_closed=5, depth=0.000, lx=1, ly=1)
@@ -75,6 +80,7 @@ def list_mk() -> list[Marker]:
     return markers
 
 
+@functools.lru_cache
 @pytest.fixture
 def list_tcol(list_wg) -> list[TrenchColumn]:
     PARAM_TC = dict(length=1.0, base_folder='', y_min=-0.1, y_max=19 * 0.08 + 0.1, u=[30.339, 32.825])
@@ -87,6 +93,7 @@ def list_tcol(list_wg) -> list[TrenchColumn]:
     return t_col
 
 
+@functools.lru_cache
 @pytest.fixture
 def list_utcol(list_wg) -> list[UTrenchColumn]:
     PARAM_TC = dict(length=1.0, base_folder='', n_pillars=1, y_min=-0.1, y_max=19 * 0.08 + 0.1, u=[30.339, 32.825])
