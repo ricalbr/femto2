@@ -56,9 +56,9 @@ repos:
         exclude: ^(pre_commit/resources/|testing/resources/python3_hooks_repo/)
         args: [ --py38-plus, --add-import, 'from __future__ import annotations' ]
 
-#  - repo: https://github.com/pre-commit/mirrors-mypy
-#    rev: v0.991
-#    hooks:
-#      - id: mypy
-#        additional_dependencies: [types-all]
-#        exclude: ^tests/
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v0.991
+    hooks:
+      - id: mypy
+        additional_dependencies: [types-all]
+        exclude: ^tests/
