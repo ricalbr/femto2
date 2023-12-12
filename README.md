@@ -21,6 +21,7 @@
 [![Codecov](https://codecov.io/gh/ricalbr/femto2/branch/main/graph/badge.svg?token=1E69VOP4ED)](https://codecov.io/gh/ricalbr/femto2)
 [![Tests](https://github.com/ricalbr/femto/actions/workflows/tests.yml/badge.svg)](https://github.com/ricalbr/femto/actions/workflows/tests.yml)
 [![Documentation Status](https://readthedocs.org/projects/femto2/badge/?version=latest)](https://femto2.readthedocs.io/en/latest/?badge=latest)
+[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/ricalbr/femto2/main.svg)](https://results.pre-commit.ci/latest/github/ricalbr/femto2/main)
 
 </div>
 
