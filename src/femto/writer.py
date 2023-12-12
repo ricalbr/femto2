@@ -220,7 +220,6 @@ class Writer(PGMCompiler, abc.ABC):
         list
            List of objects contained in the current Writer.
         """
-        pass
 
     @property
     @abc.abstractmethod
@@ -234,7 +233,6 @@ class Writer(PGMCompiler, abc.ABC):
         float
            Total fabrication time [s].
         """
-        pass
 
     @abc.abstractmethod
     def add(self, obj: Any) -> None:
@@ -251,7 +249,6 @@ class Writer(PGMCompiler, abc.ABC):
         -------
         None
         """
-        pass
 
     @abc.abstractmethod
     def plot2d(
@@ -284,7 +281,6 @@ class Writer(PGMCompiler, abc.ABC):
         --------
         go.Figure : Plotly figure object.
         """
-        pass
 
     @abc.abstractmethod
     def plot3d(
@@ -317,7 +313,6 @@ class Writer(PGMCompiler, abc.ABC):
         --------
         go.Figure : Plotly figure object.
         """
-        pass
 
     @abc.abstractmethod
     def pgm(self, verbose: bool = False) -> None:
@@ -339,7 +334,6 @@ class Writer(PGMCompiler, abc.ABC):
         --------
         ``femto.pgmcompiler.PGMCompiler`` : class that convert lists of points to PGM file.
         """
-        pass
 
     def _get_glass_borders(self) -> tuple[float, float, float, float]:
         return (

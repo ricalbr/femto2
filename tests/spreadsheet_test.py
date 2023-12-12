@@ -1,6 +1,6 @@
 from __future__ import annotations
-from contextlib import nullcontext as does_not_raise
 
+from contextlib import nullcontext as does_not_raise
 from pathlib import Path
 
 import openpyxl
@@ -312,7 +312,7 @@ def test_generate_all_cols_with_newcols(all_cols):
 def test_new_col_wrong_format(ncol):
 
     with pytest.raises(ValueError):
-        S = Spreadsheet(new_columns=ncol)
+        Spreadsheet(new_columns=ncol)
 
 
 def test_create_structures(list_wg, gc_param, ss_param):
@@ -412,9 +412,9 @@ def test_add_line_length_data_fmt(data, fmt_str, expectation) -> None:
 
 def test_add_line_formula() -> None:
     with Spreadsheet() as S:
-        S.add_line(row=1, col=1, data="=SUM(A1:A5)")
+        S.add_line(row=1, col=1, data='=SUM(A1:A5)')
         assert S._worksheet.table[1][1].formula
-        assert S._worksheet.table[1][1].formula == "SUM(A1:A5)"
+        assert S._worksheet.table[1][1].formula == 'SUM(A1:A5)'
     (dot_path / 'FABRICATION.xlsx').unlink()
 
 

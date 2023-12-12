@@ -971,13 +971,13 @@ def test_coupler_pitch(param) -> None:
 
 def test_coupler_wg_type(param) -> None:
     mode1, mode2 = coupler(param, f_profile=sin, nasu=False)
-    assert type(mode1) == type(mode2)
-    assert type(mode1) == Waveguide
+    assert isinstance(mode1, type(mode2))
+    assert isinstance(mode1, Waveguide)
     del mode1, mode2
 
     mode1, mode2 = coupler(param, f_profile=sin, nasu=True)
-    assert type(mode1) == type(mode2)
-    assert type(mode1) == NasuWaveguide
+    assert isinstance(mode1, type(mode2))
+    assert isinstance(mode1, NasuWaveguide)
 
 
 @pytest.mark.parametrize('d_input', [0.000, 0.001, 0.002, 0.003, 0.005, 0.007, 0.009, 0.0011, 0.0015, 0.0025])

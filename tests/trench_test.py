@@ -208,8 +208,8 @@ def test_border(poly) -> None:
 
     np.testing.assert_array_equal(xb, np.array([1.0, 0.0, 0.0, 0.0, 1.0, 1.0]))
     np.testing.assert_array_equal(yb, np.array([0.0, 0.0, 0.0, 1.0, 1.0, 0.0]))
-    assert type(xb) == np.ndarray
-    assert type(yb) == np.ndarray
+    assert isinstance(xb, np.ndarray)
+    assert isinstance(yb, np.ndarray)
 
 
 @pytest.mark.parametrize(
@@ -375,7 +375,7 @@ def test_load(param) -> None:
         dill.dump(attrs.asdict(tc1), f)
 
     tc2 = TrenchColumn.load(fn)
-    assert type(tc1) == type(tc2)
+    assert isinstance(tc1, type(tc2))
     assert sorted(attrs.asdict(tc1)) == sorted(attrs.asdict(tc2))
     fn.unlink()
 

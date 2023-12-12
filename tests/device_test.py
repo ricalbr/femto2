@@ -98,7 +98,7 @@ def cell() -> Cell:
 def test_cell_init(cell) -> None:
     assert cell.name == 'base'
     assert cell.description is None
-    assert type(cell._objs) == dict
+    assert isinstance(cell._objs, dict)
     assert cell._objs == {
         TrenchColumn: [],
         UTrenchColumn: [],
@@ -141,7 +141,7 @@ def test_cell_repr(name, exp) -> None:
 
 
 def test_cell_objects_empty(cell) -> None:
-    assert type(cell.objects) == dict
+    assert isinstance(cell.objects, dict)
     assert cell.objects == {
         TrenchColumn: [],
         UTrenchColumn: [],

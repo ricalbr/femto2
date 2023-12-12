@@ -141,8 +141,8 @@ def euler_S2(
     s_f = (theta * (n + 1) / k) ** (1 / (n + 1))
     s_vals = np.linspace(0, s_f, num_points // 2)
 
-    x1 = np.array([integrate.quad(lambda l: np.cos(k * l ** (n + 1) / (n + 1)), 0, s)[0] for s in s_vals])
-    y1 = np.array([integrate.quad(lambda l: np.sin(k * l ** (n + 1) / (n + 1)), 0, s)[0] for s in s_vals])
+    x1 = np.array([integrate.quad(lambda var: np.cos(k * var ** (n + 1) / (n + 1)), 0, s)[0] for s in s_vals])
+    y1 = np.array([integrate.quad(lambda var: np.sin(k * var ** (n + 1) / (n + 1)), 0, s)[0] for s in s_vals])
 
     # first, rotate by the final angle
     x2_data, y2_data = np.dot(-np.eye(2), np.stack([x1, y1], 0))
@@ -164,8 +164,8 @@ def euler_S4(
     s_f = (theta * (n + 1) / k) ** (1 / (n + 1))
     s_vals = np.linspace(0, s_f, num_points // 2)
 
-    x1 = np.array([integrate.quad(lambda l: np.cos(k * l ** (n + 1) / (n + 1)), 0, s)[0] for s in s_vals])
-    y1 = np.array([integrate.quad(lambda l: np.sin(k * l ** (n + 1) / (n + 1)), 0, s)[0] for s in s_vals])
+    x1 = np.array([integrate.quad(lambda var: np.cos(k * var ** (n + 1) / (n + 1)), 0, s)[0] for s in s_vals])
+    y1 = np.array([integrate.quad(lambda var: np.sin(k * var ** (n + 1) / (n + 1)), 0, s)[0] for s in s_vals])
 
     x2, y2 = np.dot(
         np.array([[np.cos(2 * theta), np.sin(2 * theta)], [-np.sin(2 * theta), np.cos(2 * theta)]]),
