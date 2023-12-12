@@ -16,7 +16,7 @@
 <div align="center">
 
 [![Latest version](https://img.shields.io/static/v1?label=version&message=2.0.0&color=yellowgreen)](https://github.com/ricalbr/femto/releases/latest)
-[![Python 3.8 | 3.9 | 3.10 | 3.11 ](https://img.shields.io/static/v1?label=python&message=3.8%20|3.9%20|3.10%20|%203.11%20&color=blueviolet)](https://www.python.org)
+[![Python 3.8 +](https://img.shields.io/static/v1?label=python&message=3.8%20%2B&color=blueviolet)](https://www.python.org)
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 <!-- [![Codecov](https://codecov.io/gh/jakob-bagterp/colorist-for-python/branch/master/graph/badge.svg?token=1E69VOP4ED)](https://codecov.io/gh/jakob-bagterp/colorist-for-python)… -->
 [![Tests](https://github.com/ricalbr/femto/actions/workflows/tests.yml/badge.svg)](https://github.com/ricalbr/femto/actions/workflows/tests.yml)
