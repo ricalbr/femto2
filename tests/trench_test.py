@@ -726,7 +726,7 @@ def test_u_dig_no_trench() -> None:
         'n_pillars': 0,
     }
     utc = TrenchColumn(**p)
-    assert utc.define_trench_bed() is None
+    assert utc.define_trench_bed(p['n_pillars']) is None
     assert utc.bed_list == []
 
 

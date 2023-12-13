@@ -5,6 +5,7 @@ from femto.device import Cell
 from femto.device import Device
 from femto.marker import Marker
 from femto.waveguide import Waveguide
+from femto.trench import TrenchColumn
 
 # WAVEGUIDE PARAMETERS
 PARAM_WG = dict(
