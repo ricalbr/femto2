@@ -410,7 +410,7 @@ class TrenchColumn:
     z_off: float = -0.020  #: Starting offset in `z` with respect to the sample's surface [mm].
     deltaz: float = 0.0015  #: Offset distance between countors paths of the trench wall [mm].
     delta_floor: float = 0.001  #: Offset distance between buffered polygons in the trench toolpath [mm].
-    n_pillars: int = 0  #: number of sustaining pillars.
+    n_pillars: int | None = None  #: number of sustaining pillars.
     pillar_width: float = 0.040  #: width of the pillars.
     safe_inner_turns: int = 5  #: Number of spiral turns befor zig-zag filling
     u: list[float] = attrs.field(factory=list)  #: List of U coordinate to change irradiation power automatically [deg].
@@ -525,7 +525,7 @@ class TrenchColumn:
         return self._trench_list
 
     @property
-    def trench_bed(self) -> list[Trench]:
+    def bed_list(self) -> list[Trench]:
         """Trench bed list.
 
         Returns
@@ -813,7 +813,7 @@ class TrenchColumn:
             del self._trench_list[index]
 
         # TODO: test with n_pillars = None
-        if self.n_pillars:
+        if self.n_pillars is None:
             self.define_trench_bed()
 
 

@@ -392,7 +392,7 @@ class TrenchWriter(Writer):
 
         self._obj_list: list[TrenchColumn] = [] if objects is None else flatten(listcast(objects))
         self._trenches: list[Trench] = [tr for col in self._obj_list for tr in col]
-        self._beds: list[Trench] = [ubed for col in self._obj_list for ubed in col.trench_bed]
+        self._beds: list[Trench] = [ubed for col in self._obj_list for ubed in col.bed_list]
 
         self._param: dict[str, Any] = p
         self._export_path = self.CWD / (self.export_dir or '') / (self.dirname or '')
@@ -470,7 +470,7 @@ class TrenchWriter(Writer):
             self._obj_list.append(obj)
             self._trenches.extend(obj.trench_list)
             logger.debug('Append U-Trench to _obj_list.')
-            self._beds.extend(obj.trench_bed)
+            self._beds.extend(obj.bed_list)
             logger.debug('Append Trench bed to _trenchbed.')
 
     def plot2d(
@@ -730,7 +730,7 @@ class TrenchWriter(Writer):
             )
 
         # Bed script
-        for i, bed_block in enumerate(column.trench_bed):
+        for i, bed_block in enumerate(column.bed_list):
             logger.debug(f'Export trench bed for {bed_block}.')
 
             x_bed_block = np.array([])
@@ -828,7 +828,7 @@ class TrenchWriter(Writer):
                 G.remove_program(floor_filename)
 
             # BED
-            for i_bed, bed_block in enumerate(column.trench_bed):
+            for i_bed, bed_block in enumerate(column.bed_list):
                 x0, y0, z0 = self.transform_points(
                     np.array(bed_block.block.exterior.coords.xy[0])[0],
                     np.array(bed_block.block.exterior.coords.xy[1])[0],
