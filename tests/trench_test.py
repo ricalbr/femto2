@@ -299,7 +299,7 @@ def test_trenchcol_default() -> None:
     assert tcol.h_box == float(0.075)
     assert tcol.deltaz == float(0.0015)
     assert tcol.delta_floor == float(0.001)
-    assert tcol.n_pillars == float(0.000)
+    assert tcol.n_pillars is None
     assert tcol.pillar_width == float(0.040)
     assert tcol.safe_inner_turns == int(5)
     assert tcol.u == []
@@ -329,7 +329,7 @@ def test_trenchcol_param(param) -> None:
     assert tcol.h_box == float(0.080)
     assert tcol.deltaz == float(0.002)
     assert tcol.delta_floor == float(0.0015)
-    assert tcol.n_pillars == float(0.000)
+    assert tcol.n_pillars is None
     assert tcol.pillar_width == float(0.040)
     assert tcol.safe_inner_turns == int(8)
     assert tcol.u == [28, 29.47]
@@ -360,7 +360,7 @@ def test_trenchcol_from_dict(param) -> None:
     assert tcol.deltaz == float(0.002)
     assert tcol.delta_floor == float(0.0015)
     assert tcol.safe_inner_turns == int(8)
-    assert tcol.n_pillars == float(0.000)
+    assert tcol.n_pillars is None
     assert tcol.pillar_width == float(0.040)
     assert tcol.u == [28, 29.47]
     assert tcol.speed_wall == float(5.0)
@@ -406,7 +406,6 @@ def test_utrenchcol_param(uparam) -> None:
     assert tcol.trench_list == []
 
 
-
 def test_load(param) -> None:
     tc1 = TrenchColumn(**param)
     fn = Path('obj.pickle')
@@ -434,6 +433,7 @@ def test_trenchcol_adj_bridge(tc, param) -> None:
 
 def test_adj_pillar_width(utc, uparam) -> None:
     assert utc.adj_pillar_width == uparam['pillar_width'] / 2 + uparam['beam_waist']
+
 
 @pytest.mark.parametrize(
     'h_box, z_off, deltaz, exp',
@@ -662,7 +662,6 @@ def test_normalize(tc):
         assert almost_equal(p1, p2)
 
 
-
 def test_u_dig() -> None:
     p = {
         'x_center': 0.0,
@@ -726,7 +725,7 @@ def test_u_dig_no_trench() -> None:
         'round_corner': 0.0,
         'n_pillars': 0,
     }
-    utc = UTrenchColumn(**p)
+    utc = TrenchColumn(**p)
     assert utc.define_trench_bed() is None
     assert utc.bed_list == []
 

@@ -635,7 +635,7 @@ class TrenchColumn:
         logger.debug(f'Return rectangle of sides {self.y_max - self.y_min} mm and {self.length} mm.')
         return geometry.box(self.x_center - self.length / 2, self.y_min, self.x_center + self.length / 2, self.y_max)
 
-    def define_trench_bed(self) -> None:
+    def define_trench_bed(self, n_pillars: int) -> None:
         """Trenchbed shape.
 
         This method is used to calculate the shape of the plane beneath the column of trenches based on a list of
@@ -644,9 +644,14 @@ class TrenchColumn:
         The trench bed is defined as a rectangular-ish shape with the top and bottom part with the same shape of the
         top and bottom trench (respectively) of the column of trenches.
         This trench bed can be divided into several `beds` divided by structural pillars of a given `x`-width. The
-        width and the number of the pillars can be defined by the user when the ``UTrenchColumn`` object is created.
+        width and the number of the pillars can be defined by the user when the `TrenchColumn`` object is created.
 
-        This method populated the ``self._trenchbed`` attribute of the ``UTrenchColumn`` object.
+        This method populated the ``self._trenchbed`` attribute of the ``TrenchColumn`` object.
+
+        Parameters
+        ----------
+        n_pillars: int
+            Number of pillers
 
         Returns
         -------
@@ -659,14 +664,14 @@ class TrenchColumn:
         # Define the trench bed shape as union of a rectangle and the first and last trench of the column.
         # Automatically convert the bed polygon to a MultiPolygon to keep the code flexible to word with the
         # no-pillar case.
-        logger.debug(f'Divide bed in {self.n_pillars +1} parts.')
+        logger.debug(f'Divide bed in {n_pillars +1} parts.')
         t1, t2 = self._trench_list[0], self._trench_list[-1]
         tmp_rect = geometry.box(t1.xmin, t1.center[1], t2.xmax, t2.center[1])
         tmp_bed = geometry.MultiPolygon([unary_union([t1.block, t2.block, tmp_rect])])
 
         # Add pillars and define the bed layer as a Trench object
         xmin, ymin, xmax, ymax = tmp_bed.bounds
-        x_pillars = np.linspace(xmin, xmax, self.n_pillars + 2)[1:-1]
+        x_pillars = np.linspace(xmin, xmax, n_pillars + 2)[1:-1]
         for x in x_pillars:
             tmp_pillar = geometry.LineString([[x, ymin], [x, ymax]]).buffer(self.adj_pillar_width)
             tmp_bed = tmp_bed.difference(tmp_pillar)
@@ -813,8 +818,8 @@ class TrenchColumn:
             del self._trench_list[index]
 
         # TODO: test with n_pillars = None
-        if self.n_pillars is None:
-            self.define_trench_bed()
+        if self.n_pillars is not None:
+            self.define_trench_bed(int(self.n_pillars))
 
 
 def main() -> None:

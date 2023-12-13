@@ -314,13 +314,14 @@ class Device:
         # Case in which metadata is given as keyword argument, use it for the Spreadsheet generation
         if 'metadata' in kwargs.keys():
             mdata = kwargs.pop('metadata')
+            print(mdata)
         elif not metadata:
             mdata = {
                 'laser_name': self._param.get('laser') or '',
                 'sample_name': pathlib.Path(self._param.get('filename') or '').stem,
             }
         else:
-            mdata = {}
+            mdata = metadata
 
         # Fetch all objects from writers
         objs: list[Waveguide | NasuWaveguide] = []
