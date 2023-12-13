@@ -396,7 +396,7 @@ class Trench:
         return [geometry.Polygon()]
 
 
-@attrs.define(repr=False)
+@attrs.define(kw_only=True, repr=False, init=False)
 class TrenchColumn:
     """Class representing a column of isolation trenches."""
 
@@ -425,8 +425,8 @@ class TrenchColumn:
 
     CWD: pathlib.Path = attrs.field(default=pathlib.Path.cwd())  #: Current working directory
 
-    def __init__(self, **kwargs):
-        filtered = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}
+    def __init__(self, **kwargs: Any | None) -> None:
+        filtered: dict[str, Any] = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}
         self.__attrs_init__(**filtered)
 
     def __attrs_post_init__(self) -> None:
@@ -448,7 +448,7 @@ class TrenchColumn:
         return f'{self.__class__.__name__}@{id(self) & 0xFFFFFF:x}'
 
     @classmethod
-    def from_dict(cls: type[TrenchColumn], param: dict[str, Any], **kwargs) -> TrenchColumn:
+    def from_dict(cls: type[TrenchColumn], param: dict[str, Any], **kwargs: Any | None) -> TrenchColumn:
         """Create an instance of the class from a dictionary.
 
         It takes a class and a dictionary, and returns an instance of the class with the dictionary's keys as the
@@ -601,9 +601,7 @@ class TrenchColumn:
         geometry.box
             Rectangular box polygon.
         """
-
-        if self.length is None:
-            logger.debug('The length is None. Area is empty.')
+        if not self.length:
             return geometry.Polygon()
         logger.debug(f'Return rectangle of sides {self.y_max - self.y_min} mm and {self.length} mm.')
         return geometry.box(self.x_center - self.length / 2, self.y_min, self.x_center + self.length / 2, self.y_max)
@@ -737,7 +735,7 @@ class TrenchColumn:
             del self._trench_list[index]
 
 
-@attrs.define(repr=False)
+@attrs.define(kw_only=True, repr=False, init=False)
 class UTrenchColumn(TrenchColumn):
     """Class representing a column of isolation U-trenches."""
 
@@ -747,8 +745,8 @@ class UTrenchColumn(TrenchColumn):
     _id: str = attrs.field(alias='_id', default='UTC')  #: UTrenchColumn ID.
     _trenchbed: list[Trench] = attrs.field(alias='_trenchbed', factory=list)  #: List of beds blocks.
 
-    def __init__(self, **kwargs):
-        filtered = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}
+    def __init__(self, **kwargs: Any) -> None:
+        filtered: dict[str, Any] = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}
         self.__attrs_init__(**filtered)
 
     @property

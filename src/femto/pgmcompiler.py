@@ -45,7 +45,7 @@ class Laser:
     mode: int | None  #: Mode od the PSO card
 
 
-@attrs.define(kw_only=True, repr=False)
+@attrs.define(kw_only=True, repr=False, init=False)
 class PGMCompiler:
     """Class representing a PGMCompiler.
 
@@ -87,11 +87,15 @@ class PGMCompiler:
     _loaded_files: list[str] = attrs.field(factory=list)
     _dvars: list[str] = attrs.field(factory=list)
 
-    def __init__(self, **kwargs):
-        filtered = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}
+    def __init__(self, **kwargs: Any):
+        filtered: dict[str, Any] = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}
         self.__attrs_init__(**filtered)
 
     def __attrs_post_init__(self) -> None:
+
+        if not self.filename:
+            logger.error('Filename is invalid.')
+            raise ValueError("Filename is invalid, set a proper 'filename' attribute.")
 
         self._lasers = {
             'ant': Laser(name='ANT', lab='DIAMOND', axis='Z', pin=0, mode=1),
@@ -101,9 +105,6 @@ class PGMCompiler:
         }
 
         # File initialization
-        if self.filename is None:
-            logger.error('Filename is None.')
-            raise ValueError("Filename is None, set 'filename' attribute")
         self._instructions: Deque[str] = collections.deque()
         self._loaded_files: list[str] = []
         self._dvars: list[str] = []
@@ -126,7 +127,7 @@ class PGMCompiler:
             self.aerotech_angle = float(0.0)
 
     @classmethod
-    def from_dict(cls: type[PGMCompiler], param: dict[str, Any], **kwargs) -> PGMCompiler:
+    def from_dict(cls: type[PGMCompiler], param: dict[str, Any], **kwargs: Any | None) -> PGMCompiler:
         """Create an instance of the class from a dictionary.
 
         It takes a class and a dictionary, and returns an instance of the class with the dictionary's keys as the
@@ -517,9 +518,6 @@ class PGMCompiler:
             logger.error('Given final position is not valid.')
             raise ValueError(f'Given final position is not valid. 3 values required, given {len(position)}.')
 
-        if speed_pos is None and self.speed_pos is None:
-            logger.error('The positioning speed is None.')
-            raise ValueError('The positioning speed is None. Set the "speed_pos" attribute or give a valid value.')
         speed_pos = self.speed_pos if speed_pos is None else speed_pos
 
         # close the shutter before the movements
@@ -588,25 +586,19 @@ class PGMCompiler:
 
         Parameters
         ----------
-        var : str
+        var: str
             Iterating variable.
-        num : int
+        num: int
             Number of iterations.
 
         Yields
         ------
         Current PGMCompiler instance.
         """
-        if num is None:
-            logger.error("Number of iterations is None. Give a valid 'scan' attribute value.")
-            raise ValueError("Number of iterations is None. Give a valid 'scan' attribute value.")
         if num <= 0:
             logger.error("Number of iterations is 0. Set 'scan'>= 1.")
             raise ValueError("Number of iterations is 0. Set 'scan'>= 1.")
 
-        if var is None:
-            logger.error('Given variable is None. Give a valid varible.')
-            raise ValueError('Given variable is None. Give a valid varible.')
         if var.lower() not in self._dvars:
             logger.error(f'Given variable has not beed declared. Use dvar() method to declare ${var} variable.')
             raise ValueError(f'Given variable has not beed declared. Use dvar() method to declare ${var} variable.')
@@ -638,9 +630,6 @@ class PGMCompiler:
         ------
         Current PGMCompiler instance.
         """
-        if num is None:
-            logger.error("Number of iterations is None. Give a valid 'scan' attribute value.")
-            raise ValueError("Number of iterations is None. Give a valid 'scan' attribute value.")
         if num <= 0:
             logger.error("Number of iterations is 0. Set 'scan'>= 1.")
             raise ValueError("Number of iterations is 0. Set 'scan'>= 1.")
@@ -722,12 +711,8 @@ class PGMCompiler:
         -------
         None.
         """
-        if task_id is None:
-            logger.debug('Set task ID to 2.')
-            task_id = 2
-
         file = self._get_filepath(filename=filename, extension='pgm')
-        self._instructions.append(f'PROGRAM {int(task_id)} LOAD "{file}"\n')
+        self._instructions.append(f'PROGRAM {abs(int(task_id))} LOAD "{file}"\n')
         logger.debug(f'Load file {file}.')
         self._loaded_files.append(file.stem)
 
@@ -1290,10 +1275,6 @@ class PGMCompiler:
         pathlib.Path
             Complete path of the file (filepath + filename).
         """
-
-        if filename is None:
-            logger.error('Given filename is None. Give a valid filename.')
-            raise ValueError('Given filename is None. Give a valid filename.')
 
         path = pathlib.Path(filename) if filepath is None else pathlib.Path(filepath) / filename
         if extension is None:

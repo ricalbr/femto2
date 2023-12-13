@@ -3,7 +3,6 @@ from __future__ import annotations
 from contextlib import nullcontext as does_not_raise
 from pathlib import Path
 
-import numpy as np
 import pytest
 from femto.curves import sin
 from femto.helpers import flatten
@@ -262,12 +261,6 @@ def test_trench_writer_pgm_single_col(gc_param, list_tcol) -> None:
     twr._export_path.rmdir()
 
 
-def test_trench_writer_export_array2d_raise(gc_param, list_tcol) -> None:
-    twr = TrenchWriter(gc_param, objects=list_tcol)
-    with pytest.raises(ValueError):
-        twr.export_array2d(filename=None, x=np.array([1, 2, 3]), y=np.array([1, 2, 3]), speed=4)
-
-
 def test_utrench_writer_init(gc_param, list_utcol) -> None:
     twr = UTrenchWriter(gc_param, objects=list_utcol)
     dirname = 'U-TRENCH'
@@ -407,12 +400,6 @@ def test_utrench_writer_pgm(gc_param, list_utcol) -> None:
     twr._export_path.rmdir()
 
 
-def test_utrench_writer_export_array2d_raise(gc_param, list_utcol) -> None:
-    twr = UTrenchWriter(gc_param, list_utcol)
-    with pytest.raises(ValueError):
-        twr.export_array2d(filename=None, x=np.array([1, 2, 3]), y=np.array([1, 2, 3]), speed=4)
-
-
 def test_waveguide_writer_init(gc_param, list_wg) -> None:
     wwr = WaveguideWriter(gc_param, objects=list_wg)
     expp = Path.cwd()
@@ -448,7 +435,7 @@ def test_waveguide_writer_extend_behaviour(gc_param, list_wg) -> None:
     del wwr
 
     wwr = WaveguideWriter(gc_param)
-    new_list = [list_wg, list_wg, list_wg[0]]
+    new_list = [*list_wg, *list_wg, list_wg[0]]
     wwr.add(new_list)
     assert wwr._obj_list == new_list
 
@@ -553,7 +540,7 @@ def test_nasu_writer_extend_behaviour(gc_param, list_ng) -> None:
     del wwr
 
     wwr = NasuWriter(gc_param)
-    new_list = [list_ng, list_ng, list_ng[0]]
+    new_list = [*list_ng, *list_ng, list_ng[0]]
     wwr.add(new_list)
     assert wwr._obj_list == new_list
 

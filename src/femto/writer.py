@@ -6,6 +6,7 @@ import datetime
 import itertools
 import pathlib
 from typing import Any
+from typing import Sequence
 
 import dill
 import numpy as np
@@ -348,7 +349,7 @@ class Writer(PGMCompiler, abc.ABC):
         filename: str | pathlib.Path | None = None,
         export_path: str | pathlib.Path | None = None,
         export_dir: str | pathlib.Path = 'EXPORT',
-    ):
+    ) -> None:
         """Export Nasu Waveguide objects.
 
         The export the list of Nasu Waveguide objects into a pickle file. The objects are exported in an ``EXPORT``
@@ -382,7 +383,7 @@ class TrenchWriter(Writer):
         param: dict[str, Any],
         objects: TrenchColumn | list[TrenchColumn] | None = None,
         dirname: str = 'TRENCH',
-        **kwargs,
+        **kwargs: Any | None,
     ) -> None:
 
         p = copy.deepcopy(param)
@@ -398,7 +399,7 @@ class TrenchWriter(Writer):
         self._fabtime: float = 0.0
 
     @property
-    def objs(self) -> list[Any]:
+    def objs(self) -> list[TrenchColumn]:
         """TrenchColumn objects.
 
         Property for returning the TrenchColumn objects contained inside a TrenchWriter.
@@ -411,7 +412,7 @@ class TrenchWriter(Writer):
         return self._obj_list
 
     @property
-    def trench_list(self) -> list[Any]:
+    def trench_list(self) -> list[Trench]:
         """Trench objects.
 
         Property for returning the Trench objects contained inside a TrenchWriter.
@@ -448,13 +449,14 @@ class TrenchWriter(Writer):
         None
         """
 
-        objs = flatten([objs])
-        for obj in objs:
-            if not isinstance(obj, TrenchColumn):
-                logger.error(f'The object must be a TrenchColumn. {type(obj).__name__} was given.')
-                raise TypeError(f'The object must be a TrenchColumn. {type(obj).__name__} was given.')
-            self._obj_list.append(obj)
-            self._trenches.extend(obj.trench_list)
+        objs_cast: list[TrenchColumn] = flatten([objs])
+        for obj in objs_cast:
+            if isinstance(obj, TrenchColumn):
+                self._obj_list.append(obj)
+                self._trenches.extend(obj.trench_list)
+                continue
+            logger.error(f'The object must be a TrenchColumn. {type(obj).__name__} was given.')
+            raise TypeError(f'The object must be a TrenchColumn. {type(obj).__name__} was given.')
         logger.debug('Trench added to obj_list.')
 
     def plot2d(
@@ -633,10 +635,6 @@ class TrenchWriter(Writer):
         pgmcompiler.transform_points : series of geometrical transformation on input points.
         pathlib.Path : class representing cross-system filepaths.
         """
-
-        if filename is None:
-            logger.error('No filename given.')
-            raise ValueError('No filename given.')
 
         # Transform points
         x_arr, y_arr, _ = self.transform_points(x, y, np.zeros_like(x))
@@ -913,26 +911,14 @@ class UTrenchWriter(TrenchWriter):
     def __init__(
         self,
         param: dict[str, Any],
-        objects: UTrenchColumn | list[UTrenchColumn] | None = None,
+        objects: UTrenchColumn | Sequence[UTrenchColumn] | None = None,
         dirname: str = 'U-TRENCH',
-        **kwargs,
+        **kwargs: Any | None,
     ) -> None:
-        obj_list: list[UTrenchColumn] = flatten(listcast(objects)) if objects is not None else []
+        obj_list: Sequence[UTrenchColumn] = flatten(listcast(objects)) if objects is not None else []
         super().__init__(param, objects=obj_list, dirname=dirname, **kwargs)
+
         self.beds: list[Trench] = [ubed for col in obj_list for ubed in col.trench_bed]
-
-    @property
-    def objs(self) -> list[Any]:
-        """UTrenchColumn objects.
-
-        Property for returning the UTrenchColumn objects contained inside a UTrenchWriter.
-
-        Returns
-        -------
-        list
-           List of UTrenchColumn objects.
-        """
-        return self._obj_list
 
     @property
     def fab_time(self) -> float:
@@ -959,8 +945,8 @@ class UTrenchWriter(TrenchWriter):
         None.
         """
 
-        objs = flatten([objs])
-        for obj in objs:
+        objs_cast = flatten([objs])
+        for obj in objs_cast:
             if not isinstance(obj, UTrenchColumn):
                 logger.error(f'The object must be a UTrenchColumn. {type(obj).__name__} was given.')
                 raise TypeError(f'The object must be a UTrenchColumn. {type(obj).__name__} was given.')
@@ -1303,7 +1289,7 @@ class UTrenchWriter(TrenchWriter):
 class WaveguideWriter(Writer):
     """Waveguide Writer class."""
 
-    def __init__(self, param: dict[str, Any], objects: list[Waveguide] | None = None, **kwargs) -> None:
+    def __init__(self, param: dict[str, Any], objects: list[Waveguide] | None = None, **kwargs: Any | None) -> None:
 
         p = copy.deepcopy(param)
         p.update(kwargs)
@@ -1353,9 +1339,10 @@ class WaveguideWriter(Writer):
         None.
         """
 
-        objs = flatten(listcast(objs))
-        if all(isinstance(wg, Waveguide) for wg in objs):
-            self._obj_list.extend(objs)
+        objs_cast = flatten(listcast(objs))
+        print(objs_cast)
+        if all(isinstance(wg, Waveguide) for wg in objs_cast):
+            self._obj_list.extend(objs_cast)
             logger.debug('Waveguide added to _obj_list.')
         else:
             logger.error('The objects must be of Waveguide type. Given wrong type.')
@@ -1633,7 +1620,7 @@ class WaveguideWriter(Writer):
 class NasuWriter(Writer):
     """NasuWaveguide Writer class."""
 
-    def __init__(self, param: dict[str, Any], objects: list[NasuWaveguide] | None = None, **kwargs) -> None:
+    def __init__(self, param: dict[str, Any], objects: list[NasuWaveguide] | None = None, **kwargs: Any | None) -> None:
 
         p = copy.deepcopy(param)
         p.update(kwargs)
@@ -1670,12 +1657,12 @@ class NasuWriter(Writer):
         logger.debug(f'Return fabrication time = {self._fabtime}.')
         return self._fabtime
 
-    def add(self, objs: Waveguide | list[Waveguide]) -> None:
+    def add(self, objs: NasuWaveguide | list[NasuWaveguide]) -> None:
         """Append NasuWaveguide objects.
 
         Parameters
         ----------
-        objs: NasuWaveguide
+        objs: NasuWaveguide | list[NasuWaveguide]
             Waveguide object to be added to object list.
 
         Returns
@@ -1683,9 +1670,9 @@ class NasuWriter(Writer):
         None.
         """
 
-        objs = flatten(listcast(objs))
-        if all(isinstance(wg, NasuWaveguide) for wg in objs):
-            self._obj_list.extend(objs)
+        objs_cast = flatten(listcast(objs))
+        if all(isinstance(wg, NasuWaveguide) for wg in objs_cast):
+            self._obj_list.extend(objs_cast)
             logger.debug('Waveguide added to _obj_list.')
         else:
             logger.error('The objects must be of NasuWaveguide type. Given wrong type.')
@@ -1965,7 +1952,7 @@ class NasuWriter(Writer):
 class MarkerWriter(Writer):
     """Marker Writer class."""
 
-    def __init__(self, param: dict[str, Any], objects: list[Marker] | None = None, **kwargs) -> None:
+    def __init__(self, param: dict[str, Any], objects: list[Marker] | None = None, **kwargs: Any | None) -> None:
 
         p = copy.deepcopy(param)
         p.update(kwargs)
@@ -2007,7 +1994,7 @@ class MarkerWriter(Writer):
 
         Parameters
         ----------
-        objs: Marker
+        objs: Marker | list[Marker]
             Marker object to be added to object list.
 
         Returns
@@ -2015,11 +2002,11 @@ class MarkerWriter(Writer):
         None.
         """
 
-        objs = flatten(listcast(objs))
-        if not all(isinstance(obj, Marker) for obj in objs):
+        objs_cast = flatten(listcast(objs))
+        if not all(isinstance(obj, Marker) for obj in objs_cast):
             logger.error('The objects must be of Marker type. Given wrong type.')
             raise TypeError('The objects must be of Marker type. Given wrong type.')
-        self._obj_list.extend(objs)
+        self._obj_list.extend(objs_cast)
         logger.debug('Marker added to _obj_list.')
 
     def plot2d(
@@ -2094,7 +2081,7 @@ class MarkerWriter(Writer):
         fig = go.Figure()
         logger.debug('Update figure.')
         fig = self._plot3d_mk(fig=fig, style=style)
-        fig = super().standard_3d_figure_update(fig)  # Add glass, shift_origin and axis elements
+        fig = plot3d_base_layer(fig)  # Add glass, shift_origin and axis elements
         return fig
 
     def pgm(self, verbose: bool = False) -> None:

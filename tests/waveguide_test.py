@@ -143,18 +143,6 @@ def test_scan(param) -> None:
         Waveguide(**param)
 
 
-def test_dy_bend_pitch_error(param) -> None:
-    wg = Waveguide(**param)
-    wg.pitch = None
-    with pytest.raises(ValueError):
-        print(wg.dy_bend)
-
-    param['pitch'] = None
-    wg = Waveguide(**param)
-    with pytest.raises(ValueError):
-        print(wg.dy_bend)
-
-
 def test_dy_bend_int_dist_error(param) -> None:
     wg = Waveguide(**param)
     wg.int_dist = None
@@ -376,11 +364,6 @@ def test_arc_acc_len(param):
     assert pytest.approx(x[-1] - x[0]) == 2 * wg.get_sbend_parameter(wg.dy_bend, wg.radius)[1] + i_len
     wg.end()
 
-    wg = Waveguide(**param)
-    wg.int_length = None
-    with pytest.raises(ValueError):
-        wg.start([0, 0, 0]).coupler(dy=wg.dy_bend, dz=0, int_length=None, fx=circ).end()
-
 
 def test_arc_mzi_len(param):
     dy = 0.065
@@ -428,11 +411,6 @@ def test_arc_mzi_len(param):
     x = wg.x
     assert pytest.approx(x[-1] - x[0]) == 4 * wg.get_sbend_parameter(wg.dy_bend, wg.radius)[1] + 2 * i_len + a_len
     wg.end()
-
-    wg = Waveguide(**param)
-    wg.arm_length = None
-    with pytest.raises(ValueError):
-        wg.start([0, 0, 0]).mzi(dy=wg.dy_bend, dz=0, arm_length=None, fx=circ).end()
 
 
 def test_sin_bend_default(param):
@@ -504,11 +482,6 @@ def test_sin_acc_len(param):
     assert pytest.approx(x[-1] - x[0]) == 2 * wg.get_sbend_parameter(wg.dy_bend, wg.radius)[1] + i_len
     wg.end()
 
-    wg = Waveguide(**param)
-    wg.int_length = None
-    with pytest.raises(ValueError):
-        wg.start([0, 0, 0]).coupler(dy=dy, dz=0.0, fx=sin, int_length=None).end()
-
 
 def test_sin_mzi_len(param):
     dy = 0.3335
@@ -557,11 +530,6 @@ def test_sin_mzi_len(param):
     assert pytest.approx(x[-1] - x[0]) == 4 * wg.get_sbend_parameter(wg.dy_bend, wg.radius)[1] + 2 * i_len + a_len
     wg.end()
 
-    wg = Waveguide(**param)
-    wg.arm_length = None
-    with pytest.raises(ValueError):
-        wg.start([0, 0, 0]).mzi(dy=dy, dz=0.0, fx=sin, arm_length=None).end()
-
 
 def test_spline_dy_default(param):
     dx = 5
@@ -598,15 +566,6 @@ def test_spline_dy_custom(param):
     wg.end()
 
 
-def test_spline_dy_none(param):
-    dx = 5
-    dz = 0.01
-
-    wg = Waveguide(**param)
-    with pytest.raises(ValueError):
-        wg.start([0, 0, 0]).bend(disp_x=dx, dy=None, dz=dz, fx=spline).end()
-
-
 def test_spline_dz_default(param):
     dx = 5
     dy = 0.01
@@ -640,16 +599,6 @@ def test_spline_dz_custom(param):
     assert pytest.approx(y[-1] - y[0]) == dy
     assert pytest.approx(z[-1] - z[0]) == -dz
     wg.end()
-
-
-def test_spline_dz_none(param):
-    dx = 7
-    dy = 0.01
-    param['dz_bridge'] = None
-
-    wg = Waveguide(**param)
-    with pytest.raises(ValueError):
-        wg.start([0, 0, 0]).bend(disp_x=dx, dy=dy, dz=None, fx=spline).end()
 
 
 def test_spline_init_pos_default(param):
@@ -734,14 +683,6 @@ def test_spline_radius_none(param):
         wg.start([0, 0, 0]).bend(disp_x=None, dy=dy, dz=dz, fx=spline, radius=r).end()
 
 
-def test_spline_speed_none(param):
-    _, dy, dz = (0.1, 0.23, 0.456)
-    wg = Waveguide(**param)
-    wg.speed = None
-    with pytest.raises(ValueError):
-        wg.start([0, 0, 0]).bend(disp_x=None, dy=dy, dz=dz, fx=spline, speed=None).end()
-
-
 @pytest.mark.parametrize(
     'ddy', [((0.0, 0.0), (0.0, 0.0)), ((1.0, 0.0), (1.0, 1.0)), ((-2.0, 0.5), (0.5, 0.6)), ((0.1, 0.1), (0.0, 0.23))]
 )
@@ -812,18 +753,6 @@ def test_cmd_rate(param) -> None:
     wg.start().linear([1, 2, 3], mode='abs').bend(dy=wg.dy_bend, dz=0.0, fx=sin).linear([4, 5, 6]).end()
 
     assert np.mean(wg.cmd_rate) <= wg.cmd_rate_max
-
-
-def test_spline_bridge_error(param) -> None:
-    wg = Waveguide(**param)
-    with pytest.raises(ValueError):
-        wg.start().bend(disp_x=None, dy=None, dz=None, fx=spline_bridge).end()
-
-    with pytest.raises(ValueError):
-        wg.start().bend(disp_x=None, dy=0.05, dz=None, fx=spline_bridge).end()
-
-    with pytest.raises(ValueError):
-        wg.start().bend(disp_x=None, dy=None, dz=0.006, fx=spline_bridge).end()
 
 
 def test_spline_bridge_speed(param) -> None:

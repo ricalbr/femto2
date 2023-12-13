@@ -33,7 +33,7 @@ class CustomConsoleFormatter(logging.Formatter):
         logging.CRITICAL: CONSOLEFORMATTER.format(white, rev_bold_red, rev_bold_red),
     }
 
-    def format(self, record):
+    def format(self, record: logging.LogRecord) -> str:
         log_fmt = self.FORMATS.get(record.levelno)
         formatter = logging.Formatter(log_fmt)
         return formatter.format(record)

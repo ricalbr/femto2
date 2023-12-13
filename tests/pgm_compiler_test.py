@@ -680,7 +680,6 @@ def test_set_home_values(param, h_pos) -> None:
     'speedp, pos, speed, expectation',
     [
         (12, [1, 2, 3], 14, does_not_raise()),
-        (None, [1, 2, 3], None, pytest.raises(ValueError)),
         (13, [1, 2, 3], None, does_not_raise()),
         (5, [None, 1, 2], 6.7, does_not_raise()),
         (5, [1, 2], None, pytest.raises(ValueError)),
@@ -791,13 +790,11 @@ def test_enter_axis_rotation(param, angle_p, angle) -> None:
 @pytest.mark.parametrize(
     'n, dvar, var, expectation',
     [
-        (None, ['PIPPO'], None, pytest.raises(ValueError)),
         (13, ['PIPPO'], 'PIPPO', does_not_raise()),
         (0, ['PIPPO'], 'PIPPO', pytest.raises(ValueError)),
         (-5, ['PIPPO'], 'PIPPO', pytest.raises(ValueError)),
         (-3.2, ['PIPPO'], 'PIPPO', pytest.raises(ValueError)),
         (3.2, ['PIPPO'], 'PIPPO', does_not_raise()),
-        (4, ['PIPPO'], None, pytest.raises(ValueError)),
         (6, ['pippo'], 'paperino', pytest.raises(ValueError)),
         (13, ['paperino'], 'PAPERINO', does_not_raise()),
         (13, ['paperino', 'pippo', 'pluto'], 'pluto', does_not_raise()),
@@ -827,7 +824,6 @@ def test_for_loop(param, n, v) -> None:
 @pytest.mark.parametrize(
     'n, expectation',
     [
-        (None, pytest.raises(ValueError)),
         (13, does_not_raise()),
         (0, pytest.raises(ValueError)),
         (-5, pytest.raises(ValueError)),
@@ -896,12 +892,6 @@ def test_get_filepath_values(param, fn, fp, ext, res) -> None:
     assert G._get_filepath(fn, fp, ext) == file
 
 
-def tests_get_filepath_none_fp(param) -> None:
-    G = PGMCompiler(**param)
-    with pytest.raises(ValueError):
-        G._get_filepath(None, 'test/femto', '.pgm')
-
-
 @pytest.mark.parametrize(
     'fn, fp, ext, expectation',
     [
@@ -919,22 +909,14 @@ def test_get_filepath_extensions(param, fn, fp, ext, expectation) -> None:
         assert G._get_filepath(fn, fp, ext) is not None
 
 
-@pytest.mark.parametrize('fn, i', [('test.pgm', 0), ('test.pgm', 1), ('test.pgm', None), ('mzi.pgm', 3)])
+@pytest.mark.parametrize('fn, i', [('test.pgm', 0), ('test.pgm', 1), ('test.pgm', -5), ('mzi.pgm', 3)])
 def test_load_program(param, fn, i) -> None:
     G = PGMCompiler(**param)
     G.load_program(fn, i)
 
     f = Path(fn)
-    if i is None:
-        i = 2
-    assert G._instructions[-1] == f'PROGRAM {i} LOAD "{f}"\n'
+    assert G._instructions[-1] == f'PROGRAM {abs(i)} LOAD "{f}"\n'
     assert f.stem in G._loaded_files
-
-
-def test_load_program_raise(param) -> None:
-    G = PGMCompiler(**param)
-    with pytest.raises(ValueError):
-        G.load_program(None)
 
 
 def test_programstop(param) -> None:
@@ -956,7 +938,6 @@ def test_programstop(param) -> None:
         ('test.pgm', 'femto/test.pgm', does_not_raise()),
         ('test.pgm', 'test', pytest.raises(ValueError)),
         ('test.pgm', 'tttest.pgm', pytest.raises(FileNotFoundError)),
-        ('test.pgm', None, pytest.raises(ValueError)),
     ],
 )
 def test_remove_program_raise(param, lp, rp, expectation) -> None:
@@ -973,7 +954,6 @@ def test_remove_program_raise(param, lp, rp, expectation) -> None:
         ('test.pgm', 'femto/test.pgm', does_not_raise()),
         ('test.pgm', 'test', pytest.raises(ValueError)),
         ('test.pgm', 'tttest.pgm', pytest.raises(FileNotFoundError)),
-        ('test.pgm', None, pytest.raises(ValueError)),
     ],
 )
 def test_farcall_raise(param, lp, cp, expectation) -> None:
@@ -998,7 +978,6 @@ def test_farcall_value(param) -> None:
         ('test.pgm', 'femto/test.pgm', does_not_raise()),
         ('test.pgm', 'test', pytest.raises(ValueError)),
         ('test.pgm', 'tttest.pgm', pytest.raises(FileNotFoundError)),
-        ('test.pgm', None, pytest.raises(ValueError)),
     ],
 )
 def test_bufferedcall_raise(param, lp, cp, expectation) -> None:

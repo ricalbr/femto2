@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from typing import Any
 from typing import Tuple
 
 import numpy as np
@@ -13,7 +14,7 @@ nparray = npt.NDArray[np.float32]
 ptarray = Tuple[nparray, nparray, nparray]
 
 
-def euler(radius: float, theta: float, dz: float, num_points: int, **kwargs) -> ptarray:
+def euler(radius: float, theta: float, dz: float, num_points: int, **kwargs: Any | None) -> ptarray:
     L = 2 * abs(radius) * theta  # total length of the Euler bend
     f = np.sqrt(np.pi * abs(radius) * L)  # Fresnel integral function are defined as function of (pi*t^2/2)
 
@@ -23,7 +24,7 @@ def euler(radius: float, theta: float, dz: float, num_points: int, **kwargs) -> 
     return f * x, f * y, z
 
 
-def sin(dx: float, dy: float, dz: float, num_points: int, flat_peaks: float = 0, **kwargs) -> ptarray:
+def sin(dx: float, dy: float, dz: float, num_points: int, flat_peaks: float = 0, **kwargs: Any | None) -> ptarray:
     x = np.linspace(0, dx, num_points)
     tmp_cos = np.cos(np.pi / dx * x)
     y = 0.5 * dy * (1 - np.sqrt((1 + flat_peaks**2) / (1 + flat_peaks**2 * tmp_cos**2)) * tmp_cos)
@@ -31,7 +32,7 @@ def sin(dx: float, dy: float, dz: float, num_points: int, flat_peaks: float = 0,
     return x, y, z
 
 
-def double_sin(dy1: float, dy2: float, radius: float, num_points: int = 100, **kwargs) -> ptarray:
+def double_sin(dy1: float, dy2: float, radius: float, num_points: int = 100, **kwargs: Any | None) -> ptarray:
 
     # First part of the curve, sinusoidal S-bend with dy1 y-displacement
     dx1 = np.sqrt(4 * np.abs(dy1) * radius - dy1**2)
@@ -50,7 +51,7 @@ def double_sin(dy1: float, dy2: float, radius: float, num_points: int = 100, **k
     return x, y, z
 
 
-def jack_curve(dx: float, dy: float, dz: float, num_points: int, **kwargs) -> ptarray:
+def jack_curve(dx: float, dy: float, dz: float, num_points: int, **kwargs: Any | None) -> ptarray:
 
     dx1 = dx
     dx2 = kwargs['dx2'] or dx1
@@ -71,7 +72,7 @@ def spline(
     num_points: int,
     y_derivatives: tuple[tuple[float, float], tuple[float, float]] = ((0.0, 0.0), (0.0, 0.0)),
     z_derivatives: tuple[tuple[float, float], tuple[float, float]] = ((0.0, 0.0), (0.0, 0.0)),
-    **kwargs,
+    **kwargs: Any | None,
 ) -> ptarray:
     x = np.linspace(0, dx, num_points)
     y = BPoly.from_derivatives([0, dx], [[0, *y_derivatives[0]], [dy, *y_derivatives[-1]]])(x)
@@ -79,7 +80,7 @@ def spline(
     return x, y, z
 
 
-def spline_bridge(dx: float, dy: float, dz: float, num_points: int, **kwargs) -> ptarray:
+def spline_bridge(dx: float, dy: float, dz: float, num_points: int, **kwargs: Any | None) -> ptarray:
     xi, yi, zi = spline(
         dx=dx / 2,
         dy=dy / 2,
@@ -99,35 +100,35 @@ def spline_bridge(dx: float, dy: float, dz: float, num_points: int, **kwargs) ->
     return np.append(xi, xf + xi[-1]), np.append(yi, yf + yi[-1]), np.append(zi, zf + zi[-1])
 
 
-def tanh(dx: float, dy: float, dz: float, num_points: int, s: float = 1.0, **kwargs) -> ptarray:
+def tanh(dx: float, dy: float, dz: float, num_points: int, s: float = 1.0, **kwargs: Any | None) -> ptarray:
     x = np.linspace(-dx / 2, dx / 2, num_points)
     y = dy / 2 * np.tanh(x * s)
     z = np.linspace(0, dz, x.size)
     return x + dx / 2, y + dy / 2, z
 
 
-def erf(dx: float, dy: float, dz: float, num_points: int, s: float = 1.0, **kwargs) -> ptarray:
+def erf(dx: float, dy: float, dz: float, num_points: int, s: float = 1.0, **kwargs: Any | None) -> ptarray:
     x = np.linspace(-dx / 2, dx / 2, num_points)
     y = dy / 2 * (1 + special.erf(x * s))
     z = np.linspace(0, dz, x.size)
     return x + dx / 2, y, z
 
 
-def arctan(dx: float, dy: float, dz: float, num_points: int, s: float = 1.0, **kwargs) -> ptarray:
+def arctan(dx: float, dy: float, dz: float, num_points: int, s: float = 1.0, **kwargs: Any | None) -> ptarray:
     x = np.linspace(-dx / 2, dx / 2, num_points)
     y = 2 / np.pi * np.arctan(np.pi * (x * s) / 2)
     z = np.linspace(0, dz, x.size)
     return x + dx / 2, y * dy / (y[-1] - y[0]) + dy / 2, z
 
 
-def rad(dx: float, dy: float, dz: float, num_points: int, s: float = 1.0, **kwargs) -> ptarray:
+def rad(dx: float, dy: float, dz: float, num_points: int, s: float = 1.0, **kwargs: Any | None) -> ptarray:
     x = np.linspace(-dx / 2, dx / 2, num_points)
     y = x * s / (np.sqrt(1 + (x * s) ** 2))
     z = np.linspace(0, dz, x.size)
     return x + dx / 2, y * dy / (y[-1] - y[0]) + dy / 2, z
 
 
-def abv(dx: float, dy: float, dz: float, num_points: int, s: float = 1.0, **kwargs) -> ptarray:
+def abv(dx: float, dy: float, dz: float, num_points: int, s: float = 1.0, **kwargs: Any | None) -> ptarray:
     x = np.linspace(-dx / 2, dx / 2, num_points)
     y = x * s * 1 / (1 + abs(x * s))
     z = np.linspace(0, dz, x.size)
@@ -135,7 +136,14 @@ def abv(dx: float, dy: float, dz: float, num_points: int, s: float = 1.0, **kwar
 
 
 def euler_S2(
-    dx: float, dy: float, dz: float, radius: float, num_points: int, theta: float = np.pi / 24, n: int = 1, **kwargs
+    dx: float,
+    dy: float,
+    dz: float,
+    radius: float,
+    num_points: int,
+    theta: float = np.pi / 24,
+    n: int = 1,
+    **kwargs: Any | None,
 ) -> ptarray:
     k = 1 / (theta**n * radius ** (n + 1) * (n + 1) ** n)
     s_f = (theta * (n + 1) / k) ** (1 / (n + 1))
@@ -158,7 +166,14 @@ def euler_S2(
 
 
 def euler_S4(
-    dx: float, dy: float, dz: float, num_points: int, radius: float, theta: float = np.pi / 24, n: int = 1, **kwargs
+    dx: float,
+    dy: float,
+    dz: float,
+    num_points: int,
+    radius: float,
+    theta: float = np.pi / 24,
+    n: int = 1,
+    **kwargs: Any | None,
 ) -> ptarray:
     k = 1 / (theta**n * radius ** (n + 1) * (n + 1) ** n)
     s_f = (theta * (n + 1) / k) ** (1 / (n + 1))
@@ -185,7 +200,7 @@ def euler_S4(
     return x, y, z
 
 
-def arc(dy: float, dz: float, num_points: int, radius: float, theta_offset: float = 0, **kwargs) -> ptarray:
+def arc(dy: float, dz: float, num_points: int, radius: float, theta_offset: float = 0, **kwargs: Any | None) -> ptarray:
 
     thetaf = np.arccos(1 - np.abs(dy) / (2 * radius))
     theta = theta_offset + 3 * np.pi / 2 + np.linspace(0, thetaf, num_points)
@@ -194,7 +209,7 @@ def arc(dy: float, dz: float, num_points: int, radius: float, theta_offset: floa
     return x, y, z
 
 
-def circ(dy: float, dz: float, num_points: int, radius: float, **kwargs) -> ptarray:
+def circ(dy: float, dz: float, num_points: int, radius: float, **kwargs: Any | None) -> ptarray:
     x1, y1, _ = arc(dy=dy, dz=dz / 2, num_points=num_points, radius=radius, theta_offset=0)
     x2, y2, _ = arc(dy=dy, dz=dz / 2, num_points=num_points, radius=radius, theta_offset=np.pi)
 
@@ -228,7 +243,7 @@ if __name__ == '__main__':
 
     # x, y, z = spline(0.5, 0.3, dz=0.0, num_points=100)
     # x, y, z = sin(dx=0.5, dy=0.6, dz=0.0, num_points=100, flat_peaks=1)
-    x, y, z = double_sin(dx=0.5, dy1=0.045, dz=0.0, dy2=-0.077, num_points=100, flat_peaks=0)
+    x, y, z = double_sin(dx=0.5, dy1=0.045, dz=0.0, dy2=-0.077, radius=10, num_points=100, flat_peaks=0)
     # x, y, z = spline_bridge(dx=5, dy=0.06, dz=0.03, num_points=100)
     # x, y, z = tanh(dx=10, dy=0.08, dz=0, num_points=200)
     # x, y, z = tanh(dx=1000, dy=0.04, dz=0, num_points=200, s=1/200)
