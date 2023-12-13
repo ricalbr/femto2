@@ -410,6 +410,8 @@ class TrenchColumn:
     z_off: float = -0.020  #: Starting offset in `z` with respect to the sample's surface [mm].
     deltaz: float = 0.0015  #: Offset distance between countors paths of the trench wall [mm].
     delta_floor: float = 0.001  #: Offset distance between buffered polygons in the trench toolpath [mm].
+    n_pillars: int = 0  #: number of sustaining pillars.
+    pillar_width: float = 0.040  #: width of the pillars.
     safe_inner_turns: int = 5  #: Number of spiral turns befor zig-zag filling
     u: list[float] = attrs.field(factory=list)  #: List of U coordinate to change irradiation power automatically [deg].
     speed_wall: float = 4.0  #: Translation speed of the wall section [mm/s].
@@ -422,6 +424,7 @@ class TrenchColumn:
 
     _id: str = attrs.field(alias='_id', default='TC')  #: TrenchColumn ID.
     _trench_list: list[Trench] = attrs.field(alias='_trench_list', factory=list)  #: List of trench objects.
+    _trenchbed: list[Trench] = attrs.field(alias='_trenchbed', factory=list)  #: List of beds blocks.
 
     CWD: pathlib.Path = attrs.field(default=pathlib.Path.cwd())  #: Current working directory
 
@@ -522,6 +525,17 @@ class TrenchColumn:
         return self._trench_list
 
     @property
+    def trench_bed(self) -> list[Trench]:
+        """Trench bed list.
+
+        Returns
+        -------
+        list[Trench]
+            List of Trench objects that constitute the "bed" under the waveguides of the U-Trench structure.
+        """
+        return self._trenchbed
+
+    @property
     def adj_bridge(self) -> float:
         """Bridge length adjusted for the laser beam waist.
 
@@ -533,6 +547,19 @@ class TrenchColumn:
         adj_b = self.bridge / 2 + self.beam_waist + self.round_corner
         logger.debug(f'The beidge size adjusted for the beam size is {adj_b} mm.')
         return adj_b
+
+    @property
+    def adj_pillar_width(self) -> float:
+        """Pillar size adjusted for the laser beam waist.
+
+        Returns
+        -------
+        float
+            Adjustted pillar size considering the size of the laser focus [mm].
+        """
+        adj_p = self.pillar_width / 2 + self.beam_waist
+        logger.debug(f'The adjusted pillar size is {adj_p} mm.')
+        return adj_p
 
     @property
     def n_repeat(self) -> int:
@@ -551,20 +578,22 @@ class TrenchColumn:
     def fabrication_time(self) -> float:
         """Total fabrication time.
 
-        The fabrication time is the sum of the lengths of all the walls and floors of all the trenches, divided by the
-        translation speed.
+        The fabrication time is the sum of the lengths of all the walls, floors and bedfloors of all the trenches,
+        divided by the translation speed.
 
         Returns
         -------
         float
             Total fabrication time [s].
         """
-        fab_time: float = np.sum(
+        t_box: float = np.sum(
             [
                 self.nboxz * (self.n_repeat * t.wall_length / self.speed_wall + t.floor_length / self.speed_floor)
                 for t in self._trench_list
             ]
         )
+        t_bed: float = np.sum([b.floor_length / self.speed_floor for b in self._trenchbed])
+        fab_time: float = t_box + t_bed
         logger.debug(f'The total fabrication time for the trench column is {fab_time} s.')
         return fab_time
 
@@ -605,6 +634,55 @@ class TrenchColumn:
             return geometry.Polygon()
         logger.debug(f'Return rectangle of sides {self.y_max - self.y_min} mm and {self.length} mm.')
         return geometry.box(self.x_center - self.length / 2, self.y_min, self.x_center + self.length / 2, self.y_max)
+
+    def define_trench_bed(self) -> None:
+        """Trenchbed shape.
+
+        This method is used to calculate the shape of the plane beneath the column of trenches based on a list of
+        trenches.
+
+        The trench bed is defined as a rectangular-ish shape with the top and bottom part with the same shape of the
+        top and bottom trench (respectively) of the column of trenches.
+        This trench bed can be divided into several `beds` divided by structural pillars of a given `x`-width. The
+        width and the number of the pillars can be defined by the user when the ``UTrenchColumn`` object is created.
+
+        This method populated the ``self._trenchbed`` attribute of the ``UTrenchColumn`` object.
+
+        Returns
+        -------
+        None.
+        """
+        if not self._trench_list:
+            logger.critical('No trench is present. Trenchbed cannot be defined.')
+            return None
+
+        # Define the trench bed shape as union of a rectangle and the first and last trench of the column.
+        # Automatically convert the bed polygon to a MultiPolygon to keep the code flexible to word with the
+        # no-pillar case.
+        logger.debug(f'Divide bed in {self.n_pillars +1} parts.')
+        t1, t2 = self._trench_list[0], self._trench_list[-1]
+        tmp_rect = geometry.box(t1.xmin, t1.center[1], t2.xmax, t2.center[1])
+        tmp_bed = geometry.MultiPolygon([unary_union([t1.block, t2.block, tmp_rect])])
+
+        # Add pillars and define the bed layer as a Trench object
+        xmin, ymin, xmax, ymax = tmp_bed.bounds
+        x_pillars = np.linspace(xmin, xmax, self.n_pillars + 2)[1:-1]
+        for x in x_pillars:
+            tmp_pillar = geometry.LineString([[x, ymin], [x, ymax]]).buffer(self.adj_pillar_width)
+            tmp_bed = tmp_bed.difference(tmp_pillar)
+
+        # Add bed blocks
+        logger.debug('Add trench beds as trench objects with height = 0.015 mm.')
+        self._trenchbed = [
+            Trench(
+                block=normalize_polygon(p.buffer(-self.round_corner).buffer(self.round_corner)),
+                height=0.015,
+                delta_floor=self.delta_floor,
+                safe_inner_turns=self.safe_inner_turns,
+            )
+            for p in tmp_bed.geoms
+        ]
+        return None
 
     def dig_from_waveguide(
         self,
@@ -734,124 +812,9 @@ class TrenchColumn:
         for index in sorted(listcast(remove), reverse=True):
             del self._trench_list[index]
 
-
-@attrs.define(kw_only=True, repr=False, init=False)
-class UTrenchColumn(TrenchColumn):
-    """Class representing a column of isolation U-trenches."""
-
-    n_pillars: int = 0  #: number of sustaining pillars.
-    pillar_width: float = 0.040  #: width of the pillars.
-
-    _id: str = attrs.field(alias='_id', default='UTC')  #: UTrenchColumn ID.
-    _trenchbed: list[Trench] = attrs.field(alias='_trenchbed', factory=list)  #: List of beds blocks.
-
-    def __init__(self, **kwargs: Any) -> None:
-        filtered: dict[str, Any] = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}
-        self.__attrs_init__(**filtered)
-
-    @property
-    def trench_bed(self) -> list[Trench]:
-        """Trench bed list.
-
-        Returns
-        -------
-        list[Trench]
-            List of Trench objects that constitute the "bed" under the waveguides of the U-Trench structure.
-        """
-        return self._trenchbed
-
-    @property
-    def adj_pillar_width(self) -> float:
-        """Pillar size adjusted for the laser beam waist.
-
-        Returns
-        -------
-        float
-            Adjustted pillar size considering the size of the laser focus [mm].
-        """
-        adj_p = self.pillar_width / 2 + self.beam_waist
-        logger.debug(f'The adjusted pillar size is {adj_p} mm.')
-        return adj_p
-
-    @property
-    def fabrication_time(self) -> float:
-        """Total fabrication time.
-
-        The fabrication time is the sum of the lengths of all the walls, floors and bedfloors of all the trenches,
-        divided by the translation speed.
-
-        Returns
-        -------
-        float
-            Total fabrication time [s].
-        """
-        t_box: float = np.sum(
-            [
-                self.nboxz * (self.n_repeat * t.wall_length / self.speed_wall + t.floor_length / self.speed_floor)
-                for t in self._trench_list
-            ]
-        )
-        t_bed: float = np.sum([b.floor_length / self.speed_floor for b in self._trenchbed])
-        fab_time: float = t_box + t_bed
-        logger.debug(f'The total fabrication time for the trench column is {fab_time} s.')
-        return fab_time
-
-    def define_trench_bed(self) -> None:
-        """Trenchbed shape.
-
-        This method is used to calculate the shape of the plane beneath the column of trenches based on a list of
-        trenches.
-
-        The trench bed is defined as a rectangular-ish shape with the top and bottom part with the same shape of the
-        top and bottom trench (respectively) of the column of trenches.
-        This trench bed can be divided into several `beds` divided by structural pillars of a given `x`-width. The
-        width and the number of the pillars can be defined by the user when the ``UTrenchColumn`` object is created.
-
-        This method populated the ``self._trenchbed`` attribute of the ``UTrenchColumn`` object.
-
-        Returns
-        -------
-        None.
-        """
-        if not self._trench_list:
-            logger.critical('No trench is present. Trenchbed cannot be defined.')
-            return None
-
-        # Define the trench bed shape as union of a rectangle and the first and last trench of the column.
-        # Automatically convert the bed polygon to a MultiPolygon to keep the code flexible to word with the
-        # no-pillar case.
-        logger.debug(f'Divide bed in {self.n_pillars +1} parts.')
-        t1, t2 = self._trench_list[0], self._trench_list[-1]
-        tmp_rect = geometry.box(t1.xmin, t1.center[1], t2.xmax, t2.center[1])
-        tmp_bed = geometry.MultiPolygon([unary_union([t1.block, t2.block, tmp_rect])])
-
-        # Add pillars and define the bed layer as a Trench object
-        xmin, ymin, xmax, ymax = tmp_bed.bounds
-        x_pillars = np.linspace(xmin, xmax, self.n_pillars + 2)[1:-1]
-        for x in x_pillars:
-            tmp_pillar = geometry.LineString([[x, ymin], [x, ymax]]).buffer(self.adj_pillar_width)
-            tmp_bed = tmp_bed.difference(tmp_pillar)
-
-        # Add bed blocks
-        logger.debug('Add trench beds as trench objects with height = 0.015 mm.')
-        self._trenchbed = [
-            Trench(
-                block=normalize_polygon(p.buffer(-self.round_corner).buffer(self.round_corner)),
-                height=0.015,
-                delta_floor=self.delta_floor,
-                safe_inner_turns=self.safe_inner_turns,
-            )
-            for p in tmp_bed.geoms
-        ]
-        return None
-
-    def _dig(
-        self,
-        coords_list: list[list[tuple[float, float]]],
-        remove: list[int] | None = None,
-    ) -> None:
-        super()._dig(coords_list, remove)
-        self.define_trench_bed()
+        # TODO: test with n_pillars = None
+        if self.n_pillars:
+            self.define_trench_bed()
 
 
 def main() -> None:
@@ -873,7 +836,7 @@ def main() -> None:
         wg.end()
 
     # Trench
-    utc = UTrenchColumn(x_center=x_c, n_pillars=3, **param_tc)
+    utc = TrenchColumn(x_center=x_c, n_pillars=3, **param_tc)
     utc.dig_from_waveguide(flatten([coup]))
 
     import matplotlib.pyplot as plt

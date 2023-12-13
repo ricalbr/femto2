@@ -14,7 +14,6 @@ from femto.helpers import flatten
 from femto.marker import Marker
 from femto.trench import Trench
 from femto.trench import TrenchColumn
-from femto.trench import UTrenchColumn
 from femto.waveguide import NasuWaveguide
 from femto.waveguide import Waveguide
 from shapely.geometry import Polygon
@@ -101,7 +100,6 @@ def test_cell_init(cell) -> None:
     assert isinstance(cell._objs, dict)
     assert cell._objs == {
         TrenchColumn: [],
-        UTrenchColumn: [],
         Marker: [],
         Waveguide: [],
         NasuWaveguide: [],
@@ -144,7 +142,6 @@ def test_cell_objects_empty(cell) -> None:
     assert isinstance(cell.objects, dict)
     assert cell.objects == {
         TrenchColumn: [],
-        UTrenchColumn: [],
         Marker: [],
         Waveguide: [],
         NasuWaveguide: [],
@@ -156,7 +153,6 @@ def test_cell_objects(cell, list_wg, list_mk) -> None:
     cell.add(list_mk)
     cell.add([list_wg, list_mk])
     obj = cell.objects
-    assert obj[UTrenchColumn] == []
     assert obj[TrenchColumn] == []
     assert obj[NasuWaveguide] == []
     assert obj[Waveguide] == flatten([list_wg, list_wg])
@@ -183,7 +179,6 @@ def test_cell_add(list_wg, list_mk, list_tcol) -> None:
     assert cell.objects[Waveguide] == list_wg
     assert cell.objects[TrenchColumn] == []
     assert cell.objects[Marker] == []
-    assert cell.objects[UTrenchColumn] == []
     assert cell.objects[TrenchColumn] == []
     assert cell.objects[NasuWaveguide] == []
     del cell
@@ -193,21 +188,18 @@ def test_cell_add(list_wg, list_mk, list_tcol) -> None:
     assert cell.objects[Waveguide] == list_wg
     assert cell.objects[TrenchColumn] == []
     assert cell.objects[Marker] == []
-    assert cell.objects[UTrenchColumn] == []
     assert cell.objects[NasuWaveguide] == []
 
     cell.add(list_mk)
     assert cell.objects[Waveguide] == list_wg
     assert cell.objects[TrenchColumn] == []
     assert cell.objects[Marker] == list_mk
-    assert cell.objects[UTrenchColumn] == []
     assert cell.objects[NasuWaveguide] == []
 
     cell.add(list_tcol)
     assert cell.objects[Waveguide] == list_wg
     assert cell.objects[TrenchColumn] == list_tcol
     assert cell.objects[Marker] == list_mk
-    assert cell.objects[UTrenchColumn] == []
     assert cell.objects[NasuWaveguide] == []
     del cell
 
@@ -218,7 +210,6 @@ def test_cell_add(list_wg, list_mk, list_tcol) -> None:
     assert cell.objects[Waveguide] == list_wg
     assert cell.objects[TrenchColumn] == list_tcol
     assert cell.objects[Marker] == list_mk
-    assert cell.objects[UTrenchColumn] == []
     assert cell.objects[NasuWaveguide] == []
     del cell
 
@@ -232,7 +223,6 @@ def test_cell_add(list_wg, list_mk, list_tcol) -> None:
     assert cell.objects[Waveguide] == list_wg * 3
     assert cell.objects[TrenchColumn] == list_tcol * 2
     assert cell.objects[Marker] == list_mk
-    assert cell.objects[UTrenchColumn] == []
     assert cell.objects[NasuWaveguide] == []
     del cell
 
@@ -304,13 +294,11 @@ def test_device_add_cell(device, cell, list_tcol, list_wg) -> None:
     assert device.cells['base'].objects[NasuWaveguide] == []
     assert device.cells['base'].objects[Marker] == []
     assert device.cells['base'].objects[TrenchColumn] == list_tcol
-    assert device.cells['base'].objects[UTrenchColumn] == []
 
     assert device.cells['new'].objects[Waveguide] == list_wg
     assert device.cells['new'].objects[NasuWaveguide] == []
     assert device.cells['new'].objects[Marker] == []
     assert device.cells['new'].objects[TrenchColumn] == []
-    assert device.cells['new'].objects[UTrenchColumn] == []
 
 
 def test_device_add_to_cell(device, cell, list_wg, list_mk) -> None:
@@ -322,7 +310,6 @@ def test_device_add_to_cell(device, cell, list_wg, list_mk) -> None:
     assert device.cells['new'].objects[NasuWaveguide] == []
     assert device.cells['new'].objects[Marker] == []
     assert device.cells['new'].objects[TrenchColumn] == []
-    assert device.cells['new'].objects[UTrenchColumn] == []
 
     device.add_to_cell(key=c2.name, obj=list_mk)
     assert len(device.cells.values()) == 1
@@ -332,7 +319,6 @@ def test_device_add_to_cell(device, cell, list_wg, list_mk) -> None:
     assert device.cells['new'].objects[NasuWaveguide] == []
     assert device.cells['new'].objects[Marker] == list_mk
     assert device.cells['new'].objects[TrenchColumn] == []
-    assert device.cells['new'].objects[UTrenchColumn] == []
 
 
 def test_device_add_to_non_existing_cell(device, cell, list_wg, list_mk) -> None:
@@ -344,7 +330,6 @@ def test_device_add_to_non_existing_cell(device, cell, list_wg, list_mk) -> None
     assert device.cells['new'].objects[NasuWaveguide] == []
     assert device.cells['new'].objects[Marker] == []
     assert device.cells['new'].objects[TrenchColumn] == []
-    assert device.cells['new'].objects[UTrenchColumn] == []
 
     device.add_to_cell(key='new2', obj=list_mk)
     assert len(device.cells.values()) == 2
@@ -354,7 +339,6 @@ def test_device_add_to_non_existing_cell(device, cell, list_wg, list_mk) -> None
     assert device.cells['new2'].objects[NasuWaveguide] == []
     assert device.cells['new2'].objects[Marker] == list_mk
     assert device.cells['new2'].objects[TrenchColumn] == []
-    assert device.cells['new2'].objects[UTrenchColumn] == []
 
 
 def test_device_add_list_femtobjs(device, list_wg, list_mk, list_tcol) -> None:
@@ -365,7 +349,6 @@ def test_device_add_list_femtobjs(device, list_wg, list_mk, list_tcol) -> None:
     assert device.cells['base'].objects[NasuWaveguide] == []
     assert device.cells['base'].objects[Marker] == list_mk
     assert device.cells['base'].objects[TrenchColumn] == list_tcol
-    assert device.cells['base'].objects[UTrenchColumn] == []
 
 
 def test_device_add_list_femtobjs_multi(device, list_wg, list_mk, list_tcol) -> None:
@@ -376,7 +359,6 @@ def test_device_add_list_femtobjs_multi(device, list_wg, list_mk, list_tcol) -> 
     assert device.cells['base'].objects[NasuWaveguide] == []
     assert device.cells['base'].objects[Marker] == list_mk
     assert device.cells['base'].objects[TrenchColumn] == list_tcol
-    assert device.cells['base'].objects[UTrenchColumn] == []
 
 
 def test_device_add_single_femtobjs(device, list_wg, list_mk, list_tcol) -> None:
@@ -389,7 +371,6 @@ def test_device_add_single_femtobjs(device, list_wg, list_mk, list_tcol) -> None
     assert device.cells['base'].objects[NasuWaveguide] == []
     assert device.cells['base'].objects[Marker] == [mk]
     assert device.cells['base'].objects[TrenchColumn] == [tc]
-    assert device.cells['base'].objects[UTrenchColumn] == []
 
 
 def test_device_add_single_cell(device) -> None:
@@ -402,7 +383,6 @@ def test_device_add_single_cell(device) -> None:
     assert device.cells['test'].objects[NasuWaveguide] == []
     assert device.cells['test'].objects[Marker] == []
     assert device.cells['test'].objects[TrenchColumn] == []
-    assert device.cells['test'].objects[UTrenchColumn] == []
 
 
 def test_device_add_single_cell_multi(device) -> None:
@@ -419,19 +399,16 @@ def test_device_add_single_cell_multi(device) -> None:
     assert device.cells['test'].objects[NasuWaveguide] == []
     assert device.cells['test'].objects[Marker] == []
     assert device.cells['test'].objects[TrenchColumn] == []
-    assert device.cells['test'].objects[UTrenchColumn] == []
 
     assert device.cells['test1'].objects[Waveguide] == []
     assert device.cells['test1'].objects[NasuWaveguide] == []
     assert device.cells['test1'].objects[Marker] == []
     assert device.cells['test1'].objects[TrenchColumn] == []
-    assert device.cells['test1'].objects[UTrenchColumn] == []
 
     assert device.cells['test2'].objects[Waveguide] == []
     assert device.cells['test2'].objects[NasuWaveguide] == []
     assert device.cells['test2'].objects[Marker] == []
     assert device.cells['test2'].objects[TrenchColumn] == []
-    assert device.cells['test2'].objects[UTrenchColumn] == []
 
 
 def test_device_add_list_cell_multi(device) -> None:
@@ -446,19 +423,16 @@ def test_device_add_list_cell_multi(device) -> None:
     assert device.cells['test'].objects[NasuWaveguide] == []
     assert device.cells['test'].objects[Marker] == []
     assert device.cells['test'].objects[TrenchColumn] == []
-    assert device.cells['test'].objects[UTrenchColumn] == []
 
     assert device.cells['test1'].objects[Waveguide] == []
     assert device.cells['test1'].objects[NasuWaveguide] == []
     assert device.cells['test1'].objects[Marker] == []
     assert device.cells['test1'].objects[TrenchColumn] == []
-    assert device.cells['test1'].objects[UTrenchColumn] == []
 
     assert device.cells['test2'].objects[Waveguide] == []
     assert device.cells['test2'].objects[NasuWaveguide] == []
     assert device.cells['test2'].objects[Marker] == []
     assert device.cells['test2'].objects[TrenchColumn] == []
-    assert device.cells['test2'].objects[UTrenchColumn] == []
 
 
 @pytest.mark.parametrize(
@@ -616,7 +590,6 @@ def test_device_load_verbose(device, list_wg, list_mk, gc_param) -> None:
     assert d2.cells['base'].objects[Waveguide]
     assert d2.cells['base'].objects[Marker]
     assert not d2.cells['base'].objects[TrenchColumn]
-    assert not d2.cells['base'].objects[UTrenchColumn]
     assert not d2.cells['base'].objects[NasuWaveguide]
 
     objs = []
@@ -642,7 +615,6 @@ def test_device_load_empty(list_wg, list_mk, list_tcol, gc_param) -> None:
     assert d2.cells['base'].objects[Waveguide]
     assert d2.cells['base'].objects[Marker]
     assert d2.cells['base'].objects[TrenchColumn]
-    assert not d2.cells['base'].objects[UTrenchColumn]
     assert not d2.cells['base'].objects[NasuWaveguide]
     # assert d2.writers[Waveguide].objs == list_wg
     # assert d2.writers[TrenchColumn].objs == list_tcol
@@ -687,7 +659,6 @@ def test_device_load_non_base_cell(device, gc_param, list_wg, list_mk, list_tcol
     assert d2.cells['test'].objects[Waveguide]
     assert d2.cells['test'].objects[Marker]
     assert d2.cells['test'].objects[TrenchColumn]
-    assert not d2.cells['test'].objects[UTrenchColumn]
     assert not d2.cells['test'].objects[NasuWaveguide]
     # assert d2.writers[Waveguide].objs == list_wg
     # assert d2.writers[TrenchColumn].objs == list_tcol

@@ -5,7 +5,6 @@ import copy
 import pathlib
 from typing import Any
 from typing import get_args
-from typing import Optional
 from typing import Union
 
 import attrs
@@ -20,7 +19,6 @@ from femto.marker import Marker
 from femto.spreadsheet import Spreadsheet
 from femto.trench import Trench
 from femto.trench import TrenchColumn
-from femto.trench import UTrenchColumn
 from femto.waveguide import NasuWaveguide
 from femto.waveguide import Waveguide
 from femto.writer import MarkerWriter
@@ -28,7 +26,6 @@ from femto.writer import NasuWriter
 from femto.writer import plot2d_base_layer
 from femto.writer import plot3d_base_layer
 from femto.writer import TrenchWriter
-from femto.writer import UTrenchWriter
 from femto.writer import WaveguideWriter
 
 
@@ -40,13 +37,11 @@ types = dict(
     LP=LaserPath,
     TR=Trench,
     TC=TrenchColumn,
-    UTC=UTrenchColumn,
 )
-femtobj = Union[Waveguide, NasuWaveguide, Marker, Trench, TrenchColumn, UTrenchColumn]
+femtobj = Union[Waveguide, NasuWaveguide, Marker, Trench, TrenchColumn]
 
 writers = {
     TrenchColumn: TrenchWriter,
-    UTrenchColumn: UTrenchWriter,
     Marker: MarkerWriter,
     Waveguide: WaveguideWriter,
     NasuWaveguide: NasuWriter,
@@ -65,7 +60,6 @@ class Cell:
     def __attrs_post_init__(self) -> None:
         self._objs = {
             TrenchColumn: [],
-            UTrenchColumn: [],
             Marker: [],
             Waveguide: [],
             NasuWaveguide: [],
@@ -325,6 +319,8 @@ class Device:
                 'laser_name': self._param.get('laser') or '',
                 'sample_name': pathlib.Path(self._param.get('filename') or '').stem,
             }
+        else:
+            mdata = {}
 
         # Fetch all objects from writers
         objs: list[Waveguide | NasuWaveguide] = []
