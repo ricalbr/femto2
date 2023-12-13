@@ -493,7 +493,7 @@ class NasuWaveguide(Waveguide):
 
     _id: str = attrs.field(alias='_id', default='NWG')  #: Nasu Waveguide ID.
 
-    def __init__(self, **kwargs: Any):
+    def __init__(self, **kwargs: Any)->None:
         filtered: dict[str, Any] = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}
         self.__attrs_init__(**filtered)
 
@@ -587,7 +587,7 @@ def coupler(
 def main() -> None:
     """The main function of the script."""
     import matplotlib.pyplot as plt
-    from curves import circ, sin
+    from femto.curves import circ, sin
     from mpl_toolkits.mplot3d import Axes3D
     from addict import Dict as ddict
 
