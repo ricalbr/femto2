@@ -1,12 +1,12 @@
 from __future__ import annotations
 
+import dataclasses
 import itertools
 import pathlib
 from types import TracebackType
 from typing import Any
 
 import attrs
-import numpy
 import numpy as np
 import numpy.typing as npt
 import xlsxwriter
@@ -19,6 +19,43 @@ from femto.waveguide import Waveguide
 
 # Define array type
 nparray = npt.NDArray[np.float32]
+
+
+@dataclasses.dataclass
+class ColumnData:
+    """Class that handles column data."""
+
+    tagname: str  #: Tag of the data represented in the column.
+    name: str  #: Name of the column.
+    unit: str  #: Unit of measurement for the data in the column.
+    width: str  #: With of the column cells.
+    format: str  #: Formatting information for the data in the column.
+
+    def __repr__(self) -> str:
+        return self.name
+
+
+@dataclasses.dataclass
+class PreambleParameter:
+    """Class that handles preamble parameters."""
+
+    name: str  #: Full name.
+    value: str = ''  #: Value.
+    location: tuple[int, int] = (0, 0)  #: Location (1-indexing).
+    format: str = 'parval'  #: Format.
+    row: int | None = None  #: Row of Spreadsheet document.
+    col: int | None = None  #: Column of Spreadsheet document.
+
+    def __post_init__(self) -> None:
+        """Set row and column, from the location with Excel 1-indexing."""
+        self.row = self.location[0]
+        self.col = self.location[1]
+
+    def set_location(self, loc: tuple[int, int]) -> None:
+        """Set location of a cell parameter."""
+        self.location = loc
+        self.row = loc[0]
+        self.col = loc[1]
 
 
 @attrs.define(kw_only=True)
@@ -73,7 +110,7 @@ class Spreadsheet:
             'Irradiation': ['objective', 'power', 'speed', 'scan', 'depth'],
         }
 
-        preamble_data = {}
+        preamble_data: dict[str, dict[str, PreambleParameter]] = {}
         for k, section in preamble_info.items():
             preamble_data[k] = {
                 field: PreambleParameter(name=field, value=self.metadata.get(field) or '') for field in section
@@ -182,11 +219,11 @@ class Spreadsheet:
                 row += 1
             row += 2
 
-    def close(self):
+    def close(self) -> None:
         """Close the workbook."""
         self._workbook.close()
 
-    def write(self, obj_list: list[Waveguide | Marker], start: int = 5) -> None:
+    def write(self, obj_list: list[Waveguide | NasuWaveguide], start: int = 5) -> None:
         """Write the structures to the spreadsheet.
 
         Builds the structures list, containing all the required information about the structures to fabricate. Then,
@@ -331,7 +368,7 @@ class Spreadsheet:
 
     def _extract_data(
         self,
-        structures: list[Waveguide | Marker] | None = None,
+        structures: list[Waveguide | NasuWaveguide] | None = None,
     ) -> tuple[list[ColumnData], npt.NDArray[Any]]:
         """Build a table with all of the structures.
 
@@ -351,7 +388,7 @@ class Spreadsheet:
             with all the numerical data relative to the columns.
         """
 
-        def coords(x):
+        def coords(x: Waveguide | Marker) -> dict[type[Waveguide] | type[Marker], dict[str, float]]:
             """Input/output y-coordinates of Waveguide and Marker objects."""
             return {
                 Waveguide: {
@@ -378,35 +415,31 @@ class Spreadsheet:
 
         # Extract all data from structures (either attributes of metadata)
         for i, ent in enumerate(structures):
-            data_line = []
+            data_line: list[float | str | None] = []
             for tag, typ in dtype:
                 if tag in ['yin', 'yout']:
-                    item = coords(ent)[type(ent)][tag]
+                    data_line.append(coords(ent)[type(ent)][tag])
                 else:
-                    item = getattr(ent, tag, None) or ent.metadata.get(tag)
-
-                if item is None:
-                    item = 1.1e5 if typ in [np.float64, np.int64] else ''
-                data_line.append(item)
+                    fallback: float | str = 1.1e5 if typ in [np.float64, np.int64] else ''
+                    item: float | str | None = getattr(ent, tag, fallback) or ent.metadata.get(tag)
+                    data_line.append(item)
             table_lines[i] = tuple(data_line)
 
         # Select
         keep = []
         ignored_fields = []
-        for i, t in enumerate(self.columns_names):
+        for i, (t, typ) in enumerate(dtype):
             # Keep string-type columns (names, obs,...)
-            if table_lines.dtype.fields[t][0] not in [np.int64, np.float64]:
-                keep.append(t)
-                continue
-
             # Ignore redundant columns (same value on all the rows) if explicitly requested
-            if not self.redundant_cols and np.all(table_lines[t] == table_lines[t][0]) and table_lines.shape[0] != 1:
-                ignored_fields.append(t)
-            # Ignore columns with all the values greater than 1e5
-            elif np.all(table_lines[t] >= 1e5):
-                ignored_fields.append(t)
-            else:
-                keep.append(t)
+            if typ in [np.int64, np.float64]:
+                if not self.redundant_cols and len(set(table_lines[t])) == 1 and table_lines.shape[0] != 1:
+                    ignored_fields.append(t)
+                    continue
+                # Ignore columns with all the values greater than 1e5
+                elif np.all(table_lines[t] >= 1e5):
+                    ignored_fields.append(t)
+                    continue
+            keep.append(t)
 
         if ignored_fields:
             fields_left_out = ', '.join(ignored_fields)
@@ -443,7 +476,7 @@ class Spreadsheet:
             'time': {**{'num_format': 'HH:MM:SS'}, **al},
         }
 
-    def _dtype(self, tag: str):
+    def _dtype(self, tag: str) -> str | type:
         """Return the data type corresponding to a give column tagname.
 
         The data type is determined in the ``columns.txt`` file, under the column named ``format``. The dtypes are
@@ -473,43 +506,6 @@ class Spreadsheet:
             return np.float64
         else:
             return np.int64
-
-
-@attrs.define
-class ColumnData:
-    """Class that handles column data."""
-
-    tagname: str  #: Tag of the data represented in the column.
-    name: str  #: Name of the column.
-    unit: str  #: Unit of measurement for the data in the column.
-    width: str  #: With of the column cells.
-    format: str  #: Formatting information for the data in the column.
-
-    def __repr__(self):
-        return self.name
-
-
-@attrs.define
-class PreambleParameter:
-    """Class that handles preamble parameters."""
-
-    name: str  #: Full name.
-    value: str = ''  #: Value.
-    location: tuple[int, int] = (0, 0)  #: Location (1-indexing).
-    format: str = 'parval'  #: Format.
-    row: int | None = None
-    col: int | None = None
-
-    def __attrs_post_init__(self):
-        """Set row and column, from the location with Excel 1-indexing."""
-        self.row = self.location[0]
-        self.col = self.location[1]
-
-    def set_location(self, loc: tuple[int, int]):
-        """Set location of a cell parameter."""
-        self.location = loc
-        self.row = loc[0]
-        self.col = loc[1]
 
 
 def main() -> None:
@@ -542,7 +538,7 @@ def main() -> None:
     speeds = [20, 30, 40]
     scans = [3, 5, 7]
 
-    all_fabb: list[Waveguide | Marker] = []
+    all_fabb: list[Waveguide] = []
 
     for i_guide, (p, v, ns) in enumerate(product(powers, speeds, scans)):
         start_pt = [l_start, 2 + i_guide * 0.08, pars_wg.depth]

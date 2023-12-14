@@ -18,7 +18,6 @@ from femto.marker import Marker
 from femto.pgmcompiler import PGMCompiler
 from femto.trench import Trench
 from femto.trench import TrenchColumn
-from femto.trench import UTrenchColumn
 from femto.waveguide import NasuWaveguide
 from femto.waveguide import Waveguide
 from plotly import graph_objs as go
@@ -220,7 +219,6 @@ class Writer(PGMCompiler, abc.ABC):
         list
            List of objects contained in the current Writer.
         """
-        pass
 
     @property
     @abc.abstractmethod
@@ -234,7 +232,6 @@ class Writer(PGMCompiler, abc.ABC):
         float
            Total fabrication time [s].
         """
-        pass
 
     @abc.abstractmethod
     def add(self, obj: Any) -> None:
@@ -251,7 +248,6 @@ class Writer(PGMCompiler, abc.ABC):
         -------
         None
         """
-        pass
 
     @abc.abstractmethod
     def plot2d(
@@ -284,7 +280,6 @@ class Writer(PGMCompiler, abc.ABC):
         --------
         go.Figure : Plotly figure object.
         """
-        pass
 
     @abc.abstractmethod
     def plot3d(
@@ -317,7 +312,6 @@ class Writer(PGMCompiler, abc.ABC):
         --------
         go.Figure : Plotly figure object.
         """
-        pass
 
     @abc.abstractmethod
     def pgm(self, verbose: bool = False) -> None:
@@ -339,7 +333,6 @@ class Writer(PGMCompiler, abc.ABC):
         --------
         ``femto.pgmcompiler.PGMCompiler`` : class that convert lists of points to PGM file.
         """
-        pass
 
     def _get_glass_borders(self) -> tuple[float, float, float, float]:
         return (
@@ -354,7 +347,7 @@ class Writer(PGMCompiler, abc.ABC):
         filename: str | pathlib.Path | None = None,
         export_path: str | pathlib.Path | None = None,
         export_dir: str | pathlib.Path = 'EXPORT',
-    ):
+    ) -> None:
         """Export Nasu Waveguide objects.
 
         The export the list of Nasu Waveguide objects into a pickle file. The objects are exported in an ``EXPORT``
@@ -388,7 +381,7 @@ class TrenchWriter(Writer):
         param: dict[str, Any],
         objects: TrenchColumn | list[TrenchColumn] | None = None,
         dirname: str = 'TRENCH',
-        **kwargs,
+        **kwargs: Any | None,
     ) -> None:
 
         p = copy.deepcopy(param)
@@ -399,15 +392,17 @@ class TrenchWriter(Writer):
 
         self._obj_list: list[TrenchColumn] = [] if objects is None else flatten(listcast(objects))
         self._trenches: list[Trench] = [tr for col in self._obj_list for tr in col]
+        self._beds: list[Trench] = [ubed for col in self._obj_list for ubed in col.bed_list]
+
         self._param: dict[str, Any] = p
         self._export_path = self.CWD / (self.export_dir or '') / (self.dirname or '')
         self._fabtime: float = 0.0
 
     @property
-    def objs(self) -> list[Any]:
+    def objs(self) -> list[TrenchColumn]:
         """TrenchColumn objects.
 
-        Property for returning the TrenchColumn objects contained inside a TrenchWriter.
+        Returns the TrenchColumn objects contained inside a TrenchWriter.
 
         Returns
         -------
@@ -417,10 +412,10 @@ class TrenchWriter(Writer):
         return self._obj_list
 
     @property
-    def trench_list(self) -> list[Any]:
+    def trench_list(self) -> list[Trench]:
         """Trench objects.
 
-        Property for returning the Trench objects contained inside a TrenchWriter.
+        Returns the list of Trench objects contained inside a TrenchWriter.
 
         Returns
         -------
@@ -428,6 +423,19 @@ class TrenchWriter(Writer):
            List of Trench objects.
         """
         return self._trenches
+
+    @property
+    def beds_list(self) -> list[Trench]:
+        """Bed objects.
+
+        Returns the list of bed objects contained inside a TrenchWriter.
+
+        Returns
+        -------
+        list
+           List of bed objects.
+        """
+        return self._beds
 
     @property
     def fab_time(self) -> float:
@@ -442,7 +450,7 @@ class TrenchWriter(Writer):
         return self._fabtime
 
     def add(self, objs: TrenchColumn) -> None:
-        """Add TrenchColumn objects.
+        """Append TrenchColumn objects.
 
         Parameters
         ----------
@@ -451,17 +459,19 @@ class TrenchWriter(Writer):
 
         Returns
         -------
-        None
+        None.
         """
 
-        objs = flatten([objs])
-        for obj in objs:
+        objs_cast = flatten([objs])
+        for obj in objs_cast:
             if not isinstance(obj, TrenchColumn):
                 logger.error(f'The object must be a TrenchColumn. {type(obj).__name__} was given.')
                 raise TypeError(f'The object must be a TrenchColumn. {type(obj).__name__} was given.')
             self._obj_list.append(obj)
             self._trenches.extend(obj.trench_list)
-        logger.debug('Trench added to obj_list.')
+            logger.debug('Append U-Trench to _obj_list.')
+            self._beds.extend(obj.bed_list)
+            logger.debug('Append Trench bed to _trenchbed.')
 
     def plot2d(
         self, fig: go.Figure | None = None, show_shutter_close: bool = True, style: dict[str, Any] | None = None
@@ -640,10 +650,6 @@ class TrenchWriter(Writer):
         pathlib.Path : class representing cross-system filepaths.
         """
 
-        if filename is None:
-            logger.error('No filename given.')
-            raise ValueError('No filename given.')
-
         # Transform points
         x_arr, y_arr, _ = self.transform_points(x, y, np.zeros_like(x))
         z_arr = [None]
@@ -723,285 +729,8 @@ class TrenchWriter(Writer):
                 forced_deceleration=f_decel,
             )
 
-    def _farcall_trench_column(self, column: TrenchColumn, index: int, verbose: bool = False) -> None:
-        """Trench Column FARCALL generator
-
-        The function compiles a Trench Column by loading the wall and floor scripts, and then calling them with the
-        appropriate order and `U` parameters.
-        It produces a `FARCALL` file calling all the trenches of the TrenchColumn.
-
-        Parameters
-        ----------
-        column: TrenchColumn
-            TrenchColumn object to fabricate (and export as `PGM` file).
-        index: int
-            Index of the trench column. It is used for automatic filename creation.
-
-        Returns
-        -------
-        None.
-        """
-
-        logger.debug('Generate Trench columns FARCALL.pgm file.')
-        column_param = dict(self._param.copy())
-        column_param['filename'] = self._export_path / f'FARCALL{index + 1:03}.pgm'
-        with PGMCompiler.from_dict(column_param, verbose=verbose) as G:
-            G.dvar(['ZCURR'])
-
-            for nbox, (i_trc, trench) in list(itertools.product(range(column.nboxz), list(enumerate(column)))):
-                # load filenames (wall/floor)
-                wall_filename = f'trench{i_trc + 1:03}_WALL.pgm'
-                floor_filename = f'trench{i_trc + 1:03}_FLOOR.pgm'
-                wall_path = pathlib.Path(column.base_folder) / f'trenchCol{index + 1:03}' / wall_filename
-                floor_path = pathlib.Path(column.base_folder) / f'trenchCol{index + 1:03}' / floor_filename
-
-                # INIT POINT
-                x0, y0, z0 = self.transform_points(
-                    trench.xborder[0],
-                    trench.yborder[0],
-                    np.array(nbox * column.h_box + column.z_off),
-                )
-                G.comment(f'+--- COLUMN #{index + 1}, TRENCH #{i_trc + 1} LEVEL {nbox + 1} ---+')
-
-                # WALL
-                G.load_program(str(wall_path))
-                G.instruction(f'MSGDISPLAY 1, "COL {index + 1:03}, TR {i_trc + 1:03}, LV {nbox + 1:03}, W"\n')
-                G.shutter('OFF')
-                if column.u:
-                    G.instruction(f'G1 U{column.u[0]:.6f}')
-                    G.dwell(self.long_pause)
-                G.move_to([float(x0), float(y0), float(z0)], speed_pos=column.speed_closed)
-
-                G.instruction(f'$ZCURR = {z0:.6f}')
-                G.shutter(state='ON')
-                with G.repeat(column.n_repeat):
-                    G.farcall(wall_filename)
-                    G.instruction(f'$ZCURR = $ZCURR + {column.deltaz / super().neff:.6f}')
-                    G.instruction('G1 Z$ZCURR')
-                G.remove_program(wall_filename)
-
-                # FLOOR
-                G.shutter(state='OFF')
-                G.load_program(str(floor_path))
-                G.instruction(f'MSGDISPLAY 1, "COL {index + 1:03}, TR {i_trc + 1:03}, LV {nbox + 1:03}, F"\n')
-                if column.u:
-                    G.instruction(f'G1 U{column.u[-1]:.6f}')
-                    G.dwell(self.long_pause)
-                G.shutter(state='ON')
-                G.farcall(floor_filename)
-                G.shutter(state='OFF')
-                if column.u:
-                    G.instruction(f'G1 U{column.u[0]:.6f}')
-                G.remove_program(floor_filename)
-            G.instruction('MSGCLEAR -1\n')
-
-    def _plot2d_trench(self, fig: go.Figure, style: dict[str, Any] | None = None) -> go.Figure:
-        """2D plot helper.
-
-        The function takes a figure and a style dictionary as inputs, and adds a trace to the figure for each ``Trench``
-        stored in the ``Writer`` object.
-
-        Parameters
-        ----------
-        fig : go.Figure
-            Plotly figure object to add the trench traces.
-        style : dict
-            Dictionary containing all the styling parameters of the trench traces.
-
-        Returns
-        -------
-        go.Figure
-            Input figure with added trench traces.
-
-        See Also
-        --------
-        go.Figure : Plotly's figure object.
-        go.Scattergl : Plotly's method to trace paths and lines.
-        """
-
-        if style is None:
-            style = dict()
-        default_tcargs = {'fillcolor': '#7E7E7E', 'mode': 'none', 'hoverinfo': 'none'}
-        tcargs = {**default_tcargs, **style}
-
-        logger.debug('Add trenches shapes to figure.')
-        for tr in self._trenches:
-            # get points and transform them
-            xt, yt = tr.border
-            xt, yt, *_ = self.transform_points(xt, yt, np.zeros_like(xt, dtype=np.float32))
-
-            fig.add_trace(
-                go.Scattergl(
-                    x=xt,
-                    y=yt,
-                    fill='toself',
-                    **tcargs,
-                    showlegend=False,
-                    hovertemplate='(%{x:.4f}, %{y:.4f})<extra>TR</extra>',
-                )
-            )
-        return fig
-
-    def _plot3d_trench(self, fig: go.Figure, style: dict[str, Any] | None = None) -> go.Figure:
-        if style is None:
-            style = dict()
-        default_tcargs = {'dash': 'solid', 'color': '#000000', 'width': 1.5}
-        tcargs = {**default_tcargs, **style}
-
-        logger.debug('Add trenches 3D profile to figure.')
-        for tr in self._trenches:
-            # get points and transform them
-            xt, yt = tr.border
-            xt, yt, *_ = self.transform_points(xt, yt, np.zeros_like(xt, dtype=np.float32))
-
-            # Wall surface
-            x = np.array([xt, xt])
-            y = np.array([yt, yt])
-            z = np.array([np.zeros_like(xt), tr.height * np.ones_like(xt)])
-            fig.add_trace(
-                go.Surface(
-                    x=x,
-                    y=y,
-                    z=z,
-                    colorscale=[[0, 'grey'], [1, 'grey']],
-                    showlegend=False,
-                    hoverinfo='skip',
-                    showscale=False,
-                    opacity=0.6,
-                )
-            )
-
-            # Floor surface
-            if len(xt) % 2:
-                xt = np.append(xt, xt[0])
-                yt = np.append(yt, yt[0])
-
-            n = len(xt) // 2
-            v = np.linspace(0, 1, 10)
-            x_c1, x_c2 = xt[:n], xt[n:]
-            y_c1, y_c2 = yt[:n], yt[n:]
-
-            # surface points (xs, ys, zs):
-            xs = np.outer(1 - v, x_c1) + np.outer(v, x_c2)
-            ys = np.outer(1 - v, y_c1) + np.outer(v, y_c2)
-            zs = tr.height * np.ones(xs.shape)
-            fig.add_trace(
-                go.Surface(
-                    x=xs,
-                    y=ys,
-                    z=zs,
-                    colorscale=[[0, 'grey'], [1, 'grey']],
-                    showlegend=False,
-                    hoverinfo='skip',
-                    showscale=False,
-                )
-            )
-
-            # Perimeter points
-            for zval in [0.0, tr.height]:
-                fig.add_trace(
-                    go.Scatter3d(
-                        x=xt,
-                        y=yt,
-                        z=zval * np.ones_like(xt),
-                        mode='lines',
-                        line=tcargs,
-                        showlegend=False,
-                        hovertemplate='(%{x:.4f}, %{y:.4f})<extra>TR</extra>',
-                    )
-                )
-        return fig
-
-
-class UTrenchWriter(TrenchWriter):
-    """U-Trench Writer class."""
-
-    def __init__(
-        self,
-        param: dict[str, Any],
-        objects: UTrenchColumn | list[UTrenchColumn] | None = None,
-        dirname: str = 'U-TRENCH',
-        **kwargs,
-    ) -> None:
-        obj_list: list[UTrenchColumn] = flatten(listcast(objects)) if objects is not None else []
-        super().__init__(param, objects=obj_list, dirname=dirname, **kwargs)
-        self.beds: list[Trench] = [ubed for col in obj_list for ubed in col.trench_bed]
-
-    @property
-    def objs(self) -> list[Any]:
-        """UTrenchColumn objects.
-
-        Property for returning the UTrenchColumn objects contained inside a UTrenchWriter.
-
-        Returns
-        -------
-        list
-           List of UTrenchColumn objects.
-        """
-        return self._obj_list
-
-    @property
-    def fab_time(self) -> float:
-        """U-Trench fabrication time.
-
-        Returns
-        -------
-        float
-           Total U-trench fabrication time [s].
-        """
-        logger.debug(f'Return fabrication time = {self._fabtime}.')
-        return self._fabtime
-
-    def add(self, objs: UTrenchColumn) -> None:
-        """Append UTrenchColumn objects.
-
-        Parameters
-        ----------
-        objs: UTrenchColumn
-            UTrenchColumn object to be added to object list.
-
-        Returns
-        -------
-        None.
-        """
-
-        objs = flatten([objs])
-        for obj in objs:
-            if not isinstance(obj, UTrenchColumn):
-                logger.error(f'The object must be a UTrenchColumn. {type(obj).__name__} was given.')
-                raise TypeError(f'The object must be a UTrenchColumn. {type(obj).__name__} was given.')
-            self._obj_list.append(obj)
-            self._trenches.extend(obj.trench_list)
-            logger.debug('Append U-Trench to _obj_list.')
-            self.beds.extend(obj.trench_bed)
-            logger.debug('Append Trench bed to _trenchbed.')
-
-    # Private interface
-    def _export_trench_column(self, column: UTrenchColumn, column_path: pathlib.Path) -> None:
-        """Export Trench columns to PGM file.
-
-        Helper function that exports the wall and floor scripts for each trench in a Trench Column.
-
-        Parameters
-        ----------
-        column : UTrenchColumn
-            TrenchColumn object containing the Trench blocks to export.
-        column_path : pathlib.Path
-            Directory for the floor and wall `PGM` files.
-
-        Returns
-        -------
-        None.
-
-        See Also
-        --------
-        pathlib.Path : class representing cross-system filepaths.
-        """
-
-        super()._export_trench_column(column=column, column_path=column_path)
-
         # Bed script
-        for i, bed_block in enumerate(column.trench_bed):
+        for i, bed_block in enumerate(column.bed_list):
             logger.debug(f'Export trench bed for {bed_block}.')
 
             x_bed_block = np.array([])
@@ -1027,7 +756,7 @@ class UTrenchWriter(TrenchWriter):
                 forced_deceleration=f_decel,
             )
 
-    def _farcall_trench_column(self, column: UTrenchColumn, index: int, verbose: bool = False) -> None:
+    def _farcall_trench_column(self, column: TrenchColumn, index: int, verbose: bool = False) -> None:
         """Trench Column FARCALL generator
 
         The function compiles a Trench Column by loading the wall and floor scripts, and then calling them with the
@@ -1099,7 +828,7 @@ class UTrenchWriter(TrenchWriter):
                 G.remove_program(floor_filename)
 
             # BED
-            for i_bed, bed_block in enumerate(column.trench_bed):
+            for i_bed, bed_block in enumerate(column.bed_list):
                 x0, y0, z0 = self.transform_points(
                     np.array(bed_block.block.exterior.coords.xy[0])[0],
                     np.array(bed_block.block.exterior.coords.xy[1])[0],
@@ -1155,9 +884,11 @@ class UTrenchWriter(TrenchWriter):
             style = dict()
         default_utcargs = {'fillcolor': '#BEBEBE', 'mode': 'none', 'hoverinfo': 'none'}
         utcargs = {**default_utcargs, **style}
+        default_tcargs = {'fillcolor': '#7E7E7E', 'mode': 'none', 'hoverinfo': 'none'}
+        tcargs = {**default_tcargs, **style}
 
         logger.debug('Add trenches beds shapes to figure.')
-        for bd in self.beds:
+        for bd in self._beds:
             xt, yt = bd.border
             xt, yt, *_ = self.transform_points(xt, yt, np.zeros_like(xt, dtype=np.float32))
 
@@ -1171,7 +902,23 @@ class UTrenchWriter(TrenchWriter):
                     hovertemplate='(%{x:.4f}, %{y:.4f})<extra>TR</extra>',
                 )
             )
-        super()._plot2d_trench(fig, style)
+
+        logger.debug('Add trenches shapes to figure.')
+        for tr in self._trenches:
+            # get points and transform them
+            xt, yt = tr.border
+            xt, yt, *_ = self.transform_points(xt, yt, np.zeros_like(xt, dtype=np.float32))
+
+            fig.add_trace(
+                go.Scattergl(
+                    x=xt,
+                    y=yt,
+                    fill='toself',
+                    **tcargs,
+                    showlegend=False,
+                    hovertemplate='(%{x:.4f}, %{y:.4f})<extra>TR</extra>',
+                )
+            )
         return fig
 
     def _plot3d_trench(self, fig: go.Figure, style: dict[str, Any] | None = None) -> go.Figure:
@@ -1179,6 +926,8 @@ class UTrenchWriter(TrenchWriter):
             style = dict()
         default_utcargs = {'dash': 'solid', 'color': '#000000', 'width': 1.5}
         utcargs = {**default_utcargs, **style}
+        default_tcargs = {'dash': 'solid', 'color': '#000000', 'width': 1.5}
+        {**default_tcargs, **style}
 
         if not self._trenches:
             return fig
@@ -1246,7 +995,7 @@ class UTrenchWriter(TrenchWriter):
 
         logger.debug('Add trenches beds 3D shapes to figure.')
         tr = self._trenches[0]
-        for bd in self.beds:
+        for bd in self._beds:
             xt, yt = bd.border
             xt, yt, *_ = self.transform_points(xt, yt, np.zeros_like(xt, dtype=np.float32))
 
@@ -1309,7 +1058,7 @@ class UTrenchWriter(TrenchWriter):
 class WaveguideWriter(Writer):
     """Waveguide Writer class."""
 
-    def __init__(self, param: dict[str, Any], objects: list[Waveguide] | None = None, **kwargs) -> None:
+    def __init__(self, param: dict[str, Any], objects: list[Waveguide] | None = None, **kwargs: Any | None) -> None:
 
         p = copy.deepcopy(param)
         p.update(kwargs)
@@ -1359,9 +1108,10 @@ class WaveguideWriter(Writer):
         None.
         """
 
-        objs = flatten(listcast(objs))
-        if all(isinstance(wg, Waveguide) for wg in objs):
-            self._obj_list.extend(objs)
+        objs_cast = flatten(listcast(objs))
+        print(objs_cast)
+        if all(isinstance(wg, Waveguide) for wg in objs_cast):
+            self._obj_list.extend(objs_cast)
             logger.debug('Waveguide added to _obj_list.')
         else:
             logger.error('The objects must be of Waveguide type. Given wrong type.')
@@ -1639,7 +1389,7 @@ class WaveguideWriter(Writer):
 class NasuWriter(Writer):
     """NasuWaveguide Writer class."""
 
-    def __init__(self, param: dict[str, Any], objects: list[NasuWaveguide] | None = None, **kwargs) -> None:
+    def __init__(self, param: dict[str, Any], objects: list[NasuWaveguide] | None = None, **kwargs: Any | None) -> None:
 
         p = copy.deepcopy(param)
         p.update(kwargs)
@@ -1676,12 +1426,12 @@ class NasuWriter(Writer):
         logger.debug(f'Return fabrication time = {self._fabtime}.')
         return self._fabtime
 
-    def add(self, objs: Waveguide | list[Waveguide]) -> None:
+    def add(self, objs: NasuWaveguide | list[NasuWaveguide]) -> None:
         """Append NasuWaveguide objects.
 
         Parameters
         ----------
-        objs: NasuWaveguide
+        objs: NasuWaveguide | list[NasuWaveguide]
             Waveguide object to be added to object list.
 
         Returns
@@ -1689,9 +1439,9 @@ class NasuWriter(Writer):
         None.
         """
 
-        objs = flatten(listcast(objs))
-        if all(isinstance(wg, NasuWaveguide) for wg in objs):
-            self._obj_list.extend(objs)
+        objs_cast = flatten(listcast(objs))
+        if all(isinstance(wg, NasuWaveguide) for wg in objs_cast):
+            self._obj_list.extend(objs_cast)
             logger.debug('Waveguide added to _obj_list.')
         else:
             logger.error('The objects must be of NasuWaveguide type. Given wrong type.')
@@ -1971,7 +1721,7 @@ class NasuWriter(Writer):
 class MarkerWriter(Writer):
     """Marker Writer class."""
 
-    def __init__(self, param: dict[str, Any], objects: list[Marker] | None = None, **kwargs) -> None:
+    def __init__(self, param: dict[str, Any], objects: list[Marker] | None = None, **kwargs: Any | None) -> None:
 
         p = copy.deepcopy(param)
         p.update(kwargs)
@@ -2013,7 +1763,7 @@ class MarkerWriter(Writer):
 
         Parameters
         ----------
-        objs: Marker
+        objs: Marker | list[Marker]
             Marker object to be added to object list.
 
         Returns
@@ -2021,11 +1771,11 @@ class MarkerWriter(Writer):
         None.
         """
 
-        objs = flatten(listcast(objs))
-        if not all(isinstance(obj, Marker) for obj in objs):
+        objs_cast = flatten(listcast(objs))
+        if not all(isinstance(obj, Marker) for obj in objs_cast):
             logger.error('The objects must be of Marker type. Given wrong type.')
             raise TypeError('The objects must be of Marker type. Given wrong type.')
-        self._obj_list.extend(objs)
+        self._obj_list.extend(objs_cast)
         logger.debug('Marker added to _obj_list.')
 
     def plot2d(
@@ -2100,7 +1850,7 @@ class MarkerWriter(Writer):
         fig = go.Figure()
         logger.debug('Update figure.')
         fig = self._plot3d_mk(fig=fig, style=style)
-        fig = super().standard_3d_figure_update(fig)  # Add glass, shift_origin and axis elements
+        fig = plot3d_base_layer(fig)  # Add glass, shift_origin and axis elements
         return fig
 
     def pgm(self, verbose: bool = False) -> None:

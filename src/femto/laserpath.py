@@ -16,7 +16,7 @@ from femto.helpers import unique_filter
 nparray = npt.NDArray[np.float32]
 
 
-@attrs.define(kw_only=True, repr=False)
+@attrs.define(kw_only=True, repr=False, init=False)
 class LaserPath:
     """Class that computes and stores the coordinates of a laser path."""
 
@@ -45,11 +45,11 @@ class LaserPath:
     _s: nparray = attrs.field(alias='_s', factory=lambda: np.array([], dtype=np.float32))
     logger.debug('Initialized all the coordinates arrays.')
 
-    def __init__(self, **kwargs):
-        filtered = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}
+    def __init__(self, **kwargs: Any) -> None:
+        filtered: dict[str, Any] = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}
         self.__attrs_init__(**filtered)
 
-    def __attrs_post_init__(self):
+    def __attrs_post_init__(self) -> None:
         if 'name' not in self.metadata.keys():
             self.metadata['name'] = type(self).__name__
 
@@ -57,7 +57,7 @@ class LaserPath:
         return f'{self.__class__.__name__}@{id(self) & 0xFFFFFF:x}'
 
     @classmethod
-    def from_dict(cls: type[LaserPath], param: dict[str, Any], **kwargs) -> LaserPath:
+    def from_dict(cls: type[LaserPath], param: dict[str, Any], **kwargs: Any | None) -> LaserPath:
         """Create an instance of the class from a dictionary.
 
         It takes a class and a dictionary, and returns an instance of the class with the dictionary's keys as the
@@ -174,8 +174,9 @@ class LaserPath:
             The end of the laser path outside the sample [mm].
         """
 
-        if self.samplesize[0] is None:
+        if not self.samplesize[0]:
             logger.debug('Return None, check samplesize.')
+            logger.error(f'Error, sample size is {self.samplesize[0]}.')
             return None
         if self.end_off_sample:
             logger.debug(f'Return x_end = {self.samplesize[0] + self.lsafe}.')
@@ -581,7 +582,7 @@ class LaserPath:
         z: nparray,
         f: nparray,
         s: nparray,
-    ):
+    ) -> None:
         """Appends the given arrays to the end of the existing coordinates.
 
         Parameters
