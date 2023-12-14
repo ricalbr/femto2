@@ -38,7 +38,7 @@ types = dict(
     TR=Trench,
     TC=TrenchColumn,
 )
-femtobj = Union[Waveguide, NasuWaveguide, Marker, Trench, TrenchColumn]
+femto_objects = Union[Waveguide, NasuWaveguide, Marker, Trench, TrenchColumn]
 
 writers = {
     TrenchColumn: TrenchWriter,
@@ -72,14 +72,14 @@ class Cell:
         }
         self.name = self.name.lower()
         if ' ' in self.name:
-            self.name = self.name.replace(' ', '-')
-        logger.info(f'Init Cell {self.name.replace("-", " ").upper()}.')
+            self.name = self.name.strip().replace(' ', '-')
+        logger.info(f'Init Cell {self.name.upper()}.')
 
     def __repr__(self) -> str:
         return f'Cell {self.name}'
 
     @property
-    def objects(self) -> dict[type[femto_objects], list[femto_objects]]:
+    def objects(self) -> dict[type[Any], list[Any]]:
         """Objects.
 
         Returns
@@ -136,7 +136,7 @@ class Cell:
         -------
         None.
         """
-        if all(isinstance(obj, femto_objects.__args__) for obj in flatten([objs])):
+        if all(isinstance(obj, get_args(femto_objects)) for obj in flatten([objs])):
             self.parse_objects(objs)
         else:
             logger.error(
@@ -148,7 +148,7 @@ class Cell:
 
 
 class Device:
-    def __init__(self, **param) -> None:
+    def __init__(self, **param: Any | None) -> None:
         self.cells_collection: dict[str, Cell] = collections.defaultdict(Cell)
         self.fig: go.Figure | None = None
         self.fabrication_time: float = 0.0
@@ -219,7 +219,7 @@ class Device:
         for elem in objs:
             if isinstance(elem, Cell):
                 self.add_cell(elem)
-            elif isinstance(elem, femto_objects.__args__):
+            elif isinstance(elem, get_args(femto_objects)):
                 if self._print_base_cell_warning:
                     logger.warning('femto objects added straight to a Device will be added to a common layer: BASE.')
                     self._print_base_cell_warning = False

@@ -1386,6 +1386,7 @@ class WaveguideWriter(Writer):
 
 class NasuWriter(Writer):
     """NasuWaveguide Writer class."""
+
     def __init__(self, param: dict[str, Any], objects: list[NasuWaveguide] | None = None, **kwargs: Any | None) -> None:
         p = copy.deepcopy(param)
         p.update(kwargs)

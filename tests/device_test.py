@@ -403,6 +403,7 @@ def test_device_add_single_cell(device) -> None:
     assert device.cells_collection['test'].objects[Marker] == []
     assert device.cells_collection['test'].objects[TrenchColumn] == []
 
+
 def test_device_add_single_cell_multi(device) -> None:
     cell = Cell(name='test')
     device.add(cell)
