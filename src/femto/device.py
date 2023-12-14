@@ -4,6 +4,7 @@ import collections
 import copy
 import pathlib
 from typing import Any
+from typing import get_args
 from typing import Union
 
 import attrs
@@ -18,7 +19,6 @@ from femto.marker import Marker
 from femto.spreadsheet import Spreadsheet
 from femto.trench import Trench
 from femto.trench import TrenchColumn
-from femto.trench import UTrenchColumn
 from femto.waveguide import NasuWaveguide
 from femto.waveguide import Waveguide
 from femto.writer import MarkerWriter
@@ -26,7 +26,6 @@ from femto.writer import NasuWriter
 from femto.writer import plot2d_base_layer
 from femto.writer import plot3d_base_layer
 from femto.writer import TrenchWriter
-from femto.writer import UTrenchWriter
 from femto.writer import WaveguideWriter
 
 
@@ -38,13 +37,11 @@ types = dict(
     LP=LaserPath,
     TR=Trench,
     TC=TrenchColumn,
-    UTC=UTrenchColumn,
 )
-femtobj = Union[Waveguide, NasuWaveguide, Marker, Trench, TrenchColumn, UTrenchColumn]
+femtobj = Union[Waveguide, NasuWaveguide, Marker, Trench, TrenchColumn]
 
 writers = {
     TrenchColumn: TrenchWriter,
-    UTrenchColumn: UTrenchWriter,
     Marker: MarkerWriter,
     Waveguide: WaveguideWriter,
     NasuWaveguide: NasuWriter,
@@ -60,16 +57,15 @@ class Cell:
 
     _objs: dict[type[femtobj], list[femtobj]] = attrs.field(alias='_objs', factory=dict)
 
-    def __attrs_post_init__(self):
+    def __attrs_post_init__(self) -> None:
         self._objs = {
             TrenchColumn: [],
-            UTrenchColumn: [],
             Marker: [],
             Waveguide: [],
             NasuWaveguide: [],
         }
         self.name = self.name.lower()
-        if self.name != self.name.split(' '):
+        if ' ' in self.name:
             self.name = self.name.replace(' ', '-')
         logger.info(f'Cell {self.name.replace("-", " ").upper()}.')
 
@@ -77,7 +73,7 @@ class Cell:
         return f'Cell {self.name}'
 
     @property
-    def objects(self) -> dict[type[femtobj], list[femtobj]]:
+    def objects(self) -> dict[type[Any], list[Any]]:
         return self._objs
 
     def parse_objects(self, unparsed_objects: Any | list[Any]) -> None:
@@ -113,7 +109,7 @@ class Cell:
                 raise TypeError(f'Found unexpected type {err.args}.')
 
     def add(self, objs: femtobj | tuple[femtobj] | list[femtobj]) -> None:
-        if all(isinstance(obj, femtobj.__args__) for obj in flatten([objs])):
+        if all(isinstance(obj, get_args(femtobj)) for obj in flatten([objs])):
             self.parse_objects(objs)
         else:
             logger.error(
@@ -125,7 +121,7 @@ class Cell:
 
 
 class Device:
-    def __init__(self, **param) -> None:
+    def __init__(self, **param: dict[str, Any]) -> None:
         self.cells: dict[str, Cell] = dict()
         self.fig: go.Figure | None = None
         self.fabrication_time: float = 0.0
@@ -136,7 +132,7 @@ class Device:
         logger.info(f'Instantiate device {self._param["filename"].rsplit(".", 1)[0].upper()}.')
 
     @classmethod
-    def from_dict(cls, param: dict[str, Any], **kwargs):
+    def from_dict(cls, param: dict[str, Any], **kwargs: Any | None) -> Device:
         """Create an instance of the class from a dictionary.
 
         It takes a class and a dictionary, and returns an instance of the class with the dictionary's keys as the
@@ -152,7 +148,7 @@ class Device:
 
         Returns
         -------
-        Instance of class
+        Instance of class.
         """
         # Update parameters with kwargs
         p = copy.deepcopy(param)
@@ -167,7 +163,7 @@ class Device:
         for elem in objs:
             if isinstance(elem, Cell):
                 self.add_cell(elem)
-            elif isinstance(elem, femtobj.__args__):
+            elif isinstance(elem, get_args(femtobj)):
                 if self._print_base_cell_warning:
                     logger.warning('femto objects added straight to a Device will be added to a common layer: BASE.')
                     self._print_base_cell_warning = False
@@ -182,7 +178,7 @@ class Device:
                     f'Given {type(elem)}.'
                 )
 
-    def add_cell(self, cell: Cell):
+    def add_cell(self, cell: Cell) -> None:
         if cell.name.lower() in self.cells:
             logger.error(f'Cell ID "{cell.name}" already present in layer  dict, give another value.')
             raise ValueError(f'Cell ID "{cell.name}" already present in layer  dict, give another value.')
@@ -309,7 +305,7 @@ class Device:
                 wr.export(filename=layer.name.upper(), export_dir=export_dir)
         logger.info('Export completed.')
 
-    def xlsx(self, metadata: dict[str, Any] | None = None, **kwargs) -> None:
+    def xlsx(self, metadata: dict[str, Any] | None = None, **kwargs: Any) -> None:
         """Generate the spreadsheet.
 
         Add all waveguides and markers of the ``Device`` to the spreadsheet.
@@ -317,22 +313,25 @@ class Device:
 
         # Case in which metadata is given as keyword argument, use it for the Spreadsheet generation
         if 'metadata' in kwargs.keys():
-            metadata = kwargs.pop('metadata')
+            mdata = kwargs.pop('metadata')
+            print(mdata)
         elif not metadata:
-            metadata = {
+            mdata = {
                 'laser_name': self._param.get('laser') or '',
                 'sample_name': pathlib.Path(self._param.get('filename') or '').stem,
             }
+        else:
+            mdata = metadata
 
         # Fetch all objects from writers
-        objs = []
+        objs: list[Waveguide | NasuWaveguide] = []
         for layer in self.cells.values():
             objs.extend(layer.objects[Waveguide])
             objs.extend(layer.objects[NasuWaveguide])
 
         # Generate Spreadsheet
         logger.info('Generating spreadsheet...')
-        with Spreadsheet(**kwargs, metadata=metadata) as S:
+        with Spreadsheet(**kwargs, metadata=mdata) as S:
             S.write(objs)
         logger.info('Excel file created.')
 
@@ -415,7 +414,6 @@ def main() -> None:
     test.add(waveguides)
     test.add(tcol)
     test.add_cell(trenches)
-    test.add_to_cell('2', coup)
 
     # test.plot2d()
     # test.save('scheme.pdf')
