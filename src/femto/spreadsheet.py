@@ -1,12 +1,12 @@
 from __future__ import annotations
 
+import dataclasses
 import itertools
 import pathlib
 from types import TracebackType
 from typing import Any
 
 import attrs
-import numpy
 import numpy as np
 import numpy.typing as npt
 import xlsxwriter
@@ -19,6 +19,43 @@ from femto.waveguide import Waveguide
 
 # Define array type
 nparray = npt.NDArray[np.float32]
+
+
+@dataclasses.dataclass
+class ColumnData:
+    """Class that handles column data."""
+
+    tagname: str  #: Tag of the data represented in the column.
+    name: str  #: Name of the column.
+    unit: str  #: Unit of measurement for the data in the column.
+    width: str  #: With of the column cells.
+    format: str  #: Formatting information for the data in the column.
+
+    def __repr__(self) -> str:
+        return self.name
+
+
+@dataclasses.dataclass
+class PreambleParameter:
+    """Class that handles preamble parameters."""
+
+    name: str  #: Full name.
+    value: str = ''  #: Value.
+    location: tuple[int, int] = (0, 0)  #: Location (1-indexing).
+    format: str = 'parval'  #: Format.
+    row: int | None = None  #: Row of Spreadsheet document.
+    col: int | None = None  #: Column of Spreadsheet document.
+
+    def __post_init__(self) -> None:
+        """Set row and column, from the location with Excel 1-indexing."""
+        self.row = self.location[0]
+        self.col = self.location[1]
+
+    def set_location(self, loc: tuple[int, int]) -> None:
+        """Set location of a cell parameter."""
+        self.location = loc
+        self.row = loc[0]
+        self.col = loc[1]
 
 
 @attrs.define(kw_only=True)
@@ -73,7 +110,7 @@ class Spreadsheet:
             'Irradiation': ['objective', 'power', 'speed', 'scan', 'depth'],
         }
 
-        preamble_data : dict[str, dict[str, PreambleParameter]] = {}
+        preamble_data: dict[str, dict[str, PreambleParameter]] = {}
         for k, section in preamble_info.items():
             preamble_data[k] = {
                 field: PreambleParameter(name=field, value=self.metadata.get(field) or '') for field in section
@@ -469,43 +506,6 @@ class Spreadsheet:
             return np.float64
         else:
             return np.int64
-
-
-@attrs.define
-class ColumnData:
-    """Class that handles column data."""
-
-    tagname: str  #: Tag of the data represented in the column.
-    name: str  #: Name of the column.
-    unit: str  #: Unit of measurement for the data in the column.
-    width: str  #: With of the column cells.
-    format: str  #: Formatting information for the data in the column.
-
-    def __repr__(self) -> str:
-        return self.name
-
-
-@attrs.define
-class PreambleParameter:
-    """Class that handles preamble parameters."""
-
-    name: str  #: Full name.
-    value: str = ''  #: Value.
-    location: tuple[int, int] = (0, 0)  #: Location (1-indexing).
-    format: str = 'parval'  #: Format.
-    row: int | None = None
-    col: int | None = None
-
-    def __attrs_post_init__(self) -> None:
-        """Set row and column, from the location with Excel 1-indexing."""
-        self.row = self.location[0]
-        self.col = self.location[1]
-
-    def set_location(self, loc: tuple[int, int]) -> None:
-        """Set location of a cell parameter."""
-        self.location = loc
-        self.row = loc[0]
-        self.col = loc[1]
 
 
 def main() -> None:
