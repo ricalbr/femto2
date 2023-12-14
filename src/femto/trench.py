@@ -651,7 +651,7 @@ class TrenchColumn:
         Parameters
         ----------
         n_pillars: int
-            Number of pillers
+            Number of pillars
 
         Returns
         -------
