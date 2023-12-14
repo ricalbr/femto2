@@ -73,7 +73,7 @@ class Spreadsheet:
             'Irradiation': ['objective', 'power', 'speed', 'scan', 'depth'],
         }
 
-        preamble_data = {}
+        preamble_data : dict[str, dict[str, PreambleParameter]] = {}
         for k, section in preamble_info.items():
             preamble_data[k] = {
                 field: PreambleParameter(name=field, value=self.metadata.get(field) or '') for field in section
