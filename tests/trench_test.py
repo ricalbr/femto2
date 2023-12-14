@@ -76,7 +76,7 @@ def tc(param) -> TrenchColumn:
 
 
 @pytest.fixture
-def utc(uparam) -> UTrenchColumn:
+def utc(uparam) -> TrenchColumn:
     return TrenchColumn(**uparam)
 
 
