@@ -13,7 +13,7 @@ from femto.laserpath import LaserPath
 nparray = npt.NDArray[np.float32]
 
 
-@attrs.define(kw_only=True, repr=False)
+@attrs.define(kw_only=True, repr=False, init=False)
 class Waveguide(LaserPath):
     """Class that computes and stores the coordinates of an optical waveguide."""
 
@@ -28,11 +28,11 @@ class Waveguide(LaserPath):
 
     _id: str = attrs.field(alias='_id', default='WG')  #: Waveguide ID.
 
-    def __init__(self, **kwargs):
-        filtered = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}
+    def __init__(self, **kwargs: Any) -> None:
+        filtered: dict[str, Any] = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}
         self.__attrs_init__(**filtered)
 
-    def __attrs_post_init__(self):
+    def __attrs_post_init__(self) -> None:
         super().__attrs_post_init__()
         if self.z_init is None:
             self.z_init = self.depth
@@ -54,9 +54,6 @@ class Waveguide(LaserPath):
         float
             The difference between the waveguide pitch and the interaction distance.
         """
-        if self.pitch is None:
-            logger.error('Waveguide pitch is set to None.')
-            raise ValueError('Waveguide pitch is set to None.')
         if self.int_dist is None:
             logger.error('Interaction distance is set to None.')
             raise ValueError('Interaction distance is set to None.')
@@ -116,7 +113,7 @@ class Waveguide(LaserPath):
         reverse: bool = False,
         speed: float | None = None,
         shutter: int = 1,
-        **kwargs,
+        **kwargs: Any | None,
     ) -> Waveguide:
         """Bend segment.
 
@@ -152,18 +149,6 @@ class Waveguide(LaserPath):
         -------
         The object itself.
         """
-        if radius is None and self.radius is None:
-            logger.error('Radius is None.')
-            raise ValueError('Radius is None. Set Waveguide\'s "radius" attribute or give a radius as input.')
-        if speed is None and self.speed is None:
-            logger.error('Speed is None.')
-            raise ValueError('Speed is None. Set Waveguide\'s "speed" attribute or give a speed as input.')
-        if dz is None and self.dz_bridge is None:
-            logger.error('dz bridge is None.')
-            raise ValueError('dz bridge is None. Set Waveguide\'s "dz_bridge" attribute or give a valid dz as input.')
-        if dy is None:
-            logger.error('dy is None.')
-            raise ValueError('dy is None. Give a valid dy as input.')
 
         r = radius if radius is not None else self.radius
         logger.debug(f'Radius set to r = {r}.')
@@ -211,7 +196,7 @@ class Waveguide(LaserPath):
         reverse: bool = False,
         speed: float | None = None,
         shutter: int = 1,
-        **kwargs,
+        **kwargs: Any | None,
     ) -> Waveguide:
         """Double bend.
 
@@ -293,7 +278,7 @@ class Waveguide(LaserPath):
         reverse: bool = False,
         speed: float | None = None,
         shutter: int = 1,
-        **kwargs,
+        **kwargs: Any | None,
     ) -> Waveguide:
         """Concatenate two bends to make a single mode of a Directional Coupler.
 
@@ -330,13 +315,6 @@ class Waveguide(LaserPath):
         The object itself.
         """
 
-        if int_length is None and self.int_length is None:
-            logger.error('Interaction length is None.')
-            raise ValueError(
-                'Interaction length is None.'
-                'Set Waveguide\'s "int_length" attribute or give a valid "int_length" as input.'
-            )
-
         int_length = int_length if int_length is not None else self.int_length
         logger.debug(f'Interaction lenght set to int_length = {int_length}.')
 
@@ -349,6 +327,7 @@ class Waveguide(LaserPath):
             num_points=num_points,
             reverse=reverse,
             speed=speed,
+            shutter=1,
             **kwargs,
         )
         if reverse:
@@ -364,6 +343,7 @@ class Waveguide(LaserPath):
             num_points=num_points,
             reverse=reverse,
             speed=speed,
+            shutter=1,
             **kwargs,
         )
         return self
@@ -381,7 +361,7 @@ class Waveguide(LaserPath):
         reverse: bool = False,
         speed: float | None = None,
         shutter: int = 1,
-        **kwargs,
+        **kwargs: Any | None,
     ) -> Waveguide:
         """Concatenate two Directional Couplers segments to make a single mode of a Mach-Zehnder Interferometer.
 
@@ -418,12 +398,6 @@ class Waveguide(LaserPath):
         The object itself.
         """
 
-        if arm_length is None and self.arm_length is None:
-            logger.error('Arm length is None.')
-            raise ValueError(
-                'Arm length is None. Set Waveguide\'s "arm_length" attribute or give a valid "arm_length" as input.'
-            )
-
         arm_length = arm_length if arm_length is not None else self.arm_length
         logger.debug(f'Arm length set to arm_length = {arm_length}.')
 
@@ -437,6 +411,7 @@ class Waveguide(LaserPath):
             int_length=int_length,
             reverse=reverse,
             speed=speed,
+            shutter=1,
             **kwargs,
         )
         if reverse:
@@ -453,16 +428,16 @@ class Waveguide(LaserPath):
             int_length=int_length,
             reverse=reverse,
             speed=speed,
+            shutter=1,
             **kwargs,
         )
         return self
 
     def add_curve_points(
         self,
-        points: tuple[nparray, nparray, nparray] | np.ndarray,
+        points: tuple[nparray, nparray, nparray] | npt.NDArray[np.float32],
         speed: float | None = None,
         shutter: int = 1,
-        **kwargs,
     ) -> Waveguide:
         """Add custom curve segment defined by points.
 
@@ -479,17 +454,11 @@ class Waveguide(LaserPath):
             Translation speed [mm/s]. The default value is `self.speed`.
         shutter: int, optional
             State of the shutter during the transition (0: 'OFF', 1: 'ON'). The default value is 1.
-        kwargs: optional
-            Additional arguments for the `fx` function.
 
         Returns
         -------
         The object itself.
         """
-
-        if speed is None and self.speed is None:
-            logger.error('Speed is None.')
-            raise ValueError('Speed is None. Set Waveguide\'s "speed" attribute or give a speed as input.')
 
         f = speed if speed is not None else self.speed
         logger.debug(f'Speed set to f = {f}.')
@@ -510,7 +479,7 @@ class Waveguide(LaserPath):
         return self
 
 
-@attrs.define(kw_only=True, repr=False)
+@attrs.define(kw_only=True, repr=False, init=False)
 class NasuWaveguide(Waveguide):
     """Class that computes and stores the coordinates of a Nasu optical waveguide [#]_.
 
@@ -524,11 +493,11 @@ class NasuWaveguide(Waveguide):
 
     _id: str = attrs.field(alias='_id', default='NWG')  #: Nasu Waveguide ID.
 
-    def __init__(self, **kwargs):
-        filtered = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}
+    def __init__(self, **kwargs: Any) -> None:
+        filtered: dict[str, Any] = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}
         self.__attrs_init__(**filtered)
 
-    def __attrs_post_init__(self):
+    def __attrs_post_init__(self) -> None:
         super().__attrs_post_init__()
         if self.z_init is None:
             self.z_init = self.depth
@@ -618,7 +587,7 @@ def coupler(
 def main() -> None:
     """The main function of the script."""
     import matplotlib.pyplot as plt
-    from curves import circ, sin
+    from femto.curves import circ, sin
     from mpl_toolkits.mplot3d import Axes3D
     from addict import Dict as ddict
 

@@ -5,6 +5,7 @@ import itertools
 import os
 import pathlib
 from typing import Any
+from typing import Generator
 from typing import Iterable
 from typing import Iterator
 
@@ -44,7 +45,7 @@ pairwise = functools.partial(grouped, n=2)
 def swap(
     array: list[Any] | npt.NDArray[Any],
     swap_pos: list[tuple[int, int]],
-) -> list[Any]:
+) -> list[Any] | npt.NDArray[Any]:
     """Swaps elements.
 
     Swap elements of an array given as input.
@@ -100,20 +101,20 @@ def listcast(x: Any) -> list[Any]:
         return [x]
 
 
-def nest_level(lst: list[Any]) -> int:
+def nest_level(lst: list[Any] | Any) -> int:
     """Nest level.
 
     Compute the neseting level of a list.
 
     Parameters
     ----------
-    lst: list[Any]
+    lst: list[Any] | Any
         Input list with a certain nested level.
 
     Returns
     -------
     int
-        Number of nested lists, a flatten list has ``nest_level`` of 1.
+        Number of nested lists, a flattened list has ``nest_level`` of 1.
     """
     if not isinstance(lst, list):
         return 0
@@ -122,14 +123,52 @@ def nest_level(lst: list[Any]) -> int:
     return max(nest_level(item) for item in lst) + 1
 
 
-def flatten(items):
-    """Flatten list.
+def collapse(iterable: Iterable[Any]) -> Iterable[Any]:
+    """Collapse Generator.
 
-    A recursive function that flattens a list.
+    Flatten an iterable with multiple levels of nesting (e.g., a list of lists of tuples) into non-iterable types.
+
+        >>> iterable = [(1, 2), ([3, 4], [[5], [6]])]
+        >>> list(collapse(iterable))
+        [1, 2, 3, 4, 5, 6]
+
+    Binary and text strings are not considered iterable and will not be collapsed.
 
     Parameters
     ----------
-    items: list
+    iterable: Iterable[Any]
+        Input list with an arbitrary nesting level.
+
+    Yields
+    ------
+    Iterable[Any]
+        Flattened version of input iterable.
+    """
+
+    if isinstance(iterable, (str, bytes)):
+        yield iterable
+        return
+
+    for x in iterable:
+        if isinstance(x, (list, tuple)):
+            yield from collapse(x)
+        else:
+            yield x
+
+
+def flatten(iterable: Iterable[Any]) -> list[Any]:
+    """Flatten list.
+
+    Flatten an arbitrarily nested list. Returns a new list, the original list is unchanged.
+
+    >>> flatten([1, 2, 3, [4], [], [[[[[[[[[5]]]]]]]]]])
+    [1, 2, 3, 4, 5]
+    >>> flatten([[1, 2], 3]
+    [1, 2, 3]
+
+    Parameters
+    ----------
+    iterable: list
         Input list with an arbitrary nesting level.
 
     Returns
@@ -137,14 +176,7 @@ def flatten(items):
     list
         List with the same elements of the input list but a single nesting level.
     """
-    try:
-        for i, x in enumerate(items):
-            while isinstance(x, (list, tuple)) and not isinstance(x, (str, bytes)):
-                items[i : i + 1] = x
-                x = items[i]
-    except IndexError:
-        pass
-    return items
+    return list(collapse(iterable))
 
 
 def sign() -> Iterator[int]:
@@ -334,7 +366,7 @@ def normalize_polygon(poly: geometry.Polygon) -> geometry.Polygon:
     `This <https://stackoverflow.com/a/63402916>`_ stackoverflow answer.
     """
 
-    def normalize_ring(ring: geometry.polygon.LinearRing):
+    def normalize_ring(ring: geometry.polygon.LinearRing) -> geometry.Polygon:
         """Normalize ring.
 
         It takes the exterior ring (a list of coordinates) of a ``Polygon`` object and returns the same ring,
@@ -363,7 +395,7 @@ def normalize_polygon(poly: geometry.Polygon) -> geometry.Polygon:
     return geometry.Polygon(normalized_exterior, normalized_interiors)
 
 
-def lookahead(iterable):
+def lookahead(iterable: Iterable[Any]) -> Generator[tuple[Any, bool], None, None]:
     """Lookahead.
 
     Pass through all values from the given iterable, augmented by the information if there are more values to come
@@ -396,7 +428,7 @@ def lookahead(iterable):
 
 
 # TODO: test
-def walklevel(path: str | pathlib.Path, depth: int = 1):
+def walklevel(path: str | pathlib.Path, depth: int = 1) -> Generator[tuple[Any, Any, Any], None, None]:
     """Walklevel.
 
     It works just like os.walk, but you can pass it a level parameter that indicates how deep the recursion will go.

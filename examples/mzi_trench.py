@@ -4,7 +4,7 @@ from femto.curves import sin
 from femto.device import Cell
 from femto.device import Device
 from femto.marker import Marker
-from femto.trench import UTrenchColumn
+from femto.trench import TrenchColumn
 from femto.waveguide import Waveguide
 
 # WAVEGUIDE PARAMETERS
@@ -90,7 +90,7 @@ tcs = Cell(name='trench-layer')
 xc = PARAM_GC['samplesize'][0] / 2
 ymin = wg.y_init
 ymax = wg.y_init + 6 * wg.pitch
-col = UTrenchColumn(x_center=xc, y_min=ymin, y_max=ymax, **PARAM_TC)
+col = TrenchColumn(x_center=xc, y_min=ymin, y_max=ymax, **PARAM_TC)
 col.dig_from_waveguide(wgs.objects[Waveguide])
 tcs.add(col)
 circ.add(tcs)

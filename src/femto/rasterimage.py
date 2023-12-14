@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 import attrs
 import numpy as np
 from femto import logger
@@ -8,7 +10,7 @@ from femto.laserpath import LaserPath
 from PIL import Image
 
 
-@attrs.define(kw_only=True, repr=False)
+@attrs.define(kw_only=True, repr=False, init=False)
 class RasterImage(LaserPath):
     """Class representing a laser path in the xy-plane of a b/w rastered image."""
 
@@ -17,11 +19,11 @@ class RasterImage(LaserPath):
 
     _id: str = attrs.field(alias='_id', default='RI')  #: RasterImage ID.
 
-    def __init__(self, **kwargs):
-        filtered = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}
+    def __init__(self, **kwargs: Any) -> None:
+        filtered: dict[str, Any] = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}
         self.__attrs_init__(**filtered)
 
-    def __attrs_post_init__(self):
+    def __attrs_post_init__(self) -> None:
         super().__attrs_post_init__()
         if self.z_init is None:
             self.z_init = 0.0

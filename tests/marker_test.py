@@ -145,20 +145,6 @@ def test_cross_init_pos(param) -> None:
         mk.cross(i_pos)
 
 
-def test_cross_l_error(param) -> None:
-    param['lx'] = None
-    param['ly'] = 3
-    mk = Marker(**param)
-    with pytest.raises(ValueError):
-        mk.cross([0, 0, 0])
-
-    param['lx'] = 2
-    param['ly'] = None
-    mk = Marker(**param)
-    with pytest.raises(ValueError):
-        mk.cross([0, 0, 0])
-
-
 def test_cross_l_default(param) -> None:
     i_pos = [0, 0, 0]
     mk = Marker(**param)
@@ -230,13 +216,6 @@ def test_ruler_lx(param) -> None:
     mk.ruler([1, 2, 3], lx=lxx)
     assert pytest.approx(np.max(mk.x)) == lxx
 
-    # test none lx
-    lxx = None
-    param['lx'] = None
-    mk = Marker(**param)
-    with pytest.raises(ValueError):
-        mk.ruler([1, 2, 3], lx=lxx)
-
 
 def test_ruler_lx_short(param) -> None:
     # test default lx2
@@ -267,13 +246,6 @@ def test_ruler_x_init(param) -> None:
     mk = Marker(**param)
     mk.ruler([1, 2, 3], x_init=x1)
     assert pytest.approx(mk.x[0]) == x1
-
-    # test None x_init
-    xi = None
-    param['x_init'] = None
-    mk = Marker(**param)
-    with pytest.raises(ValueError):
-        mk.ruler([1, 2, 3], x_init=xi)
 
 
 def test_ruler_points(param) -> None:

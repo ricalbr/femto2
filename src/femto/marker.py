@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from typing import Any
 
 import attrs
 import numpy as np
@@ -13,7 +14,7 @@ from femto.laserpath import LaserPath
 nparray = npt.NDArray[np.float32]
 
 
-@attrs.define(kw_only=True, repr=False)
+@attrs.define(kw_only=True, repr=False, init=False)
 class Marker(LaserPath):
     """Class that computes and stores the coordinates of a superficial abletion marker."""
 
@@ -23,11 +24,11 @@ class Marker(LaserPath):
 
     _id: str = attrs.field(alias='_id', default='MK')  #: Marker ID.
 
-    def __init__(self, **kwargs):
-        filtered = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}
+    def __init__(self, **kwargs: Any) -> None:
+        filtered: dict[str, Any] = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}
         self.__attrs_init__(**filtered)
 
-    def __attrs_post_init__(self):
+    def __attrs_post_init__(self) -> None:
         super().__attrs_post_init__()
         if self.z_init is None:
             self.z_init = self.depth
@@ -65,17 +66,7 @@ class Marker(LaserPath):
                 f'position has {len(position)} elements.'
             )
 
-        if lx is None and self.lx is None:
-            logger.debug('The x-length of the cross is None.')
-            raise ValueError(
-                "The x-length of the cross is None. Set the Marker's 'lx' attribute or give a valid number as " 'input.'
-            )
         lx = self.lx if lx is None else lx
-        if ly is None and self.ly is None:
-            logger.error('The y-length of the cross is None.')
-            raise ValueError(
-                "The y-length of the cross is None. Set the Marker's 'ly' attribute or give a valid number as " 'input.'
-            )
         ly = self.ly if ly is None else ly
 
         # start_pos = np.add(position, [-lx / 2, 0, 0])
@@ -124,9 +115,6 @@ class Marker(LaserPath):
         y_ticks = np.unique(y_ticks)
 
         # Ticks x-length
-        if lx is None and self.lx is None:
-            logger.error('The tick length is None.')
-            raise ValueError('The tick length is None. Set the "lx" attribute or give a valid number as input.')
         lx = self.lx if lx is None else lx
         lx2 = 0.75 * self.lx if lx2 is None else lx2
         logger.debug(f'Set lx = {lx}.')
@@ -136,11 +124,6 @@ class Marker(LaserPath):
         x_ticks[0] = lx
 
         # Set x_init
-        if x_init is None and self.x_init is None:
-            logger.error('The x-init value of the ruler is None.')
-            raise ValueError(
-                'The x-init value of the ruler is None. Set the "x_init" attribute or give a valid number as input.'
-            )
         x_init = self.x_init if x_init is None else x_init
 
         # Add straight segments

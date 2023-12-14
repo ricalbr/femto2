@@ -15,18 +15,18 @@ repos:
     hooks:
       - id: setup-cfg-fmt
 
-  - repo: https://github.com/asottile/reorder_python_imports
-    rev: v3.9.0
+  - repo: https://github.com/PyCQA/autoflake
+    rev: v2.2.1
     hooks:
-      - id: reorder-python-imports
-        exclude: ^(pre_commit/resources/|testing/resources/python3_hooks_repo/)
-        args: [ --py38-plus, --add-import, 'from __future__ import annotations' ]
-
-  - repo: https://github.com/asottile/pyupgrade
-    rev: v3.2.2
-    hooks:
-      - id: pyupgrade
-        args: [ --py38-plus ]
+    -   id: autoflake
+        exclude: test/_mock_data
+        args:
+        -   --expand-star-imports
+        -   --ignore-init-module-imports
+        -   --in-place
+        -   --remove-all-unused-imports
+        -   --remove-duplicate-keys
+        -   --remove-unused-variables
 
   - repo: https://github.com/psf/black
     rev: 22.10.0
@@ -36,13 +36,29 @@ repos:
         additional_dependencies: [ 'click==8.0.4' ]
 
   - repo: https://github.com/PyCQA/flake8
-    rev: 5.0.4
+    rev: 6.1.0
     hooks:
       - id: flake8
+        language_version: python3
 
-#  - repo: https://github.com/pre-commit/mirrors-mypy
-#    rev: v0.991
-#    hooks:
-#      - id: mypy
-#        additional_dependencies: [types-all]
-#        exclude: ^tests/
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v3.14.0
+    hooks:
+      - id: pyupgrade
+        exclude: ^test/
+        args:
+        -   --py38-plus
+
+  - repo: https://github.com/asottile/reorder_python_imports
+    rev: v3.9.0
+    hooks:
+      - id: reorder-python-imports
+        exclude: ^(pre_commit/resources/|testing/resources/python3_hooks_repo/)
+        args: [ --py38-plus, --add-import, 'from __future__ import annotations' ]
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.7.1
+    hooks:
+      - id: mypy
+        additional_dependencies: [types-all, attrs]
+        exclude: ^tests/|^examples/
