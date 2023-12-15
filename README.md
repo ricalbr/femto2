@@ -18,6 +18,7 @@
 [![Latest version](https://img.shields.io/static/v1?label=version&message=2.0.0&color=yellowgreen)](https://github.com/ricalbr/femto/releases/latest)
 [![Python 3.8 +](https://img.shields.io/static/v1?label=python&message=3.8%20%2B&color=blueviolet)](https://www.python.org)
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+
 [![Codecov](https://codecov.io/gh/ricalbr/femto2/branch/main/graph/badge.svg?token=1E69VOP4ED)](https://codecov.io/gh/ricalbr/femto2)
 [![Tests](https://github.com/ricalbr/femto/actions/workflows/tests.yml/badge.svg)](https://github.com/ricalbr/femto/actions/workflows/tests.yml)
 [![Documentation Status](https://readthedocs.org/projects/femto2/badge/?version=latest)](https://femto2.readthedocs.io/en/latest/?badge=latest)
@@ -54,15 +55,9 @@ First, import all the required modules
 
 ```python
 from femto.curves import sin
-from femto.device import Layer
+from femto.device import Device
 from femto.pgmcompiler import PGMCompiler
 from femto.waveguide import Waveguide
-```
-
-Define a `Device` which represents a circuit
-
-```python
-circuit = Device()
 ```
 
 Set waveguide parameters
@@ -97,7 +92,7 @@ for i in range(6):
     wgs.append(wg)
 ```
 
-Now that the waveguides are defined we set the fabrication parameters
+Now that the waveguides are defined, we set the fabrication parameters
 
 ```python
 PARAM_GC = dict(filename='MZIs.pgm',
