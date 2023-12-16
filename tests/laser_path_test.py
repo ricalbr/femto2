@@ -115,6 +115,24 @@ def test_from_dict(param) -> None:
     assert lp.end_off_sample is True
     assert lp.metadata == dict(name='LPth', power='300')
 
+def test_from_dict_update(param) -> None:
+    p = dict(radius=100, scan=10, speed_closed=3)
+    lp = LaserPath.from_dict(param, **p)
+
+    assert lp.radius == float(100.0)
+    assert lp.scan == int(10)
+    assert lp.speed == float(20.0)
+    assert lp.x_init == float(-2.0)
+    assert lp.y_init == float(1.5)
+    assert lp.z_init == float(0.035)
+    assert lp.lsafe == float(4.3)
+    assert lp.speed_closed == float(3)
+    assert lp.speed_pos == float(0.1)
+    assert lp.cmd_rate_max == int(1200)
+    assert lp.acc_max == int(500)
+    assert lp.samplesize == (100, 15)
+    assert lp.end_off_sample is True
+    assert lp.metadata == dict(name='LPth', power='300')
 
 def test_load(param) -> None:
     lp1 = LaserPath(**param)
@@ -575,6 +593,15 @@ def test_pickle(laser_path) -> None:
     assert isinstance(lp, type(laser_path))
     filename.unlink()
 
+def test_pickle_no_extension(laser_path) -> None:
+    filename = Path('test.pickle')
+    laser_path.export(filename.stem)
+    assert filename.is_file()
+
+    with open(filename, 'rb') as f:
+        lp = dill.load(f)
+    assert isinstance(lp, type(laser_path))
+    filename.unlink()
 
 def test_pickle_as_dict(laser_path) -> None:
     filename = Path('test.pickle')
