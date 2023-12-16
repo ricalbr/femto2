@@ -153,6 +153,54 @@ def test_enter_exit_method_default(param) -> None:
     file.unlink()
     fold.rmdir()
 
+def test_enter_exit_method_verbose() -> None:
+    p = dict(
+            filename='testPGM.pgm',
+            n_glass=1.5,
+            n_environment=1.33,
+            laser='ant',
+            samplesize=(25, 25),
+            home=True,
+            aerotech_angle=2.0,
+            flip_x=True,
+            verbose=False,
+    )
+    with PGMCompiler(**p) as G:
+        print(G._instructions)
+        assert G._instructions == deque(
+                [
+                        '; SETUP ANT - DIAMOND LAB\n',
+                        '\n',
+                        'ENABLE X Y Z\n',
+                        'PSOCONTROL Z RESET\n',
+                        'PSOOUTPUT Z CONTROL 0 1\n',
+                        'PSOCONTROL Z OFF\n',
+                        '\n',
+                        'G71     ; DISTANCE UNITS: METRIC\n',
+                        'G76     ; TIME UNITS: SECONDS\n',
+                        'G90     ; ABSOLUTE MODE\n',
+                        'G359    ; WAIT MODE NOWAIT\n',
+                        'G108    ; VELOCITY ON\n',
+                        'G17     ; ROTATIONS IN XY PLANE\n',
+                        '\n',
+                        '; NSCOPETRIG\n',
+                        '; MSGCLEAR -1\n',
+                        '\n',
+                        'G4 P1.0 ; DWELL\n',
+                        '\n',
+                        '\n; ACTIVATE AXIS ROTATION\n',
+                        'G1 X0.000000 Y0.000000 Z0.000000 F5.000000\n',
+                        'G84 X Y\n',
+                        'G4 P0.05 ; DWELL\n',
+                        'G84 X Y F2.0\n\n',
+                        'G4 P0.05 ; DWELL\n',
+                ]
+        )
+    assert G._instructions == deque([])
+
+    file = Path('.') / p['filename']
+    assert file.is_file()
+    file.unlink()
 
 def test_enter_exit_method() -> None:
     p = dict(
@@ -1304,6 +1352,14 @@ def test_write(param, pts, expected) -> None:
 
     G.write(np.array(pts))
     assert G._instructions == expected
+
+
+#TODO: add tests here both true and false with len of instructions lines
+@pytest.mark.parametrize('pts, exp', [(np.array([]), 0),])
+def test_write_raise(param, pts, exp) -> None:
+    G = PGMCompiler(**param)
+    G.write(pts)
+    assert len(G._instructions) == exp
 
 
 @pytest.mark.parametrize(
