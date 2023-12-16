@@ -530,6 +530,7 @@ def test_device_xlsx(device, list_wg, list_mk, ss_param) -> None:
     assert (Path().cwd() / 'custom_book_name.xlsx').is_file()
     (Path().cwd() / 'custom_book_name.xlsx').unlink()
 
+
 def test_device_xlsx_meta(device, list_wg, list_mk, ss_param) -> None:
     device.add([list_wg, list_mk])
     ss_param['metadata'] = {'laser': 'UWE'}
@@ -538,6 +539,7 @@ def test_device_xlsx_meta(device, list_wg, list_mk, ss_param) -> None:
     wb = openpyxl.load_workbook(Path().cwd() / 'custom_book_name.xlsx')
     assert wb['custom_sheet_name'].cell(row=25, column=3).value == 'UWE'
     (Path().cwd() / 'custom_book_name.xlsx').unlink()
+
 
 def test_device_xlsx_meta_ext(device, list_wg, list_mk, ss_param) -> None:
     device.add([list_wg, list_mk])
@@ -632,12 +634,21 @@ def test_device_load_verbose(device, list_wg, list_mk, gc_param) -> None:
 def test_device_load_empty(list_wg, list_mk, list_tcol, gc_param) -> None:
     fn = Path().cwd() / 'EXPORT' / 'BASE'
 
+    fn.mkdir(parents=True, exist_ok=True)
+    (fn / 'cell1').mkdir(parents=True, exist_ok=True)
+    (fn / 'cell2').mkdir(parents=True, exist_ok=True)
+    (fn / 'cell3').mkdir(parents=True, exist_ok=True)
+
     d2 = Device.load_objects(fn, gc_param, verbose=True)
     assert not d2.cells_collection['base'].objects[Waveguide]
     assert not d2.cells_collection['base'].objects[Marker]
     assert not d2.cells_collection['base'].objects[TrenchColumn]
     assert not d2.cells_collection['base'].objects[NasuWaveguide]
 
+    (fn / 'cell1').rmdir()
+    (fn / 'cell2').rmdir()
+    (fn / 'cell3').rmdir()
+    fn.rmdir()
 
 
 def test_device_export_non_base_cell(device, list_wg, list_mk) -> None:
