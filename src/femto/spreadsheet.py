@@ -5,6 +5,7 @@ import itertools
 import pathlib
 from types import TracebackType
 from typing import Any
+from typing import NamedTuple
 
 import attrs
 import numpy as np
@@ -21,8 +22,7 @@ from femto.waveguide import Waveguide
 nparray = npt.NDArray[np.float32]
 
 
-@dataclasses.dataclass
-class ColumnData:
+class ColumnData(NamedTuple):
     """Class that handles column data."""
 
     tagname: str  #: Tag of the data represented in the column.
@@ -30,10 +30,6 @@ class ColumnData:
     unit: str  #: Unit of measurement for the data in the column.
     width: str  #: With of the column cells.
     format: str  #: Formatting information for the data in the column.
-
-    def __repr__(self) -> str:
-        return self.name
-
 
 @dataclasses.dataclass
 class PreambleParameter:

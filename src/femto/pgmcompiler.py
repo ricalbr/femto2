@@ -13,6 +13,7 @@ from typing import Callable
 from typing import Deque
 from typing import Generator
 from typing import TypeVar
+from typing import NamedTuple
 
 import attrs
 import dill
@@ -30,8 +31,7 @@ GC = TypeVar('GC', bound='PGMCompiler')
 nparray = npt.NDArray[np.float32]
 
 
-@attrs.define
-class Laser:
+class Laser(NamedTuple):
     """Class representing a Laser.
 
     The class contains all the info (``name``, ``lab``) and configuration (``axis``, ``pin``, ``mode``) of the given
@@ -328,7 +328,7 @@ class PGMCompiler:
         """
 
         try:
-            par = attrs.asdict(self._lasers[self.laser.lower()])
+            par = self._lasers[self.laser.lower()]._asdict()
             logger.debug(f'Load header for laser {self.laser.lower()}.')
         except (KeyError, AttributeError):
             logger.error(f'Laser can only be ANT, CARBIDE, PHAROS or UWE. Given {self.laser}.')
