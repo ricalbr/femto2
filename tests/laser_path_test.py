@@ -115,6 +115,7 @@ def test_from_dict(param) -> None:
     assert lp.end_off_sample is True
     assert lp.metadata == dict(name='LPth', power='300')
 
+
 def test_from_dict_update(param) -> None:
     p = dict(radius=100, scan=10, speed_closed=3)
     lp = LaserPath.from_dict(param, **p)
@@ -133,6 +134,7 @@ def test_from_dict_update(param) -> None:
     assert lp.samplesize == (100, 15)
     assert lp.end_off_sample is True
     assert lp.metadata == dict(name='LPth', power='300')
+
 
 def test_load(param) -> None:
     lp1 = LaserPath(**param)
@@ -593,6 +595,7 @@ def test_pickle(laser_path) -> None:
     assert isinstance(lp, type(laser_path))
     filename.unlink()
 
+
 def test_pickle_no_extension(laser_path) -> None:
     filename = Path('test.pickle')
     laser_path.export(filename.stem)
@@ -602,6 +605,7 @@ def test_pickle_no_extension(laser_path) -> None:
         lp = dill.load(f)
     assert isinstance(lp, type(laser_path))
     filename.unlink()
+
 
 def test_pickle_as_dict(laser_path) -> None:
     filename = Path('test.pickle')

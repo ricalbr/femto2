@@ -31,6 +31,7 @@ class ColumnData(NamedTuple):
     width: str  #: With of the column cells.
     format: str  #: Formatting information for the data in the column.
 
+
 @dataclasses.dataclass
 class PreambleParameter:
     """Class that handles preamble parameters."""

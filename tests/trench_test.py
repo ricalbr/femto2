@@ -376,6 +376,36 @@ def test_trenchcol_from_dict(param) -> None:
     assert tcol.bed_list == []
 
 
+def test_trenchcol_from_dict_update(param) -> None:
+    tcol = TrenchColumn.from_dict(param, bridge=0.040, safe_inner_turns=32, speed_closed=10)
+
+    assert tcol.x_center == float(6)
+    assert tcol.y_min == float(1)
+    assert tcol.y_max == float(2)
+    assert tcol.bridge == float(0.040)
+    assert tcol.length == float(3)
+    assert tcol.nboxz == int(4)
+    assert tcol.z_off == float(-0.020)
+    assert tcol.h_box == float(0.080)
+    assert tcol.deltaz == float(0.002)
+    assert tcol.delta_floor == float(0.0015)
+    assert tcol.safe_inner_turns == int(32)
+    assert tcol.n_pillars is None
+    assert tcol.pillar_width == float(0.040)
+    assert tcol.u == [28, 29.47]
+    assert tcol.speed_wall == float(5.0)
+    assert tcol.speed_floor == float(3.0)
+    assert tcol.speed_closed == float(10.0)
+    assert tcol.speed_pos == float(0.5)
+    assert tcol.base_folder == ''
+    assert tcol.beam_waist == float(0.002)
+    assert tcol.round_corner == float(0.010)
+
+    assert tcol.CWD == Path.cwd()
+    assert tcol.trench_list == []
+    assert tcol.bed_list == []
+
+
 def test_utrenchcol_param(uparam) -> None:
     tcol = TrenchColumn(**uparam)
 
