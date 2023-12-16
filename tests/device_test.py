@@ -530,8 +530,16 @@ def test_device_xlsx(device, list_wg, list_mk, ss_param) -> None:
     assert (Path().cwd() / 'custom_book_name.xlsx').is_file()
     (Path().cwd() / 'custom_book_name.xlsx').unlink()
 
-
 def test_device_xlsx_meta(device, list_wg, list_mk, ss_param) -> None:
+    device.add([list_wg, list_mk])
+    ss_param['metadata'] = {'laser': 'UWE'}
+    device.xlsx(**ss_param)
+    assert (Path().cwd() / 'custom_book_name.xlsx').is_file()
+    wb = openpyxl.load_workbook(Path().cwd() / 'custom_book_name.xlsx')
+    assert wb['custom_sheet_name'].cell(row=25, column=3).value == 'UWE'
+    (Path().cwd() / 'custom_book_name.xlsx').unlink()
+
+def test_device_xlsx_meta_ext(device, list_wg, list_mk, ss_param) -> None:
     device.add([list_wg, list_mk])
     ss_param['metadata'] = {'laser': 'UWE'}
     device.xlsx(**ss_param)
@@ -622,27 +630,14 @@ def test_device_load_verbose(device, list_wg, list_mk, gc_param) -> None:
 
 
 def test_device_load_empty(list_wg, list_mk, list_tcol, gc_param) -> None:
-    device = Device(**gc_param)
-    device.add([list_tcol, list_wg, list_mk])
-    device.export()
-
     fn = Path().cwd() / 'EXPORT' / 'BASE'
 
     d2 = Device.load_objects(fn, gc_param, verbose=True)
-    assert d2.cells_collection['base'].objects[Waveguide]
-    assert d2.cells_collection['base'].objects[Marker]
-    assert d2.cells_collection['base'].objects[TrenchColumn]
+    assert not d2.cells_collection['base'].objects[Waveguide]
+    assert not d2.cells_collection['base'].objects[Marker]
+    assert not d2.cells_collection['base'].objects[TrenchColumn]
     assert not d2.cells_collection['base'].objects[NasuWaveguide]
-    # assert d2.writers[Waveguide].objs == list_wg
-    # assert d2.writers[TrenchColumn].objs == list_tcol
-    # assert d2.writers[Marker].objs == list_mk
 
-    for root, dirs, files in os.walk(fn):
-        for file in files:
-            (pathlib.Path(root) / file).unlink()
-
-    (Path().cwd() / 'EXPORT' / 'BASE').rmdir()
-    (Path().cwd() / 'EXPORT').rmdir()
 
 
 def test_device_export_non_base_cell(device, list_wg, list_mk) -> None:

@@ -447,16 +447,11 @@ class Device:
         """
 
         # Case in which metadata is given as keyword argument, use it for the Spreadsheet generation
-        if 'metadata' in kwargs.keys():
-            mdata = kwargs.pop('metadata')
-            print(mdata)
-        elif not metadata:
-            mdata = {
+        if not metadata:
+            metadata = {
                 'laser_name': self._param.get('laser') or '',
                 'sample_name': pathlib.Path(self._param.get('filename') or '').stem,
             }
-        else:
-            mdata = metadata
 
         # Fetch all objects from writers
         objs: list[Waveguide | NasuWaveguide] = []
@@ -466,7 +461,7 @@ class Device:
 
         # Generate Spreadsheet
         logger.info('Generating spreadsheet...')
-        with Spreadsheet(**kwargs, metadata=mdata) as S:
+        with Spreadsheet(**kwargs, metadata=metadata) as S:
             S.write(objs)
         logger.info('Excel file created.')
 
