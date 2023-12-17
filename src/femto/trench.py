@@ -239,11 +239,11 @@ class Trench:
 
             # Distinguish concave / biconcave
             if d_upper <= buffer_length or d_lower <= buffer_length:
-                n_turns = int((d_upper + d_lower) / self.delta_floor) + self.safe_inner_turns
+                n_turns = math.ceil((d_upper + d_lower) / self.delta_floor) + self.safe_inner_turns
             else:
-                n_turns = int((d_upper + d_lower) / (2 * self.delta_floor)) + self.safe_inner_turns
+                n_turns = math.ceil((d_upper + d_lower) / (2 * self.delta_floor)) + self.safe_inner_turns
             logger.debug(f'The number of spiral turns is {n_turns}.')
-            return n_turns
+            return int(n_turns)
 
     def zigzag_mask(self) -> geometry.MultiLineString:
         """Zig-zag mask.

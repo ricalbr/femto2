@@ -1361,12 +1361,12 @@ def test_write(param, pts, expected) -> None:
     'pts, exp',
     [
         (np.array([]), 0),
-            (np.random.rand(67, 2).T, 0),
-            (np.random.rand(69, 3).T, 0),
-            (np.random.rand(67, 5).T, 69), # +2 for final pause and '\n' instruction
-            (np.random.rand(167, 5).T, 169), # +2 for final pause and '\n' instruction
-            (np.random.rand(10, 6).T, 0),
-            (np.random.rand(10, 11).T, 0),
+        (np.random.rand(67, 2).T, 0),
+        (np.random.rand(69, 3).T, 0),
+        (np.random.rand(67, 5).T, 69),  # +2 for final pause and '\n' instruction
+        (np.random.rand(167, 5).T, 169),  # +2 for final pause and '\n' instruction
+        (np.random.rand(10, 6).T, 0),
+        (np.random.rand(10, 11).T, 0),
     ],
 )
 def test_write_raise(param, pts, exp) -> None:
