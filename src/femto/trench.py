@@ -817,7 +817,6 @@ class TrenchColumn:
         for index in sorted(listcast(remove), reverse=True):
             del self._trench_list[index]
 
-        # TODO: test with n_pillars = None
         if self.n_pillars is not None:
             self.define_trench_bed(int(self.n_pillars))
 

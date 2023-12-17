@@ -427,7 +427,6 @@ def lookahead(iterable: Iterable[Any]) -> Generator[tuple[Any, bool], None, None
     yield next_item, True
 
 
-# TODO: test
 def walklevel(path: str | pathlib.Path, depth: int = 1) -> Generator[tuple[Any, Any, Any], None, None]:
     """Walklevel.
 

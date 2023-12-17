@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import pathlib
 
 import numpy as np
 import pytest
@@ -267,3 +268,19 @@ def test_look_ahead() -> None:
 def test_walklevel_0() -> None:
     res = walklevel(os.getcwd(), depth=0)
     assert list(res) == []
+def test_walklevel_minus1() -> None:
+    from  pathlib import Path
+
+    root = Path('.\..')
+    wl_gen = walklevel(root, depth=-1)
+    wk_gen = os.walk(root)
+    all(a == b for a, b in zip(wl_gen, wk_gen))
+
+def test_walklevel() -> None:
+    from  pathlib import Path
+
+    root = Path('.\..')
+    wl_gen = walklevel(root, depth=1)
+    wk_gen = os.walk(root)
+    all(a == b for a, b in zip(wl_gen, wk_gen))
+    assert next(wk_gen) # wl_gen is exhaused but the wk_gen not, we can explore other levels
