@@ -207,6 +207,8 @@ class Writer(PGMCompiler, abc.ABC):
     etc.) and provides methods to append objects, plot and export them as .pgm files.
     """
 
+    __slots__ = ()
+
     @property
     @abc.abstractmethod
     def objs(self) -> list[Any]:
@@ -376,6 +378,8 @@ class Writer(PGMCompiler, abc.ABC):
 
 class TrenchWriter(Writer):
     """Trench Writer class."""
+
+    __slots__ = ('dirname', '_obj_list', '_trenches', '_beds', '_param', '_export_path', '_fabtime')
 
     def __init__(
         self,
@@ -1056,6 +1060,8 @@ class TrenchWriter(Writer):
 class WaveguideWriter(Writer):
     """Waveguide Writer class."""
 
+    __slots__ = ('dirname', '_obj_list', '_param', '_export_path', '_fabtime')
+
     def __init__(self, param: dict[str, Any], objects: list[Waveguide] | None = None, **kwargs: Any | None) -> None:
         p = copy.deepcopy(param)
         p.update(kwargs)
@@ -1385,6 +1391,8 @@ class WaveguideWriter(Writer):
 
 class NasuWriter(Writer):
     """NasuWaveguide Writer class."""
+
+    __slots__ = ('dirname', '_obj_list', '_param', '_export_path', '_fabtime')
 
     def __init__(self, param: dict[str, Any], objects: list[NasuWaveguide] | None = None, **kwargs: Any | None) -> None:
         p = copy.deepcopy(param)
@@ -1716,6 +1724,8 @@ class NasuWriter(Writer):
 
 class MarkerWriter(Writer):
     """Marker Writer class."""
+
+    __slots__ = ('dirname', '_obj_list', '_param', '_export_path', '_fabtime')
 
     def __init__(self, param: dict[str, Any], objects: list[Marker] | None = None, **kwargs: Any | None) -> None:
         p = copy.deepcopy(param)

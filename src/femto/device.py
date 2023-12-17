@@ -428,7 +428,7 @@ class Device:
             wrs = writers
             for typ, list_objs in cell.objects.items():
                 wr = wrs[typ](self._param, objects=list_objs)
-                wr.export(filename=cell.name.upper(), export_dir=export_dir)
+                wr.export(filename=cell.name.upper(), export_root=export_dir)
         logger.info('Export completed.')
 
     def xlsx(self, metadata: dict[str, Any] | None = None, **kwargs: Any) -> None:
