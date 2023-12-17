@@ -404,7 +404,7 @@ class Device:
             wrs = writers
             for typ, list_objs in cell.objects.items():
                 wr = wrs[typ](self._param, objects=list_objs)
-                wr.pgm(verbose=verbose)
+                wr.pgm(filename=cell.name.upper(), verbose=verbose)
                 self.fabrication_time += wr.fab_time
 
     def export(self, export_dir: str = 'EXPORT') -> None:
