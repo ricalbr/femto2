@@ -274,6 +274,14 @@ class Spreadsheet:
             ]
             self.add_line(row=i + 8, col=5, data=sdata, fmt=[col.format for col in cols_info])
 
+        # Add autofilters
+        self._worksheet.autofilter(
+            first_row=7,
+            first_col=5,
+            last_row=7 + len(numerical_data) - 1,
+            last_col=5 + len(titles) - 1,
+        )
+
     def generate_all_cols_data(self) -> list[ColumnData]:
         """Create the available columns array from a file.
 
@@ -418,7 +426,7 @@ class Spreadsheet:
                     data_line.append(coords(ent)[type(ent)][tag])
                 else:
                     fallback: float | str = 1.1e5 if typ in [np.float64, np.int64] else ''
-                    item: float | str | None = getattr(ent, tag, fallback) or ent.metadata.get(tag)
+                    item: float | str = getattr(ent, tag, None) or ent.metadata.get(tag) or fallback
                     data_line.append(item)
             table_lines[i] = tuple(data_line)
 
@@ -528,7 +536,7 @@ def main() -> None:
     pars_ss = ddict(
         book_name='Fabbrication.xlsx',
         columns_names=['name', 'power', 'speed', 'scan', 'depth', 'int_dist', 'yin', 'yout', 'obs'],
-        redundant_cols=True,
+        redundant_cols=False,
     )
 
     powers = np.linspace(600, 800, 5)
