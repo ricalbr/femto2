@@ -83,7 +83,7 @@ def test_gcode_values(param) -> None:
     assert G.verbose is True
 
 
-def test_mk_from_dict(param) -> None:
+def test_pgm_from_dict(param) -> None:
     G = PGMCompiler.from_dict(param)
     assert G.filename == 'test.pgm'
     assert G.export_dir == 'G-Code'
@@ -99,6 +99,30 @@ def test_mk_from_dict(param) -> None:
     assert G.long_pause == float(1.0)
     assert G.short_pause == float(0.025)
     assert G.output_digits == int(6)
+    assert G.speed_pos == float(10)
+    assert G.flip_x is True
+    assert G.flip_y is False
+    assert G.minimal_gcode is True
+    assert G.verbose is True
+
+
+def test_pgm_from_dict_update(param) -> None:
+    G = PGMCompiler.from_dict(param, output_digits=9, laser='UWE', samplesize=(25, 30), long_pause=1.0)
+
+    assert G.filename == 'test.pgm'
+    assert G.export_dir == 'G-Code'
+    assert G.samplesize == (25, 30)
+    assert G.laser == 'UWE'
+    assert G.home is False
+    assert G.shift_origin == (0.0, 0.0)
+    assert G.warp_flag is False
+    assert G.n_glass == float(1.50)
+    assert G.n_environment == float(1.33)
+    assert G.rotation_angle == float(math.radians(1.0))
+    assert G.aerotech_angle == float(0.0)
+    assert G.long_pause == float(1.0)
+    assert G.short_pause == float(0.025)
+    assert G.output_digits == int(9)
     assert G.speed_pos == float(10)
     assert G.flip_x is True
     assert G.flip_y is False
@@ -403,6 +427,12 @@ def test_antiwarp_error(param, samplesize, expectation) -> None:
         function_pickle.unlink()
 
 
+def test_antiwarp_pos_file_error(param) -> None:
+    G = PGMCompiler(**param)
+    with pytest.raises(FileNotFoundError):
+        assert G.warp_management(opt=True)
+
+
 @pytest.mark.parametrize('x, y', [(4, 5), (2, 4), (5, 2), (5, 0), (5, 3), (7, 7), (7, 0), (10, 5), (6, 10), (0, 5)])
 def test_fwarp_load(param, x, y) -> None:
     G = PGMCompiler(**param)
@@ -441,6 +471,28 @@ def test_antiwarp_creation(param) -> None:
     assert callable(G_fun)
     assert funpath.is_file()
     funpath.unlink()
+    pospath.unlink()
+
+
+def test_antiwarp_plot(param) -> None:
+    from pathlib import Path
+    import matplotlib.pyplot as plt
+
+    fn = 'POS.txt'
+    pospath = Path.cwd() / fn
+
+    x_in = np.linspace(0, 100, 50)
+    y_in = np.linspace(0, 25, 10)
+    X, Y = np.meshgrid(x_in, y_in)
+    z_in = np.random.uniform(-0.030, 0.030, X.shape)
+
+    M = np.stack([X.ravel(), Y.ravel(), z_in.ravel()], axis=-1)
+    np.savetxt(fn, M, fmt='%.6f', delimiter=' ')
+
+    G = PGMCompiler(**param)
+    G.warp_generation(pospath, show=True)
+    plt.close('all')
+    assert True  # the plot is closed safely
     pospath.unlink()
 
 

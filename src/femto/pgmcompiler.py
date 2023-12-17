@@ -1202,7 +1202,7 @@ class PGMCompiler:
             ax.contour3D(x, y, z, 200, cmap='viridis')
             ax.set_xlabel('X [mm]'), ax.set_ylabel('Y [mm]'), ax.set_zlabel('Z [mm]')
             ax.set_aspect('equalxz')
-            plt.show()
+            plt.show(block=False)
 
         return f
 
