@@ -861,6 +861,12 @@ def test_nasu_id(param) -> None:
     assert nw.id == 'NWG'
 
 
+def test_nasu_depth(param) -> None:
+    param['z_init'] = None
+    nw = NasuWaveguide(**param)
+    assert nw.z_init == nw.depth
+
+
 @pytest.mark.parametrize(
     'a_scan, exp',
     [
@@ -1035,3 +1041,207 @@ def test_reverse_bend_circ(param) -> None:
     for zr, z in zip(wg_reg.z, wg.z):
         assert pytest.approx(np.abs(zr - z0)) == np.abs(z - z0)
         assert np.sign(zr - z0) == -np.sign(z - z0)
+
+
+def test_reverse_coupler(param) -> None:
+    dz = 0.1
+    x0, y0, z0 = 3, 4, 5
+    lin = 5
+    wg = Waveguide(**param)
+    wg.start([x0, y0, z0])
+    wg.coupler(dy=wg.dy_bend, dz=dz, fx=circ, int_length=lin, reverse=True)
+
+    assert pytest.approx(wg.lastx) == -2 * wg.dx_bend + x0 - lin
+    assert pytest.approx(wg.lasty) == y0
+    assert pytest.approx(wg.lastz) == z0
+
+    wg_reg = Waveguide(**param)
+    wg_reg.start([x0, y0, z0])
+    wg_reg.coupler(dy=wg.dy_bend, dz=dz, fx=circ, int_length=lin)
+
+    for xr, x in zip(wg_reg.x, wg.x):
+        assert pytest.approx(np.abs(xr - x0)) == np.abs(x - x0)
+        assert np.sign(xr - x0) == np.sign(-(x - x0))
+
+    for yr, y in zip(wg_reg.y, wg.y):
+        assert pytest.approx(np.abs(yr - y0)) == np.abs(y - y0)
+        assert np.sign(yr - y0) == np.sign(y - y0)
+
+    for zr, z in zip(wg_reg.z, wg.z):
+        assert pytest.approx(np.abs(zr - z0)) == np.abs(z - z0)
+        assert np.sign(zr - z0) == -np.sign(z - z0)
+
+
+def test_reverse_mzi(param) -> None:
+    dz = 0.1
+    x0, y0, z0 = 3, 4, 5
+    lin = 5
+    lar = 3
+    wg = Waveguide(**param)
+    wg.start([x0, y0, z0])
+    wg.mzi(dy=wg.dy_bend, dz=dz, fx=circ, int_length=lin, arm_length=lar, reverse=True)
+
+    assert pytest.approx(wg.lastx) == -4 * wg.dx_bend + x0 - 2 * lin - lar
+    assert pytest.approx(wg.lasty) == y0
+    assert pytest.approx(wg.lastz) == z0
+
+    wg_reg = Waveguide(**param)
+    wg_reg.start([x0, y0, z0])
+    wg_reg.mzi(dy=wg.dy_bend, dz=dz, fx=circ, int_length=lin, arm_length=lar)
+
+    for xr, x in zip(wg_reg.x, wg.x):
+        assert pytest.approx(np.abs(xr - x0)) == np.abs(x - x0)
+        assert np.sign(xr - x0) == np.sign(-(x - x0))
+
+    for yr, y in zip(wg_reg.y, wg.y):
+        assert pytest.approx(np.abs(yr - y0)) == np.abs(y - y0)
+        assert np.sign(yr - y0) == np.sign(y - y0)
+
+    for zr, z in zip(wg_reg.z, wg.z):
+        assert pytest.approx(np.abs(zr - z0)) == np.abs(z - z0)
+        assert np.sign(zr - z0) == -np.sign(z - z0)
+
+
+def test_add_points(param):
+
+    pts = np.random.rand(3, 123)
+    wg = Waveguide(**param)
+    wg.start([0, 0, 0])
+    wg.add_curve_points(pts, speed=None, shutter=1)
+    x, y, z = wg.path3d
+    np.testing.assert_array_equal(x[1:], np.array(pts[0, :], dtype=np.float32))
+    np.testing.assert_array_equal(y[1:], np.array(pts[1, :], dtype=np.float32))
+    np.testing.assert_array_equal(z[1:], np.array(pts[2, :], dtype=np.float32))
+    del wg
+
+    pts = np.random.rand(123, 3)
+    wg = Waveguide(**param)
+    wg.start([0, 0, 0])
+    wg.add_curve_points(pts, speed=None, shutter=1)
+    x, y, z = wg.path3d
+    np.testing.assert_array_equal(x[1:], np.array(pts[:, 0], dtype=np.float32))
+    np.testing.assert_array_equal(y[1:], np.array(pts[:, 1], dtype=np.float32))
+    np.testing.assert_array_equal(z[1:], np.array(pts[:, 2], dtype=np.float32))
+
+
+@pytest.mark.parametrize(
+    'pts, exp',
+    [
+        (np.random.rand(4, 123), pytest.raises(ValueError)),
+        (np.random.rand(1, 123), pytest.raises(ValueError)),
+        (np.random.rand(2, 123), pytest.raises(ValueError)),
+        (np.random.rand(7, 123), pytest.raises(ValueError)),
+        (np.random.rand(3, 123), does_not_raise()),
+        (np.random.rand(3, 3), does_not_raise()),
+        (np.random.rand(123, 3), does_not_raise()),
+        (np.random.rand(123, 4), pytest.raises(ValueError)),
+        (np.random.rand(123, 1), pytest.raises(ValueError)),
+        (np.random.rand(123, 2), pytest.raises(ValueError)),
+        (np.random.rand(123, 7), pytest.raises(ValueError)),
+    ],
+)
+def test_add_points_raise(param, pts, exp) -> None:
+
+    wg = Waveguide(**param)
+    wg.start([0, 0, 0])
+    with exp:
+        wg.add_curve_points(pts)
+
+
+@pytest.mark.parametrize(
+    'dy1, dy2, dz1, dz2',
+    [
+        (0.2, 0.55, 0.2, -0.34),
+        (3.2, -1.50, 0.2, -0.34),
+        (0.2, 0.55, 0.5, 4.34),
+        (0.2, 1.55, -3.2, -0.34),
+        (0.2, 0.5, 0.6, 0.34),
+        (0.2, 0.2, 0.2, 0.2),
+        (-0.2, -0.2, -0.2, -0.2),
+        (-0.2, 0.2, -0.2, 0.2),
+        (0.2, -0.2, -0.2, 0.2),
+    ],
+)
+def test_double_bend_non_sin_disp_x_none(param, dy1, dy2, dz1, dz2) -> None:
+    wg = Waveguide(**param)
+    wg.start([0, 0, 0])
+    wg.double_bend(dy1=dy1, dy2=dy2, dz1=dz1, dz2=dz2, fx=spline)
+
+    _, dx1 = wg.get_sbend_parameter(np.sqrt(dy1**2 + dz1**2), wg.radius)
+    _, dx2 = wg.get_sbend_parameter(np.sqrt(dy2**2 + dz2**2), wg.radius)
+    assert pytest.approx(np.around(wg.lastx, decimals=8)) == dx1 + dx2
+    assert pytest.approx(np.around(wg.lasty, decimals=8)) == dy1 + dy2
+    assert pytest.approx(np.around(wg.lastz, decimals=8)) == dz1 + dz2
+
+
+@pytest.mark.parametrize(
+    'dy1, dy2, dz1, dz2, disp_x1, disp_x2',
+    [
+        (0.2, 0.55, 0.2, -0.34, 1, 2),
+        (3.2, -1.50, 0.2, -0.34, 3, 4),
+        (0.2, 0.55, 0.5, 4.34, 1, 1),
+        (0.2, 1.55, -3.2, -0.34, 10, 10),
+        (0.2, 0.5, 0.6, 0.34, 20, 20),
+        (0.2, 0.2, 0.2, 0.2, 50, 50),
+        (-0.2, -0.2, -0.2, -0.2, 4, 4),
+        (-0.2, 0.2, -0.2, 0.2, 5, 5),
+        (0.2, -0.2, -0.2, 0.2, 9, 3),
+    ],
+)
+def test_double_bend_non_sin_disp_x_none(param, dy1, dy2, dz1, dz2, disp_x1, disp_x2) -> None:
+    wg = Waveguide(**param)
+    wg.start([0, 0, 0])
+    wg.double_bend(dy1=dy1, dy2=dy2, dz1=dz1, dz2=dz2, fx=spline, disp_x1=disp_x1, disp_x2=disp_x2)
+
+    assert pytest.approx(np.around(wg.lastx, decimals=8)) == disp_x1 + disp_x2
+    assert pytest.approx(np.around(wg.lasty, decimals=8)) == dy1 + dy2
+    assert pytest.approx(np.around(wg.lastz, decimals=8)) == dz1 + dz2
+
+
+@pytest.mark.parametrize(
+    'dy1, dy2, dz1, dz2, disp_x1, disp_x2',
+    [
+        (0.2, 0.55, 0.2, -0.34, 1, 2),
+        (3.2, -1.50, 0.2, -0.34, 3, 4),
+        (0.2, 0.55, 0.5, 4.34, 1, 1),
+        (0.2, 1.55, -3.2, -0.34, 10, 10),
+        (0.2, 0.5, 0.6, 0.34, 20, 20),
+        (0.2, 0.2, 0.2, 0.2, 50, 50),
+        (-0.2, -0.2, -0.2, -0.2, 4, 4),
+        (-0.2, 0.2, -0.2, 0.2, 5, 5),
+        (0.2, -0.2, -0.2, 0.2, 9, 3),
+    ],
+)
+def test_double_bend_sin_disp_x_none(param, dy1, dy2, dz1, dz2, disp_x1, disp_x2) -> None:
+    wg = Waveguide(**param)
+    wg.start([0, 0, 0])
+    wg.double_bend(dy1=dy1, dy2=dy2, dz1=dz1, dz2=dz2, fx=sin, disp_x1=disp_x1, disp_x2=disp_x2)
+
+    assert pytest.approx(np.around(wg.lastx, decimals=8)) == disp_x1 + disp_x2
+    assert pytest.approx(np.around(wg.lasty, decimals=8)) == dy1 + dy2
+    assert pytest.approx(np.around(wg.lastz, decimals=8)) == dz1 + dz2
+
+
+@pytest.mark.parametrize(
+    'dy1, dy2, dz1, dz2, disp_x1',
+    [
+        (0.2, 0.55, 0.2, -0.34, 1),
+        (3.2, -1.50, 0.2, -0.34, 3),
+        (0.2, 0.55, 0.5, 4.34, 1),
+        (0.2, 1.55, -3.2, -0.34, 10),
+        (0.2, 0.5, 0.6, 0.34, 20),
+        (0.2, 0.2, 0.2, 0.2, 50),
+        (-0.2, -0.2, -0.2, -0.2, 4),
+        (-0.2, 0.2, -0.2, 0.2, 5),
+        (0.2, -0.2, -0.2, 0.2, 9),
+    ],
+)
+def test_double_bend_sin_disp_x_none(param, dy1, dy2, dz1, dz2, disp_x1) -> None:
+    wg = Waveguide(**param)
+    wg.start([0, 0, 0])
+    wg.double_bend(dy1=dy1, dy2=dy2, dz1=dz1, dz2=dz2, fx=sin, disp_x1=disp_x1)
+
+    disp_x2 = np.sqrt(4 * np.abs(dy2) * wg.radius - np.abs(dy1 * dy2))
+    assert pytest.approx(np.around(wg.lastx, decimals=8)) == disp_x1 + disp_x2
+    assert pytest.approx(np.around(wg.lasty, decimals=8)) == dy1 + dy2
+    assert pytest.approx(np.around(wg.lastz, decimals=8)) == dz1 + dz2

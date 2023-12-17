@@ -219,6 +219,9 @@ class Waveguide(LaserPath):
         disp_x1: float, optional
             `x`-displacement for the first S-bend. if the value is ``None`` (the default value),
             the `x`-displacement is computed with the formula for the circular S-bend.
+        disp_x2: float, optional
+            `x`-displacement for the second S-bend. if the value is ``None`` (the default value),
+            the `x`-displacement is computed with the formula for the circular S-bend.
         radius: float, optional
             Curvature radius [mm]. The default value is `self.radius`.
         num_points: int, optional
@@ -464,7 +467,7 @@ class Waveguide(LaserPath):
         logger.debug(f'Speed set to f = {f}.')
 
         points = np.array(points)
-        if not any([dim == 3 for dim in points.shape]):
+        if 3 not in points.shape:
             logger.error(f'Wrong points dimension. Expected 3xN or Nx3, given {points.shape[0]}x{points.shape[1]}.')
             raise ValueError(f'Wrong points dimension. Expected 3xN or Nx3, given {points.shape[0]}x{points.shape[1]}.')
         if points.shape[0] == 3:
@@ -499,8 +502,6 @@ class NasuWaveguide(Waveguide):
 
     def __attrs_post_init__(self) -> None:
         super().__attrs_post_init__()
-        if self.z_init is None:
-            self.z_init = self.depth
 
     @property
     def adj_scan_order(self) -> list[float]:
