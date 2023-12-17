@@ -343,28 +343,29 @@ class Writer(PGMCompiler, abc.ABC):
         )
 
     def export(
-        self,
-        filename: str | pathlib.Path | None = None,
-        export_path: str | pathlib.Path | None = None,
-        export_dir: str | pathlib.Path = 'EXPORT',
+        self, filename: str | pathlib.Path | None = None, export_root: str | pathlib.Path | None = 'EXPORT'
     ) -> None:
-        """Export Nasu Waveguide objects.
+        """Export objects.
 
-        The export the list of Nasu Waveguide objects into a pickle file. The objects are exported in an ``EXPORT``
-        directory.
+        The export the list of objects into a pickle file.
 
-        export_dir: str, optional
-            Name of the directory inside which export objects.
+        filename: str | pathlib.Path, optional
+            Optional name of the final directory into which export objects, useful to export various Cell objects
+            with different filenames in the same ``export_path`` folder. The default value is the ``filename``
+            attribute of the Writer object.
+
+        export_root: str | pathlib.Path, optional
+            Name of the directory inside which export objects. The objects are exported in an ``EXPORT`` directory by
+            default. If the export path is ``None``, the export path will be the current working directory.
 
         Returns
         -------
-            None
+        None
         """
 
-        fn = filename if filename is not None else self.filename
-        exp_p = self.CWD if export_path is None else export_dir
-
-        filepath = pathlib.Path(exp_p) / export_dir / pathlib.Path(fn).stem
+        filepath = (
+            self.CWD / (self.export_dir or '') / (export_root or '') / pathlib.Path(filename or self.filename).stem
+        )
         filepath.mkdir(exist_ok=True, parents=True)
 
         for i, el in enumerate(self.objs):
@@ -925,8 +926,6 @@ class TrenchWriter(Writer):
             style = dict()
         default_utcargs = {'dash': 'solid', 'color': '#000000', 'width': 1.5}
         utcargs = {**default_utcargs, **style}
-        default_tcargs = {'dash': 'solid', 'color': '#000000', 'width': 1.5}
-        {**default_tcargs, **style}
 
         if not self._trenches:
             return fig
@@ -1926,9 +1925,9 @@ class MarkerWriter(Writer):
         mk_args = {**default_mkargs, **style}
 
         logger.debug('Add marker trace to figure.')
-        for mk in listcast(flatten(self._obj_list)):
-            x_wg, y_wg, z_wg, _, s = mk.points
-            x, y, z = self.transform_points(x_wg, y_wg, z_wg)
+        for mk in self._obj_list:
+            x_mk, y_mk, z_mk, _, s = mk.points
+            x, y, z = self.transform_points(x_mk, y_mk, z_mk)
             xo = split_mask(x, s.astype(bool))
             yo = split_mask(y, s.astype(bool))
             [
@@ -1976,9 +1975,9 @@ class MarkerWriter(Writer):
         mk_args = {**default_mkargs, **style}
 
         logger.debug('Add marker trace to figure.')
-        for mk in listcast(flatten(self._obj_list)):
-            x_wg, y_wg, z_wg, _, s = mk.points
-            x, y, z = self.transform_points(x_wg, y_wg, z_wg)
+        for mk in self._obj_list:
+            x_mk, y_mk, z_mk, _, s = mk.points
+            x, y, z = self.transform_points(x_mk, y_mk, z_mk)
             xo = split_mask(x, s.astype(bool))
             yo = split_mask(y, s.astype(bool))
             zo = split_mask(z, s.astype(bool))
