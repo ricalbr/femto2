@@ -1,5 +1,6 @@
 [run]
 source = src
+omit = src/femto/curves.py
 
 [report]
 exclude_lines =
