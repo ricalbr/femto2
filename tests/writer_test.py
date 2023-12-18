@@ -308,6 +308,28 @@ def test_trench_writer_pgm(gc_param, list_tcol) -> None:
     twr._export_path.rmdir()
 
 
+def test_trench_writer_pgm_custom_filename(gc_param, list_tcol) -> None:
+    twr = TrenchWriter(gc_param, objects=list_tcol)
+    old_dir = twr._export_path
+    twr.pgm(filename='trenchtest')
+
+    assert twr._export_path == old_dir / 'TRENCHTEST'
+    assert twr._export_path.is_dir()
+    for i_col, col in enumerate(list_tcol):
+        assert (twr._export_path / f'trenchCol{i_col + 1:03}').is_dir()
+        assert (twr._export_path / f'FARCALL{i_col + 1:03}.pgm').is_file()
+        for i_tr, tr in enumerate(col):
+            assert (twr._export_path / f'trenchCol{i_col + 1:03}' / f'trench{i_tr + 1:03}_WALL.pgm').is_file()
+            (twr._export_path / f'trenchCol{i_col + 1:03}' / f'trench{i_tr + 1:03}_WALL.pgm').unlink()
+            assert (twr._export_path / f'trenchCol{i_col + 1:03}' / f'trench{i_tr + 1:03}_FLOOR.pgm').is_file()
+            (twr._export_path / f'trenchCol{i_col + 1:03}' / f'trench{i_tr + 1:03}_FLOOR.pgm').unlink()
+        (twr._export_path / f'trenchCol{i_col + 1:03}').rmdir()
+        (twr._export_path / f'FARCALL{i_col + 1:03}.pgm').unlink()
+    assert (twr._export_path / 'MAIN.pgm').is_file()
+    (twr._export_path / 'MAIN.pgm').unlink()
+    twr._export_path.rmdir()
+
+
 def test_trench_writer_pgm_single_col(gc_param, list_tcol) -> None:
     list_cols = [list_tcol[0]]
     twr = TrenchWriter(gc_param, objects=list_cols)

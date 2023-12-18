@@ -524,6 +524,35 @@ def test_device_pgm_verbose(device, list_wg, list_mk) -> None:
     (Path().cwd() / 'testCell_MK.pgm').unlink()
 
 
+def test_device_pgm_custom_folder(device, list_wg, list_mk) -> None:
+    cell = Cell(name='test')
+    cell.add([list_wg, list_mk])
+    device.add(cell)
+    device.pgm()
+    assert (Path().cwd() / 'TEST_WG.pgm').is_file()
+    assert (Path().cwd() / 'TEST_MK.pgm').is_file()
+    (Path().cwd() / 'TEST_WG.pgm').unlink()
+    (Path().cwd() / 'TEST_MK.pgm').unlink()
+
+
+def test_device_pgm_custom_folder_and_base(device, list_wg, list_mk) -> None:
+    cell = Cell(name='test')
+    cell.add([list_wg, list_mk])
+    device.add(cell)
+    device.add([list_wg, list_mk])
+    device.pgm()
+
+    assert (Path().cwd() / 'TEST_WG.pgm').is_file()
+    assert (Path().cwd() / 'TEST_MK.pgm').is_file()
+    (Path().cwd() / 'TEST_WG.pgm').unlink()
+    (Path().cwd() / 'TEST_MK.pgm').unlink()
+
+    assert (Path().cwd() / 'BASE_WG.pgm').is_file()
+    assert (Path().cwd() / 'BASE_MK.pgm').is_file()
+    (Path().cwd() / 'BASE_WG.pgm').unlink()
+    (Path().cwd() / 'BASE_MK.pgm').unlink()
+
+
 def test_device_xlsx(device, list_wg, list_mk, ss_param) -> None:
     device.add([list_wg, list_mk])
     device.xlsx(**ss_param)

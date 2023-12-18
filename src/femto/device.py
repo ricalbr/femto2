@@ -404,7 +404,12 @@ class Device:
             wrs = writers
             for typ, list_objs in cell.objects.items():
                 wr = wrs[typ](self._param, objects=list_objs)
-                wr.pgm(filename=cell.name.upper(), verbose=verbose)
+                if cell.name.lower() == 'base' and len(self.cells_collection) == 1:
+                    # objects are only stored in BASE Cell, they are exported with self.filename.
+                    wr.pgm(filename=None, verbose=verbose)
+                else:
+                    # othterwise save the objects stored in Cell with the Cell's name.
+                    wr.pgm(filename=cell.name.upper(), verbose=verbose)
                 self.fabrication_time += wr.fab_time
 
     def export(self, export_dir: str = 'EXPORT') -> None:

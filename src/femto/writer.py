@@ -585,7 +585,7 @@ class TrenchWriter(Writer):
             return None
 
         if filename is not None:
-            self._export_path = self._export_path / filename
+            self._export_path = self._export_path / filename.upper()
 
         # Export each Trench for each TrenchColumn
         for i_col, col in enumerate(self._obj_list):
