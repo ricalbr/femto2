@@ -727,7 +727,6 @@ def test_spline_z_derivative(param, ddz):
 
 @pytest.mark.parametrize('r_input', [5, 10, 15, 20, 25, 30, 35, 40, 50, 60])
 def test_curvature_radius(param, r_input) -> None:
-
     # mean curvature radius is within 5% of the original radius
     r = r_input
     x = 0.05
@@ -953,7 +952,6 @@ def test_coupler_d_int(d_input) -> None:
 
 
 def test_reverse_bend(param) -> None:
-
     dx = 9
     dz = 0.1
     wg = Waveguide(**param)
@@ -983,7 +981,6 @@ def test_reverse_bend(param) -> None:
 
 @pytest.mark.parametrize('f', [euler_S4, sin, spline, arctan, rad, abv, euler_S2, erf])
 def test_reverse_bend_curves(f, param) -> None:
-
     dx = 9
     dz = 0.1
     x0, y0, z0 = 3, 4, 5
@@ -1013,7 +1010,6 @@ def test_reverse_bend_curves(f, param) -> None:
 
 
 def test_reverse_bend_circ(param) -> None:
-
     dz = 0.1
     x0, y0, z0 = 3, 4, 5
     wg = Waveguide(**param)
