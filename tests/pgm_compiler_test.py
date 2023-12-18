@@ -12,6 +12,7 @@ from femto.helpers import flatten
 from femto.helpers import listcast
 from femto.pgmcompiler import PGMCompiler
 from femto.pgmcompiler import sample_warp
+from femto.pgmcompiler import farcall
 
 
 @pytest.fixture
@@ -1498,3 +1499,35 @@ def test_close_dir(param) -> None:
 
     file.unlink()
     dire.rmdir()
+
+
+def test_pgm_farcall_empty_external_files(param) -> None:
+    dir = Path('./dir/')
+    dir.mkdir()
+    farcall_file = dir / 'FARCALL.pgm'
+    assert dir.is_dir()
+    farcall(directory=dir, parameters=param)
+    assert not farcall_file.is_file()
+    dir.rmdir()
+
+
+def test_pgm_farcall_external_files(param) -> None:
+    dir = Path('./dir/')
+    dir.mkdir()
+    farcall_file = dir / 'FARCALL.pgm'
+
+    with PGMCompiler.from_dict(param, filename='test1', export_dir='dir') as G:
+        G.write(np.random.rand(90, 3))
+    with PGMCompiler.from_dict(param, filename='test2', export_dir='dir') as G:
+        G.write(np.random.rand(90, 3))
+    with PGMCompiler.from_dict(param, filename='test3', export_dir='dir') as G:
+        G.write(np.random.rand(90, 3))
+
+    assert dir.is_dir()
+    farcall(directory=dir, parameters=param)
+    assert farcall_file.is_file()
+    Path('./dir/test1.pgm').unlink()
+    Path('./dir/test2.pgm').unlink()
+    Path('./dir/test3.pgm').unlink()
+    Path('./dir/FARCALL.pgm').unlink()
+    dir.rmdir()

@@ -5,6 +5,7 @@ import contextlib
 import copy
 import itertools
 import math
+import os
 import pathlib
 import re
 from types import TracebackType
@@ -811,16 +812,16 @@ class PGMCompiler:
         self._instructions.append(f'PROGRAM {task_id} BUFFEREDRUN "{file}"\n')
         logger.debug(f'Call buffered file {file}.')
 
-    def farcall_list(self, filenames: list[str], task_id: list[int] | int = 2) -> None:
+    def farcall_list(self, filenames: list[str] | list[pathlib.Path], task_id: list[int] | int = 2) -> None:
         """Chiamatutto.
 
         Load and execute sequentially a list of G-Code scripts.
 
         Parameters
         ----------
-        filenames : list(str)
+        filenames : list[str] | pathlib.Path
             List of filenames of the G-code scripts to be executed.
-        task_id : list(int), optional
+        task_id : list[int], optional
             Task ID number onto which the program will be loaded (and executed). The default value is 2 for all the
             scripts in the filename list.
 
@@ -1328,6 +1329,41 @@ class PGMCompiler:
         self._instructions.append('G84 X Y\n')
         self.dwell(self.short_pause)
         logger.debug('Deactivate axis rotation.')
+
+
+def farcall(directory: str | pathlib.Path, parameters: dict[str, Any]) -> None:
+    """Generate a FARCALL script.
+
+    The function compile a FARCALL file for calling the files stored in a given directory. The file will be saved in
+    that very directory as well. If no file is present, no FARCALL.pgm file will be created.
+
+    Parameters
+    ----------
+    directory: str | pathlib.Path
+        Directory containing the files to call.
+    parameters: dict[str, Any]
+        Dictionary of the the parameters for a G-Code file.
+
+    Returns
+    -------
+    None.
+    """
+
+    pgm_files = sorted(pathlib.Path(directory).glob('*.pgm'))
+
+    if not pgm_files:
+        logger.warning(f'No .pgm file found in {directory.absolute()}.')
+    else:
+        parameters['filename'] = 'FARCALL.pgm'
+        parameters['export_dir'] = directory
+        gcode_writer = PGMCompiler(**parameters)
+        gcode_writer.comment('FARCALL PROGRAM\n; ---------------')
+        gcode_writer.instruction('\n\n')
+        gcode_writer.farcall_list(filenames=pgm_files)
+        gcode_writer.go_origin()
+        gcode_writer.close()
+        logger.info(f'Created FARCALL file for directory {directory}.')
+    return
 
 
 def sample_warp(pts_x: int, pts_y: int, margin: float, parameters: dict[str, Any]) -> None:
