@@ -1503,7 +1503,7 @@ def test_close_dir(param) -> None:
 
 def test_pgm_farcall_empty_external_files(param) -> None:
     dir = Path('./dir/')
-    dir.mkdir()
+    dir.mkdir(parents=True, exist_ok=True)
     farcall_file = dir / 'FARCALL.pgm'
     assert dir.is_dir()
     farcall(directory=dir, parameters=param)
@@ -1513,7 +1513,7 @@ def test_pgm_farcall_empty_external_files(param) -> None:
 
 def test_pgm_farcall_external_files(param) -> None:
     dir = Path('./dir/')
-    dir.mkdir()
+    dir.mkdir(parents=True, exist_ok=True)
     farcall_file = dir / 'FARCALL.pgm'
 
     with PGMCompiler.from_dict(param, filename='test1', export_dir='dir') as G:
