@@ -5,7 +5,6 @@ import contextlib
 import copy
 import itertools
 import math
-import os
 import pathlib
 import re
 from types import TracebackType
