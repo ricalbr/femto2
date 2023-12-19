@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import itertools
-from typing import Any, Callable
+from typing import Any
+from typing import Callable
 
 import numpy as np
 import numpy.typing as npt
-from femto.waveguide import Waveguide
 from femto.curves import sin
+from femto.waveguide import Waveguide
 
 # Define array type
 nparray = npt.NDArray[np.float32]

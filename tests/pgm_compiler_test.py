@@ -10,9 +10,9 @@ import numpy as np
 import pytest
 from femto.helpers import flatten
 from femto.helpers import listcast
+from femto.pgmcompiler import farcall
 from femto.pgmcompiler import PGMCompiler
 from femto.pgmcompiler import sample_warp
-from femto.pgmcompiler import farcall
 
 
 @pytest.fixture
