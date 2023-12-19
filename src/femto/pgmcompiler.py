@@ -812,14 +812,14 @@ class PGMCompiler:
         self._instructions.append(f'PROGRAM {task_id} BUFFEREDRUN "{file}"\n')
         logger.debug(f'Call buffered file {file}.')
 
-    def farcall_list(self, filenames: list[str] | list[pathlib.Path], task_id: list[int] | int = 2) -> None:
+    def farcall_list(self, filenames: list[str], task_id: list[int] | int = 2) -> None:
         """Chiamatutto.
 
         Load and execute sequentially a list of G-Code scripts.
 
         Parameters
         ----------
-        filenames : list[str] | pathlib.Path
+        filenames : list[str]
             List of filenames of the G-code scripts to be executed.
         task_id : list[int], optional
             Task ID number onto which the program will be loaded (and executed). The default value is 2 for all the
@@ -1349,10 +1349,10 @@ def farcall(directory: str | pathlib.Path, parameters: dict[str, Any]) -> None:
     None.
     """
 
-    pgm_files = sorted(pathlib.Path(directory).glob('*.pgm'))
+    pgm_files = sorted(str(pathlib.Path(directory).glob('*.pgm')))
 
     if not pgm_files:
-        logger.warning(f'No .pgm file found in {directory.absolute()}.')
+        logger.warning(f'No .pgm file found in {pathlib.Path(directory).absolute()}.')
     else:
         parameters['filename'] = 'FARCALL.pgm'
         parameters['export_dir'] = directory
