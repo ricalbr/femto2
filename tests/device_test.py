@@ -292,6 +292,7 @@ def test_device_keys(device) -> None:
     device.add([c1, c2, c3, c4])
     assert device.keys == ['name1', 'name2', 'name3', 'name4']
 
+
 def test_device_remove_cell(device, cell) -> None:
 
     c2 = Cell(name='c2')
@@ -310,6 +311,7 @@ def test_device_remove_cell(device, cell) -> None:
     assert cell.name not in device.cells_collection.keys()
     assert list(device.cells_collection.keys()) == []
 
+
 def test_device_remove_cell_not_present(device, cell) -> None:
 
     c2 = Cell(name='c2')
@@ -319,6 +321,7 @@ def test_device_remove_cell_not_present(device, cell) -> None:
 
     with pytest.raises(KeyError):
         device.remove_cell(cell)
+
 
 def test_device_add_cell_same_name(device, cell) -> None:
     c2 = cell
