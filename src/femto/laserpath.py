@@ -26,7 +26,7 @@ class LaserPath:
     samplesize: tuple[float, float] = (100, 50)  #: Dimensions of the sample (x `[mm]`, y `[mm]`).
     x_init: float = -2.0  #: Initial x-coordinate for the laser path `[mm]`.
     y_init: float = 0.0  #: Initial y-coordinate for the laser path `[mm]`
-    z_init: float | None = None  #: Initial z-coordinate for the laser path `[mm]`.
+    z_init: float = attrs.field(default=float('nan'))  #: Initial z-coordinate for the laser path `[mm]`.
     shrink_correction_factor: float = 1.0  #: Correcting factor for glass shrinking.
     lsafe: float = 2.0  #: Safe margin length `[mm]`.
     speed_closed: float = 5.0  #: Closed shutter translation speed `[mm/s]`.

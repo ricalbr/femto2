@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from typing import Any
 from typing import Callable
 
@@ -34,7 +35,7 @@ class Waveguide(LaserPath):
 
     def __attrs_post_init__(self) -> None:
         super().__attrs_post_init__()
-        if self.z_init is None:
+        if math.isnan(self.z_init):
             self.z_init = self.depth
             logger.debug(f'Set z_init to {self.z_init} mm.')
 

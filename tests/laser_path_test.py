@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from pathlib import Path
 
 import attrs
@@ -54,7 +55,7 @@ def test_default_values() -> None:
     assert lp.speed == float(1.0)
     assert lp.x_init == float(-2.0)
     assert lp.y_init == float(0.0)
-    assert lp.z_init is None
+    assert math.isnan(lp.z_init)
     assert lp.lsafe == float(2.0)
     assert lp.speed_closed == float(5.0)
     assert lp.speed_pos == float(0.5)

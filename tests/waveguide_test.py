@@ -131,7 +131,7 @@ def test_id(param) -> None:
 
 
 def test_z_init(param) -> None:
-    param['z_init'] = None
+    del param['z_init']
     param['depth'] = 0.05
     wg = Waveguide(**param)
     assert wg.z_init == float(0.05)
@@ -862,7 +862,7 @@ def test_nasu_id(param) -> None:
 
 
 def test_nasu_depth(param) -> None:
-    param['z_init'] = None
+    del param['z_init']
     nw = NasuWaveguide(**param)
     assert nw.z_init == nw.depth
 

@@ -30,7 +30,7 @@ class Marker(LaserPath):
 
     def __attrs_post_init__(self) -> None:
         super().__attrs_post_init__()
-        if self.z_init is None:
+        if math.isnan(self.z_init):
             self.z_init = self.depth
             logger.debug(f'z_init set to {self.z_init}.')
 
