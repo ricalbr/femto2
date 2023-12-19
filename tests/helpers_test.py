@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-import pathlib
 
 import numpy as np
 import pytest
@@ -273,7 +272,7 @@ def test_walklevel_0() -> None:
 def test_walklevel_minus1() -> None:
     from pathlib import Path
 
-    root = Path('.\..')
+    root = Path(r'.\..')
     wl_gen = walklevel(root, depth=-1)
     wk_gen = os.walk(root)
     all(a == b for a, b in zip(wl_gen, wk_gen))

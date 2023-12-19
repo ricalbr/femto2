@@ -12,8 +12,8 @@ from femto.helpers import normalize_polygon
 from femto.trench import Trench
 from femto.trench import TrenchColumn
 from shapely.geometry import box
-from shapely.geometry import MultiPolygon
 from shapely.geometry import MultiLineString
+from shapely.geometry import MultiPolygon
 from shapely.geometry import Point
 from shapely.geometry import Polygon
 

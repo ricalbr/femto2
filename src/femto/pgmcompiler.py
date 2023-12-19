@@ -12,8 +12,8 @@ from typing import Any
 from typing import Callable
 from typing import Deque
 from typing import Generator
-from typing import TypeVar
 from typing import NamedTuple
+from typing import TypeVar
 
 import attrs
 import dill
