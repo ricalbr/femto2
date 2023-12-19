@@ -292,10 +292,37 @@ def test_device_keys(device) -> None:
     device.add([c1, c2, c3, c4])
     assert device.keys == ['name1', 'name2', 'name3', 'name4']
 
+def test_device_remove_cell(device, cell) -> None:
 
-def test_device_add_cell_dame_name(device, cell) -> None:
+    c2 = Cell(name='c2')
+    c3 = Cell(name='c3')
+    device.add_cell(cell)
+    device.add_cell(c2)
+    device.add_cell(c3)
+
+    device.remove_cell(c2)
+    assert 'c2' not in device.cells_collection.keys()
+
+    device.remove_cell(c3)
+    assert 'c3' not in device.cells_collection.keys()
+
+    device.remove_cell(cell)
+    assert cell.name not in device.cells_collection.keys()
+    assert list(device.cells_collection.keys()) == []
+
+def test_device_remove_cell_not_present(device, cell) -> None:
+
+    c2 = Cell(name='c2')
+    c3 = Cell(name='c3')
+    device.add_cell(c2)
+    device.add_cell(c3)
+
+    with pytest.raises(KeyError):
+        device.remove_cell(cell)
+
+def test_device_add_cell_same_name(device, cell) -> None:
     c2 = cell
-    with pytest.raises(ValueError):
+    with pytest.raises(KeyError):
         device.add_cell(cell)
         device.add_cell(c2)
 
@@ -457,14 +484,14 @@ def test_device_add_list_cell_multi(device) -> None:
 @pytest.mark.parametrize(
     'elem, exp',
     [
-        ([Waveguide(), 1, 2, 3], pytest.raises(ValueError)),
+        ([Waveguide(), 1, 2, 3], pytest.raises(TypeError)),
         ([Waveguide(), Marker(), Marker()], does_not_raise()),
         ([[[Waveguide(), Marker(), Marker()]]], does_not_raise()),
         (NasuWaveguide(), does_not_raise()),
         ([NasuWaveguide(), Waveguide()], does_not_raise()),
         ([Waveguide()], does_not_raise()),
-        ([None], pytest.raises(ValueError)),
-        (None, pytest.raises(ValueError)),
+        ([None], pytest.raises(TypeError)),
+        (None, pytest.raises(TypeError)),
     ],
 )
 def test_device_add_raise(device, elem, exp) -> None:

@@ -229,7 +229,7 @@ class Device:
                     'Objects can only be Cells or other femto objects (Waveguide, Markers, etc.). '
                     f'Given {type(elem)}.'
                 )
-                raise ValueError(
+                raise TypeError(
                     'Objects can only be Cells or other femto objects (Waveguide, Markers, etc.). '
                     f'Given {type(elem)}.'
                 )
@@ -255,8 +255,28 @@ class Device:
         """
         if cell.name.lower() in self.cells_collection:
             logger.error(f'Cell ID "{cell.name}" already present in layer  dict, give another value.')
-            raise ValueError(f'Cell ID "{cell.name}" already present in layer  dict, give another value.')
+            raise KeyError(f'Cell ID "{cell.name}" already present in layer  dict, give another value.')
         self.cells_collection[cell.name] = cell
+
+    def remove_cell(self, cell: Cell) -> None:
+        """Remove cell.
+
+        The method removes a cell to the current Device. First it checks a Cell with the same name is present in the
+        cell list, and eventually it removes it from the Device.
+
+        Parameters
+        ----------
+        cell: Cell
+            Cell to add to the current Device.
+
+        Returns
+        -------
+        None.
+        """
+        if cell.name.lower() not in self.cells_collection:
+            logger.error(f'Cell ID "{cell.name}" not present in layer  dict, give another value.')
+            raise KeyError(f'Cell ID "{cell.name}" not present in layer  dict, give another value.')
+        del self.cells_collection[cell.name]
 
     def add_to_cell(self, key: str, obj: femto_objects | list[femto_objects]) -> None:
         """Adds a femto object to a the cell.
