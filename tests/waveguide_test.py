@@ -1188,7 +1188,7 @@ def test_double_bend_non_sin_disp_x_none(param, dy1, dy2, dz1, dz2) -> None:
         (0.2, -0.2, -0.2, 0.2, 9, 3),
     ],
 )
-def test_double_bend_non_sin_disp_x_none(param, dy1, dy2, dz1, dz2, disp_x1, disp_x2) -> None:
+def test_double_bend_non_sin_disp_x(param, dy1, dy2, dz1, dz2, disp_x1, disp_x2) -> None:
     wg = Waveguide(**param)
     wg.start([0, 0, 0])
     wg.double_bend(dy1=dy1, dy2=dy2, dz1=dz1, dz2=dz2, fx=spline, disp_x1=disp_x1, disp_x2=disp_x2)
@@ -1236,7 +1236,7 @@ def test_double_bend_sin_disp_x_none(param, dy1, dy2, dz1, dz2, disp_x1, disp_x2
         (0.2, -0.2, -0.2, 0.2, 9),
     ],
 )
-def test_double_bend_sin_disp_x_none(param, dy1, dy2, dz1, dz2, disp_x1) -> None:
+def test_double_bend_sin_disp_x(param, dy1, dy2, dz1, dz2, disp_x1) -> None:
     wg = Waveguide(**param)
     wg.start([0, 0, 0])
     wg.double_bend(dy1=dy1, dy2=dy2, dz1=dz1, dz2=dz2, fx=sin, disp_x1=disp_x1)
