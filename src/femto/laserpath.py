@@ -228,21 +228,18 @@ class LaserPath:
         return np.array([])
 
     @property
-    def lastx(self) -> float | None:
+    def lastx(self) -> float:
         """Last `x` value in the trajectory points matrix, if any.
 
         Returns
         -------
-        float, optional
+        float
             The last value of the `x` array.
         """
 
         arrx = self.x
-        if arrx.size:
-            logger.debug(f'Return x-coordinate of last point: {float(arrx[-1])}.')
-            return float(arrx[-1])
-        logger.debug('x-coordinate array is empty. Return None.')
-        return None
+        logger.debug(f'Return x-coordinate of last point: {float(arrx[-1])}.')
+        return float(arrx[-1])
 
     @property
     def y(self) -> nparray:
@@ -268,21 +265,18 @@ class LaserPath:
         return np.array([])
 
     @property
-    def lasty(self) -> float | None:
+    def lasty(self) -> float:
         """Last `y` value in the trajectory points matrix, if any.
 
         Returns
         -------
-        float, optional
+        float
             The last value of the `y` array.
         """
 
         arry = self.y
-        if arry.size:
-            logger.debug(f'Return y-coordinate of last point: {float(arry[-1])}.')
-            return float(arry[-1])
-        logger.debug('y-coordinate array is empty. Return None.')
-        return None
+        logger.debug(f'Return y-coordinate of last point: {float(arry[-1])}.')
+        return float(arry[-1])
 
     @property
     def z(self) -> nparray:
@@ -308,21 +302,18 @@ class LaserPath:
         return np.array([])
 
     @property
-    def lastz(self) -> float | None:
+    def lastz(self) -> float:
         """Last `z` value in the trajectory points matrix, if any.
 
         Returns
         -------
-        float, optional
+        float
             The last value of the `z` array.
         """
 
         arrz = self.z
-        if arrz.size:
-            logger.debug(f'Return z-coordinate of last point: {float(arrz[-1])}.')
-            return float(arrz[-1])
-        logger.debug('z-coordinate array is empty. Return None.')
-        return None
+        logger.debug(f'Return z-coordinate of last point: {float(arrz[-1])}.')
+        return float(arrz[-1])
 
     @property
     def lastpt(self) -> nparray:
