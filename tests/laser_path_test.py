@@ -458,7 +458,8 @@ def test_lastx(laser_path) -> None:
 
 
 def test_lastx_empty(empty_path) -> None:
-    assert empty_path.lastx is None
+    with pytest.raises(IndexError):
+        empty_path.lastx
 
 
 def test_y(laser_path) -> None:
@@ -474,7 +475,8 @@ def test_lasty(laser_path) -> None:
 
 
 def test_lasty_empty(empty_path) -> None:
-    assert empty_path.lasty is None
+    with pytest.raises(IndexError):
+        empty_path.lasty
 
 
 def test_z(laser_path) -> None:
@@ -490,7 +492,8 @@ def test_lastz(laser_path) -> None:
 
 
 def test_lastz_empty(empty_path) -> None:
-    assert empty_path.lastz is None
+    with pytest.raises(IndexError):
+        empty_path.lastz
 
 
 def test_last_point(laser_path) -> None:
