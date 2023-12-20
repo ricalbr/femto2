@@ -462,3 +462,28 @@ def walklevel(path: str | pathlib.Path, depth: int = 1) -> Generator[tuple[Any, 
         cur_depth = root.count(os.path.sep)
         if base_depth + depth <= cur_depth:
             del dirs[:]
+
+
+def delete_folder(path: str | pathlib.Path) -> None:
+    """Delete folder.
+
+    Empty and remove the folder given as input.
+
+    Parameters
+    ----------
+    path: str | pathlib.Path
+        Directory to remove.
+
+    Returns
+    -------
+    None
+    """
+    if isinstance(path, str):
+        path = pathlib.Path(path)
+
+    for sub in path.iterdir():
+        if sub.is_dir():
+            delete_folder(sub)
+        else:
+            sub.unlink()
+    path.rmdir()
