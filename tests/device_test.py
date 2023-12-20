@@ -11,6 +11,7 @@ import pytest
 from femto.curves import sin
 from femto.device import Cell
 from femto.device import Device
+from femto.helpers import delete_folder
 from femto.helpers import flatten
 from femto.marker import Marker
 from femto.trench import Trench
@@ -639,30 +640,25 @@ def test_device_export(device, list_wg, list_mk) -> None:
     for i, _ in enumerate(list_wg):
         fn = Path().cwd() / 'EXPORT' / 'BASE' / f'WG_{i + 1:02}.pickle'
         assert fn.is_file()
-        fn.unlink()
     for i, _ in enumerate(list_mk):
         fn = Path().cwd() / 'EXPORT' / 'BASE' / f'MK_{i + 1:02}.pickle'
         assert fn.is_file()
-        fn.unlink()
 
-    (Path().cwd() / 'EXPORT' / 'BASE').rmdir()
-    (Path().cwd() / 'EXPORT').rmdir()
+    delete_folder(Path().cwd() / 'EXPORT')
 
 
 def test_device_export_verbose(device, list_wg, list_mk) -> None:
     device.add([list_wg, list_mk])
     device.export()
+
     for i, _ in enumerate(list_wg):
         fn = Path().cwd() / 'EXPORT' / 'BASE' / f'WG_{i + 1:02}.pickle'
         assert fn.is_file()
-        fn.unlink()
     for i, _ in enumerate(list_mk):
         fn = Path().cwd() / 'EXPORT' / 'BASE' / f'MK_{i + 1:02}.pickle'
         assert fn.is_file()
-        fn.unlink()
 
-    (Path().cwd() / 'EXPORT' / 'BASE').rmdir()
-    (Path().cwd() / 'EXPORT').rmdir()
+    delete_folder(Path().cwd() / 'EXPORT')
 
 
 def test_device_load_verbose(device, list_wg, list_mk, gc_param) -> None:
@@ -677,15 +673,7 @@ def test_device_load_verbose(device, list_wg, list_mk, gc_param) -> None:
     assert not d2.cells_collection['base'].objects[TrenchColumn]
     assert not d2.cells_collection['base'].objects[NasuWaveguide]
 
-    objs = []
-    objs.extend(list_wg)
-    objs.extend(list_mk)
-    for root, dirs, files in os.walk(fn):
-        for file in files:
-            (pathlib.Path(root) / file).unlink()
-
-    (Path().cwd() / 'EXPORT' / 'BASE').rmdir()
-    (Path().cwd() / 'EXPORT').rmdir()
+    delete_folder(fn.parent)
 
 
 def test_device_load_empty(list_wg, list_mk, list_tcol, gc_param) -> None:
@@ -693,7 +681,8 @@ def test_device_load_empty(list_wg, list_mk, list_tcol, gc_param) -> None:
     device.add([list_tcol, list_wg, list_mk])
     device.export()
 
-    fn = Path().cwd() / 'EXPORT' / 'BASE'
+    # load on a different, empty path
+    fn = Path().cwd() / 'EXPORT' / 'BAASE'
 
     fn.mkdir(parents=True, exist_ok=True)
     (fn / 'cell1').mkdir(parents=True, exist_ok=True)
@@ -706,10 +695,7 @@ def test_device_load_empty(list_wg, list_mk, list_tcol, gc_param) -> None:
     assert not d2.cells_collection['base'].objects[TrenchColumn]
     assert not d2.cells_collection['base'].objects[NasuWaveguide]
 
-    (fn / 'cell1').rmdir()
-    (fn / 'cell2').rmdir()
-    (fn / 'cell3').rmdir()
-    fn.rmdir()
+    delete_folder(fn.parent)
 
 
 def test_device_export_non_base_cell(device, list_wg, list_mk) -> None:
@@ -717,17 +703,15 @@ def test_device_export_non_base_cell(device, list_wg, list_mk) -> None:
     cell.add([list_wg, list_mk])
     device.add(cell)
     device.export()
+
     for i, _ in enumerate(list_wg):
         fn = Path().cwd() / 'EXPORT' / 'TEST' / f'WG_{i + 1:02}.pickle'
         assert fn.is_file()
-        fn.unlink()
     for i, _ in enumerate(list_mk):
         fn = Path().cwd() / 'EXPORT' / 'TEST' / f'MK_{i + 1:02}.pickle'
         assert fn.is_file()
-        fn.unlink()
 
-    (Path().cwd() / 'EXPORT' / 'TEST').rmdir()
-    (Path().cwd() / 'EXPORT').rmdir()
+    delete_folder(Path().cwd() / 'EXPORT')
 
 
 def test_device_load_non_base_cell(device, gc_param, list_wg, list_mk, list_tcol) -> None:
@@ -752,5 +736,4 @@ def test_device_load_non_base_cell(device, gc_param, list_wg, list_mk, list_tcol
         for file in files:
             (pathlib.Path(root) / file).unlink()
 
-    (Path().cwd() / 'EXPORT' / 'TEST').rmdir()
-    (Path().cwd() / 'EXPORT').rmdir()
+    delete_folder(Path().cwd() / 'EXPORT')

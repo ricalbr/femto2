@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 from femto.curves import sin
+from femto.helpers import delete_folder
 from femto.helpers import flatten
 from femto.helpers import listcast
 from femto.marker import Marker
@@ -298,14 +299,12 @@ def test_trench_writer_pgm(gc_param, list_tcol) -> None:
         assert (twr._export_path / f'FARCALL{i_col + 1:03}.pgm').is_file()
         for i_tr, tr in enumerate(col):
             assert (twr._export_path / f'trenchCol{i_col + 1:03}' / f'trench{i_tr + 1:03}_WALL.pgm').is_file()
-            (twr._export_path / f'trenchCol{i_col + 1:03}' / f'trench{i_tr + 1:03}_WALL.pgm').unlink()
             assert (twr._export_path / f'trenchCol{i_col + 1:03}' / f'trench{i_tr + 1:03}_FLOOR.pgm').is_file()
-            (twr._export_path / f'trenchCol{i_col + 1:03}' / f'trench{i_tr + 1:03}_FLOOR.pgm').unlink()
-        (twr._export_path / f'trenchCol{i_col + 1:03}').rmdir()
+        delete_folder(twr._export_path / f'trenchCol{i_col + 1:03}')
         (twr._export_path / f'FARCALL{i_col + 1:03}.pgm').unlink()
     assert (twr._export_path / 'MAIN.pgm').is_file()
     (twr._export_path / 'MAIN.pgm').unlink()
-    twr._export_path.rmdir()
+    delete_folder(twr._export_path)
 
 
 def test_trench_writer_pgm_custom_filename(gc_param, list_tcol) -> None:
@@ -320,14 +319,12 @@ def test_trench_writer_pgm_custom_filename(gc_param, list_tcol) -> None:
         assert (twr._export_path / f'FARCALL{i_col + 1:03}.pgm').is_file()
         for i_tr, tr in enumerate(col):
             assert (twr._export_path / f'trenchCol{i_col + 1:03}' / f'trench{i_tr + 1:03}_WALL.pgm').is_file()
-            (twr._export_path / f'trenchCol{i_col + 1:03}' / f'trench{i_tr + 1:03}_WALL.pgm').unlink()
             assert (twr._export_path / f'trenchCol{i_col + 1:03}' / f'trench{i_tr + 1:03}_FLOOR.pgm').is_file()
-            (twr._export_path / f'trenchCol{i_col + 1:03}' / f'trench{i_tr + 1:03}_FLOOR.pgm').unlink()
-        (twr._export_path / f'trenchCol{i_col + 1:03}').rmdir()
+        delete_folder(twr._export_path / f'trenchCol{i_col + 1:03}')
         (twr._export_path / f'FARCALL{i_col + 1:03}.pgm').unlink()
     assert (twr._export_path / 'MAIN.pgm').is_file()
     (twr._export_path / 'MAIN.pgm').unlink()
-    twr._export_path.rmdir()
+    delete_folder(twr._export_path)
 
 
 def test_trench_writer_pgm_single_col(gc_param, list_tcol) -> None:
@@ -341,13 +338,11 @@ def test_trench_writer_pgm_single_col(gc_param, list_tcol) -> None:
         assert (twr._export_path / f'FARCALL{i_col + 1:03}.pgm').is_file()
         for i_tr, tr in enumerate(col):
             assert (twr._export_path / f'trenchCol{i_col + 1:03}' / f'trench{i_tr + 1:03}_WALL.pgm').is_file()
-            (twr._export_path / f'trenchCol{i_col + 1:03}' / f'trench{i_tr + 1:03}_WALL.pgm').unlink()
             assert (twr._export_path / f'trenchCol{i_col + 1:03}' / f'trench{i_tr + 1:03}_FLOOR.pgm').is_file()
-            (twr._export_path / f'trenchCol{i_col + 1:03}' / f'trench{i_tr + 1:03}_FLOOR.pgm').unlink()
-        (twr._export_path / f'trenchCol{i_col + 1:03}').rmdir()
+        delete_folder(twr._export_path / f'trenchCol{i_col + 1:03}')
         (twr._export_path / f'FARCALL{i_col + 1:03}.pgm').unlink()
     assert not (twr._export_path / 'MAIN.pgm').is_file()
-    twr._export_path.rmdir()
+    delete_folder(twr._export_path)
 
 
 def test_utrench_writer_init(gc_param, list_utcol) -> None:
@@ -474,19 +469,14 @@ def test_utrench_writer_pgm(gc_param, list_utcol) -> None:
 
         for i_tr, tr in enumerate(col):
             assert (twr._export_path / f'trenchCol{i_col + 1:03}' / f'trench{i_tr + 1:03}_WALL.pgm').is_file()
-            (twr._export_path / f'trenchCol{i_col + 1:03}' / f'trench{i_tr + 1:03}_WALL.pgm').unlink()
             assert (twr._export_path / f'trenchCol{i_col + 1:03}' / f'trench{i_tr + 1:03}_FLOOR.pgm').is_file()
-            (twr._export_path / f'trenchCol{i_col + 1:03}' / f'trench{i_tr + 1:03}_FLOOR.pgm').unlink()
-
         for i_bed, _ in enumerate(col._trenchbed):
             assert (twr._export_path / f'trenchCol{i_col + 1:03}' / f'trench_BED_{i_bed + 1:03}.pgm').is_file()
-            (twr._export_path / f'trenchCol{i_col + 1:03}' / f'trench_BED_{i_bed + 1:03}.pgm').unlink()
-
-        (twr._export_path / f'trenchCol{i_col + 1:03}').rmdir()
+        delete_folder(twr._export_path / f'trenchCol{i_col + 1:03}')
         (twr._export_path / f'FARCALL{i_col + 1:03}.pgm').unlink()
     assert (twr._export_path / 'MAIN.pgm').is_file()
     (twr._export_path / 'MAIN.pgm').unlink()
-    twr._export_path.rmdir()
+    delete_folder(twr._export_path)
 
 
 @pytest.mark.parametrize(
@@ -628,9 +618,7 @@ def test_export_default(gc_param, list_wg) -> None:
     assert fn.is_dir()
     _, _, files = next(os.walk(fn))
     assert len(files) == len(list_wg)
-    for f in files:
-        pathlib.Path(fn / f).unlink()
-    fn.rmdir()
+    delete_folder(fn.parent)
 
 
 def test_export_custom_filename(gc_param, list_wg) -> None:
@@ -644,9 +632,7 @@ def test_export_custom_filename(gc_param, list_wg) -> None:
     assert fn.is_dir()
     _, _, files = next(os.walk(fn))
     assert len(files) == len(list_wg)
-    for f in files:
-        pathlib.Path(fn / f).unlink()
-    fn.rmdir()
+    delete_folder(wwr.CWD / wwr.export_dir / 'EXPORT')
 
 
 def test_export_custom_dir(gc_param, list_wg) -> None:
@@ -660,9 +646,7 @@ def test_export_custom_dir(gc_param, list_wg) -> None:
     assert fn.is_dir()
     _, _, files = next(os.walk(fn))
     assert len(files) == len(list_wg)
-    for f in files:
-        pathlib.Path(fn / f).unlink()
-    fn.rmdir()
+    delete_folder(wwr.CWD / wwr.export_dir / dir)
 
 
 def test_export_none_dirs(gc_param, list_wg) -> None:
