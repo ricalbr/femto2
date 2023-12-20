@@ -11,7 +11,8 @@ import pytest
 from femto.curves import sin
 from femto.device import Cell
 from femto.device import Device
-from femto.helpers import flatten, delete_folder
+from femto.helpers import delete_folder
+from femto.helpers import flatten
 from femto.marker import Marker
 from femto.trench import Trench
 from femto.trench import TrenchColumn

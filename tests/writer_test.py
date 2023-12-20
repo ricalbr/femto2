@@ -7,8 +7,9 @@ from pathlib import Path
 
 import pytest
 from femto.curves import sin
+from femto.helpers import delete_folder
 from femto.helpers import flatten
-from femto.helpers import listcast, delete_folder
+from femto.helpers import listcast
 from femto.marker import Marker
 from femto.trench import TrenchColumn
 from femto.waveguide import NasuWaveguide
