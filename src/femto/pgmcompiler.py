@@ -12,6 +12,7 @@ from typing import Any
 from typing import Callable
 from typing import Deque
 from typing import Generator
+from typing import NamedTuple
 from typing import TypeVar
 
 import attrs
@@ -30,8 +31,7 @@ GC = TypeVar('GC', bound='PGMCompiler')
 nparray = npt.NDArray[np.float32]
 
 
-@attrs.define
-class Laser:
+class Laser(NamedTuple):
     """Class representing a Laser.
 
     The class contains all the info (``name``, ``lab``) and configuration (``axis``, ``pin``, ``mode``) of the given
@@ -328,7 +328,7 @@ class PGMCompiler:
         """
 
         try:
-            par = attrs.asdict(self._lasers[self.laser.lower()])
+            par = self._lasers[self.laser.lower()]._asdict()
             logger.debug(f'Load header for laser {self.laser.lower()}.')
         except (KeyError, AttributeError):
             logger.error(f'Laser can only be ANT, CARBIDE, PHAROS or UWE. Given {self.laser}.')
@@ -818,9 +818,9 @@ class PGMCompiler:
 
         Parameters
         ----------
-        filenames : list(str)
+        filenames : list[str]
             List of filenames of the G-code scripts to be executed.
-        task_id : list(int), optional
+        task_id : list[int], optional
             Task ID number onto which the program will be loaded (and executed). The default value is 2 for all the
             scripts in the filename list.
 
@@ -1202,7 +1202,7 @@ class PGMCompiler:
             ax.contour3D(x, y, z, 200, cmap='viridis')
             ax.set_xlabel('X [mm]'), ax.set_ylabel('Y [mm]'), ax.set_zlabel('Z [mm]')
             ax.set_aspect('equalxz')
-            plt.show()
+            plt.show(block=False)
 
         return f
 
@@ -1328,6 +1328,41 @@ class PGMCompiler:
         self._instructions.append('G84 X Y\n')
         self.dwell(self.short_pause)
         logger.debug('Deactivate axis rotation.')
+
+
+def farcall(directory: str | pathlib.Path, parameters: dict[str, Any]) -> None:
+    """Generate a FARCALL script.
+
+    The function compile a FARCALL file for calling the files stored in a given directory. The file will be saved in
+    that very directory as well. If no file is present, no FARCALL.pgm file will be created.
+
+    Parameters
+    ----------
+    directory: str | pathlib.Path
+        Directory containing the files to call.
+    parameters: dict[str, Any]
+        Dictionary of the the parameters for a G-Code file.
+
+    Returns
+    -------
+    None.
+    """
+
+    pgm_files = [str(fpath) for fpath in sorted(pathlib.Path(directory).glob('*.pgm'))]
+
+    if not pgm_files:
+        logger.warning(f'No .pgm file found in {pathlib.Path(directory).absolute()}.')
+    else:
+        parameters['filename'] = 'FARCALL.pgm'
+        parameters['export_dir'] = directory
+        gcode_writer = PGMCompiler(**parameters)
+        gcode_writer.comment('FARCALL PROGRAM\n; ---------------')
+        gcode_writer.instruction('\n\n')
+        gcode_writer.farcall_list(filenames=pgm_files)
+        gcode_writer.go_origin()
+        gcode_writer.close()
+        logger.info(f'Created FARCALL file for directory {directory}.')
+    return
 
 
 def sample_warp(pts_x: int, pts_y: int, margin: float, parameters: dict[str, Any]) -> None:

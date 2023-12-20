@@ -20,16 +20,16 @@ class CustomConsoleFormatter(logging.Formatter):
     bold_mintgreen = f'{reset}{bold}\x1b[38;2;153;255;153m'
     red = f'{reset}\x1b[38;2;255;127;80m'
     bold_red = f'{reset}{bold}\x1b[38;2;255;127;80m'
-    rev_bold_red = f'{reset}{reverse}{bold}38;2;255;127;80m'
+    rev_bold_red = f'{reset}{reverse}{bold}\x1b[38;2;255;127;80m'
 
-    CONSOLEFORMATTER = '{}%(module)12s:  {}[%(levelname)-.3s]  {}%(message)s'
+    CONSOLEFORMATTER = '{}%(module)12s:  {}[%(levelname)-.3s]  {}%(message)s{}'
 
     FORMATS = {
-        logging.DEBUG: CONSOLEFORMATTER.format(white, white, white),
-        logging.INFO: CONSOLEFORMATTER.format(white, bold_mintgreen, white),
-        logging.WARNING: CONSOLEFORMATTER.format(white, bold_yellow, italic_yellow),
-        logging.ERROR: CONSOLEFORMATTER.format(white, bold_red, red),
-        logging.CRITICAL: CONSOLEFORMATTER.format(white, rev_bold_red, rev_bold_red),
+        logging.DEBUG: CONSOLEFORMATTER.format(white, white, white, reset),
+        logging.INFO: CONSOLEFORMATTER.format(white, bold_mintgreen, white, reset),
+        logging.WARNING: CONSOLEFORMATTER.format(white, bold_yellow, italic_yellow, reset),
+        logging.ERROR: CONSOLEFORMATTER.format(white, bold_red, red, reset),
+        logging.CRITICAL: CONSOLEFORMATTER.format(white, rev_bold_red, rev_bold_red, reset),
     }
 
     def format(self, record: logging.LogRecord) -> str:

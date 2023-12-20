@@ -12,6 +12,7 @@ from femto.helpers import normalize_polygon
 from femto.trench import Trench
 from femto.trench import TrenchColumn
 from shapely.geometry import box
+from shapely.geometry import MultiLineString
 from shapely.geometry import MultiPolygon
 from shapely.geometry import Point
 from shapely.geometry import Polygon
@@ -366,6 +367,36 @@ def test_trenchcol_from_dict(param) -> None:
     assert tcol.speed_wall == float(5.0)
     assert tcol.speed_floor == float(3.0)
     assert tcol.speed_closed == float(5.0)
+    assert tcol.speed_pos == float(0.5)
+    assert tcol.base_folder == ''
+    assert tcol.beam_waist == float(0.002)
+    assert tcol.round_corner == float(0.010)
+
+    assert tcol.CWD == Path.cwd()
+    assert tcol.trench_list == []
+    assert tcol.bed_list == []
+
+
+def test_trenchcol_from_dict_update(param) -> None:
+    tcol = TrenchColumn.from_dict(param, bridge=0.040, safe_inner_turns=32, speed_closed=10)
+
+    assert tcol.x_center == float(6)
+    assert tcol.y_min == float(1)
+    assert tcol.y_max == float(2)
+    assert tcol.bridge == float(0.040)
+    assert tcol.length == float(3)
+    assert tcol.nboxz == int(4)
+    assert tcol.z_off == float(-0.020)
+    assert tcol.h_box == float(0.080)
+    assert tcol.deltaz == float(0.002)
+    assert tcol.delta_floor == float(0.0015)
+    assert tcol.safe_inner_turns == int(32)
+    assert tcol.n_pillars is None
+    assert tcol.pillar_width == float(0.040)
+    assert tcol.u == [28, 29.47]
+    assert tcol.speed_wall == float(5.0)
+    assert tcol.speed_floor == float(3.0)
+    assert tcol.speed_closed == float(10.0)
     assert tcol.speed_pos == float(0.5)
     assert tcol.base_folder == ''
     assert tcol.beam_waist == float(0.002)
@@ -752,7 +783,7 @@ def test_orientation(ymin, ymax, exp, param) -> None:
 @pytest.mark.parametrize(
     'poly, sit',
     [
-        (box(0, 0, 3, 4), 10),
+        (box(0, 0, 3, 44), 10),
         (box(0, 0, 55, 7), 7),
         (Point(0, 0).buffer(8), 1),
     ],
@@ -765,10 +796,54 @@ def test_num_insets_convex(poly, sit) -> None:
 @pytest.mark.parametrize(
     'poly, sit, exp',
     [
-        (box(0, 0, 2, 2).difference(box(1, 1, 1.5, 3)), 4, 7),
-        (box(0, 0, 2, 2).difference(box(0.2, 0.5, 0.8, 3)), 4, 15),
+        (box(0, 0, 2, 2).difference(box(1, 1, 1.5, 3)), 4, 8),
+        (box(0, 0, 2, 2).difference(box(0.2, 0.5, 0.8, 3)), 4, 16),
+        (box(0, 0, 5, 2).difference(box(2, 0.5, 8, 3)), 4, 8),
+        (box(0, 0, 6, 5).difference(box(1, 0, 4, 1).union(box(1, 4, 4, 6))), 1, 13),
     ],
 )
 def test_num_insets_concave(poly, sit, exp) -> None:
     t = Trench(poly, safe_inner_turns=sit, delta_floor=0.1)
     assert t.num_insets == exp
+
+
+def test_zig_zag_mask_horizontal() -> None:
+    poly = box(0, 0, 1, 0.4)
+    sit = 5
+    delta_floor = 0.01
+    t = Trench(poly, safe_inner_turns=sit, delta_floor=delta_floor)
+    mask = t.zigzag_mask()
+
+    assert isinstance(mask, MultiLineString)
+    assert len(mask.geoms) == 2 + 1 / delta_floor
+    line1 = mask.geoms[0]
+    xmin, ymin, xmax, ymax = line1.bounds
+    np.testing.assert_almost_equal(xmax - xmin, 1)
+    np.testing.assert_almost_equal(ymax - ymin, 0)
+    line_last = mask.geoms[-1]
+    xmin, ymin, xmax, ymax = line_last.bounds
+    np.testing.assert_almost_equal(xmax - xmin, 1)
+    np.testing.assert_almost_equal(ymax - ymin, 0)
+
+
+def test_zig_zag_mask_vertical() -> None:
+    poly = box(0, 0, 0.4, 1.4)
+    sit = 5
+    delta_floor = 0.01
+    t = Trench(poly, safe_inner_turns=sit, delta_floor=delta_floor)
+    mask = t.zigzag_mask()
+
+    assert isinstance(mask, MultiLineString)
+    assert len(mask.geoms) == 2 + 0.4 / delta_floor
+    line1 = mask.geoms[0]
+    xmin, ymin, xmax, ymax = line1.bounds
+    np.testing.assert_almost_equal(xmax - xmin, 0)
+    np.testing.assert_almost_equal(ymax - ymin, 1.4)
+    line_last = mask.geoms[-1]
+    xmin, ymin, xmax, ymax = line_last.bounds
+    np.testing.assert_almost_equal(xmax - xmin, 0)
+    np.testing.assert_almost_equal(ymax - ymin, 1.4)
+
+
+def test_zig_zag() -> None:
+    pass

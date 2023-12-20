@@ -331,6 +331,20 @@ def test_write_empty(ss_param, structures):
     (dot_path / 'custom_book_name.xlsx').unlink()
 
 
+def test_write_ignore_cols(ss_param, list_wg):
+    with Spreadsheet(**ss_param, redundant_cols=True) as S:
+        info, numdata = S._extract_data(list_wg)
+
+    for row in range(numdata.size):
+        for elem in numdata[row]:
+            if isinstance(elem, str):
+                continue
+            else:
+                assert elem < 1.1e5
+
+    (dot_path / 'custom_book_name.xlsx').unlink()
+
+
 def test_write_error(ss_param):
     with pytest.raises(ValueError):
         with Spreadsheet(**ss_param) as S:

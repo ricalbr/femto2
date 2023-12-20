@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from typing import Any
 
 import attrs
@@ -25,7 +26,7 @@ class RasterImage(LaserPath):
 
     def __attrs_post_init__(self) -> None:
         super().__attrs_post_init__()
-        if self.z_init is None:
+        if math.isnan(self.z_init):
             self.z_init = 0.0
 
     @property

@@ -80,7 +80,7 @@ def test_mk_from_dict(param) -> None:
 
 
 def test_z_init(param) -> None:
-    param['z_init'] = None
+    del param['z_init']
     param['depth'] = -0.001
     mk = Marker(**param)
     assert mk.z_init == float(-0.001)
