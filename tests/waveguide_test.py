@@ -1103,7 +1103,6 @@ def test_reverse_mzi(param) -> None:
 
 
 def test_add_points(param):
-
     pts = np.random.rand(3, 123)
     wg = Waveguide(**param)
     wg.start([0, 0, 0])
@@ -1141,7 +1140,6 @@ def test_add_points(param):
     ],
 )
 def test_add_points_raise(param, pts, exp) -> None:
-
     wg = Waveguide(**param)
     wg.start([0, 0, 0])
     with exp:
