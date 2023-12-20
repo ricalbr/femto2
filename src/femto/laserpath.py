@@ -26,7 +26,7 @@ class LaserPath:
     samplesize: tuple[float, float] = (100, 50)  #: Dimensions of the sample (x `[mm]`, y `[mm]`).
     x_init: float = -2.0  #: Initial x-coordinate for the laser path `[mm]`.
     y_init: float = 0.0  #: Initial y-coordinate for the laser path `[mm]`
-    z_init: float | None = None  #: Initial z-coordinate for the laser path `[mm]`.
+    z_init: float = attrs.field(default=float('nan'))  #: Initial z-coordinate for the laser path `[mm]`.
     shrink_correction_factor: float = 1.0  #: Correcting factor for glass shrinking.
     lsafe: float = 2.0  #: Safe margin length `[mm]`.
     speed_closed: float = 5.0  #: Closed shutter translation speed `[mm/s]`.
@@ -228,21 +228,18 @@ class LaserPath:
         return np.array([])
 
     @property
-    def lastx(self) -> float | None:
+    def lastx(self) -> float:
         """Last `x` value in the trajectory points matrix, if any.
 
         Returns
         -------
-        float, optional
+        float
             The last value of the `x` array.
         """
 
         arrx = self.x
-        if arrx.size:
-            logger.debug(f'Return x-coordinate of last point: {float(arrx[-1])}.')
-            return float(arrx[-1])
-        logger.debug('x-coordinate array is empty. Return None.')
-        return None
+        logger.debug(f'Return x-coordinate of last point: {float(arrx[-1])}.')
+        return float(arrx[-1])
 
     @property
     def y(self) -> nparray:
@@ -268,21 +265,18 @@ class LaserPath:
         return np.array([])
 
     @property
-    def lasty(self) -> float | None:
+    def lasty(self) -> float:
         """Last `y` value in the trajectory points matrix, if any.
 
         Returns
         -------
-        float, optional
+        float
             The last value of the `y` array.
         """
 
         arry = self.y
-        if arry.size:
-            logger.debug(f'Return y-coordinate of last point: {float(arry[-1])}.')
-            return float(arry[-1])
-        logger.debug('y-coordinate array is empty. Return None.')
-        return None
+        logger.debug(f'Return y-coordinate of last point: {float(arry[-1])}.')
+        return float(arry[-1])
 
     @property
     def z(self) -> nparray:
@@ -308,21 +302,18 @@ class LaserPath:
         return np.array([])
 
     @property
-    def lastz(self) -> float | None:
+    def lastz(self) -> float:
         """Last `z` value in the trajectory points matrix, if any.
 
         Returns
         -------
-        float, optional
+        float
             The last value of the `z` array.
         """
 
         arrz = self.z
-        if arrz.size:
-            logger.debug(f'Return z-coordinate of last point: {float(arrz[-1])}.')
-            return float(arrz[-1])
-        logger.debug('z-coordinate array is empty. Return None.')
-        return None
+        logger.debug(f'Return z-coordinate of last point: {float(arrz[-1])}.')
+        return float(arrz[-1])
 
     @property
     def lastpt(self) -> nparray:

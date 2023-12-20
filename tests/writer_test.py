@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import functools
+import pathlib
 from contextlib import nullcontext as does_not_raise
 from pathlib import Path
 
@@ -18,6 +20,7 @@ from femto.writer import WaveguideWriter
 from femto.writer import Writer
 
 
+@functools.lru_cache
 @pytest.fixture
 def gc_param() -> dict:
     p = dict(
@@ -31,6 +34,7 @@ def gc_param() -> dict:
     return p
 
 
+@functools.lru_cache
 @pytest.fixture
 def list_wg() -> list[Waveguide]:
     PARAM_WG = dict(speed=20, radius=25, pitch=0.080, int_dist=0.007, samplesize=(25, 3))
@@ -46,6 +50,7 @@ def list_wg() -> list[Waveguide]:
     return coup
 
 
+@functools.lru_cache
 @pytest.fixture
 def list_ng() -> list[NasuWaveguide]:
     PARAM_WG = dict(speed=20, radius=25, pitch=0.080, int_dist=0.007, samplesize=(25, 3))
@@ -61,17 +66,19 @@ def list_ng() -> list[NasuWaveguide]:
     return coup
 
 
+@functools.lru_cache
 @pytest.fixture
 def list_mk() -> list[Marker]:
     PARAM_MK = dict(scan=1, speed=2, speed_pos=5, speed_closed=5, depth=0.000, lx=1, ly=1)
     markers = []
-    for (x, y) in zip(range(4, 8), range(3, 7)):
+    for x, y in zip(range(4, 8), range(3, 7)):
         m = Marker(**PARAM_MK)
         m.cross([x, y])
         markers.append(m)
     return markers
 
 
+@functools.lru_cache
 @pytest.fixture
 def list_tcol(list_wg) -> list[TrenchColumn]:
     PARAM_TC = dict(length=1.0, base_folder='', y_min=-0.1, y_max=19 * 0.08 + 0.1, u=[30.339, 32.825])
@@ -84,6 +91,7 @@ def list_tcol(list_wg) -> list[TrenchColumn]:
     return t_col
 
 
+@functools.lru_cache
 @pytest.fixture
 def list_utcol(list_wg) -> list[TrenchColumn]:
     PARAM_TC = dict(length=1.0, n_pillars=5, base_folder='', y_min=-0.1, y_max=19 * 0.08 + 0.1, u=[30.339, 32.825])
@@ -118,6 +126,24 @@ def test_writer(gc_param) -> None:
     assert pgm is None
 
 
+@pytest.mark.parametrize(
+    'attr, exp',
+    [
+        ('_param', does_not_raise()),
+        ('_ram', pytest.raises(AttributeError)),
+        ('dirname', does_not_raise()),
+        ('dirnames', pytest.raises(AttributeError)),
+        ('fab_time', pytest.raises(AttributeError)),
+        ('_fab_time', pytest.raises(AttributeError)),
+        ('_fabtime', does_not_raise()),
+    ],
+)
+def test_trench_writer_slots(gc_param, attr, exp) -> None:
+    twr = TrenchWriter(gc_param)
+    with exp:
+        setattr(twr, attr, None)
+
+
 def test_trench_writer_init(gc_param, list_tcol) -> None:
     twr = TrenchWriter(gc_param, list_tcol)
     dirname = 'TRENCH'
@@ -149,12 +175,41 @@ def test_trench_writer_init(gc_param, list_tcol) -> None:
     assert twr._export_path == expp
 
 
+def test_trench_writer_trench_list(gc_param, list_tcol) -> None:
+    twr = TrenchWriter(gc_param, objects=list_tcol)
+    t_list = [t for tcol in list_tcol for t in tcol]
+    assert twr.trench_list == t_list
+
+
+def test_trench_writer_utrench_list(gc_param, list_utcol) -> None:
+    twr = TrenchWriter(gc_param, objects=list_utcol)
+    t_list = [t for tcol in list_utcol for t in tcol]
+    assert twr.trench_list == t_list
+
+
+def test_trench_writer_bed_list(gc_param, list_tcol) -> None:
+    twr = TrenchWriter(gc_param, objects=list_tcol)
+    assert twr.beds_list == []
+
+
+def test_trench_writer_utrench_bed_list(gc_param, list_utcol) -> None:
+    twr = TrenchWriter(gc_param, objects=list_utcol)
+    b_list = [b for tcol in list_utcol for b in tcol.bed_list]
+    assert twr.beds_list == b_list
+
+
 def test_trench_writer_append_behaviour(gc_param, list_tcol) -> None:
     twr = TrenchWriter(gc_param, objects=[])
     for col in list_tcol:
         twr.add(col)
     assert twr._obj_list == list_tcol
     assert twr._trenches == flatten([tr for col in listcast(list_tcol) for tr in col])
+
+
+def test_trench_writer_fab_time(gc_param) -> None:
+    twr = TrenchWriter(gc_param, objects=[])
+    twr._fabtime = 10
+    assert twr.fab_time == 10
 
 
 def test_trench_writer_extend_behaviour(gc_param, list_tcol) -> None:
@@ -186,6 +241,12 @@ def test_trench_writer_extend_raise(gc_param, list_tcol) -> None:
         twr.add(l_t_col)
 
 
+def test_trench_writer_add_raise_type(gc_param, list_wg) -> None:
+    twr = TrenchWriter(gc_param, objects=[])
+    with pytest.raises(TypeError):
+        twr.add(list_wg)
+
+
 def test_trench_writer_plot2d(gc_param, list_tcol) -> None:
     from plotly import graph_objs as go
 
@@ -196,6 +257,10 @@ def test_trench_writer_plot2d(gc_param, list_tcol) -> None:
     del twr
 
     twr = TrenchWriter(gc_param, objects=list_tcol)
+    assert twr.plot2d() is not None
+    del twr
+
+    twr = TrenchWriter(gc_param, objects=[])
     assert twr.plot2d() is not None
     del twr
 
@@ -212,6 +277,10 @@ def test_trench_writer_plot3d(gc_param, list_tcol) -> None:
     assert twr.plot3d() is not None
     del twr
 
+    twr = TrenchWriter(gc_param, objects=[])
+    assert twr.plot3d() is not None
+    del twr
+
 
 def test_trench_writer_pgm_empty(gc_param) -> None:
     twr = TrenchWriter(gc_param, objects=[])
@@ -223,6 +292,28 @@ def test_trench_writer_pgm(gc_param, list_tcol) -> None:
     twr = TrenchWriter(gc_param, objects=list_tcol)
     twr.pgm()
 
+    assert twr._export_path.is_dir()
+    for i_col, col in enumerate(list_tcol):
+        assert (twr._export_path / f'trenchCol{i_col + 1:03}').is_dir()
+        assert (twr._export_path / f'FARCALL{i_col + 1:03}.pgm').is_file()
+        for i_tr, tr in enumerate(col):
+            assert (twr._export_path / f'trenchCol{i_col + 1:03}' / f'trench{i_tr + 1:03}_WALL.pgm').is_file()
+            (twr._export_path / f'trenchCol{i_col + 1:03}' / f'trench{i_tr + 1:03}_WALL.pgm').unlink()
+            assert (twr._export_path / f'trenchCol{i_col + 1:03}' / f'trench{i_tr + 1:03}_FLOOR.pgm').is_file()
+            (twr._export_path / f'trenchCol{i_col + 1:03}' / f'trench{i_tr + 1:03}_FLOOR.pgm').unlink()
+        (twr._export_path / f'trenchCol{i_col + 1:03}').rmdir()
+        (twr._export_path / f'FARCALL{i_col + 1:03}.pgm').unlink()
+    assert (twr._export_path / 'MAIN.pgm').is_file()
+    (twr._export_path / 'MAIN.pgm').unlink()
+    twr._export_path.rmdir()
+
+
+def test_trench_writer_pgm_custom_filename(gc_param, list_tcol) -> None:
+    twr = TrenchWriter(gc_param, objects=list_tcol)
+    old_dir = twr._export_path
+    twr.pgm(filename='trenchtest')
+
+    assert twr._export_path == old_dir / 'TRENCHTEST'
     assert twr._export_path.is_dir()
     for i_col, col in enumerate(list_tcol):
         assert (twr._export_path / f'trenchCol{i_col + 1:03}').is_dir()
@@ -398,6 +489,24 @@ def test_utrench_writer_pgm(gc_param, list_utcol) -> None:
     twr._export_path.rmdir()
 
 
+@pytest.mark.parametrize(
+    'attr, exp',
+    [
+        ('_param', does_not_raise()),
+        ('_ram', pytest.raises(AttributeError)),
+        ('dirname', does_not_raise()),
+        ('dirnames', pytest.raises(AttributeError)),
+        ('fab_time', pytest.raises(AttributeError)),
+        ('_fab_time', pytest.raises(AttributeError)),
+        ('_fabtime', does_not_raise()),
+    ],
+)
+def test_waveguide_writer_slots(gc_param, attr, exp) -> None:
+    wwr = WaveguideWriter(gc_param)
+    with exp:
+        setattr(wwr, attr, None)
+
+
 def test_waveguide_writer_init(gc_param, list_wg) -> None:
     wwr = WaveguideWriter(gc_param, objects=list_wg)
     expp = Path.cwd()
@@ -417,6 +526,12 @@ def test_waveguide_writer_init(gc_param, list_wg) -> None:
 
     assert wwr._param == dict(export_dir=dirname, **gc_param)
     assert wwr._export_path == expp
+
+
+def test_waveguide_writer_fab_time(gc_param) -> None:
+    wwr = WaveguideWriter(gc_param, objects=[])
+    wwr._fabtime = 10
+    assert wwr.fab_time == 10
 
 
 def test_waveguide_writer_append_behaviour(gc_param, list_wg) -> None:
@@ -503,6 +618,88 @@ def test_waveguide_writer_pgm_empty(gc_param) -> None:
     assert not (wwr._export_path / fp).is_file()
 
 
+def test_export_default(gc_param, list_wg) -> None:
+    import os
+
+    wwr = WaveguideWriter(gc_param, list_wg)
+    wwr.export()
+
+    fn = pathlib.Path(wwr.CWD) / wwr.export_dir / 'EXPORT' / pathlib.Path(wwr.filename).stem
+    assert fn.is_dir()
+    _, _, files = next(os.walk(fn))
+    assert len(files) == len(list_wg)
+    for f in files:
+        pathlib.Path(fn / f).unlink()
+    fn.rmdir()
+
+
+def test_export_custom_filename(gc_param, list_wg) -> None:
+    import os
+
+    filename = 'CUSTOM_FOLDER'
+    wwr = WaveguideWriter(gc_param, list_wg)
+    wwr.export(filename=filename)
+
+    fn = pathlib.Path(wwr.CWD) / wwr.export_dir / 'EXPORT' / filename
+    assert fn.is_dir()
+    _, _, files = next(os.walk(fn))
+    assert len(files) == len(list_wg)
+    for f in files:
+        pathlib.Path(fn / f).unlink()
+    fn.rmdir()
+
+
+def test_export_custom_dir(gc_param, list_wg) -> None:
+    import os
+
+    dir = 'CUSTOM_FOLDER'
+    wwr = WaveguideWriter(gc_param, list_wg)
+    wwr.export(export_root=dir)
+
+    fn = pathlib.Path(wwr.CWD) / wwr.export_dir / dir / pathlib.Path(wwr.filename).stem
+    assert fn.is_dir()
+    _, _, files = next(os.walk(fn))
+    assert len(files) == len(list_wg)
+    for f in files:
+        pathlib.Path(fn / f).unlink()
+    fn.rmdir()
+
+
+def test_export_none_dirs(gc_param, list_wg) -> None:
+    import os
+
+    dir = None
+    gc_param['export_dir'] = None
+    wwr = WaveguideWriter(gc_param, list_wg)
+    wwr.export(export_root=dir)
+
+    fn = pathlib.Path(wwr.CWD) / pathlib.Path(wwr.filename).stem
+    assert fn.is_dir()
+    _, _, files = next(os.walk(fn))
+    assert len(files) == len(list_wg)
+    for f in files:
+        pathlib.Path(fn / f).unlink()
+    fn.rmdir()
+
+
+@pytest.mark.parametrize(
+    'attr, exp',
+    [
+        ('_param', does_not_raise()),
+        ('_ram', pytest.raises(AttributeError)),
+        ('dirname', does_not_raise()),
+        ('dirnames', pytest.raises(AttributeError)),
+        ('fab_time', pytest.raises(AttributeError)),
+        ('_fab_time', pytest.raises(AttributeError)),
+        ('_fabtime', does_not_raise()),
+    ],
+)
+def test_nasu_waveguide_writer_slots(gc_param, attr, exp) -> None:
+    wwr = NasuWriter(gc_param)
+    with exp:
+        setattr(wwr, attr, None)
+
+
 def test_nasu_writer_init(gc_param, list_ng) -> None:
     wwr = NasuWriter(gc_param, objects=list_ng)
     expp = Path.cwd()
@@ -524,6 +721,12 @@ def test_nasu_writer_init(gc_param, list_ng) -> None:
     assert wwr._export_path == expp
 
 
+def test_nasu_waveguide_writer_fab_time(gc_param) -> None:
+    wwr = NasuWriter(gc_param, objects=[])
+    wwr._fabtime = 10
+    assert wwr.fab_time == 10
+
+
 def test_nasu_writer_append_behaviour(gc_param, list_ng) -> None:
     wwr = NasuWriter(gc_param)
     for wg in list_ng:
@@ -541,6 +744,12 @@ def test_nasu_writer_extend_behaviour(gc_param, list_ng) -> None:
     new_list = [*list_ng, *list_ng, list_ng[0]]
     wwr.add(new_list)
     assert wwr._obj_list == new_list
+
+
+def test_nasu_writer_objects(gc_param, list_ng) -> None:
+    wwr = NasuWriter(gc_param)
+    wwr.add(list_ng)
+    assert wwr.objs == list_ng
 
 
 @pytest.mark.parametrize(
@@ -609,6 +818,30 @@ def test_nasu_writer_pgm_empty(gc_param) -> None:
     assert not (wwr._export_path / fp).is_file()
 
 
+@pytest.mark.parametrize(
+    'attr, exp',
+    [
+        ('_param', does_not_raise()),
+        ('_ram', pytest.raises(AttributeError)),
+        ('dirname', does_not_raise()),
+        ('dirnames', pytest.raises(AttributeError)),
+        ('fab_time', pytest.raises(AttributeError)),
+        ('_fab_time', pytest.raises(AttributeError)),
+        ('_fabtime', does_not_raise()),
+    ],
+)
+def test_marker_waveguide_writer_slots(gc_param, attr, exp) -> None:
+    mwr = MarkerWriter(gc_param)
+    with exp:
+        setattr(mwr, attr, None)
+
+
+def test_marker_waveguide_writer_fab_time(gc_param) -> None:
+    wwr = MarkerWriter(gc_param, objects=[])
+    wwr._fabtime = 10
+    assert wwr.fab_time == 10
+
+
 def test_marker_writer_init(gc_param, list_mk) -> None:
     mwr = MarkerWriter(gc_param, objects=list_mk)
     expp = Path.cwd()
@@ -662,6 +895,12 @@ def test_marker_writer_extend_behaviour(gc_param, list_mk) -> None:
     assert mwr._obj_list == flatten(new_list)
 
 
+def test_marker_writer_objects(gc_param, list_mk) -> None:
+    mwr = MarkerWriter(gc_param)
+    mwr.add(list_mk)
+    assert mwr.objs == list_mk
+
+
 @pytest.mark.parametrize(
     'l_mk, expectation',
     [
@@ -684,11 +923,11 @@ def test_marker_writer_plot2d(gc_param, list_mk) -> None:
 
     fig = go.Figure()
 
-    mwr = NasuWriter(gc_param, mk_list=list_mk)
+    mwr = MarkerWriter(gc_param, objects=list_mk)
     assert mwr.plot2d(fig=fig) is not None
     del mwr
 
-    mwr = NasuWriter(gc_param, mk_list=list_mk)
+    mwr = MarkerWriter(gc_param, objects=list_mk)
     assert mwr.plot2d() is not None
     del mwr
 
@@ -698,11 +937,11 @@ def test_marker_writer_plot3d(gc_param, list_mk) -> None:
 
     fig = go.Figure()
 
-    mwr = NasuWriter(gc_param, mk_list=list_mk)
+    mwr = MarkerWriter(gc_param, objects=list_mk)
     assert mwr.plot3d(fig=fig) is not None
     del mwr
 
-    mwr = NasuWriter(gc_param, mk_list=list_mk)
+    mwr = MarkerWriter(gc_param, objects=list_mk)
     assert mwr.plot3d() is not None
     del mwr
 

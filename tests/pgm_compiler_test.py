@@ -10,6 +10,7 @@ import numpy as np
 import pytest
 from femto.helpers import flatten
 from femto.helpers import listcast
+from femto.pgmcompiler import farcall
 from femto.pgmcompiler import PGMCompiler
 from femto.pgmcompiler import sample_warp
 
@@ -83,7 +84,7 @@ def test_gcode_values(param) -> None:
     assert G.verbose is True
 
 
-def test_mk_from_dict(param) -> None:
+def test_pgm_from_dict(param) -> None:
     G = PGMCompiler.from_dict(param)
     assert G.filename == 'test.pgm'
     assert G.export_dir == 'G-Code'
@@ -99,6 +100,30 @@ def test_mk_from_dict(param) -> None:
     assert G.long_pause == float(1.0)
     assert G.short_pause == float(0.025)
     assert G.output_digits == int(6)
+    assert G.speed_pos == float(10)
+    assert G.flip_x is True
+    assert G.flip_y is False
+    assert G.minimal_gcode is True
+    assert G.verbose is True
+
+
+def test_pgm_from_dict_update(param) -> None:
+    G = PGMCompiler.from_dict(param, output_digits=9, laser='UWE', samplesize=(25, 30), long_pause=1.0)
+
+    assert G.filename == 'test.pgm'
+    assert G.export_dir == 'G-Code'
+    assert G.samplesize == (25, 30)
+    assert G.laser == 'UWE'
+    assert G.home is False
+    assert G.shift_origin == (0.0, 0.0)
+    assert G.warp_flag is False
+    assert G.n_glass == float(1.50)
+    assert G.n_environment == float(1.33)
+    assert G.rotation_angle == float(math.radians(1.0))
+    assert G.aerotech_angle == float(0.0)
+    assert G.long_pause == float(1.0)
+    assert G.short_pause == float(0.025)
+    assert G.output_digits == int(9)
     assert G.speed_pos == float(10)
     assert G.flip_x is True
     assert G.flip_y is False
@@ -152,6 +177,57 @@ def test_enter_exit_method_default(param) -> None:
     file = fold / param['filename']
     file.unlink()
     fold.rmdir()
+
+
+def test_enter_exit_method_verbose() -> None:
+    p = dict(
+        filename='testPGM.pgm',
+        n_glass=1.5,
+        n_environment=1.33,
+        laser='ant',
+        samplesize=(25, 25),
+        home=True,
+        aerotech_angle=2.0,
+        rotation_angle=1.0,
+        flip_x=True,
+        verbose=False,
+    )
+    with PGMCompiler(**p) as G:
+        print(G._instructions)
+        assert G._instructions == deque(
+            [
+                '; SETUP ANT - DIAMOND LAB\n',
+                '\n',
+                'ENABLE X Y Z\n',
+                'PSOCONTROL Z RESET\n',
+                'PSOOUTPUT Z CONTROL 0 1\n',
+                'PSOCONTROL Z OFF\n',
+                '\n',
+                'G71     ; DISTANCE UNITS: METRIC\n',
+                'G76     ; TIME UNITS: SECONDS\n',
+                'G90     ; ABSOLUTE MODE\n',
+                'G359    ; WAIT MODE NOWAIT\n',
+                'G108    ; VELOCITY ON\n',
+                'G17     ; ROTATIONS IN XY PLANE\n',
+                '\n',
+                '; NSCOPETRIG\n',
+                '; MSGCLEAR -1\n',
+                '\n',
+                'G4 P1.0 ; DWELL\n',
+                '\n',
+                '\n; ACTIVATE AXIS ROTATION\n',
+                'G1 X0.000000 Y0.000000 Z0.000000 F5.000000\n',
+                'G84 X Y\n',
+                'G4 P0.05 ; DWELL\n',
+                'G84 X Y F2.0\n\n',
+                'G4 P0.05 ; DWELL\n',
+            ]
+        )
+    assert G._instructions == deque([])
+
+    file = Path('.') / p['filename']
+    assert file.is_file()
+    file.unlink()
 
 
 def test_enter_exit_method() -> None:
@@ -352,6 +428,12 @@ def test_antiwarp_error(param, samplesize, expectation) -> None:
         function_pickle.unlink()
 
 
+def test_antiwarp_pos_file_error(param) -> None:
+    G = PGMCompiler(**param)
+    with pytest.raises(FileNotFoundError):
+        assert G.warp_management(opt=True)
+
+
 @pytest.mark.parametrize('x, y', [(4, 5), (2, 4), (5, 2), (5, 0), (5, 3), (7, 7), (7, 0), (10, 5), (6, 10), (0, 5)])
 def test_fwarp_load(param, x, y) -> None:
     G = PGMCompiler(**param)
@@ -390,6 +472,28 @@ def test_antiwarp_creation(param) -> None:
     assert callable(G_fun)
     assert funpath.is_file()
     funpath.unlink()
+    pospath.unlink()
+
+
+def test_antiwarp_plot(param) -> None:
+    from pathlib import Path
+    import matplotlib.pyplot as plt
+
+    fn = 'POS.txt'
+    pospath = Path.cwd() / fn
+
+    x_in = np.linspace(0, 100, 50)
+    y_in = np.linspace(0, 25, 10)
+    X, Y = np.meshgrid(x_in, y_in)
+    z_in = np.random.uniform(-0.030, 0.030, X.shape)
+
+    M = np.stack([X.ravel(), Y.ravel(), z_in.ravel()], axis=-1)
+    np.savetxt(fn, M, fmt='%.6f', delimiter=' ')
+
+    G = PGMCompiler(**param)
+    G.warp_generation(pospath, show=True)
+    plt.close('all')
+    assert True  # the plot is closed safely
     pospath.unlink()
 
 
@@ -1307,6 +1411,24 @@ def test_write(param, pts, expected) -> None:
 
 
 @pytest.mark.parametrize(
+    'pts, exp',
+    [
+        (np.array([]), 0),
+        (np.random.rand(67, 2).T, 0),
+        (np.random.rand(69, 3).T, 0),
+        (np.random.rand(67, 5).T, 69),  # +2 for final pause and '\n' instruction
+        (np.random.rand(167, 5).T, 169),  # +2 for final pause and '\n' instruction
+        (np.random.rand(10, 6).T, 0),
+        (np.random.rand(10, 11).T, 0),
+    ],
+)
+def test_write_raise(param, pts, exp) -> None:
+    G = PGMCompiler(**param)
+    G.write(pts)
+    assert len(G._instructions) == exp
+
+
+@pytest.mark.parametrize(
     'list_instr, expected',
     [
         (
@@ -1377,3 +1499,35 @@ def test_close_dir(param) -> None:
 
     file.unlink()
     dire.rmdir()
+
+
+def test_pgm_farcall_empty_external_files(param) -> None:
+    dir = Path('./dir/')
+    dir.mkdir(parents=True, exist_ok=True)
+    farcall_file = dir / 'FARCALL.pgm'
+    assert dir.is_dir()
+    farcall(directory=dir, parameters=param)
+    assert not farcall_file.is_file()
+    dir.rmdir()
+
+
+def test_pgm_farcall_external_files(param) -> None:
+    dir = Path('./dir/')
+    dir.mkdir(parents=True, exist_ok=True)
+    farcall_file = dir / 'FARCALL.pgm'
+
+    with PGMCompiler.from_dict(param, filename='test1', export_dir='dir') as G:
+        G.write(np.random.rand(90, 3))
+    with PGMCompiler.from_dict(param, filename='test2', export_dir='dir') as G:
+        G.write(np.random.rand(90, 3))
+    with PGMCompiler.from_dict(param, filename='test3', export_dir='dir') as G:
+        G.write(np.random.rand(90, 3))
+
+    assert dir.is_dir()
+    farcall(directory=dir, parameters=param)
+    assert farcall_file.is_file()
+    Path('./dir/test1.pgm').unlink()
+    Path('./dir/test2.pgm').unlink()
+    Path('./dir/test3.pgm').unlink()
+    Path('./dir/FARCALL.pgm').unlink()
+    dir.rmdir()

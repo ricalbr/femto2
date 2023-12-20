@@ -207,6 +207,8 @@ class Writer(PGMCompiler, abc.ABC):
     etc.) and provides methods to append objects, plot and export them as .pgm files.
     """
 
+    __slots__ = ()
+
     @property
     @abc.abstractmethod
     def objs(self) -> list[Any]:
@@ -314,13 +316,15 @@ class Writer(PGMCompiler, abc.ABC):
         """
 
     @abc.abstractmethod
-    def pgm(self, verbose: bool = False) -> None:
+    def pgm(self, filename: str | None = None, verbose: bool = False) -> None:
         """Export to PGM file.
 
         Abstract method for exporting the objects stored in Writer object as PGM file.
 
         Parameters
         ----------
+        filename: str, optional
+            Name of the .pgm file. The default value is ``self.filename``.
         verbose : bool, optional
             Boolean flag, if ``True`` some information about the exporting procedures are printed. The default value is
             ``False``.
@@ -343,28 +347,29 @@ class Writer(PGMCompiler, abc.ABC):
         )
 
     def export(
-        self,
-        filename: str | pathlib.Path | None = None,
-        export_path: str | pathlib.Path | None = None,
-        export_dir: str | pathlib.Path = 'EXPORT',
+        self, filename: str | pathlib.Path | None = None, export_root: str | pathlib.Path | None = 'EXPORT'
     ) -> None:
-        """Export Nasu Waveguide objects.
+        """Export objects.
 
-        The export the list of Nasu Waveguide objects into a pickle file. The objects are exported in an ``EXPORT``
-        directory.
+        The export the list of objects into a pickle file.
 
-        export_dir: str, optional
-            Name of the directory inside which export objects.
+        filename: str | pathlib.Path, optional
+            Optional name of the final directory into which export objects, useful to export various Cell objects
+            with different filenames in the same ``export_path`` folder. The default value is the ``filename``
+            attribute of the Writer object.
+
+        export_root: str | pathlib.Path, optional
+            Name of the directory inside which export objects. The objects are exported in an ``EXPORT`` directory by
+            default. If the export path is ``None``, the export path will be the current working directory.
 
         Returns
         -------
-            None
+        None
         """
 
-        fn = filename if filename is not None else self.filename
-        exp_p = self.CWD if export_path is None else export_dir
-
-        filepath = pathlib.Path(exp_p) / export_dir / pathlib.Path(fn).stem
+        filepath = (
+            self.CWD / (self.export_dir or '') / (export_root or '') / pathlib.Path(filename or self.filename).stem
+        )
         filepath.mkdir(exist_ok=True, parents=True)
 
         for i, el in enumerate(self.objs):
@@ -376,6 +381,8 @@ class Writer(PGMCompiler, abc.ABC):
 class TrenchWriter(Writer):
     """Trench Writer class."""
 
+    __slots__ = ('dirname', '_obj_list', '_trenches', '_beds', '_param', '_export_path', '_fabtime')
+
     def __init__(
         self,
         param: dict[str, Any],
@@ -383,7 +390,6 @@ class TrenchWriter(Writer):
         dirname: str = 'TRENCH',
         **kwargs: Any | None,
     ) -> None:
-
         p = copy.deepcopy(param)
         p.update(kwargs)
 
@@ -549,7 +555,7 @@ class TrenchWriter(Writer):
         fig = plot3d_base_layer(fig)  # Add glass, shift_origin and axis elements
         return fig
 
-    def pgm(self, verbose: bool = False) -> None:
+    def pgm(self, filename: str | None = None, verbose: bool = False) -> None:
         """Export to PGM file.
 
         Function for the compilation of TrenchColumn objects.
@@ -559,6 +565,8 @@ class TrenchWriter(Writer):
 
         Parameters
         ----------
+        filename: str, optional
+            Name of the .pgm file. The default value is ``self.filename``.
         verbose : bool, optional
             Boolean flag, if ``True`` some information about the exporting procedures are printed. The default value is
             ``False``.
@@ -575,6 +583,9 @@ class TrenchWriter(Writer):
         if not self._obj_list:
             logger.debug('No object in current writer, no PGM file created.')
             return None
+
+        if filename is not None:
+            self._export_path = self._export_path / filename.upper()
 
         # Export each Trench for each TrenchColumn
         for i_col, col in enumerate(self._obj_list):
@@ -661,7 +672,7 @@ class TrenchWriter(Writer):
         ]
 
         gcode_instr = []
-        for (line, dec) in itertools.zip_longest(instr, listcast(forced_deceleration)):
+        for line, dec in itertools.zip_longest(instr, listcast(forced_deceleration)):
             if bool(dec):
                 gcode_instr.append(f'G9 G1 {line}\n')
             else:
@@ -926,8 +937,6 @@ class TrenchWriter(Writer):
             style = dict()
         default_utcargs = {'dash': 'solid', 'color': '#000000', 'width': 1.5}
         utcargs = {**default_utcargs, **style}
-        default_tcargs = {'dash': 'solid', 'color': '#000000', 'width': 1.5}
-        {**default_tcargs, **style}
 
         if not self._trenches:
             return fig
@@ -1058,8 +1067,9 @@ class TrenchWriter(Writer):
 class WaveguideWriter(Writer):
     """Waveguide Writer class."""
 
-    def __init__(self, param: dict[str, Any], objects: list[Waveguide] | None = None, **kwargs: Any | None) -> None:
+    __slots__ = ('dirname', '_obj_list', '_param', '_export_path', '_fabtime')
 
+    def __init__(self, param: dict[str, Any], objects: list[Waveguide] | None = None, **kwargs: Any | None) -> None:
         p = copy.deepcopy(param)
         p.update(kwargs)
 
@@ -1192,7 +1202,7 @@ class WaveguideWriter(Writer):
         fig = plot3d_base_layer(fig)  # Add glass, shift_origin and axis elements
         return fig
 
-    def pgm(self, verbose: bool = False) -> None:
+    def pgm(self, filename: str | None = None, verbose: bool = False) -> None:
         """Export to PGM file.
 
         Function for the compilation of Waveguide objects. The function produces a *single file* containing all the
@@ -1200,7 +1210,9 @@ class WaveguideWriter(Writer):
 
         Parameters
         ----------
-        verbose : bool, optional
+        filename: str, optional
+            Name of the .pgm file. The default value is ``self.filename``.
+        verbose: bool, optional
             Boolean flag, if ``True`` some information about the exporting procedures are printed. The default value is
             ``False``.
 
@@ -1208,7 +1220,7 @@ class WaveguideWriter(Writer):
         -------
         None.
 
-        See Als*o
+        See Also
         --------
         ``femto.pgmcompiler.PGMCompiler`` : class that convert lists of points to PGM file.
         """
@@ -1218,7 +1230,8 @@ class WaveguideWriter(Writer):
             return
 
         _wg_fab_time = 0.0
-        fn = pathlib.Path(self.filename).stem + '_WG.pgm'
+        fn = self.filename if filename is None else filename
+        fn = pathlib.Path(fn).stem + '_WG.pgm'
 
         with PGMCompiler.from_dict(self._param, filename=fn, verbose=verbose) as G:
             with G.repeat(listcast(self.objs)[0].scan):
@@ -1389,8 +1402,9 @@ class WaveguideWriter(Writer):
 class NasuWriter(Writer):
     """NasuWaveguide Writer class."""
 
-    def __init__(self, param: dict[str, Any], objects: list[NasuWaveguide] | None = None, **kwargs: Any | None) -> None:
+    __slots__ = ('dirname', '_obj_list', '_param', '_export_path', '_fabtime')
 
+    def __init__(self, param: dict[str, Any], objects: list[NasuWaveguide] | None = None, **kwargs: Any | None) -> None:
         p = copy.deepcopy(param)
         p.update(kwargs)
 
@@ -1522,7 +1536,7 @@ class NasuWriter(Writer):
         fig = plot3d_base_layer(fig)  # Add glass, shift_origin and axis elements
         return fig
 
-    def pgm(self, verbose: bool = False) -> None:
+    def pgm(self, filename: str | None = None, verbose: bool = False) -> None:
         """Export to PGM file.
 
         Function for the compilation of NasuWaveguide objects. The function produces a *single file* containing all the
@@ -1530,6 +1544,8 @@ class NasuWriter(Writer):
 
         Parameters
         ----------
+        filename: str, optional
+            Name of the .pgm file. The default value is ``self.filename``.
         verbose : bool, optional
             Boolean flag, if ``True`` some information about the exporting procedures are printed. The default value is
             ``False``.
@@ -1548,7 +1564,8 @@ class NasuWriter(Writer):
             return
 
         _nwg_fab_time = 0.0
-        fn = pathlib.Path(self.filename).stem + '_NASU.pgm'
+        fn = self.filename if filename is None else filename
+        fn = pathlib.Path(fn).stem + '_NASU.pgm'
 
         with PGMCompiler.from_dict(self._param, filename=fn, verbose=verbose) as G:
             for nwg in self._obj_list:
@@ -1721,8 +1738,9 @@ class NasuWriter(Writer):
 class MarkerWriter(Writer):
     """Marker Writer class."""
 
-    def __init__(self, param: dict[str, Any], objects: list[Marker] | None = None, **kwargs: Any | None) -> None:
+    __slots__ = ('dirname', '_obj_list', '_param', '_export_path', '_fabtime')
 
+    def __init__(self, param: dict[str, Any], objects: list[Marker] | None = None, **kwargs: Any | None) -> None:
         p = copy.deepcopy(param)
         p.update(kwargs)
 
@@ -1853,7 +1871,7 @@ class MarkerWriter(Writer):
         fig = plot3d_base_layer(fig)  # Add glass, shift_origin and axis elements
         return fig
 
-    def pgm(self, verbose: bool = False) -> None:
+    def pgm(self, filename: str | None = None, verbose: bool = False) -> None:
         """Export to PGM file.
 
         Function for the compilation of Marker objects. The function produces a *single file* containing all the
@@ -1861,6 +1879,8 @@ class MarkerWriter(Writer):
 
         Parameters
         ----------
+        filename: str, optional
+            Name of the .pgm file. The default value is ``self.filename``.
         verbose : bool, optional
             Boolean flag, if ``True`` some information about the exporting procedures are printed. The default value is
             ``False``.
@@ -1879,7 +1899,8 @@ class MarkerWriter(Writer):
             return
 
         _mk_fab_time = 0.0
-        fn = pathlib.Path(self.filename).stem + '_MK.pgm'
+        fn = self.filename if filename is None else filename
+        fn = pathlib.Path(fn).stem + '_MK.pgm'
 
         with PGMCompiler.from_dict(self._param, filename=fn, verbose=verbose) as G:
             for idx, mk in enumerate(flatten(self._obj_list)):
@@ -1930,9 +1951,9 @@ class MarkerWriter(Writer):
         mk_args = {**default_mkargs, **style}
 
         logger.debug('Add marker trace to figure.')
-        for mk in listcast(flatten(self._obj_list)):
-            x_wg, y_wg, z_wg, _, s = mk.points
-            x, y, z = self.transform_points(x_wg, y_wg, z_wg)
+        for mk in self._obj_list:
+            x_mk, y_mk, z_mk, _, s = mk.points
+            x, y, z = self.transform_points(x_mk, y_mk, z_mk)
             xo = split_mask(x, s.astype(bool))
             yo = split_mask(y, s.astype(bool))
             [
@@ -1980,9 +2001,9 @@ class MarkerWriter(Writer):
         mk_args = {**default_mkargs, **style}
 
         logger.debug('Add marker trace to figure.')
-        for mk in listcast(flatten(self._obj_list)):
-            x_wg, y_wg, z_wg, _, s = mk.points
-            x, y, z = self.transform_points(x_wg, y_wg, z_wg)
+        for mk in self._obj_list:
+            x_mk, y_mk, z_mk, _, s = mk.points
+            x, y, z = self.transform_points(x_mk, y_mk, z_mk)
             xo = split_mask(x, s.astype(bool))
             yo = split_mask(y, s.astype(bool))
             zo = split_mask(z, s.astype(bool))
