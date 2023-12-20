@@ -239,11 +239,11 @@ class Trench:
 
             # Distinguish concave / biconcave
             if d_upper <= buffer_length or d_lower <= buffer_length:
-                n_turns = int((d_upper + d_lower) / self.delta_floor) + self.safe_inner_turns
+                n_turns = math.ceil((d_upper + d_lower) / self.delta_floor) + self.safe_inner_turns
             else:
-                n_turns = int((d_upper + d_lower) / (2 * self.delta_floor)) + self.safe_inner_turns
+                n_turns = math.ceil((d_upper + d_lower) / (2 * self.delta_floor)) + self.safe_inner_turns
             logger.debug(f'The number of spiral turns is {n_turns}.')
-            return n_turns
+            return int(n_turns)
 
     def zigzag_mask(self) -> geometry.MultiLineString:
         """Zig-zag mask.
@@ -817,7 +817,6 @@ class TrenchColumn:
         for index in sorted(listcast(remove), reverse=True):
             del self._trench_list[index]
 
-        # TODO: test with n_pillars = None
         if self.n_pillars is not None:
             self.define_trench_bed(int(self.n_pillars))
 
@@ -849,7 +848,7 @@ def main() -> None:
     # b = T._trench_list[0]
     # b = T._trenchbed[0]
     for tr in utc.trench_list:
-        for (x, y) in tr.toolpath():
+        for x, y in tr.toolpath():
             plt.plot(x, y)
 
     plt.axis('equal')

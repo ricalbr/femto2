@@ -47,7 +47,7 @@ def list_wg() -> list[Waveguide]:
 def list_mk() -> list[Marker]:
     PARAM_MK = dict(scan=1, speed=2, speed_pos=5, speed_closed=5, depth=0.000, lx=1, ly=1)
     markers = []
-    for (x, y) in zip(range(4, 8), range(3, 7)):
+    for x, y in zip(range(4, 8), range(3, 7)):
         m = Marker(**PARAM_MK)
         m.cross([x, y])
         markers.append(m)
@@ -310,7 +310,6 @@ def test_generate_all_cols_with_newcols(all_cols):
     ],
 )
 def test_new_col_wrong_format(ncol):
-
     with pytest.raises(ValueError):
         Spreadsheet(new_columns=ncol)
 
@@ -329,6 +328,20 @@ def test_write_empty(ss_param, structures):
         info, numdata = S._extract_data(structures)
     assert info == []
     assert numdata.size == 0
+    (dot_path / 'custom_book_name.xlsx').unlink()
+
+
+def test_write_ignore_cols(ss_param, list_wg):
+    with Spreadsheet(**ss_param, redundant_cols=True) as S:
+        info, numdata = S._extract_data(list_wg)
+
+    for row in range(numdata.size):
+        for elem in numdata[row]:
+            if isinstance(elem, str):
+                continue
+            else:
+                assert elem < 1.1e5
+
     (dot_path / 'custom_book_name.xlsx').unlink()
 
 

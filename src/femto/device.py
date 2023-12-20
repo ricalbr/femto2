@@ -38,7 +38,7 @@ types = dict(
     TR=Trench,
     TC=TrenchColumn,
 )
-femtobj = Union[Waveguide, NasuWaveguide, Marker, Trench, TrenchColumn]
+femto_objects = Union[Waveguide, NasuWaveguide, Marker, Trench, TrenchColumn]
 
 writers = {
     TrenchColumn: TrenchWriter,
@@ -50,12 +50,18 @@ writers = {
 
 @attrs.define(kw_only=True, repr=False)
 class Cell:
-    """Cell object."""
+    """Cell object.
 
-    name: str = 'base'
-    description: str | None = None
+    Class representing a Cell objects, a container for femto objects within a Device object.
+    """
 
-    _objs: dict[type[femtobj], list[femtobj]] = attrs.field(alias='_objs', factory=dict)
+    name: str = 'base'  #: Name of the Cell objects. The default value is ``base``.
+    description: str | None = None  #: Description of the content of the Cell.
+
+    _objs: dict[type[femto_objects], list[femto_objects]] = attrs.field(
+        alias='_objs',
+        factory=dict,
+    )  #: Collection of femto objects in the current Cell.
 
     def __attrs_post_init__(self) -> None:
         self._objs = {
@@ -66,14 +72,22 @@ class Cell:
         }
         self.name = self.name.lower()
         if ' ' in self.name:
-            self.name = self.name.replace(' ', '-')
-        logger.info(f'Cell {self.name.replace("-", " ").upper()}.')
+            self.name = self.name.strip().replace(' ', '-')
+        logger.info(f'Init Cell {self.name.upper()}.')
 
     def __repr__(self) -> str:
         return f'Cell {self.name}'
 
     @property
     def objects(self) -> dict[type[Any], list[Any]]:
+        """Objects.
+
+        Returns
+        -------
+        dict[type[femto_objects], list[femto_objects]]
+            Returns the dictionary of femto objects contained in the current Cell. The keys of the dictionary are the
+            type of the objects and the values are the actual instances of objects.
+        """
         return self._objs
 
     def parse_objects(self, unparsed_objects: Any | list[Any]) -> None:
@@ -90,7 +104,7 @@ class Cell:
 
         Returns
         -------
-        None
+        None.
         """
 
         # split the unparsed_object list based on the type of each element
@@ -108,8 +122,21 @@ class Cell:
                 logger.error(f'Found unexpected type {err.args}.')
                 raise TypeError(f'Found unexpected type {err.args}.')
 
-    def add(self, objs: femtobj | tuple[femtobj] | list[femtobj]) -> None:
-        if all(isinstance(obj, get_args(femtobj)) for obj in flatten([objs])):
+    def add(self, objs: femto_objects | tuple[femto_objects] | list[femto_objects]) -> None:
+        """Add.
+
+        The method allows to add to the current Cell either femto objects or lists containing femto objects.
+
+        Parameters
+        ----------
+        objs: femto_objects | tuple[femto_objects] | list[femto_objects]
+            Objects, tuple of objects or list of objects that will be added to the current Cell.
+
+        Returns
+        -------
+        None.
+        """
+        if all(isinstance(obj, get_args(femto_objects)) for obj in flatten([objs])):
             self.parse_objects(objs)
         else:
             logger.error(
@@ -121,8 +148,8 @@ class Cell:
 
 
 class Device:
-    def __init__(self, **param: dict[str, Any]) -> None:
-        self.cells: dict[str, Cell] = dict()
+    def __init__(self, **param: Any | None) -> None:
+        self.cells_collection: dict[str, Cell] = collections.defaultdict(Cell)
         self.fig: go.Figure | None = None
         self.fabrication_time: float = 0.0
 
@@ -140,7 +167,7 @@ class Device:
 
         Parameters
         ----------
-        param: dict()
+        param: dict
            Dictionary mapping values to class attributes.
         kwargs: optional
            Series of keyword arguments that will be used to update the param file before the instantiation of the
@@ -150,6 +177,7 @@ class Device:
         -------
         Instance of class.
         """
+
         # Update parameters with kwargs
         p = copy.deepcopy(param)
         if kwargs:
@@ -158,12 +186,40 @@ class Device:
         logger.debug(f'Create {cls.__name__} object from dictionary.')
         return cls(**p)
 
-    def add(self, objs: Cell | list[Cell] | femtobj | list[femtobj]) -> None:
+    @property
+    def keys(self) -> list[str]:
+        """Cells keys.
+
+        Returns
+        -------
+        list[str]
+            Return the list of cell's keys added to current device.
+        """
+        return list(self.cells_collection.keys())
+
+    def add(self, objs: Cell | list[Cell] | femto_objects | list[femto_objects]) -> None:
+        """Add.
+
+        The method allows to add to the current Cell either femto objects, cells or lists of both.
+        If a cell is given, it is added to the ``self.cells_collection`` dictionary, if femto objects (or lists of femto
+        objects) are given these structures will be first added to a common cell (named ``base``) and then the
+        ``base`` cell is added to the cell dictionary.
+        If a ``base`` cell is already present, the objects will be simply added to it.
+
+        Parameters
+        ----------
+        objs: femto_objects | Cell | list[femto_objects] | list[Cell]
+            Objects, tuple of objects or list of objects that will be added to the current Cell.
+
+        Returns
+        -------
+        None.
+        """
         objs = flatten([objs])
         for elem in objs:
             if isinstance(elem, Cell):
                 self.add_cell(elem)
-            elif isinstance(elem, get_args(femtobj)):
+            elif isinstance(elem, get_args(femto_objects)):
                 if self._print_base_cell_warning:
                     logger.warning('femto objects added straight to a Device will be added to a common layer: BASE.')
                     self._print_base_cell_warning = False
@@ -173,18 +229,56 @@ class Device:
                     'Objects can only be Cells or other femto objects (Waveguide, Markers, etc.). '
                     f'Given {type(elem)}.'
                 )
-                raise ValueError(
+                raise TypeError(
                     'Objects can only be Cells or other femto objects (Waveguide, Markers, etc.). '
                     f'Given {type(elem)}.'
                 )
 
     def add_cell(self, cell: Cell) -> None:
-        if cell.name.lower() in self.cells:
-            logger.error(f'Cell ID "{cell.name}" already present in layer  dict, give another value.')
-            raise ValueError(f'Cell ID "{cell.name}" already present in layer  dict, give another value.')
-        self.cells[cell.name] = cell
+        """Add cell.
 
-    def add_to_cell(self, key: str, obj: femtobj | list[femtobj]) -> None:
+        The method adds a cell to the current Device. First it checks a Cell with the same name is not present in the
+        cell list, and eventually it adds it to the Device. If already present an error is thrown.
+
+        Parameters
+        ----------
+        cell: Cell
+            Cell to add to the current Device.
+
+        Returns
+        -------
+        None.
+
+        Raises
+        ------
+        ValueError for cells with the same name.
+        """
+        if cell.name.lower() in self.cells_collection:
+            logger.error(f'Cell ID "{cell.name}" already present in layer  dict, give another value.')
+            raise KeyError(f'Cell ID "{cell.name}" already present in layer  dict, give another value.')
+        self.cells_collection[cell.name] = cell
+
+    def remove_cell(self, cell: Cell) -> None:
+        """Remove cell.
+
+        The method removes a cell to the current Device. First it checks a Cell with the same name is present in the
+        cell list, and eventually it removes it from the Device.
+
+        Parameters
+        ----------
+        cell: Cell
+            Cell to add to the current Device.
+
+        Returns
+        -------
+        None.
+        """
+        if cell.name.lower() not in self.cells_collection:
+            logger.error(f'Cell ID "{cell.name}" not present in layer  dict, give another value.')
+            raise KeyError(f'Cell ID "{cell.name}" not present in layer  dict, give another value.')
+        del self.cells_collection[cell.name]
+
+    def add_to_cell(self, key: str, obj: femto_objects | list[femto_objects]) -> None:
         """Adds a femto object to a the cell.
 
         Parameters
@@ -196,20 +290,38 @@ class Device:
 
         Returns
         -------
-        None
+        None.
         """
         key = key.lower()
-        if key not in self.cells.keys():
-            self.cells[key] = Cell(name=key)
-        self.cells[key].add(obj)
+        if key not in self.cells_collection.keys():
+            self.cells_collection[key] = Cell(name=key)
+        self.cells_collection[key].add(obj)
 
     def plot2d(self, show: bool = True, save: bool = False, show_shutter_close: bool = True) -> None:
+        """Plot 2D.
+
+        2D plot of all the objects stored in the ``Device`` class.
+        The plot is made cell-by-cell.
+
+        Parameters
+        ----------
+        show : bool, optional
+            Boolean flag to automatically show the plot. The default value is True.
+        save : bool, optional
+            Boolean flag to automatically save the plot. The default value is False.
+        show_shutter_close: bool, optional
+            Boolean flag to automatically show the parts written with the shutter closed. The default value is True.
+
+        Returns
+        -------
+        None.
+        """
         logger.info('Plotting 2D objects...')
         self.fig = go.Figure()
-        for layer in self.cells.values():
-            logger.debug(f'2D plot of layer {layer}.')
+        for cell in self.cells_collection.values():
+            logger.debug(f'2D plot of cell {cell.name.upper()}.')
             wrs = writers
-            for typ, list_objs in layer.objects.items():
+            for typ, list_objs in cell.objects.items():
                 wr = wrs[typ](self._param, objects=list_objs)
                 self.fig = wr.plot2d(fig=self.fig, show_shutter_close=show_shutter_close)
         x0, y0, x1, y1 = writers[Waveguide](self._param)._get_glass_borders()
@@ -222,12 +334,30 @@ class Device:
             self.save()
 
     def plot3d(self, show: bool = True, save: bool = False, show_shutter_close: bool = True) -> None:
+        """Plot 3D.
+
+        3D plot of all the objects stored in the ``Device`` class.
+        The plot is made cell-by-cell.
+
+        Parameters
+        ----------
+        show : bool, optional
+            Boolean flag to automatically show the plot. The default value is True.
+        save : bool, optional
+            Boolean flag to automatically save the plot. The default value is False.
+        show_shutter_close: bool, optional
+            Boolean flag to automatically show the parts written with the shutter closed. The default value is True.
+
+        Returns
+        -------
+        None.
+        """
         logger.info('Plotting 3D objects...')
         self.fig = go.Figure()
-        for layer in self.cells.values():
-            logger.debug(f'3D plot of layer {layer}.')
+        for cell in self.cells_collection.values():
+            logger.debug(f'3D plot of cell {cell.name.upper()}.')
             wrs = writers
-            for typ, list_objs in layer.objects.items():
+            for typ, list_objs in cell.objects.items():
                 wr = wrs[typ](self._param, objects=list_objs)
                 self.fig = wr.plot3d(fig=self.fig, show_shutter_close=show_shutter_close)
         self.fig = plot3d_base_layer(self.fig)
@@ -274,18 +404,40 @@ class Device:
         logger.info(f'Plot saved to "{fn}".')
 
     def pgm(self, verbose: bool = False) -> None:
-        for layer in self.cells.values():
-            logger.debug(f'Compile G-Code of {layer} layer.')
+        """Produce PGM file.
+
+        Create a PGM file for all the objects stored in ``Device``.
+        The files are stored in folders cell-wise. The name of each folder is the same of the attribute of the
+        ``Cell`` object.
+
+        Parameters
+        ----------
+        verbose : bool, optional
+            Boolean flag to print informations during the export operation.
+
+        Returns
+        -------
+        None.
+        """
+        for cell in self.cells_collection.values():
+            logger.info(f'Generate G-Code of cell: {cell.name.upper()}.')
             wrs = writers
-            for typ, list_objs in layer.objects.items():
+            for typ, list_objs in cell.objects.items():
                 wr = wrs[typ](self._param, objects=list_objs)
-                wr.pgm(verbose=verbose)
+                if cell.name.lower() == 'base' and len(self.cells_collection) == 1:
+                    # objects are only stored in BASE Cell, they are exported with self.filename.
+                    wr.pgm(filename=None, verbose=verbose)
+                else:
+                    # othterwise save the objects stored in Cell with the Cell's name.
+                    wr.pgm(filename=cell.name.upper(), verbose=verbose)
                 self.fabrication_time += wr.fab_time
 
     def export(self, export_dir: str = 'EXPORT') -> None:
-        """Export objects to pickle files.
+        """Export objects as pickle files.
 
         Export all the objects stored in ``Device`` class as a `pickle` file.
+        The files are stored in folders cell-wise. The name of each folder is the same of the attribute of the
+        ``Cell`` object.
 
         Parameters
         ----------
@@ -294,73 +446,78 @@ class Device:
 
         Returns
         -------
-        None
+        None.
         """
-
         logger.info('Exporting layer objects...')
-        for layer in self.cells.values():
+        for cell in self.cells_collection.values():
             wrs = writers
-            for typ, list_objs in layer.objects.items():
+            for typ, list_objs in cell.objects.items():
                 wr = wrs[typ](self._param, objects=list_objs)
-                wr.export(filename=layer.name.upper(), export_dir=export_dir)
+                wr.export(filename=cell.name.upper(), export_root=export_dir)
         logger.info('Export completed.')
 
     def xlsx(self, metadata: dict[str, Any] | None = None, **kwargs: Any) -> None:
         """Generate the spreadsheet.
 
         Add all waveguides and markers of the ``Device`` to the spreadsheet.
+
+        Parameters
+        ----------
+        metadata: dict[str, Any]
+            Dictionary containing all of the metadata for the Spreadsheet file (e.g. fabrication info, etc.)
+
+        Returns
+        -------
+        None.
         """
 
         # Case in which metadata is given as keyword argument, use it for the Spreadsheet generation
-        if 'metadata' in kwargs.keys():
-            mdata = kwargs.pop('metadata')
-            print(mdata)
-        elif not metadata:
-            mdata = {
+        if not metadata:
+            metadata = {
                 'laser_name': self._param.get('laser') or '',
                 'sample_name': pathlib.Path(self._param.get('filename') or '').stem,
             }
-        else:
-            mdata = metadata
 
         # Fetch all objects from writers
         objs: list[Waveguide | NasuWaveguide] = []
-        for layer in self.cells.values():
+        for layer in self.cells_collection.values():
             objs.extend(layer.objects[Waveguide])
             objs.extend(layer.objects[NasuWaveguide])
 
         # Generate Spreadsheet
         logger.info('Generating spreadsheet...')
-        with Spreadsheet(**kwargs, metadata=mdata) as S:
+        with Spreadsheet(**kwargs, metadata=metadata) as S:
             S.write(objs)
         logger.info('Excel file created.')
 
-    @staticmethod
+    @classmethod
     def load_objects(
-        folder: str | pathlib.Path, param: dict[str, Any], level: int = 1, verbose: bool = False
+        cls, folder: str | pathlib.Path, param: dict[str, Any], level: int = 1, verbose: bool = False
     ) -> Device:
-        """
-        The load_objects method loads the objects from a folder.
+        """Load objects.
+
+        The load_objects method loads the objects from a folder and create a ``Device`` containing those objects.
+        The files are loaded and added to the Device within a Cell named after the directory of containing the objects.
 
         Parameters
         ----------
-            folder: str | pathlib.Path
-                Specify the folder where the objects are stored.
-            param: dict
-                Pass a dictionary of parameters to the load_objects function.
-            level: int, optional
-                Depth level of the directory/file tree for loading files. The default value is 1. ``level=0`` does
-                not return anythin, ``level=-1`` traverse all of the subdirectories inside the ``folder``.
-            verbose: bool, optional
-                Flag for printing the progress of the loading process. The default values is False.
+        folder: str | pathlib.Path
+            Specify the folder where the objects are stored.
+        param: dict
+            Pass a dictionary of parameters to the load_objects function.
+        level: int, optional
+            Depth level of the directory/file tree for loading files. The default value is 1. ``level=0`` does not
+            return anythin, ``level=-1`` traverse all of the subdirectories inside the ``folder``.
+        verbose: bool, optional
+            Flag for printing the progress of the loading process. The default values is False.
 
         Returns
         -------
-
-            A list of objects that have been loaded from the given folder
+        Device
+            Instance of Device class.
         """
 
-        dev = Device(**param)
+        dev = cls(**param)
 
         logger.info('Loading objects...')
         for root, dirs, files in walklevel(folder, level):
@@ -416,9 +573,9 @@ def main() -> None:
     test.add_cell(trenches)
 
     # test.plot2d()
-    # test.save('scheme.pdf')
-    # test.pgm()
-    # test.xlsx()
+    test.save('scheme.pdf')
+    test.pgm()
+    test.xlsx()
     # test.export()
 
     # test2 = Device.load_objects('.\EXPORT', param_gc)
