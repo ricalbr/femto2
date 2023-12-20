@@ -294,7 +294,6 @@ def test_device_keys(device) -> None:
 
 
 def test_device_remove_cell(device, cell) -> None:
-
     c2 = Cell(name='c2')
     c3 = Cell(name='c3')
     device.add_cell(cell)
@@ -313,7 +312,6 @@ def test_device_remove_cell(device, cell) -> None:
 
 
 def test_device_remove_cell_not_present(device, cell) -> None:
-
     c2 = Cell(name='c2')
     c3 = Cell(name='c3')
     device.add_cell(c2)
@@ -678,6 +676,10 @@ def test_device_load_verbose(device, list_wg, list_mk, gc_param) -> None:
 
 
 def test_device_load_empty(list_wg, list_mk, list_tcol, gc_param) -> None:
+    device = Device(**gc_param)
+    device.add([list_tcol, list_wg, list_mk])
+    device.export()
+
     fn = Path().cwd() / 'EXPORT' / 'BASE'
 
     fn.mkdir(parents=True, exist_ok=True)

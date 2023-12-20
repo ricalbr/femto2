@@ -46,7 +46,6 @@ def clements(
     disp_marker: float = 0.2,
     circuit_init: float = 3,
 ) -> tuple[list[Waveguide], list[tuple[float, float]]]:
-
     M, N = _get_upp_size(size)
 
     y0 = y_init if y_init is not None else param['y_init']
@@ -101,7 +100,6 @@ def bell(
     disp_marker: float = 0.2,
     circuit_init: float = 3,
 ) -> tuple[list[Waveguide], list[tuple[float, float]]]:
-
     M, N = _get_upp_size(size)
 
     y0 = y_init if y_init is not None else param['y_init']
