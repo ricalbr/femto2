@@ -680,7 +680,8 @@ def test_device_load_empty(list_wg, list_mk, list_tcol, gc_param) -> None:
     device.add([list_tcol, list_wg, list_mk])
     device.export()
 
-    fn = Path().cwd() / 'EXPORT' / 'BASE'
+    # load on a different, empty path
+    fn = Path().cwd() / 'EXPORT' / 'BAASE'
 
     fn.mkdir(parents=True, exist_ok=True)
     (fn / 'cell1').mkdir(parents=True, exist_ok=True)
