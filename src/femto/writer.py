@@ -1066,7 +1066,7 @@ class TrenchWriter(Writer):
 
 class WaveguideWriter(Writer):
     """Waveguide Writer class."""
-    
+
     __slots__ = ('dirname', '_obj_list', '_param', '_export_path', '_fabtime')
 
     def __init__(self, param: dict[str, Any], objects: list[Waveguide] | None = None, **kwargs: Any | None) -> None:
