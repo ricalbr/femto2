@@ -6,8 +6,8 @@ from typing import Callable
 
 import numpy as np
 import numpy.typing as npt
-from femto.curves import sin
-from femto.waveguide import Waveguide
+from .curves import sin
+from .waveguide import Waveguide
 
 # Define array type
 nparray = npt.NDArray[np.float32]

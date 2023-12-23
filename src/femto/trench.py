@@ -13,13 +13,13 @@ import dill
 import largestinteriorrectangle as lir
 import numpy as np
 import numpy.typing as npt
-from femto import logger
-from femto.curves import sin
-from femto.helpers import almost_equal
-from femto.helpers import flatten
-from femto.helpers import listcast
-from femto.helpers import normalize_polygon
-from femto.waveguide import Waveguide
+from . import logger
+from .curves import sin
+from .helpers import almost_equal
+from .helpers import flatten
+from .helpers import listcast
+from .helpers import normalize_polygon
+from .waveguide import Waveguide
 from shapely import geometry
 from shapely.ops import unary_union
 
@@ -593,7 +593,7 @@ class TrenchColumn:
             ]
         )
         t_bed: float = np.sum([b.floor_length / self.speed_floor for b in self._trenchbed])
-        fab_time: float = t_box + t_bed
+        fab_time = t_box + t_bed
         logger.debug(f'The total fabrication time for the trench column is {fab_time} s.')
         return fab_time
 

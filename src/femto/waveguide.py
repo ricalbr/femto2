@@ -7,8 +7,8 @@ from typing import Callable
 import attrs
 import numpy as np
 import numpy.typing as npt
-from femto import logger
-from femto.laserpath import LaserPath
+from . import logger
+from .laserpath import LaserPath
 
 # Define array type
 nparray = npt.NDArray[np.float32]
@@ -589,7 +589,7 @@ def coupler(
 def main() -> None:
     """The main function of the script."""
     import matplotlib.pyplot as plt
-    from femto.curves import circ, sin
+    from .curves import circ, sin
     from mpl_toolkits.mplot3d import Axes3D
     from addict import Dict as ddict
 

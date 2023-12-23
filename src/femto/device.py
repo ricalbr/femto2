@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import dash
+import logging
+import flask.cli
+
 import collections
 import copy
 import pathlib
@@ -11,23 +15,23 @@ from typing import Union
 import attrs
 import dill
 import plotly.graph_objects as go
-from femto import logger
-from femto.curves import sin
-from femto.helpers import flatten
-from femto.helpers import walklevel
-from femto.laserpath import LaserPath
-from femto.marker import Marker
-from femto.spreadsheet import Spreadsheet
-from femto.trench import Trench
-from femto.trench import TrenchColumn
-from femto.waveguide import NasuWaveguide
-from femto.waveguide import Waveguide
-from femto.writer import MarkerWriter
-from femto.writer import NasuWriter
-from femto.writer import plot2d_base_layer
-from femto.writer import plot3d_base_layer
-from femto.writer import TrenchWriter
-from femto.writer import WaveguideWriter
+from . import logger
+from .curves import sin
+from .helpers import flatten
+from .helpers import walklevel
+from .laserpath import LaserPath
+from .marker import Marker
+from .spreadsheet import Spreadsheet
+from .trench import Trench
+from .trench import TrenchColumn
+from .waveguide import NasuWaveguide
+from .waveguide import Waveguide
+from .writer import MarkerWriter
+from .writer import NasuWriter
+from .writer import plot2d_base_layer
+from .writer import plot3d_base_layer
+from .writer import TrenchWriter
+from .writer import WaveguideWriter
 
 # List of femto objects
 types = dict(
@@ -47,14 +51,9 @@ writers = {
     NasuWaveguide: NasuWriter,
 }
 
-import dash
-import logging
-import flask.cli
-
 flask.cli.show_server_banner = lambda *args: None
 
 app = dash.Dash(__name__)
-port = 5000
 log = logging.getLogger('werkzeug').disabled = True
 
 
@@ -307,7 +306,7 @@ class Device:
             self.cells_collection[key] = Cell(name=key)
         self.cells_collection[key].add(obj)
 
-    def plot2d(self, show: bool = True, save: bool = False, show_shutter_close: bool = True) -> None:
+    def plot2d(self, show: bool = True, save: bool = False, show_shutter_close: bool = True, port: int = 5000) -> None:
         """Plot 2D.
 
         2D plot of all the objects stored in the ``Device`` class.
@@ -321,6 +320,8 @@ class Device:
             Boolean flag to automatically save the plot. The default value is False.
         show_shutter_close: bool, optional
             Boolean flag to automatically show the parts written with the shutter closed. The default value is True.
+        port: int, optional
+            Address in which the plot will be running (http://127.0.0.1:{port}/).
 
         Returns
         -------
@@ -623,8 +624,8 @@ class Device:
 def main() -> None:
     """The main function of the script."""
 
-    from femto.trench import TrenchColumn
-    from femto.waveguide import Waveguide
+    from .trench import TrenchColumn
+    from .waveguide import Waveguide
 
     # Parameters
     param_wg: dict[str, Any] = dict(speed=20, radius=25, pitch=0.080, int_dist=0.007, samplesize=(25, 3))

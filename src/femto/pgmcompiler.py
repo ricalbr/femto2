@@ -19,11 +19,11 @@ import attrs
 import dill
 import numpy as np
 import numpy.typing as npt
-from femto import logger
-from femto.helpers import flatten
-from femto.helpers import listcast
-from femto.helpers import pad
-from femto.helpers import remove_repeated_coordinates
+from . import logger
+from .helpers import flatten
+from .helpers import listcast
+from .helpers import pad
+from .helpers import remove_repeated_coordinates
 from scipy import interpolate
 
 # Create a generic variable that can be 'PGMCompiler', or any subclass.

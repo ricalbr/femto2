@@ -506,6 +506,13 @@ def test_plot2d_save(device, list_wg, list_mk, list_tcol) -> None:
 
     device.plot2d(save=False)
     assert not (Path('.').cwd() / 'scheme.html').is_file()
+    assert device.fig is None
+
+def test_plot2d_save_show_false(device, list_wg, list_mk, list_tcol) -> None:
+    device.add([list_wg, list_mk, list_tcol])
+
+    device.plot2d(show=False, save=False)
+    assert not (Path('.').cwd() / 'scheme.html').is_file()
     assert device.fig is not None
 
 
