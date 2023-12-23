@@ -3,6 +3,7 @@ from __future__ import annotations
 import collections
 import copy
 import pathlib
+import threading
 from typing import Any
 from typing import get_args
 from typing import Union
@@ -28,7 +29,6 @@ from femto.writer import plot3d_base_layer
 from femto.writer import TrenchWriter
 from femto.writer import WaveguideWriter
 
-
 # List of femto objects
 types = dict(
     WG=Waveguide,
@@ -46,6 +46,16 @@ writers = {
     Waveguide: WaveguideWriter,
     NasuWaveguide: NasuWriter,
 }
+
+import dash
+import logging
+import flask.cli
+
+flask.cli.show_server_banner = lambda *args: None
+
+app = dash.Dash(__name__)
+port = 5000
+log = logging.getLogger('werkzeug').disabled = True
 
 
 @attrs.define(kw_only=True, repr=False)
@@ -316,19 +326,95 @@ class Device:
         -------
         None.
         """
-        logger.info('Plotting 2D objects...')
-        self.fig = go.Figure()
-        for cell in self.cells_collection.values():
-            logger.debug(f'2D plot of cell {cell.name.upper()}.')
-            wrs = writers
-            for typ, list_objs in cell.objects.items():
-                wr = wrs[typ](self._param, objects=list_objs)
-                self.fig = wr.plot2d(fig=self.fig, show_shutter_close=show_shutter_close)
-        x0, y0, x1, y1 = writers[Waveguide](self._param)._get_glass_borders()
-        self.fig = plot2d_base_layer(self.fig, x0=x0, y0=y0, x1=x1, y1=y1)
         if show:
             logger.debug('Show 2D plot.')
-            self.fig.show()
+            # self.fig.show()
+            app.layout = dash.html.Div(
+                children=[
+                    dash.html.H1(
+                        children=self._param['filename'].split('.')[0].upper(),
+                        style={'font-family': 'Arial', 'textAlign': 'center'},
+                    ),
+                    dash.html.Div(
+                        children=[
+                            dash.html.Div(
+                                style={
+                                    "width": "5%",
+                                    'display': 'inline-block',
+                                    'margin-top': '10',
+                                },
+                            ),
+                            dash.html.Div(
+                                children=[
+                                    dash.html.Label(
+                                        ['Dataset:'],
+                                        style={
+                                            "font-weight": "bold",
+                                            "font-family": "arial",
+                                            "height": "5%",
+                                            "width": "10%",
+                                            'display': 'inline-block',
+                                            'margin-top': '10',
+                                        },
+                                    ),
+                                    dash.dcc.Dropdown(
+                                        id='dropdown',
+                                        options=list(self.cells_collection.keys()),
+                                        value=list(self.cells_collection.keys()),
+                                        multi=True,
+                                        placeholder="Select a Cell",
+                                        searchable=True,
+                                        style={
+                                            "font-weight": "regular",
+                                            "font-family": "Arial",
+                                        },
+                                    ),
+                                ],
+                                style={
+                                    "width": "33%",
+                                    "display": "inline-block",
+                                },
+                            ),
+                        ]
+                    ),
+                    dash.dcc.Graph(
+                        id='figure-device',
+                        # figure=self.fig,
+                        responsive=True,
+                        style={'width': '100%', 'height': '85vh'},
+                    ),
+                ]
+            )
+
+            @app.callback(
+                dash.dependencies.Output('figure-device', 'figure'), [dash.dependencies.Input('dropdown', 'value')]
+            )
+            def update_figure(selected_cell):
+                self.fig = go.Figure()
+                for cell in [self.cells_collection[c] for c in selected_cell]:
+                    wrs = writers
+                    for typ, list_objs in cell.objects.items():
+                        wr = wrs[typ](self._param, objects=list_objs)
+                        self.fig = wr.plot2d(fig=self.fig, show_shutter_close=show_shutter_close)
+                x0, y0, x1, y1 = writers[Waveguide](self._param)._get_glass_borders()
+                return plot2d_base_layer(self.fig, x0=x0, y0=y0, x1=x1, y1=y1)
+
+            logger.info(f'Plot is running on http://127.0.0.1:{port}/')
+            app_thread = threading.Thread(
+                target=app.run_server, kwargs={'debug': False, 'port': port, 'use_reloader': False}
+            )
+            app_thread.start()
+        else:
+            logger.info('Plotting 2D objects...')
+            self.fig = go.Figure()
+            for cell in self.cells_collection.values():
+                logger.debug(f'2D plot of cell {cell.name.upper()}.')
+                wrs = writers
+                for typ, list_objs in cell.objects.items():
+                    wr = wrs[typ](self._param, objects=list_objs)
+                    self.fig = wr.plot2d(fig=self.fig, show_shutter_close=show_shutter_close)
+            x0, y0, x1, y1 = writers[Waveguide](self._param)._get_glass_borders()
+            self.fig = plot2d_base_layer(self.fig, x0=x0, y0=y0, x1=x1, y1=y1)
 
         if save:
             self.save()
@@ -569,13 +655,12 @@ def main() -> None:
     trenches.add(tcol)
 
     test.add(waveguides)
-    test.add(tcol)
     test.add_cell(trenches)
 
-    # test.plot2d()
+    test.plot2d()
     test.save('scheme.pdf')
     test.pgm()
-    test.xlsx()
+    # test.xlsx()
     # test.export()
 
     # test2 = Device.load_objects('.\EXPORT', param_gc)
@@ -583,10 +668,10 @@ def main() -> None:
     # test2.save()
 
     # Export
-    # dev.plot2d()
-    # dev.save('circuit_scheme.pdf')
-    # dev.pgm()
-    # dev.export()
+    # test.plot2d()
+    # test.save('circuit_scheme.pdf')
+    # test.pgm()
+    # test.export()
 
     # data_xlsx = dict(
     #     laboratory='CAPABLE',
