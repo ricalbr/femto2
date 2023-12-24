@@ -31,15 +31,15 @@ def plot2d_base_layer(fig: go.Figure, x0: float, y0: float, x1: float, y1: float
 
     Parameters
     ----------
-    fig : go.Figure
+    fig: go.Figure
         Plotly Figure object to update.
-    x0 : float
+    x0: float
         x-coordinate of the left-lower corner of the glass rectangle.
-    y0 : float
+    y0: float
         y-coordinate of the left-lower corner of the glass rectangle.
-    x1 : float
+    x1: float
         x-coordinate of the right-upper corner of the glass rectangle.
-    y1 : float
+    y1: float
         y-coordinate of the right-upper corner of the glass rectangle.
 
     Returns
@@ -137,7 +137,7 @@ def plot3d_base_layer(fig: go.Figure) -> go.Figure:
 
     Parameters
     ----------
-    fig : go.Figure
+    fig: go.Figure
         Plotly Figure object to update.
 
     Returns
@@ -160,7 +160,7 @@ def plot3d_base_layer(fig: go.Figure) -> go.Figure:
 
     logger.debug('Add axis labels and fix camera angle.')
     fig.update_layout(
-        scene_camera=dict(up=dict(x=0, y=np.cos(np.pi / 4), z=np.sin(np.pi / 4)), eye=dict(x=0.0, y=0.0, z=-2.5)),
+        # scene_camera=dict(up=dict(x=0, y=np.cos(np.pi / 4), z=np.sin(np.pi / 4)), eye=dict(x=0.0, y=0.0, z=-2.5)),
         scene=dict(
             bgcolor='rgba(0,0,0,0)',
             aspectratio=dict(
@@ -243,7 +243,7 @@ class Writer(PGMCompiler, abc.ABC):
 
         Parameters
         ----------
-        obj : Any
+        obj: Any
             Object to be added to current Writer.
 
         Returns
@@ -256,6 +256,7 @@ class Writer(PGMCompiler, abc.ABC):
         self,
         fig: go.Figure | None = None,
         show_shutter_close: bool = True,
+        name: str | None = None,
         style: dict[str, Any] | None = None,
     ) -> go.Figure:
         """Plot 2D.
@@ -264,12 +265,14 @@ class Writer(PGMCompiler, abc.ABC):
 
         Parameters
         ----------
-        fig : go.Figure, optional
+        fig: go.Figure, optional
             Optional plotly figure object, if no figure is provided a new one is created and updated with the object
             stored in the Writer class. If a figure is provided it is updated by adding the stored objects. The
             default behaviour is creating a new figure.
-        show_shutter_close : bool, optional
+        show_shutter_close: bool, optional
             Boolean flag, if ``True`` the movements with closed shutter are represented. The default value is ``False``.
+        name: str, optional
+            Name of the traces. Default is ``None``.
         style: dict(str, Any)
             Plotly compatible styles options for representing the objects.
 
@@ -280,7 +283,7 @@ class Writer(PGMCompiler, abc.ABC):
 
         See Also
         --------
-        go.Figure : Plotly figure object.
+        go.Figure: Plotly figure object.
         """
 
     @abc.abstractmethod
@@ -288,6 +291,7 @@ class Writer(PGMCompiler, abc.ABC):
         self,
         fig: go.Figure | None = None,
         show_shutter_close: bool = True,
+        name: str | None = None,
         style: dict[str, Any] | None = None,
     ) -> go.Figure:
         """Plot 3D.
@@ -296,12 +300,14 @@ class Writer(PGMCompiler, abc.ABC):
 
         Parameters
         ----------
-        fig : go.Figure, optional
+        fig: go.Figure, optional
             Optional plotly figure object, if no figure is provided a new one is created and updated with the object
             stored in the Writer class. If a figure is provided it is updated by adding the stored objects. The
             default behaviour is creating a new figure.
-        show_shutter_close : bool, optional
+        show_shutter_close: bool, optional
             Boolean flag, if ``True`` the movements with closed shutter are represented. The default value is ``False``.
+        name: str, optional
+            Name of the traces. Default is ``None``.
         style: dict(str, Any)
             Plotly compatible styles options for representing the objects.
 
@@ -312,7 +318,7 @@ class Writer(PGMCompiler, abc.ABC):
 
         See Also
         --------
-        go.Figure : Plotly figure object.
+        go.Figure: Plotly figure object.
         """
 
     @abc.abstractmethod
@@ -325,7 +331,7 @@ class Writer(PGMCompiler, abc.ABC):
         ----------
         filename: str, optional
             Name of the .pgm file. The default value is ``self.filename``.
-        verbose : bool, optional
+        verbose: bool, optional
             Boolean flag, if ``True`` some information about the exporting procedures are printed. The default value is
             ``False``.
 
@@ -335,7 +341,7 @@ class Writer(PGMCompiler, abc.ABC):
 
         See Also
         --------
-        ``femto.pgmcompiler.PGMCompiler`` : class that convert lists of points to PGM file.
+        ``femto.pgmcompiler.PGMCompiler``: class that convert lists of points to PGM file.
         """
 
     def _get_glass_borders(self) -> tuple[float, float, float, float]:
@@ -480,7 +486,11 @@ class TrenchWriter(Writer):
             logger.debug('Append Trench bed to _trenchbed.')
 
     def plot2d(
-        self, fig: go.Figure | None = None, show_shutter_close: bool = True, style: dict[str, Any] | None = None
+        self,
+        fig: go.Figure | None = None,
+        show_shutter_close: bool = True,
+        name: str | None = None,
+        style: dict[str, Any] | None = None,
     ) -> go.Figure:
         """Plot 2D.
 
@@ -488,11 +498,13 @@ class TrenchWriter(Writer):
 
         Parameters
         ----------
-        fig : go.Figure, optional
+        fig: go.Figure, optional
             Optional plotly figure object, if no figure is provided a new one is created and updated with the Trench
             objects stored in the Writer class. If a figure is provided it is updated by adding the stored objects. The
             default behaviour is creating a new figure.
-        show_shutter_close : bool, optional
+        name: str, optional
+            Name of the traces. Default is ``None``.
+        show_shutter_close: bool, optional
             Boolean flag, if ``True`` the movements with closed shutter are represented. The default value is ``False``.
         style: dict(str, Any)
             Plotly compatible styles options for representing the objects.
@@ -506,13 +518,13 @@ class TrenchWriter(Writer):
         # If existing figure is given as input parameter append to the figure and return it
         if fig is not None:
             logger.debug('Update figure.')
-            return self._plot2d_trench(fig=fig, style=style)
+            return self._plot2d_trench(fig=fig, name=name, style=style)
 
         # If fig is None create a new figure from scratch
         logger.debug('Create figure.')
         fig = go.Figure()
         logger.debug('Update figure.')
-        fig = self._plot2d_trench(fig=fig, style=style)
+        fig = self._plot2d_trench(fig=fig, name=name, style=style)
         x0, y0, x1, y1 = self._get_glass_borders()
         fig = plot2d_base_layer(fig, x0=x0, y0=y0, x1=x1, y1=y1)  # Add glass, shift_origin and axis elements
         return fig
@@ -521,6 +533,7 @@ class TrenchWriter(Writer):
         self,
         fig: go.Figure | None = None,
         show_shutter_close: bool = True,
+        name: str | None = None,
         style: dict[str, Any] | None = None,
     ) -> go.Figure:
         """Plot 3D.
@@ -529,12 +542,14 @@ class TrenchWriter(Writer):
 
         Parameters
         ----------
-        fig : go.Figure, optional
+        fig: go.Figure, optional
             Optional plotly figure object, if no figure is provided a new one is created and updated with the Trench
             objects stored in the Writer class. If a figure is provided it is updated by adding the stored objects. The
             default behaviour is creating a new figure.
-        show_shutter_close : bool, optional
+        show_shutter_close: bool, optional
             Boolean flag, if ``True`` the movements with closed shutter are represented. The default value is ``False``.
+        name: str, optional
+            Name of the traces. Default is ``None``.
         style: dict(str, Any)
             Plotly compatible styles options for representing the objects.
 
@@ -545,13 +560,13 @@ class TrenchWriter(Writer):
         """
         if fig is not None:
             logger.debug('Update figure.')
-            return self._plot3d_trench(fig=fig, style=style)
+            return self._plot3d_trench(fig=fig, name=name, style=style)
 
         # If fig is None create a new figure from scratch
         logger.debug('Create figure.')
         fig = go.Figure()
         logger.debug('Update figure.')
-        fig = self._plot3d_trench(fig=fig, style=style)
+        fig = self._plot3d_trench(fig=fig, name=name, style=style)
         fig = plot3d_base_layer(fig)  # Add glass, shift_origin and axis elements
         return fig
 
@@ -567,7 +582,7 @@ class TrenchWriter(Writer):
         ----------
         filename: str, optional
             Name of the .pgm file. The default value is ``self.filename``.
-        verbose : bool, optional
+        verbose: bool, optional
             Boolean flag, if ``True`` some information about the exporting procedures are printed. The default value is
             ``False``.
 
@@ -577,7 +592,7 @@ class TrenchWriter(Writer):
 
         See Also
         --------
-        ``femto.pgmcompiler.PGMCompiler`` : class that convert lists of points to PGM file.
+        ``femto.pgmcompiler.PGMCompiler``: class that convert lists of points to PGM file.
         """
 
         if not self._obj_list:
@@ -639,13 +654,13 @@ class TrenchWriter(Writer):
 
         Parameters
         ----------
-        filename : pathlib.Path
+        filename: pathlib.Path
             Filename of the output `PGM` file.
-        x : numpy.ndarray
+        x: numpy.ndarray
             `x` coordinates array [mm].
-        y : numpy.ndarray
+        y: numpy.ndarray
             `y` coordinates array [mm].
-        speed : float | list[float]
+        speed: float | list[float]
             Translation speed [mm/s].
         forced_deceleration: bool
             Add a `G9` command before `LINEAR` movements to reduce the acceleration to zero after the motion is
@@ -657,8 +672,8 @@ class TrenchWriter(Writer):
 
         See Also
         --------
-        pgmcompiler.transform_points : series of geometrical transformation on input points.
-        pathlib.Path : class representing cross-system filepaths.
+        pgmcompiler.transform_points: series of geometrical transformation on input points.
+        pathlib.Path: class representing cross-system filepaths.
         """
 
         # Transform points
@@ -690,9 +705,9 @@ class TrenchWriter(Writer):
 
         Parameters
         ----------
-        column : TrenchColumn
+        column: TrenchColumn
             TrenchColumn object containing the Trench blocks to export.
-        column_path : pathlib.Path
+        column_path: pathlib.Path
             Directory for the floor and wall `PGM` files.
 
         Returns
@@ -701,7 +716,7 @@ class TrenchWriter(Writer):
 
         See Also
         --------
-        pathlib.Path : class representing cross-system filepaths.
+        pathlib.Path: class representing cross-system filepaths.
         """
 
         for i, trench in enumerate(column):
@@ -867,7 +882,7 @@ class TrenchWriter(Writer):
 
             G.instruction('MSGCLEAR -1\n')
 
-    def _plot2d_trench(self, fig: go.Figure, style: dict[str, Any] | None = None) -> go.Figure:
+    def _plot2d_trench(self, fig: go.Figure, name: str | None = None, style: dict[str, Any] | None = None) -> go.Figure:
         """2D plot helper.
 
         The function takes a figure and a style dictionary as inputs, and adds a trace to the figure for each ``Trench``
@@ -875,9 +890,11 @@ class TrenchWriter(Writer):
 
         Parameters
         ----------
-        fig : go.Figure
+        fig: go.Figure
             Plotly figure object to add the trench traces.
-        style : dict
+        name: str, optional
+            Name of the traces. Default is ``None``.
+        style: dict
             Dictionary containing all the styling parameters of the trench traces.
 
         Returns
@@ -887,8 +904,8 @@ class TrenchWriter(Writer):
 
         See Also
         --------
-        go.Figure : Plotly's figure object.
-        go.Scattergl : Plotly's method to trace paths and lines.
+        go.Figure: Plotly's figure object.
+        go.Scattergl: Plotly's method to trace paths and lines.
         """
 
         if style is None:
@@ -911,6 +928,7 @@ class TrenchWriter(Writer):
                     **utcargs,
                     showlegend=False,
                     hovertemplate='(%{x:.4f}, %{y:.4f})<extra>TR</extra>',
+                    name=name,
                 )
             )
 
@@ -928,11 +946,12 @@ class TrenchWriter(Writer):
                     **tcargs,
                     showlegend=False,
                     hovertemplate='(%{x:.4f}, %{y:.4f})<extra>TR</extra>',
+                    name=name,
                 )
             )
         return fig
 
-    def _plot3d_trench(self, fig: go.Figure, style: dict[str, Any] | None = None) -> go.Figure:
+    def _plot3d_trench(self, fig: go.Figure, name: str | None = None, style: dict[str, Any] | None = None) -> go.Figure:
         if style is None:
             style = dict()
         default_utcargs = {'dash': 'solid', 'color': '#000000', 'width': 1.5}
@@ -960,6 +979,7 @@ class TrenchWriter(Writer):
                     hoverinfo='skip',
                     showscale=False,
                     opacity=0.6,
+                    name=name,
                 )
             )
 
@@ -986,6 +1006,7 @@ class TrenchWriter(Writer):
                     showlegend=False,
                     hoverinfo='skip',
                     showscale=False,
+                    name=name,
                 )
             )
 
@@ -999,6 +1020,7 @@ class TrenchWriter(Writer):
                     line=utcargs,
                     showlegend=False,
                     hovertemplate='(%{x:.4f}, %{y:.4f})<extra>TR</extra>',
+                    name=name,
                 )
             )
 
@@ -1022,6 +1044,7 @@ class TrenchWriter(Writer):
                     hoverinfo='skip',
                     showscale=False,
                     opacity=0.6,
+                    name=name,
                 )
             )
             # Bed floor surface
@@ -1047,6 +1070,7 @@ class TrenchWriter(Writer):
                     showlegend=False,
                     hoverinfo='skip',
                     showscale=False,
+                    name=name,
                 )
             )
             # Bed perimeter points
@@ -1059,6 +1083,7 @@ class TrenchWriter(Writer):
                     line=utcargs,
                     showlegend=False,
                     hovertemplate='(%{x:.4f}, %{y:.4f})<extra>TR</extra>',
+                    name=name,
                 )
             )
         return fig
@@ -1128,7 +1153,11 @@ class WaveguideWriter(Writer):
             raise TypeError('The objects must be of Waveguide type. Given wrong type.')
 
     def plot2d(
-        self, fig: go.Figure | None = None, show_shutter_close: bool = True, style: dict[str, Any] | None = None
+        self,
+        fig: go.Figure | None = None,
+        show_shutter_close: bool = True,
+        name: str | None = None,
+        style: dict[str, Any] | None = None,
     ) -> go.Figure:
         """Plot 2D.
 
@@ -1136,12 +1165,14 @@ class WaveguideWriter(Writer):
 
         Parameters
         ----------
-        fig : go.Figure, optional
+        fig: go.Figure, optional
             Optional plotly figure object, if no figure is provided a new one is created and updated with the Waveguide
             objects stored in the Writer class. If a figure is provided it is updated by adding the stored objects. The
             default behaviour is creating a new figure.
-        show_shutter_close : bool, optional
+        show_shutter_close: bool, optional
             Boolean flag, if ``True`` the movements with closed shutter are represented. The default value is ``False``.
+        name: str, optional
+            Name of the traces. Default is ``None``.
         style: dict(str, Any)
             Plotly compatible styles options for representing the objects.
 
@@ -1154,19 +1185,23 @@ class WaveguideWriter(Writer):
         # If existing figure is given as input parameter append to the figure and return it
         if fig is not None:
             logger.debug('Update figure.')
-            return self._plot2d_wg(fig=fig, show_shutter_close=show_shutter_close, style=style)
+            return self._plot2d_wg(fig=fig, show_shutter_close=show_shutter_close, name=name, style=style)
 
         # If fig is None create a new figure from scratch
         logger.debug('Update figure.')
         fig = go.Figure()
         logger.debug('Update figure.')
-        fig = self._plot2d_wg(fig=fig, show_shutter_close=show_shutter_close, style=style)
+        fig = self._plot2d_wg(fig=fig, show_shutter_close=show_shutter_close, name=name, style=style)
         x0, y0, x1, y1 = self._get_glass_borders()
         fig = plot2d_base_layer(fig, x0=x0, y0=y0, x1=x1, y1=y1)  # Add glass, shift_origin and axis elements
         return fig
 
     def plot3d(
-        self, fig: go.Figure | None = None, show_shutter_close: bool = True, style: dict[str, Any] | None = None
+        self,
+        fig: go.Figure | None = None,
+        show_shutter_close: bool = True,
+        name: str | None = None,
+        style: dict[str, Any] | None = None,
     ) -> go.Figure:
         """Plot 3D.
 
@@ -1174,12 +1209,14 @@ class WaveguideWriter(Writer):
 
         Parameters
         ----------
-        fig : go.Figure, optional
+        fig: go.Figure, optional
             Optional plotly figure object, if no figure is provided a new one is created and updated with the Waveguide
             objects stored in the Writer class. If a figure is provided it is updated by adding the stored objects. The
             default behaviour is creating a new figure.
-        show_shutter_close : bool, optional
+        show_shutter_close: bool, optional
             Boolean flag, if ``True`` the movements with closed shutter are represented. The default value is ``False``.
+        name: str, optional
+            Name of the traces. Default is ``None``.
         style: dict(str, Any)
             Plotly compatible styles options for representing the objects.
 
@@ -1192,13 +1229,13 @@ class WaveguideWriter(Writer):
         # If existing figure is given as input parameter append to the figure and return it
         if fig is not None:
             logger.debug('Update figure.')
-            return self._plot3d_wg(fig=fig, show_shutter_close=show_shutter_close, style=style)
+            return self._plot3d_wg(fig=fig, show_shutter_close=show_shutter_close, name=name, style=style)
 
         # If fig is None create a new figure from scratch
         logger.debug('Update figure.')
         fig = go.Figure()
         logger.debug('Update figure.')
-        fig = self._plot3d_wg(fig=fig, show_shutter_close=show_shutter_close, style=style)
+        fig = self._plot3d_wg(fig=fig, show_shutter_close=show_shutter_close, name=name, style=style)
         fig = plot3d_base_layer(fig)  # Add glass, shift_origin and axis elements
         return fig
 
@@ -1222,7 +1259,7 @@ class WaveguideWriter(Writer):
 
         See Also
         --------
-        ``femto.pgmcompiler.PGMCompiler`` : class that convert lists of points to PGM file.
+        ``femto.pgmcompiler.PGMCompiler``: class that convert lists of points to PGM file.
         """
 
         if not self.objs:
@@ -1251,7 +1288,11 @@ class WaveguideWriter(Writer):
         self._instructions.clear()
 
     def _plot2d_wg(
-        self, fig: go.Figure, show_shutter_close: bool = True, style: dict[str, Any] | None = None
+        self,
+        fig: go.Figure,
+        show_shutter_close: bool = True,
+        name: str | None = None,
+        style: dict[str, Any] | None = None,
     ) -> go.Figure:
         """2D plot helper.
 
@@ -1260,9 +1301,13 @@ class WaveguideWriter(Writer):
 
         Parameters
         ----------
-        fig : go.Figure
+        fig: go.Figure
             Plotly figure object to add the waveguide traces.
-        style : dict
+        show_shutter_close: bool
+            Flag to plot laser passes with the shutter close. Default is True.
+        name: str, optional
+            Name of the traces. Default is ``None``.
+        style: dict
             Dictionary containing all the styling parameters of the waveguide.
 
         Returns
@@ -1272,8 +1317,8 @@ class WaveguideWriter(Writer):
 
         See Also
         --------
-        go.Figure : Plotly's figure object.
-        go.Scattergl : Plotly's method to trace paths and lines.
+        go.Figure: Plotly's figure object.
+        go.Scattergl: Plotly's method to trace paths and lines.
         """
 
         if style is None:
@@ -1300,6 +1345,7 @@ class WaveguideWriter(Writer):
                         showlegend=False,
                         customdata=zoo,
                         hovertemplate='(%{x:.4f}, %{y:.4f}, %{customdata:.4f})<extra>WG</extra>',
+                        name=name,
                     )
                 )
                 for xoo, yoo, zoo in zip(xo, yo, zo)
@@ -1317,6 +1363,8 @@ class WaveguideWriter(Writer):
                             line=sc_args,
                             hoverinfo='none',
                             showlegend=False,
+                            name=name,
+                            meta='shutter_close',
                         )
                     )
                     for x, y in zip(xc, yc)
@@ -1324,7 +1372,11 @@ class WaveguideWriter(Writer):
         return fig
 
     def _plot3d_wg(
-        self, fig: go.Figure, show_shutter_close: bool = True, style: dict[str, Any] | None = None
+        self,
+        fig: go.Figure,
+        show_shutter_close: bool = True,
+        name: str | None = None,
+        style: dict[str, Any] | None = None,
     ) -> go.Figure:
         """3D plot helper.
 
@@ -1333,9 +1385,11 @@ class WaveguideWriter(Writer):
 
         Parameters
         ----------
-        fig : go.Figure
+        fig: go.Figure
             Plotly figure object to add the waveguide traces.
-        style : dict
+        name: str, optional
+            Name of the traces. Default is ``None``.
+        style: dict
             Dictionary containing all the styling parameters of the waveguide.
 
         Returns
@@ -1345,8 +1399,8 @@ class WaveguideWriter(Writer):
 
         See Also
         --------
-        go.Figure : Plotly's figure object.
-        go.Scatter3d : Plotly's method to trace paths and lines.
+        go.Figure: Plotly's figure object.
+        go.Scatter3d: Plotly's method to trace paths and lines.
         """
 
         if style is None:
@@ -1373,6 +1427,7 @@ class WaveguideWriter(Writer):
                         line=wg_args,
                         showlegend=False,
                         hovertemplate='(%{x:.4f}, %{y:.4f}, %{z:.4f})<extra>WG</extra>',
+                        name=name,
                     )
                 )
                 for x, y, z in zip(xo, yo, zo)
@@ -1392,6 +1447,8 @@ class WaveguideWriter(Writer):
                             line=sc_args,
                             hoverinfo='none',
                             showlegend=False,
+                            name=name,
+                            meta='shutter_close',
                         )
                     )
                     for x, y, z in zip(xc, yc, zc)
@@ -1462,7 +1519,11 @@ class NasuWriter(Writer):
             raise TypeError('The objects must be of NasuWaveguide type. Given wrong type.')
 
     def plot2d(
-        self, fig: go.Figure | None = None, show_shutter_close: bool = True, style: dict[str, Any] | None = None
+        self,
+        fig: go.Figure | None = None,
+        show_shutter_close: bool = True,
+        name: str | None = None,
+        style: dict[str, Any] | None = None,
     ) -> go.Figure:
         """Plot 2D.
 
@@ -1470,11 +1531,13 @@ class NasuWriter(Writer):
 
         Parameters
         ----------
-        fig : go.Figure, optional
+        fig: go.Figure, optional
             Optional plotly figure object, if no figure is provided a new one is created and updated with the
             NasuWaveguide objects stored in the Writer class. If a figure is provided it is updated by adding the
             stored objects. The default behaviour is creating a new figure.
-        show_shutter_close : bool, optional
+        name: str, optional
+            Name of the traces. Default is ``None``.
+        show_shutter_close: bool, optional
             Boolean flag, if ``True`` the movements with closed shutter are represented. The default value is ``False``.
         style: dict(str, Any)
             Plotly compatible styles options for representing the objects.
@@ -1488,19 +1551,23 @@ class NasuWriter(Writer):
         # If existing figure is given as input parameter append to the figure and return it
         if fig is not None:
             logger.debug('Update figure.')
-            return self._plot2d_nwg(fig=fig, show_shutter_close=show_shutter_close, style=style)
+            return self._plot2d_nwg(fig=fig, show_shutter_close=show_shutter_close, name=name, style=style)
 
         # If fig is None create a new figure from scratch
         logger.debug('Create figure.')
         fig = go.Figure()
         logger.debug('Update figure.')
-        fig = self._plot2d_nwg(fig=fig, show_shutter_close=show_shutter_close, style=style)
+        fig = self._plot2d_nwg(fig=fig, show_shutter_close=show_shutter_close, name=name, style=style)
         x0, y0, x1, y1 = self._get_glass_borders()
         fig = plot2d_base_layer(fig, x0=x0, y0=y0, x1=x1, y1=y1)  # Add glass, shift_origin and axis elements
         return fig
 
     def plot3d(
-        self, fig: go.Figure | None = None, show_shutter_close: bool = True, style: dict[str, Any] | None = None
+        self,
+        fig: go.Figure | None = None,
+        show_shutter_close: bool = True,
+        name: str | None = None,
+        style: dict[str, Any] | None = None,
     ) -> go.Figure:
         """Plot 3D.
 
@@ -1508,12 +1575,14 @@ class NasuWriter(Writer):
 
         Parameters
         ----------
-        fig : go.Figure, optional
+        fig: go.Figure, optional
             Optional plotly figure object, if no figure is provided a new one is created and updated with the
             NasuWaveguide objects stored in the Writer class. If a figure is provided it is updated by adding the
             stored objects. The default behaviour is creating a new figure.
-        show_shutter_close : bool, optional
+        show_shutter_close: bool, optional
             Boolean flag, if ``True`` the movements with closed shutter are represented. The default value is ``False``.
+        name: str, optional
+            Name of the traces. Default is ``None``.
         style: dict(str, Any)
             Plotly compatible styles options for representing the objects.
 
@@ -1526,13 +1595,13 @@ class NasuWriter(Writer):
         # If existing figure is given as input parameter append to the figure and return it
         if fig is not None:
             logger.debug('Update figure.')
-            return self._plot3d_nwg(fig=fig, show_shutter_close=show_shutter_close, style=style)
+            return self._plot3d_nwg(fig=fig, show_shutter_close=show_shutter_close, name=name, style=style)
 
         # If fig is None create a new figure from scratch
         logger.debug('Create figure.')
         fig = go.Figure()
         logger.debug('Update figure.')
-        fig = self._plot3d_nwg(fig=fig, show_shutter_close=show_shutter_close, style=style)
+        fig = self._plot3d_nwg(fig=fig, show_shutter_close=show_shutter_close, name=name, style=style)
         fig = plot3d_base_layer(fig)  # Add glass, shift_origin and axis elements
         return fig
 
@@ -1546,7 +1615,7 @@ class NasuWriter(Writer):
         ----------
         filename: str, optional
             Name of the .pgm file. The default value is ``self.filename``.
-        verbose : bool, optional
+        verbose: bool, optional
             Boolean flag, if ``True`` some information about the exporting procedures are printed. The default value is
             ``False``.
 
@@ -1556,7 +1625,7 @@ class NasuWriter(Writer):
 
         See Also
         --------
-        ``femto.pgmcompiler.PGMCompiler`` : class that convert lists of points to PGM file.
+        ``femto.pgmcompiler.PGMCompiler``: class that convert lists of points to PGM file.
         """
 
         if not self._obj_list:
@@ -1587,7 +1656,11 @@ class NasuWriter(Writer):
         self._instructions.clear()
 
     def _plot2d_nwg(
-        self, fig: go.Figure, show_shutter_close: bool = True, style: dict[str, Any] | None = None
+        self,
+        fig: go.Figure,
+        show_shutter_close: bool = True,
+        name: str | None = None,
+        style: dict[str, Any] | None = None,
     ) -> go.Figure:
         """2D plot helper.
 
@@ -1596,9 +1669,11 @@ class NasuWriter(Writer):
 
         Parameters
         ----------
-        fig : go.Figure
+        fig: go.Figure
             Plotly figure object to add the Nasu waveguide traces.
-        style : dict
+        name: str, optional
+            Name of the traces. Default is ``None``.
+        style: dict
             Dictionary containing all the styling parameters of the Nasu waveguide.
 
         Returns
@@ -1608,8 +1683,8 @@ class NasuWriter(Writer):
 
         See Also
         --------
-        go.Figure : Plotly's figure object.
-        go.Scattergl : Plotly's method to trace paths and lines.
+        go.Figure: Plotly's figure object.
+        go.Scattergl: Plotly's method to trace paths and lines.
         """
 
         if style is None:
@@ -1636,6 +1711,7 @@ class NasuWriter(Writer):
                             line=wg_args,
                             showlegend=False,
                             hovertemplate='(%{x:.4f}, %{y:.4f})<extra>WG</extra>',
+                            name=name,
                         )
                     )
                     for xoo, yoo in zip(xo, yo)
@@ -1652,6 +1728,8 @@ class NasuWriter(Writer):
                                 line=sc_args,
                                 hoverinfo='none',
                                 showlegend=False,
+                                name=name,
+                                meta='shutter_close',
                             )
                         )
                         for x, y in zip(xc, yc)
@@ -1659,7 +1737,11 @@ class NasuWriter(Writer):
         return fig
 
     def _plot3d_nwg(
-        self, fig: go.Figure, show_shutter_close: bool = True, style: dict[str, Any] | None = None
+        self,
+        fig: go.Figure,
+        show_shutter_close: bool = True,
+        name: str | None = None,
+        style: dict[str, Any] | None = None,
     ) -> go.Figure:
         """3D plot helper.
 
@@ -1668,9 +1750,11 @@ class NasuWriter(Writer):
 
         Parameters
         ----------
-        fig : go.Figure
+        fig: go.Figure
             Plotly figure object to add the Nasu waveguide traces.
-        style : dict
+        name: str, optional
+            Name of the traces. Default is ``None``.
+        style: dict, optional
             Dictionary containing all the styling parameters of the Nasu waveguide.
 
         Returns
@@ -1680,8 +1764,8 @@ class NasuWriter(Writer):
 
         See Also
         --------
-        go.Figure : Plotly's figure object.
-        go.Scatter3d : Plotly's method to trace paths and lines.
+        go.Figure: Plotly's figure object.
+        go.Scatter3d: Plotly's method to trace paths and lines.
         """
 
         if style is None:
@@ -1710,6 +1794,7 @@ class NasuWriter(Writer):
                             line=wg_args,
                             showlegend=False,
                             hovertemplate='(%{x:.4f}, %{y:.4f}, %{z:.4f})<extra>WG</extra>',
+                            name=name,
                         )
                     )
                     for x, y, z in zip(xo, yo, zo)
@@ -1728,6 +1813,8 @@ class NasuWriter(Writer):
                                 line=sc_args,
                                 hoverinfo='none',
                                 showlegend=False,
+                                name=name,
+                                meta='shutter_close',
                             )
                         )
                         for x, y, z in zip(xc, yc, zc)
@@ -1797,7 +1884,11 @@ class MarkerWriter(Writer):
         logger.debug('Marker added to _obj_list.')
 
     def plot2d(
-        self, fig: go.Figure | None = None, show_shutter_close: bool = True, style: dict[str, Any] | None = None
+        self,
+        fig: go.Figure | None = None,
+        show_shutter_close: bool = True,
+        name: str | None = None,
+        style: dict[str, Any] | None = None,
     ) -> go.Figure:
         """Plot 2D.
 
@@ -1805,12 +1896,14 @@ class MarkerWriter(Writer):
 
         Parameters
         ----------
-        fig : go.Figure, optional
+        fig: go.Figure, optional
             Optional plotly figure object, if no figure is provided a new one is created and updated with the Marker
             objects stored in the Writer class. If a figure is provided it is updated by adding the stored objects. The
             default behaviour is creating a new figure.
-        show_shutter_close : bool, optional
+        show_shutter_close: bool, optional
             Boolean flag, if ``True`` the movements with closed shutter are represented. The default value is ``False``.
+        name: str, optional
+            Name of the traces. Default is ``None``.
         style: dict(str, Any)
             Plotly compatible styles options for representing the objects.
 
@@ -1823,19 +1916,23 @@ class MarkerWriter(Writer):
         # If existing figure is given as input parameter append to the figure and return it
         if fig is not None:
             logger.debug('Update figure.')
-            return self._plot2d_mk(fig=fig, style=style)
+            return self._plot2d_mk(fig=fig, name=name, style=style)
 
         # If fig is None create a new figure from scratch
         logger.debug('Create figure.')
         fig = go.Figure()
         logger.debug('Update figure.')
-        fig = self._plot2d_mk(fig=fig, style=style)
+        fig = self._plot2d_mk(fig=fig, name=name, style=style)
         x0, y0, x1, y1 = self._get_glass_borders()
         fig = plot2d_base_layer(fig, x0=x0, y0=y0, x1=x1, y1=y1)  # Add glass, shift_origin and axis elements
         return fig
 
     def plot3d(
-        self, fig: go.Figure | None = None, show_shutter_close: bool = True, style: dict[str, Any] | None = None
+        self,
+        fig: go.Figure | None = None,
+        show_shutter_close: bool = True,
+        name: str | None = None,
+        style: dict[str, Any] | None = None,
     ) -> go.Figure:
         """Plot 3D.
 
@@ -1843,12 +1940,14 @@ class MarkerWriter(Writer):
 
         Parameters
         ----------
-        fig : go.Figure, optional
+        fig: go.Figure, optional
             Optional plotly figure object, if no figure is provided a new one is created and updated with the Marker
             objects stored in the Writer class. If a figure is provided it is updated by adding the stored objects. The
             default behaviour is creating a new figure.
-        show_shutter_close : bool, optional
+        show_shutter_close: bool, optional
             Boolean flag, if ``True`` the movements with closed shutter are represented. The default value is ``False``.
+        name: str, optional
+            Name of the traces. Default is ``None``.
         style: dict(str, Any)
             Plotly compatible styles options for representing the objects.
 
@@ -1861,13 +1960,13 @@ class MarkerWriter(Writer):
         # If existing figure is given as input parameter append to the figure and return it
         if fig is not None:
             logger.debug('Update figure.')
-            return self._plot3d_mk(fig=fig, style=style)
+            return self._plot3d_mk(fig=fig, name=name, style=style)
 
         # If fig is None create a new figure from scratch
         logger.debug('Create figure.')
         fig = go.Figure()
         logger.debug('Update figure.')
-        fig = self._plot3d_mk(fig=fig, style=style)
+        fig = self._plot3d_mk(fig=fig, name=name, style=style)
         fig = plot3d_base_layer(fig)  # Add glass, shift_origin and axis elements
         return fig
 
@@ -1881,7 +1980,7 @@ class MarkerWriter(Writer):
         ----------
         filename: str, optional
             Name of the .pgm file. The default value is ``self.filename``.
-        verbose : bool, optional
+        verbose: bool, optional
             Boolean flag, if ``True`` some information about the exporting procedures are printed. The default value is
             ``False``.
 
@@ -1891,7 +1990,7 @@ class MarkerWriter(Writer):
 
         See Also
         --------
-        ``femto.pgmcompiler.PGMCompiler`` : class that convert lists of points to PGM file.
+        ``femto.pgmcompiler.PGMCompiler``: class that convert lists of points to PGM file.
         """
 
         if not self._obj_list:
@@ -1921,7 +2020,7 @@ class MarkerWriter(Writer):
         logger.info(string)
         self._instructions.clear()
 
-    def _plot2d_mk(self, fig: go.Figure, style: dict[str, Any] | None = None) -> go.Figure:
+    def _plot2d_mk(self, fig: go.Figure, name: str | None = None, style: dict[str, Any] | None = None) -> go.Figure:
         """2D plot helper.
 
         The function takes a figure and a style dictionary as inputs, and adds a trace to the figure for each
@@ -1929,9 +2028,11 @@ class MarkerWriter(Writer):
 
         Parameters
         ----------
-        fig : go.Figure
+        fig: go.Figure
             Plotly figure object to add the marker traces.
-        style : dict
+        name: str, optional
+            Name of the traces. Default is ``None``.
+        style: dict, optional
             Dictionary containing all the styling parameters of the marker.
 
         Returns
@@ -1941,8 +2042,8 @@ class MarkerWriter(Writer):
 
         See Also
         --------
-        go.Figure : Plotly's figure object.
-        go.Scattergl : Plotly's method to trace paths and lines.
+        go.Figure: Plotly's figure object.
+        go.Scattergl: Plotly's method to trace paths and lines.
         """
 
         if style is None:
@@ -1965,13 +2066,14 @@ class MarkerWriter(Writer):
                         line=mk_args,
                         showlegend=False,
                         hovertemplate='(%{x:.4f}, %{y:.4f})<extra>MK</extra>',
+                        name=name,
                     )
                 )
                 for x, y in zip(xo, yo)
             ]
         return fig
 
-    def _plot3d_mk(self, fig: go.Figure, style: dict[str, Any] | None = None) -> go.Figure:
+    def _plot3d_mk(self, fig: go.Figure, name: str | None = None, style: dict[str, Any] | None = None) -> go.Figure:
         """3D plot helper.
 
         The function takes a figure and a style dictionary as inputs, and adds a 3D trace to the figure for each
@@ -1979,9 +2081,11 @@ class MarkerWriter(Writer):
 
         Parameters
         ----------
-        fig : go.Figure
+        fig: go.Figure
             Plotly figure object to add the marker traces.
-        style : dict
+        name: str, optional
+            Name of the traces. Default is ``None``.
+        style: dict, optional
             Dictionary containing all the styling parameters of the marker.
 
         Returns
@@ -1991,8 +2095,8 @@ class MarkerWriter(Writer):
 
         See Also
         --------
-        go.Figure : Plotly's figure object.
-        go.Scatter3d : Plotly's method to trace paths and lines.
+        go.Figure: Plotly's figure object.
+        go.Scatter3d: Plotly's method to trace paths and lines.
         """
 
         if style is None:
@@ -2017,6 +2121,7 @@ class MarkerWriter(Writer):
                         line=mk_args,
                         showlegend=False,
                         hovertemplate='<extra>MK</extra>',
+                        name=name,
                     )
                 )
                 for x, y, z in zip(xo, yo, zo)
@@ -2050,7 +2155,9 @@ def main() -> None:
         mzi.append(wg)
 
     nwr = NasuWriter(param_gc, objects=mzi)
-    fig = nwr.plot3d()
+    fig = nwr.plot3d(name='wg')
+    hide_trace = ['wg', 'nwg']
+    fig.for_each_trace(lambda trace: trace.update(visible=False) if trace.name in hide_trace else ())
     fig.show()
 
 

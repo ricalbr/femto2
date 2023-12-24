@@ -1,3 +1,4 @@
+from __future__ import annotations
 import logging
 import flask.cli
 import threading
@@ -19,8 +20,8 @@ app = Dash(
 app_thread = threading.Thread(target=app.run, kwargs={'debug': False, 'port': port, 'use_reloader': False})
 app_thread.start()
 
-title = []
-list_cells = []
+title: list[str] = []
+list_cells: list[str]  = []
 
 header = html.H4(title, className="bg-primary text-white p-2 mb-2 text-center")
 
@@ -45,7 +46,14 @@ shutter_switch = html.Div(
         html.Span(
             [
                 dbc.Label(className="fa fa-eraser", html_for="switch"),
-                dbc.Switch(id="switch", value=True, className="d-inline-block ms-1", persistence=True),
+                dbc.Switch(
+                    id="switch",
+                    value=True,
+                    className="d-inline-block ms-1",
+                    persistence=True,
+                    input_style={'onColor': 'success'},
+                    input_class_name='success',
+                ),
                 dbc.Label(className="fa fa-pencil", html_for="switch"),
             ]
         ),

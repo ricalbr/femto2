@@ -154,7 +154,8 @@ class Cell:
 class Device:
     def __init__(self, **param: Any | None) -> None:
         self.cells_collection: dict[str, Cell] = collections.defaultdict(Cell)
-        self.fig: go.Figure | None = None
+        self.fig_2d: go.Figure | None = None
+        self.fig_3d: go.Figure | None = None
         self.fabrication_time: float = 0.0
 
         self._param: dict[str, Any] = copy.deepcopy(param)
@@ -316,33 +317,50 @@ class Device:
 
         # Populate title and cells to show
         title.append(self._param['filename'].split('.')[0].upper())
-        list_cells.extend(list(self.cells_collection.keys()))
+        all_cells = list(self.cells_collection.keys())
+        list_cells.extend(all_cells)
+
+        # Make 2D plot
+        self.fig_2d = self._make_2d_figure(list_cells=all_cells, show_shutter_close=True)
+        self.fig_3d = self._make_3d_figure(list_cells=all_cells, show_shutter_close=True)
 
         @app.callback(
             Output('device-2d', 'figure'),
             Input('dropdown', 'value'),
             Input('switch', 'value'),
         )
-        def update_2d_figure(selected_cell, plot_colsed_shutter):
-            show_shutter_close = True if plot_colsed_shutter else False
-            self.fig = self._update_2d_fig(
-                list_cells=tuple([self.cells_collection[c] for c in selected_cell]),
-                show_shutter_close=show_shutter_close,
+        def update_2d_figure(selected_cells, plot_closed_shutter):
+            show_shutter_close = True if plot_closed_shutter else False
+            self.fig_2d.for_each_trace(
+                lambda trace: trace.update(visible=True)
+                if trace.name in selected_cells or trace.name is None
+                else trace.update(visible=False)
             )
-            return self.fig
+            self.fig_2d.for_each_trace(
+                lambda trace: trace.update(visible=show_shutter_close)
+                if trace.meta == 'shutter_close' and trace.visible
+                else ()
+            )
+            return self.fig_2d
 
         @app.callback(
             Output('device-3d', 'figure'),
             Input('dropdown', 'value'),
             Input('switch', 'value'),
         )
-        def update_3d_figure(selected_cell, plot_colsed_shutter):
-            show_shutter_close = True if plot_colsed_shutter else False
-            self.fig = self._update_3d_fig(
-                list_cells=tuple([self.cells_collection[c] for c in selected_cell]),
-                show_shutter_close=show_shutter_close,
+        def update_3d_figure(selected_cells, plot_closed_shutter):
+            show_shutter_close = True if plot_closed_shutter else False
+            self.fig_3d.for_each_trace(
+                lambda trace: trace.update(visible=True)
+                if trace.name in selected_cells or trace.name is None
+                else trace.update(visible=False)
             )
-            return self.fig
+            self.fig_3d.for_each_trace(
+                lambda trace: trace.update(visible=show_shutter_close)
+                if trace.meta == 'shutter_close' and trace.visible
+                else ()
+            )
+            return self.fig_3d
 
         @app.callback(
             Output('download_1', 'data'),
@@ -364,6 +382,27 @@ class Device:
                 return None
 
         logger.info(f'Plot is running on http://127.0.0.1:{port}/')
+
+    def _make_2d_figure(self, list_cells: list[str], show_shutter_close: bool) -> go.Figure:
+        fig = go.Figure()
+        for cell_name in list_cells:
+            wrs = writers
+            cell = self.cells_collection[cell_name]
+            for typ, list_objs in cell.objects.items():
+                wr = wrs[typ](self._param, objects=list_objs)
+                fig = wr.plot2d(fig=fig, name=cell_name, show_shutter_close=show_shutter_close)
+        x0, y0, x1, y1 = writers[Waveguide](self._param)._get_glass_borders()
+        return plot2d_base_layer(fig, x0=x0, y0=y0, x1=x1, y1=y1)
+
+    def _make_3d_figure(self, list_cells: list[str], show_shutter_close: bool) -> go.Figure:
+        fig = go.Figure()
+        for cell_name in list_cells:
+            wrs = writers
+            cell = self.cells_collection[cell_name]
+            for typ, list_objs in cell.objects.items():
+                wr = wrs[typ](self._param, objects=list_objs)
+                fig = wr.plot3d(fig=fig, name=cell_name, show_shutter_close=show_shutter_close)
+        return plot3d_base_layer(fig)
 
     def save(self, filename: str = 'scheme.html', mode: str = '2D', opt: dict[str, Any] | None = None) -> None:
         """Save figure.
@@ -394,11 +433,14 @@ class Device:
         opt = {**default_opt, **opt}
 
         if mode.upper() == '2D':
-            fig = self._update_2d_fig(list_cells=list(self.cells_collection.values()), show_shutter_close=True)
+            fig = self.fig_2d
         elif mode.upper() == '3D':
-            fig = self._update_3d_fig(list_cells=list(self.cells_collection.values()), show_shutter_close=True)
+            fig = self.fig_3d
         else:
             raise ValueError(f'mode can only be "2D" or "3D". Given {mode.upper()}.')
+
+        if fig is None:
+            return
 
         fn = pathlib.Path(filename)
         if fn.suffix.lower() in ['.html', '']:
@@ -537,25 +579,6 @@ class Device:
         logger.info('Loading complete.')
         return dev
 
-    def _update_2d_fig(self, list_cells: tuple[Cell], show_shutter_close: bool) -> go.Figure():
-        self.fig = go.Figure()
-        for cell in list_cells:
-            wrs = writers
-            for typ, list_objs in cell.objects.items():
-                wr = wrs[typ](self._param, objects=list_objs)
-                self.fig = wr.plot2d(fig=self.fig, show_shutter_close=show_shutter_close)
-        x0, y0, x1, y1 = writers[Waveguide](self._param)._get_glass_borders()
-        return plot2d_base_layer(self.fig, x0=x0, y0=y0, x1=x1, y1=y1)
-
-    def _update_3d_fig(self, list_cells: tuple[Cell], show_shutter_close: bool) -> go.Figure():
-        self.fig = go.Figure()
-        for cell in list_cells:
-            wrs = writers
-            for typ, list_objs in cell.objects.items():
-                wr = wrs[typ](self._param, objects=list_objs)
-                self.fig = wr.plot3d(fig=self.fig, show_shutter_close=show_shutter_close)
-        return plot3d_base_layer(self.fig)
-
 
 def main() -> None:
     """The main function of the script."""
@@ -595,7 +618,7 @@ def main() -> None:
     test.add_cell(trenches)
 
     test.plot()
-    # test.save('scheme.html')
+    test.save('scheme.html')
     # test.pgm()
     # test.xlsx()
     # test.export()
