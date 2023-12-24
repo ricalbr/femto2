@@ -1,13 +1,10 @@
 from __future__ import annotations
 
 import dash
-import logging
-import flask.cli
 
 import collections
 import copy
 import pathlib
-import threading
 from typing import Any
 from typing import get_args
 from typing import Union
@@ -15,23 +12,24 @@ from typing import Union
 import attrs
 import dill
 import plotly.graph_objects as go
-from . import logger
-from .curves import sin
-from .helpers import flatten
-from .helpers import walklevel
-from .laserpath import LaserPath
-from .marker import Marker
-from .spreadsheet import Spreadsheet
-from .trench import Trench
-from .trench import TrenchColumn
-from .waveguide import NasuWaveguide
-from .waveguide import Waveguide
-from .writer import MarkerWriter
-from .writer import NasuWriter
-from .writer import plot2d_base_layer
-from .writer import plot3d_base_layer
-from .writer import TrenchWriter
-from .writer import WaveguideWriter
+from femto import logger
+from femto.curves import sin
+from femto.helpers import flatten
+from femto.helpers import walklevel
+from femto.laserpath import LaserPath
+from femto.marker import Marker
+from femto.spreadsheet import Spreadsheet
+from femto.trench import Trench
+from femto.trench import TrenchColumn
+from femto.waveguide import NasuWaveguide
+from femto.waveguide import Waveguide
+from femto.writer import MarkerWriter
+from femto.writer import NasuWriter
+from femto.writer import plot2d_base_layer
+from femto.writer import plot3d_base_layer
+from femto.writer import TrenchWriter
+from femto.writer import WaveguideWriter
+from femto.app import app, title, list_cell
 
 # List of femto objects
 types = dict(
@@ -50,11 +48,6 @@ writers = {
     Waveguide: WaveguideWriter,
     NasuWaveguide: NasuWriter,
 }
-
-flask.cli.show_server_banner = lambda *args: None
-
-app = dash.Dash(__name__)
-log = logging.getLogger('werkzeug').disabled = True
 
 
 @attrs.define(kw_only=True, repr=False)
@@ -306,7 +299,7 @@ class Device:
             self.cells_collection[key] = Cell(name=key)
         self.cells_collection[key].add(obj)
 
-    def plot2d(self, show: bool = True, save: bool = False, show_shutter_close: bool = True, port: int = 5000) -> None:
+    def plot2d(self, save: bool = False, show_shutter_close: bool = True, port: int = 5000) -> None:
         """Plot 2D.
 
         2D plot of all the objects stored in the ``Device`` class.
@@ -314,8 +307,6 @@ class Device:
 
         Parameters
         ----------
-        show : bool, optional
-            Boolean flag to automatically show the plot. The default value is True.
         save : bool, optional
             Boolean flag to automatically save the plot. The default value is False.
         show_shutter_close: bool, optional
@@ -327,98 +318,39 @@ class Device:
         -------
         None.
         """
-        if show:
-            logger.debug('Show 2D plot.')
-            # self.fig.show()
-            app.layout = dash.html.Div(
-                children=[
-                    dash.html.H1(
-                        children=self._param['filename'].split('.')[0].upper(),
-                        style={'font-family': 'Arial', 'textAlign': 'center'},
-                    ),
-                    dash.html.Div(
-                        children=[
-                            dash.html.Div(
-                                style={
-                                    "width": "5%",
-                                    'display': 'inline-block',
-                                    'margin-top': '10',
-                                },
-                            ),
-                            dash.html.Div(
-                                children=[
-                                    dash.html.Label(
-                                        ['Dataset:'],
-                                        style={
-                                            "font-weight": "bold",
-                                            "font-family": "arial",
-                                            "height": "5%",
-                                            "width": "10%",
-                                            'display': 'inline-block',
-                                            'margin-top': '10',
-                                        },
-                                    ),
-                                    dash.dcc.Dropdown(
-                                        id='dropdown',
-                                        options=list(self.cells_collection.keys()),
-                                        value=list(self.cells_collection.keys()),
-                                        multi=True,
-                                        placeholder="Select a Cell",
-                                        searchable=True,
-                                        style={
-                                            "font-weight": "regular",
-                                            "font-family": "Arial",
-                                        },
-                                    ),
-                                ],
-                                style={
-                                    "width": "33%",
-                                    "display": "inline-block",
-                                },
-                            ),
-                        ]
-                    ),
-                    dash.dcc.Graph(
-                        id='figure-device',
-                        # figure=self.fig,
-                        responsive=True,
-                        style={'width': '100%', 'height': '85vh'},
-                    ),
-                ]
+        logger.info('Plotting 2D objects...')
+
+        # Populate title and cells to show
+        title.append(self._param['filename'].split('.')[0].upper())
+        list_cell.extend(list(self.cells_collection.keys()))
+
+        @app.callback(
+            dash.dependencies.Output('figure-device', 'figure'),
+            [dash.dependencies.Input('dropdown', 'value'), dash.dependencies.Input('checklist', 'value')],
+        )
+        def update_figure(selected_cell, plot_colsed_shutter):
+            show_shutter_close = True if plot_colsed_shutter else False
+            return self._update_2d_fig(
+                list_cells=[self.cells_collection[c] for c in selected_cell], show_shutter_close=show_shutter_close
             )
 
-            @app.callback(
-                dash.dependencies.Output('figure-device', 'figure'), [dash.dependencies.Input('dropdown', 'value')]
-            )
-            def update_figure(selected_cell):
-                self.fig = go.Figure()
-                for cell in [self.cells_collection[c] for c in selected_cell]:
-                    wrs = writers
-                    for typ, list_objs in cell.objects.items():
-                        wr = wrs[typ](self._param, objects=list_objs)
-                        self.fig = wr.plot2d(fig=self.fig, show_shutter_close=show_shutter_close)
-                x0, y0, x1, y1 = writers[Waveguide](self._param)._get_glass_borders()
-                return plot2d_base_layer(self.fig, x0=x0, y0=y0, x1=x1, y1=y1)
-
-            logger.info(f'Plot is running on http://127.0.0.1:{port}/')
-            app_thread = threading.Thread(
-                target=app.run_server, kwargs={'debug': False, 'port': port, 'use_reloader': False}
-            )
-            app_thread.start()
-        else:
-            logger.info('Plotting 2D objects...')
-            self.fig = go.Figure()
-            for cell in self.cells_collection.values():
-                logger.debug(f'2D plot of cell {cell.name.upper()}.')
-                wrs = writers
-                for typ, list_objs in cell.objects.items():
-                    wr = wrs[typ](self._param, objects=list_objs)
-                    self.fig = wr.plot2d(fig=self.fig, show_shutter_close=show_shutter_close)
-            x0, y0, x1, y1 = writers[Waveguide](self._param)._get_glass_borders()
-            self.fig = plot2d_base_layer(self.fig, x0=x0, y0=y0, x1=x1, y1=y1)
+        logger.info(f'Plot is running on http://127.0.0.1:{port}/')
 
         if save:
+            self.fig = self._update_2d_fig(
+                list_cells=self.cells_collection.values(), show_shutter_close=show_shutter_close
+            )
             self.save()
+
+    def _update_2d_fig(self, list_cells: list[Cell], show_shutter_close: bool) -> go.Figure():
+        self.fig = go.Figure()
+        for cell in list_cells:
+            wrs = writers
+            for typ, list_objs in cell.objects.items():
+                wr = wrs[typ](self._param, objects=list_objs)
+                self.fig = wr.plot2d(fig=self.fig, show_shutter_close=show_shutter_close)
+        x0, y0, x1, y1 = writers[Waveguide](self._param)._get_glass_borders()
+        return plot2d_base_layer(self.fig, x0=x0, y0=y0, x1=x1, y1=y1)
 
     def plot3d(self, show: bool = True, save: bool = False, show_shutter_close: bool = True) -> None:
         """Plot 3D.
@@ -624,8 +556,8 @@ class Device:
 def main() -> None:
     """The main function of the script."""
 
-    from .trench import TrenchColumn
-    from .waveguide import Waveguide
+    from femto.trench import TrenchColumn
+    from femto.waveguide import Waveguide
 
     # Parameters
     param_wg: dict[str, Any] = dict(speed=20, radius=25, pitch=0.080, int_dist=0.007, samplesize=(25, 3))
@@ -659,8 +591,8 @@ def main() -> None:
     test.add_cell(trenches)
 
     test.plot2d()
-    test.save('scheme.pdf')
-    test.pgm()
+    # test.save('scheme.pdf')
+    # test.pgm()
     # test.xlsx()
     # test.export()
 
