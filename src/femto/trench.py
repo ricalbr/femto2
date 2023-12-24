@@ -13,13 +13,13 @@ import dill
 import largestinteriorrectangle as lir
 import numpy as np
 import numpy.typing as npt
-from . import logger
-from .curves import sin
-from .helpers import almost_equal
-from .helpers import flatten
-from .helpers import listcast
-from .helpers import normalize_polygon
-from .waveguide import Waveguide
+from femto import logger
+from femto.curves import sin
+from femto.helpers import almost_equal
+from femto.helpers import flatten
+from femto.helpers import listcast
+from femto.helpers import normalize_polygon
+from femto.waveguide import Waveguide
 from shapely import geometry
 from shapely.ops import unary_union
 

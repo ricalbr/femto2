@@ -11,12 +11,12 @@ import attrs
 import numpy as np
 import numpy.typing as npt
 import xlsxwriter
-from . import logger
-from .helpers import flatten
-from .helpers import listcast
-from .marker import Marker
-from .waveguide import NasuWaveguide
-from .waveguide import Waveguide
+from femto import logger
+from femto.helpers import flatten
+from femto.helpers import listcast
+from femto.marker import Marker
+from femto.waveguide import NasuWaveguide
+from femto.waveguide import Waveguide
 
 # Define array type
 nparray = npt.NDArray[np.float32]

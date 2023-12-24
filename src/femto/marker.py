@@ -6,9 +6,9 @@ from typing import Any
 import attrs
 import numpy as np
 import numpy.typing as npt
-from . import logger
-from .helpers import sign
-from .laserpath import LaserPath
+from femto import logger
+from femto.helpers import sign
+from femto.laserpath import LaserPath
 
 # Define array type
 nparray = npt.NDArray[np.float32]

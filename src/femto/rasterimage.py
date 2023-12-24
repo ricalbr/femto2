@@ -5,9 +5,9 @@ from typing import Any
 
 import attrs
 import numpy as np
-from . import logger
-from .helpers import split_mask
-from .laserpath import LaserPath
+from femto import logger
+from femto.helpers import split_mask
+from femto.laserpath import LaserPath
 from PIL import Image
 
 

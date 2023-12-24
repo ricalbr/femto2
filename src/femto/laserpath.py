@@ -9,8 +9,8 @@ import attrs
 import dill
 import numpy as np
 import numpy.typing as npt
-from . import logger
-from .helpers import unique_filter
+from femto import logger
+from femto.helpers import unique_filter
 
 # Define array type
 nparray = npt.NDArray[np.float32]
