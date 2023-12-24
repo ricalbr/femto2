@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+
 import dash
 
 import collections
@@ -29,7 +30,8 @@ from femto.writer import plot2d_base_layer
 from femto.writer import plot3d_base_layer
 from femto.writer import TrenchWriter
 from femto.writer import WaveguideWriter
-from femto.app import app, title, list_cell
+from femto.app import app, title, list_cells, port
+from dash.dependencies import Input, Output, State
 
 # List of femto objects
 types = dict(
@@ -299,94 +301,71 @@ class Device:
             self.cells_collection[key] = Cell(name=key)
         self.cells_collection[key].add(obj)
 
-    def plot2d(self, save: bool = False, show_shutter_close: bool = True, port: int = 5000) -> None:
-        """Plot 2D.
+    def plot(self) -> None:
+        """Plot.
 
-        2D plot of all the objects stored in the ``Device`` class.
+        Plot of all the objects stored in the ``Device`` class.
         The plot is made cell-by-cell.
-
-        Parameters
-        ----------
-        save : bool, optional
-            Boolean flag to automatically save the plot. The default value is False.
-        show_shutter_close: bool, optional
-            Boolean flag to automatically show the parts written with the shutter closed. The default value is True.
-        port: int, optional
-            Address in which the plot will be running (http://127.0.0.1:{port}/).
 
         Returns
         -------
         None.
         """
-        logger.info('Plotting 2D objects...')
+
+        logger.info('Plotting objects...')
 
         # Populate title and cells to show
         title.append(self._param['filename'].split('.')[0].upper())
-        list_cell.extend(list(self.cells_collection.keys()))
+        list_cells.extend(list(self.cells_collection.keys()))
 
         @app.callback(
-            dash.dependencies.Output('figure-device', 'figure'),
-            [dash.dependencies.Input('dropdown', 'value'), dash.dependencies.Input('checklist', 'value')],
+            Output('device-2d', 'figure'),
+            Input('dropdown', 'value'),
+            Input('switch', 'value'),
         )
-        def update_figure(selected_cell, plot_colsed_shutter):
+        def update_2d_figure(selected_cell, plot_colsed_shutter):
             show_shutter_close = True if plot_colsed_shutter else False
-            return self._update_2d_fig(
-                list_cells=[self.cells_collection[c] for c in selected_cell], show_shutter_close=show_shutter_close
+            self.fig = self._update_2d_fig(
+                list_cells=tuple([self.cells_collection[c] for c in selected_cell]),
+                show_shutter_close=show_shutter_close,
             )
+            return self.fig
+
+        @app.callback(
+            Output('device-3d', 'figure'),
+            Input('dropdown', 'value'),
+            Input('switch', 'value'),
+        )
+        def update_3d_figure(selected_cell, plot_colsed_shutter):
+            show_shutter_close = True if plot_colsed_shutter else False
+            self.fig = self._update_3d_fig(
+                list_cells=tuple([self.cells_collection[c] for c in selected_cell]),
+                show_shutter_close=show_shutter_close,
+            )
+            return self.fig
+
+        @app.callback(
+            Output('download_1', 'data'),
+            Input('download', 'n_clicks'),
+            State('tabs', 'active_tab'),
+            State('device-2d', 'figure'),
+            State('device-3d', 'figure'),
+            prevent_initial_call=True,
+        )
+        def download_html(n, at, fig2d, fig3d):
+            fn = f'{self._param["filename"].split(".")[0].upper()}_{2 if at == "tab-0" else 3}D.html'
+            if at == 'tab-0' and n is not None:
+                go.Figure(**fig2d).write_html(fn)
+                return dash.dcc.send_file(fn)
+            elif at == 'tab-1' and n is not None:
+                go.Figure(**fig3d).write_html(fn)
+                return dash.dcc.send_file(fn)
+            else:
+                return None
 
         logger.info(f'Plot is running on http://127.0.0.1:{port}/')
 
-        if save:
-            self.fig = self._update_2d_fig(
-                list_cells=self.cells_collection.values(), show_shutter_close=show_shutter_close
-            )
-            self.save()
-
-    def _update_2d_fig(self, list_cells: list[Cell], show_shutter_close: bool) -> go.Figure():
-        self.fig = go.Figure()
-        for cell in list_cells:
-            wrs = writers
-            for typ, list_objs in cell.objects.items():
-                wr = wrs[typ](self._param, objects=list_objs)
-                self.fig = wr.plot2d(fig=self.fig, show_shutter_close=show_shutter_close)
-        x0, y0, x1, y1 = writers[Waveguide](self._param)._get_glass_borders()
-        return plot2d_base_layer(self.fig, x0=x0, y0=y0, x1=x1, y1=y1)
-
-    def plot3d(self, show: bool = True, save: bool = False, show_shutter_close: bool = True) -> None:
-        """Plot 3D.
-
-        3D plot of all the objects stored in the ``Device`` class.
-        The plot is made cell-by-cell.
-
-        Parameters
-        ----------
-        show : bool, optional
-            Boolean flag to automatically show the plot. The default value is True.
-        save : bool, optional
-            Boolean flag to automatically save the plot. The default value is False.
-        show_shutter_close: bool, optional
-            Boolean flag to automatically show the parts written with the shutter closed. The default value is True.
-
-        Returns
-        -------
-        None.
-        """
-        logger.info('Plotting 3D objects...')
-        self.fig = go.Figure()
-        for cell in self.cells_collection.values():
-            logger.debug(f'3D plot of cell {cell.name.upper()}.')
-            wrs = writers
-            for typ, list_objs in cell.objects.items():
-                wr = wrs[typ](self._param, objects=list_objs)
-                self.fig = wr.plot3d(fig=self.fig, show_shutter_close=show_shutter_close)
-        self.fig = plot3d_base_layer(self.fig)
-        if show:
-            logger.debug('Show 3D plot.')
-            self.fig.show()
-        if save:
-            self.save()
-
-    def save(self, filename: str = 'scheme.html', opt: dict[str, Any] | None = None) -> None:
+    def save(self, filename: str = 'scheme.html', mode: str = '2D', opt: dict[str, Any] | None = None) -> None:
         """Save figure.
 
         Save the plot as a file.
@@ -395,6 +374,8 @@ class Device:
         ----------
         filename: str, optional
             Filename of the output image file. The default name is "scheme.html".
+        mode: str, optional
+            Type of graph to export (2D or 3D). The default value is 2D.
         opt : dict, optional
             Dictionary with exporting options specifications.
 
@@ -409,18 +390,22 @@ class Device:
 
         if opt is None:
             opt = dict()
-        default_opt = {'width': 1980, 'height': 1080, 'scale': 2, 'engine': 'kaleido'}
+        default_opt = {'width': 1980, 'height': 1080, 'scale': 1, 'engine': 'kaleido'}
         opt = {**default_opt, **opt}
 
-        if self.fig is None:
-            return None
+        if mode.upper() == '2D':
+            fig = self._update_2d_fig(list_cells=list(self.cells_collection.values()), show_shutter_close=True)
+        elif mode.upper() == '3D':
+            fig = self._update_3d_fig(list_cells=list(self.cells_collection.values()), show_shutter_close=True)
+        else:
+            raise ValueError(f'mode can only be "2D" or "3D". Given {mode.upper()}.')
 
         fn = pathlib.Path(filename)
         if fn.suffix.lower() in ['.html', '']:
-            self.fig.write_html(str(fn.with_suffix('.html')))
+            fig.write_html(str(fn.with_suffix('.html')))
         else:
-            self.fig.write_image(str(fn), **opt)
-        logger.info(f'Plot saved to "{fn}".')
+            fig.write_image(str(fn), **opt)
+        logger.info(f'Plot {mode.upper()} saved to "{fn}".')
 
     def pgm(self, verbose: bool = False) -> None:
         """Produce PGM file.
@@ -552,6 +537,25 @@ class Device:
         logger.info('Loading complete.')
         return dev
 
+    def _update_2d_fig(self, list_cells: tuple[Cell], show_shutter_close: bool) -> go.Figure():
+        self.fig = go.Figure()
+        for cell in list_cells:
+            wrs = writers
+            for typ, list_objs in cell.objects.items():
+                wr = wrs[typ](self._param, objects=list_objs)
+                self.fig = wr.plot2d(fig=self.fig, show_shutter_close=show_shutter_close)
+        x0, y0, x1, y1 = writers[Waveguide](self._param)._get_glass_borders()
+        return plot2d_base_layer(self.fig, x0=x0, y0=y0, x1=x1, y1=y1)
+
+    def _update_3d_fig(self, list_cells: tuple[Cell], show_shutter_close: bool) -> go.Figure():
+        self.fig = go.Figure()
+        for cell in list_cells:
+            wrs = writers
+            for typ, list_objs in cell.objects.items():
+                wr = wrs[typ](self._param, objects=list_objs)
+                self.fig = wr.plot3d(fig=self.fig, show_shutter_close=show_shutter_close)
+        return plot3d_base_layer(self.fig)
+
 
 def main() -> None:
     """The main function of the script."""
@@ -590,8 +594,8 @@ def main() -> None:
     test.add(waveguides)
     test.add_cell(trenches)
 
-    test.plot2d()
-    # test.save('scheme.pdf')
+    test.plot()
+    # test.save('scheme.html')
     # test.pgm()
     # test.xlsx()
     # test.export()

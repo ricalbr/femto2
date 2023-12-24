@@ -160,7 +160,7 @@ def plot3d_base_layer(fig: go.Figure) -> go.Figure:
 
     logger.debug('Add axis labels and fix camera angle.')
     fig.update_layout(
-        scene_camera=dict(up=dict(x=0, y=np.cos(np.pi/4), z=np.sin(np.pi/4)), eye=dict(x=0.0, y=0.0, z=-2.5)),
+        scene_camera=dict(up=dict(x=0, y=np.cos(np.pi / 4), z=np.sin(np.pi / 4)), eye=dict(x=0.0, y=0.0, z=-2.5)),
         scene=dict(
             bgcolor='rgba(0,0,0,0)',
             aspectratio=dict(

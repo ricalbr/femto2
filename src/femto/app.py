@@ -1,99 +1,91 @@
-import dash
 import logging
 import flask.cli
 import threading
+from dash import Dash, dcc, html
+import dash_bootstrap_components as dbc
+
 
 flask.cli.show_server_banner = lambda *args: None
 log = logging.getLogger('werkzeug').disabled = True
 
 port = 5000
 
-app = dash.Dash(__name__)
-app_thread = threading.Thread(target=app.run_server, kwargs={'debug': False, 'port': port, 'use_reloader': False})
+dbc_css = "https://cdn.jsdelivr.net/gh/AnnMarieW/dash-bootstrap-templates/dbc.min.css"
+
+app = Dash(
+    __name__,
+    external_stylesheets=[dbc.themes.FLATLY, dbc.icons.FONT_AWESOME, dbc_css],
+)
+app_thread = threading.Thread(target=app.run, kwargs={'debug': False, 'port': port, 'use_reloader': False})
 app_thread.start()
 
 title = []
-list_cell = []
-app.layout = dash.html.Div(
-    children=[
-        dash.html.H1(
-            id='main-title',
-            children=title,
-            style={'font-family': 'Arial', 'textAlign': 'center'},
+list_cells = []
+
+header = html.H4(title, className="bg-primary text-white p-2 mb-2 text-center")
+
+dropdown = html.Div(
+    [
+        dbc.Label("Cells", style={'font-weight': 'bold'}),
+        dcc.Dropdown(
+            options=list_cells,
+            value=list_cells,
+            id="dropdown",
+            multi=True,
+            placeholder="Select a Cell",
+            searchable=True,
         ),
-        dash.html.Div(
-            children=[
-                dash.html.Div(
-                    style={
-                        "width": "5%",
-                        'display': 'inline-block',
-                        'margin-top': '10',
-                    },
-                ),
-                dash.html.Div(
-                    children=[
-                        dash.html.Label(
-                            ['Plot cells'],
-                            style={
-                                "font-weight": "bold",
-                                "font-family": "arial",
-                                "height": "5%",
-                                'display': 'inline-block',
-                                'margin-top': '10',
-                            },
-                        ),
-                        dash.dcc.Dropdown(
-                            id='dropdown',
-                            options=list_cell,
-                            value=list_cell,
-                            multi=True,
-                            placeholder="Select a Cell",
-                            searchable=True,
-                            style={
-                                "font-weight": "regular",
-                                "font-family": "Arial",
-                                'margin-top': '10',
-                            },
-                        ),
-                    ],
-                    style={
-                        "width": "33%",
-                        "display": "inline-block",
-                    },
-                ),
-                dash.html.Div(
-                    children=[
-                        dash.html.Label(
-                            ['Show closed shutter lines:'],
-                            style={
-                                "font-weight": "bold",
-                                "font-family": "arial",
-                                "height": "5%",
-                                'display': 'inline-block',
-                                'margin-top': '10',
-                            },
-                        ),
-                        dash.dcc.Checklist(
-                            id='checklist',
-                            options=[''],
-                            value=[''],
-                            style={
-                                "font-weight": "regular",
-                                "font-family": "Arial",
-                            },
-                        ),
-                    ],
-                    style={
-                        "width": "33%",
-                        "display": "inline-block",
-                    },
-                ),
+    ],
+    className="mb-4",
+)
+
+shutter_switch = html.Div(
+    children=[
+        html.Div(dbc.Label("Shutter closed lines", style={'font-weight': 'bold'})),
+        html.Span(
+            [
+                dbc.Label(className="fa fa-eraser", html_for="switch"),
+                dbc.Switch(id="switch", value=True, className="d-inline-block ms-1", persistence=True),
+                dbc.Label(className="fa fa-pencil", html_for="switch"),
             ]
         ),
-        dash.dcc.Graph(
-            id='figure-device',
-            responsive=True,
-            style={'width': '100%', 'height': '85vh'},
-        ),
     ]
+)
+
+download = html.Div(
+    children=[
+        html.Div(dbc.Label("Export", style={'font-weight': 'bold'})),
+        html.Div(dbc.Button("Download as HTML"), id="download"),
+        dcc.Download(id='download_1'),
+    ]
+)
+
+space = html.Br()
+
+controls = dbc.Card([dropdown, shutter_switch, space, download], body=True)
+
+tab1 = dbc.Tab(
+    [dcc.Graph(id="device-2d", responsive=True, style={'width': '100%', 'height': '85vh'})],
+    label="2D Plot",
+    id='tab-2d',
+)
+tab2 = dbc.Tab(
+    [dcc.Graph(id="device-3d", responsive=True, style={'width': '100%', 'height': '85vh'})],
+    label="3D Plot",
+    id='tab-3d',
+)
+tabs = dbc.Card(dbc.Tabs([tab1, tab2], id='tabs'))
+
+app.layout = dbc.Container(
+    [
+        header,
+        dbc.Row(
+            [
+                dbc.Col([controls], width=2),
+                dbc.Col([tabs], width=10),
+            ]
+        ),
+    ],
+    fluid=True,
+    className="dbc dbc-ag-grid",
 )
