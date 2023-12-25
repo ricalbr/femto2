@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import base64
 import logging
-import pathlib
 
 import flask.cli
 import threading
@@ -27,7 +25,7 @@ app_thread.start()
 title: list[str] = []
 list_cells: list[str] = []
 
-header = html.H4(title, className="bg-primary text-white p-2 mb-2 text-center")
+header = html.H4(title, className="bg-primary text-white fw-bold p-2 mb-2 text-center")
 
 dropdown = html.Div(
     [
@@ -47,45 +45,51 @@ dropdown = html.Div(
 shutter_switch = dbc.Row(
     [
         dbc.Col(dbc.Label("Shutter closed lines", style={'font-weight': 'bold'})),
-        dbc.Col(html.Span(
-            [
-                dbc.Label(className="fa fa-eraser", html_for="switch"),
-                dbc.Switch(
-                    id="switch",
-                    value=True,
-                    className="d-inline-block ms-1",
-                    persistence=True,
-                    input_style={'onColor': 'success'},
-                    input_class_name='success',
-                ),
-                dbc.Label(className="fa fa-pencil", html_for="switch"),
-            ]
-        )),
+        dbc.Col(
+            html.Span(
+                [
+                    dbc.Label(className="fa fa-eraser", html_for="switch"),
+                    dbc.Switch(
+                        id="switch",
+                        value=True,
+                        className="d-inline-block ms-1",
+                        persistence=True,
+                        input_style={'onColor': 'success'},
+                        input_class_name='success',
+                    ),
+                    dbc.Label(className="fa fa-pencil", html_for="switch"),
+                ]
+            )
+        ),
     ],
-align="center",
-        justify="between",
-        className="mb-4",
+    align="center",
+    justify="between",
+    className="mb-4",
 )
 
 
 download = dbc.Row(
     [
         dbc.Col(dbc.Label("Export as HTML", style={'font-weight': 'bold'})),
-        dbc.Col([dbc.Button([dbc.Label(className="fa fa-download", html_for="download"), "  Download"], id="download",
-                   size="sm"),
-        dcc.Download(id='download_1')]),
+        dbc.Col(
+            [
+                dbc.Button(
+                    [dbc.Label(className="fa fa-download", html_for="download"), "  Download"], id="download", size="sm"
+                ),
+                dcc.Download(id='download_1'),
+            ]
+        ),
     ],
-
-        align="center",
-        justify="between",
-        className="mb-4",
+    align="center",
+    justify="between",
+    className="mb-4",
 )
 
 space = html.Br()
 
 controls = dbc.Card(
     [
-        dbc.CardHeader("Plot parameters", className="bg-secondary text-primary fw-bold p-2 mb-2 text-center"),
+        dbc.CardHeader("Plot parameters", className="bg-secondary text-primary fw-bold text-center"),
         dbc.CardBody([dropdown, shutter_switch, space, download]),
     ],
     className="border-primary",
@@ -110,8 +114,13 @@ tab2 = dbc.Tab(
     label="3D Plot",
     id='tab-3d',
 )
-tabs = dbc.Card(dbc.Tabs([tab1, tab2], id='tabs',
-            active_tab="tab-0", ))
+tabs = dbc.Card(
+    dbc.Tabs(
+        [tab1, tab2],
+        id='tabs',
+        active_tab="tab-0",
+    )
+)
 
 app.layout = dbc.Container(
     [
