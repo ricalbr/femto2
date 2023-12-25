@@ -1,5 +1,9 @@
 from __future__ import annotations
+
+import base64
 import logging
+import pathlib
+
 import flask.cli
 import threading
 from dash import Dash, dcc, html
@@ -21,7 +25,7 @@ app_thread = threading.Thread(target=app.run, kwargs={'debug': False, 'port': po
 app_thread.start()
 
 title: list[str] = []
-list_cells: list[str]  = []
+list_cells: list[str] = []
 
 header = html.H4(title, className="bg-primary text-white p-2 mb-2 text-center")
 
@@ -40,10 +44,10 @@ dropdown = html.Div(
     className="mb-4",
 )
 
-shutter_switch = html.Div(
-    children=[
-        html.Div(dbc.Label("Shutter closed lines", style={'font-weight': 'bold'})),
-        html.Span(
+shutter_switch = dbc.Row(
+    [
+        dbc.Col(dbc.Label("Shutter closed lines", style={'font-weight': 'bold'})),
+        dbc.Col(html.Span(
             [
                 dbc.Label(className="fa fa-eraser", html_for="switch"),
                 dbc.Switch(
@@ -56,21 +60,45 @@ shutter_switch = html.Div(
                 ),
                 dbc.Label(className="fa fa-pencil", html_for="switch"),
             ]
-        ),
-    ]
+        )),
+    ],
+align="center",
+        justify="between",
+        className="mb-4",
 )
 
-download = html.Div(
-    children=[
-        html.Div(dbc.Label("Export", style={'font-weight': 'bold'})),
-        html.Div(dbc.Button("Download as HTML"), id="download"),
-        dcc.Download(id='download_1'),
-    ]
+
+download = dbc.Row(
+    [
+        dbc.Col(dbc.Label("Export as HTML", style={'font-weight': 'bold'})),
+        dbc.Col([dbc.Button([dbc.Label(className="fa fa-download", html_for="download"), "  Download"], id="download",
+                   size="sm"),
+        dcc.Download(id='download_1')]),
+    ],
+
+        align="center",
+        justify="between",
+        className="mb-4",
 )
 
 space = html.Br()
 
-controls = dbc.Card([dropdown, shutter_switch, space, download], body=True)
+controls = dbc.Card(
+    [
+        dbc.CardHeader("Plot parameters", className="bg-secondary text-primary fw-bold p-2 mb-2 text-center"),
+        dbc.CardBody([dropdown, shutter_switch, space, download]),
+    ],
+    className="border-primary",
+)
+
+# img_path = pathlib.Path('.') / 'utils' / 'logo.png'
+# encoded_img = base64.b64encode(open(img_path, 'rb').read())
+# logo = dbc.Card(
+#         [
+#                 dbc.CardImg(src='data:image/png;base64,{}'.format(encoded_img.decode())),
+#         ],
+#     style={"border": "none", "outline": "black", 'width':'33%'},)
+logo = html.Div()
 
 tab1 = dbc.Tab(
     [dcc.Graph(id="device-2d", responsive=True, style={'width': '100%', 'height': '85vh'})],
@@ -82,7 +110,8 @@ tab2 = dbc.Tab(
     label="3D Plot",
     id='tab-3d',
 )
-tabs = dbc.Card(dbc.Tabs([tab1, tab2], id='tabs'))
+tabs = dbc.Card(dbc.Tabs([tab1, tab2], id='tabs',
+            active_tab="tab-0", ))
 
 app.layout = dbc.Container(
     [
