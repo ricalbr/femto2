@@ -594,7 +594,16 @@ def main() -> None:
     from addict import Dict as ddict
 
     # Data
-    param_wg = ddict(scan=6, speed=20, radius=15, pitch=0.080, int_dist=0.007, lsafe=3, samplesize=(50, 3))
+    param_wg = ddict(
+        scan=6,
+        speed=20,
+        radius=15,
+        pitch=0.080,
+        int_dist=0.007,
+        lsafe=3,
+        samplesize=(50, 3),
+        warp_flag=True,
+    )
 
     increment = [5.0, 0, 0]
 
