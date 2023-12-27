@@ -200,8 +200,8 @@ def euler_S4(
 
 def arc(dy: float, dz: float, num_points: int, radius: float, theta_offset: float = 0, **kwargs: Any | None) -> ptarray:
     thetaf = np.arccos(1 - np.abs(dy) / (2 * radius))
-    theta = theta_offset + 3 * np.pi / 2 + np.linspace(0, thetaf, num_points)
-    x, y = radius * np.cos(theta), (radius * np.sin(theta)) + radius
+    theta = theta_offset - np.pi / 2 + np.linspace(0, thetaf, num_points)
+    x, y = radius * np.cos(theta), radius * (np.sin(theta) + 1)
     z = np.linspace(0, dz, x.size)
     return x, y, z
 
