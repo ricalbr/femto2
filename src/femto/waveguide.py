@@ -11,7 +11,7 @@ from femto import logger
 from femto.laserpath import LaserPath
 
 # Define array type
-nparray = npt.NDArray[np.float32]
+nparray = npt.NDArray[np.float64]
 
 
 @attrs.define(kw_only=True, repr=False, init=False)
@@ -169,9 +169,9 @@ class Waveguide(LaserPath):
         logger.debug(f'Computed (x, y, z) using {fx} function.')
 
         if reverse:
-            x = np.flip(x) - x[-1]
-            y = -(np.flip(y) - y[-1])
-            z = np.flip(z) - z[-1]
+            x= x[::-1] - x[-1] + x[0]
+            y=-(y[::-1] - y[-1] + y[0])
+            z =z[::-1] - z[-1] + z[0]
 
         # Update coordinates
         self.add_path(
@@ -439,7 +439,7 @@ class Waveguide(LaserPath):
 
     def add_curve_points(
         self,
-        points: tuple[nparray, nparray, nparray] | npt.NDArray[np.float32],
+        points: tuple[nparray, nparray, nparray] | npt.NDArray[np.float64],
         speed: float | None = None,
         shutter: int = 1,
     ) -> Waveguide:
@@ -603,6 +603,7 @@ def main() -> None:
         lsafe=3,
         samplesize=(50, 3),
         warp_flag=True,
+            reverse = True
     )
 
     increment = [5.0, 0, 0]
@@ -613,11 +614,11 @@ def main() -> None:
         wg = Waveguide(**param_wg)
         wg.y_init = -wg.pitch / 2 + index * wg.pitch
         wg.start()
-        wg.linear(increment)
-        wg.coupler(dy=(-1) ** index * wg.dy_bend, dz=0.0, fx=sin, flat_peaks=0)
-        wg.bend(dy=(-1) ** index * wg.dy_bend, dz=0.0, fx=circ)
-        wg.coupler(dy=(-1) ** index * wg.dy_bend, dz=0.0, fx=circ, flat_peaks=0)
-        wg.linear(increment)
+        # wg.linear(increment)
+        wg.coupler(dy=(-1) ** index * wg.dy_bend, dz=0.0, fx=sin, flat_peaks=0, reverse=True)
+        wg.bend(dy=(-1) ** index * wg.dy_bend, dz=0.0, fx=circ, reverse=True)
+        wg.coupler(dy=(-1) ** index * wg.dy_bend, dz=0.0, fx=circ, flat_peaks=0, reverse=True)
+        wg.linear([-5, None, None])
         wg.end()
         mzi.append(wg)
 

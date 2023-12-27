@@ -13,7 +13,7 @@ from femto import logger
 from femto.helpers import unique_filter
 
 # Define array type
-nparray = npt.NDArray[np.float32]
+nparray = npt.NDArray[np.float64]
 
 
 @attrs.define(kw_only=True, repr=False, init=False)
@@ -38,11 +38,11 @@ class LaserPath:
     metadata: dict[str, str] = attrs.field(factory=dict)  #: Dictionary with laserpath metadata.
 
     _id: str = attrs.field(alias='_id', default='LP')
-    _x: nparray = attrs.field(alias='_x', factory=lambda: np.array([], dtype=np.float32))
-    _y: nparray = attrs.field(alias='_y', factory=lambda: np.array([], dtype=np.float32))
-    _z: nparray = attrs.field(alias='_z', factory=lambda: np.array([], dtype=np.float32))
-    _f: nparray = attrs.field(alias='_f', factory=lambda: np.array([], dtype=np.float32))
-    _s: nparray = attrs.field(alias='_s', factory=lambda: np.array([], dtype=np.float32))
+    _x: nparray = attrs.field(alias='_x', factory=lambda: np.array([], dtype=np.float64))
+    _y: nparray = attrs.field(alias='_y', factory=lambda: np.array([], dtype=np.float64))
+    _z: nparray = attrs.field(alias='_z', factory=lambda: np.array([], dtype=np.float64))
+    _f: nparray = attrs.field(alias='_f', factory=lambda: np.array([], dtype=np.float64))
+    _s: nparray = attrs.field(alias='_s', factory=lambda: np.array([], dtype=np.float64))
     logger.debug('Initialized all the coordinates arrays.')
 
     def __init__(self, **kwargs: Any) -> None:
@@ -489,7 +489,7 @@ class LaserPath:
 
         # only divide nonzeros else Inf
         default_zero = np.zeros(np.size(dt))
-        cmd_rate = np.divide(f, dt, out=default_zero, where=(dt != 0)).astype(np.float32)
+        cmd_rate = np.divide(f, dt, out=default_zero, where=(dt != 0)).astype(np.float64)
         logger.debug(f'Return point-to-point command rate values, avg_cmd_rate = {np.mean(cmd_rate)}.')
         return cmd_rate
 
@@ -610,11 +610,11 @@ class LaserPath:
         -------
         None.
         """
-        self._x = np.append(self._x, x.astype(np.float32))
-        self._y = np.append(self._y, y.astype(np.float32))
-        self._z = np.append(self._z, z.astype(np.float32))
-        self._f = np.append(self._f, f.astype(np.float32))
-        self._s = np.append(self._s, s.astype(np.float32))
+        self._x = np.append(self._x, x.astype(np.float64))
+        self._y = np.append(self._y, y.astype(np.float64))
+        self._z = np.append(self._z, z.astype(np.float64))
+        self._f = np.append(self._f, f.astype(np.float64))
+        self._s = np.append(self._s, s.astype(np.float64))
 
     def linear(
         self,

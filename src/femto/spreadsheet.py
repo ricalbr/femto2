@@ -19,7 +19,7 @@ from femto.waveguide import NasuWaveguide
 from femto.waveguide import Waveguide
 
 # Define array type
-nparray = npt.NDArray[np.float32]
+nparray = npt.NDArray[np.float64]
 
 
 class ColumnData(NamedTuple):

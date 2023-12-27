@@ -24,7 +24,7 @@ from shapely import geometry
 from shapely.ops import unary_union
 
 # Define array type
-nparray = npt.NDArray[np.float32]
+nparray = npt.NDArray[np.float64]
 
 
 class Trench:
@@ -103,7 +103,7 @@ class Trench:
         """
         xx, yy = self.block.exterior.coords.xy
         logger.debug('Extracting (x,y) from trench block.')
-        return np.asarray(xx, dtype=np.float32), np.asarray(yy, dtype=np.float32)
+        return np.asarray(xx, dtype=np.float64), np.asarray(yy, dtype=np.float64)
 
     @property
     def xborder(self) -> nparray:
@@ -226,7 +226,7 @@ class Trench:
 
             # Internal rectangle
             buffer_length = 2 * self.delta_floor
-            p = np.array([[[x, y] for (x, y) in self.block.buffer(-buffer_length).exterior.coords]], np.float32) * 1e3
+            p = np.array([[[x, y] for (x, y) in self.block.buffer(-buffer_length).exterior.coords]], np.float64) * 1e3
             xmin_int, ymin_int, dx_int, dy_int = lir.lir(p.astype(np.int32), np.int32) / 1e3
             xmax_int, ymax_int = xmin_int + dx_int, ymin_int + dy_int
 

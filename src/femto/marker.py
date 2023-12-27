@@ -11,7 +11,7 @@ from femto.helpers import sign
 from femto.laserpath import LaserPath
 
 # Define array type
-nparray = npt.NDArray[np.float32]
+nparray = npt.NDArray[np.float64]
 
 
 @attrs.define(kw_only=True, repr=False, init=False)
@@ -83,7 +83,7 @@ class Marker(LaserPath):
 
     def ruler(
         self,
-        y_ticks: list[float] | npt.NDArray[np.float32],
+        y_ticks: list[float] | npt.NDArray[np.float64],
         lx: float | None = None,
         lx2: float | None = None,
         x_init: float | None = None,

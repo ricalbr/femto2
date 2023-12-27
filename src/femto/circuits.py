@@ -10,7 +10,7 @@ from femto.curves import sin
 from femto.waveguide import Waveguide
 
 # Define array type
-nparray = npt.NDArray[np.float32]
+nparray = npt.NDArray[np.float64]
 
 sign = itertools.cycle([1, -1])
 

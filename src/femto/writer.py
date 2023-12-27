@@ -625,8 +625,8 @@ class TrenchWriter(Writer):
     def export_array2d(
         self,
         filename: pathlib.Path,
-        x: npt.NDArray[np.float32],
-        y: npt.NDArray[np.float32],
+        x: npt.NDArray[np.float64],
+        y: npt.NDArray[np.float64],
         speed: float | list[float],
         forced_deceleration: bool | list[bool] | npt.NDArray[np.bool_] = False,
     ) -> None:
@@ -901,7 +901,7 @@ class TrenchWriter(Writer):
         logger.debug('Add trenches beds shapes to figure.')
         for bd in self._beds:
             xt, yt = bd.border
-            xt, yt, *_ = self.transform_points(xt, yt, np.zeros_like(xt, dtype=np.float32))
+            xt, yt, *_ = self.transform_points(xt, yt, np.zeros_like(xt, dtype=np.float64))
 
             fig.add_trace(
                 go.Scattergl(
@@ -918,7 +918,7 @@ class TrenchWriter(Writer):
         for tr in self._trenches:
             # get points and transform them
             xt, yt = tr.border
-            xt, yt, *_ = self.transform_points(xt, yt, np.zeros_like(xt, dtype=np.float32))
+            xt, yt, *_ = self.transform_points(xt, yt, np.zeros_like(xt, dtype=np.float64))
 
             fig.add_trace(
                 go.Scattergl(
@@ -944,7 +944,7 @@ class TrenchWriter(Writer):
         for tr in self._trenches:
             # get points and transform them
             xt, yt = tr.border
-            xt, yt, *_ = self.transform_points(xt, yt, np.zeros_like(xt, dtype=np.float32))
+            xt, yt, *_ = self.transform_points(xt, yt, np.zeros_like(xt, dtype=np.float64))
 
             # Wall surface
             x = np.array([xt, xt])
@@ -1006,7 +1006,7 @@ class TrenchWriter(Writer):
         tr = self._trenches[0]
         for bd in self._beds:
             xt, yt = bd.border
-            xt, yt, *_ = self.transform_points(xt, yt, np.zeros_like(xt, dtype=np.float32))
+            xt, yt, *_ = self.transform_points(xt, yt, np.zeros_like(xt, dtype=np.float64))
 
             # Bed wall surface
             x = np.array([xt, xt])

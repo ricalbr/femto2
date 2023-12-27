@@ -1003,16 +1003,20 @@ def test_reverse_bend_curves(f, param) -> None:
     wg_reg.bend(dy=wg.dy_bend, dz=dz, disp_x=dx, fx=f)
 
     for xr, x in zip(wg_reg.x, wg.x):
-        assert pytest.approx(np.abs(xr - x0)) == np.abs(x - x0)
-        assert np.sign(xr - x0) == np.sign(-(x - x0))
+        # sign equality for values close to 0 from: https://stackoverflow.com/a/43381138
+        a, b = xr - x0, x0 - x
+        assert pytest.approx(np.abs(a)) == np.abs(b)                    # check equality abs value
+        assert pytest.approx(np.abs(a+b)) == np.abs(a) + np.abs(b)      # check equality sign
 
     for yr, y in zip(wg_reg.y, wg.y):
-        assert pytest.approx(np.abs(yr - y0)) == np.abs(y - y0)
-        assert np.sign(yr - y0) == np.sign(y - y0)
+        a, b = yr-y0, y-y0
+        assert pytest.approx(np.abs(a), abs=1e-10) == np.abs(b)
+        assert pytest.approx(np.abs(a+b), abs=1e-10) == np.abs(a) + np.abs(b)
 
     for zr, z in zip(wg_reg.z, wg.z):
-        assert pytest.approx(np.abs(zr - z0)) == np.abs(z - z0)
-        assert np.sign(zr - z0) == -np.sign(z - z0)
+        a, b = zr-z0, z0-z
+        assert pytest.approx(np.abs(a)) == np.abs(b)
+        assert pytest.approx(np.abs(a+b)) == np.abs(a) + np.abs(b)
 
 
 def test_reverse_bend_circ(param) -> None:
@@ -1031,16 +1035,20 @@ def test_reverse_bend_circ(param) -> None:
     wg_reg.bend(dy=wg.dy_bend, dz=dz, fx=circ)
 
     for xr, x in zip(wg_reg.x, wg.x):
-        assert pytest.approx(np.abs(xr - x0)) == np.abs(x - x0)
-        assert np.sign(xr - x0) == np.sign(-(x - x0))
+        # sign equality for values close to 0 from: https://stackoverflow.com/a/43381138
+        a, b = xr - x0, x0 - x
+        assert pytest.approx(np.abs(a)) == np.abs(b)                    # check equality abs value
+        assert pytest.approx(np.abs(a+b)) == np.abs(a) + np.abs(b)      # check equality sign
 
     for yr, y in zip(wg_reg.y, wg.y):
-        assert pytest.approx(np.abs(yr - y0)) == np.abs(y - y0)
-        assert np.sign(yr - y0) == np.sign(y - y0)
+        a, b = yr-y0, y-y0
+        assert pytest.approx(np.abs(a)) == np.abs(b)
+        assert pytest.approx(np.abs(a+b)) == np.abs(a) + np.abs(b)
 
     for zr, z in zip(wg_reg.z, wg.z):
-        assert pytest.approx(np.abs(zr - z0)) == np.abs(z - z0)
-        assert np.sign(zr - z0) == -np.sign(z - z0)
+        a, b = zr-z0, z0-z
+        assert pytest.approx(np.abs(a)) == np.abs(b)
+        assert pytest.approx(np.abs(a+b)) == np.abs(a) + np.abs(b)
 
 
 def test_reverse_coupler(param) -> None:
@@ -1060,16 +1068,20 @@ def test_reverse_coupler(param) -> None:
     wg_reg.coupler(dy=wg.dy_bend, dz=dz, fx=circ, int_length=lin)
 
     for xr, x in zip(wg_reg.x, wg.x):
-        assert pytest.approx(np.abs(xr - x0)) == np.abs(x - x0)
-        assert np.sign(xr - x0) == np.sign(-(x - x0))
+        # sign equality for values close to 0 from: https://stackoverflow.com/a/43381138
+        a, b = xr - x0, x0 - x
+        assert pytest.approx(np.abs(a)) == np.abs(b)                    # check equality abs value
+        assert pytest.approx(np.abs(a+b)) == np.abs(a) + np.abs(b)      # check equality sign
 
     for yr, y in zip(wg_reg.y, wg.y):
-        assert pytest.approx(np.abs(yr - y0)) == np.abs(y - y0)
-        assert np.sign(yr - y0) == np.sign(y - y0)
+        a, b = yr-y0, y-y0
+        assert pytest.approx(np.abs(a)) == np.abs(b)
+        assert pytest.approx(np.abs(a+b)) == np.abs(a) + np.abs(b)
 
     for zr, z in zip(wg_reg.z, wg.z):
-        assert pytest.approx(np.abs(zr - z0)) == np.abs(z - z0)
-        assert np.sign(zr - z0) == -np.sign(z - z0)
+        a, b = zr-z0, z0-z
+        assert pytest.approx(np.abs(a)) == np.abs(b)
+        assert pytest.approx(np.abs(a+b)) == np.abs(a) + np.abs(b)
 
 
 def test_reverse_mzi(param) -> None:
@@ -1090,16 +1102,20 @@ def test_reverse_mzi(param) -> None:
     wg_reg.mzi(dy=wg.dy_bend, dz=dz, fx=circ, int_length=lin, arm_length=lar)
 
     for xr, x in zip(wg_reg.x, wg.x):
-        assert pytest.approx(np.abs(xr - x0)) == np.abs(x - x0)
-        assert np.sign(xr - x0) == np.sign(-(x - x0))
+        # sign equality for values close to 0 from: https://stackoverflow.com/a/43381138
+        a, b = xr - x0, x0 - x
+        assert pytest.approx(np.abs(a)) == np.abs(b)                    # check equality abs value
+        assert pytest.approx(np.abs(a+b)) == np.abs(a) + np.abs(b)      # check equality sign
 
     for yr, y in zip(wg_reg.y, wg.y):
-        assert pytest.approx(np.abs(yr - y0)) == np.abs(y - y0)
-        assert np.sign(yr - y0) == np.sign(y - y0)
+        a, b = yr-y0, y-y0
+        assert pytest.approx(np.abs(a)) == np.abs(b)
+        assert pytest.approx(np.abs(a+b)) == np.abs(a) + np.abs(b)
 
     for zr, z in zip(wg_reg.z, wg.z):
-        assert pytest.approx(np.abs(zr - z0)) == np.abs(z - z0)
-        assert np.sign(zr - z0) == -np.sign(z - z0)
+        a, b = zr-z0, z0-z
+        assert pytest.approx(np.abs(a)) == np.abs(b)
+        assert pytest.approx(np.abs(a+b)) == np.abs(a) + np.abs(b)
 
 
 def test_add_points(param):
@@ -1108,9 +1124,9 @@ def test_add_points(param):
     wg.start([0, 0, 0])
     wg.add_curve_points(pts, speed=None, shutter=1)
     x, y, z = wg.path3d
-    np.testing.assert_array_equal(x[1:], np.array(pts[0, :], dtype=np.float32))
-    np.testing.assert_array_equal(y[1:], np.array(pts[1, :], dtype=np.float32))
-    np.testing.assert_array_equal(z[1:], np.array(pts[2, :], dtype=np.float32))
+    np.testing.assert_array_equal(x[1:], np.array(pts[0, :], dtype=np.float64))
+    np.testing.assert_array_equal(y[1:], np.array(pts[1, :], dtype=np.float64))
+    np.testing.assert_array_equal(z[1:], np.array(pts[2, :], dtype=np.float64))
     del wg
 
     pts = np.random.rand(123, 3)
@@ -1118,9 +1134,9 @@ def test_add_points(param):
     wg.start([0, 0, 0])
     wg.add_curve_points(pts, speed=None, shutter=1)
     x, y, z = wg.path3d
-    np.testing.assert_array_equal(x[1:], np.array(pts[:, 0], dtype=np.float32))
-    np.testing.assert_array_equal(y[1:], np.array(pts[:, 1], dtype=np.float32))
-    np.testing.assert_array_equal(z[1:], np.array(pts[:, 2], dtype=np.float32))
+    np.testing.assert_array_equal(x[1:], np.array(pts[:, 0], dtype=np.float64))
+    np.testing.assert_array_equal(y[1:], np.array(pts[:, 1], dtype=np.float64))
+    np.testing.assert_array_equal(z[1:], np.array(pts[:, 2], dtype=np.float64))
 
 
 @pytest.mark.parametrize(

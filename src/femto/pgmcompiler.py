@@ -28,7 +28,7 @@ from scipy import interpolate
 
 # Create a generic variable that can be 'PGMCompiler', or any subclass.
 GC = TypeVar('GC', bound='PGMCompiler')
-nparray = npt.NDArray[np.float32]
+nparray = npt.NDArray[np.float64]
 
 
 class Laser(NamedTuple):
@@ -109,7 +109,7 @@ class PGMCompiler:
         self._dvars: list[str] = []
 
         # Load warp function
-        self.fwarp: Callable[[npt.NDArray[np.float32]], npt.NDArray[np.float32]] = self.warp_management(self.warp_flag)
+        self.fwarp: Callable[[npt.NDArray[np.float64]], npt.NDArray[np.float64]] = self.warp_management(self.warp_flag)
 
         # Set rotation angle in radians for matrix rotations
         if self.rotation_angle:
@@ -971,9 +971,9 @@ class PGMCompiler:
         """
 
         # Normalize data
-        x = np.asarray(x, dtype=np.float32)
-        y = np.asarray(y, dtype=np.float32)
-        z = np.asarray(z, dtype=np.float32)
+        x = np.asarray(x, dtype=np.float64)
+        y = np.asarray(y, dtype=np.float64)
+        z = np.asarray(z, dtype=np.float64)
         logger.debug('Normalize x-, y-, z-arrays to numpy.ndarrys.')
 
         # Translate points to new origin
@@ -1055,7 +1055,7 @@ class PGMCompiler:
         z_comp = copy.deepcopy(np.array(z))
 
         xy = np.column_stack([x_comp, y_comp])
-        zwarp = np.array(self.fwarp(xy), dtype=np.float32)
+        zwarp = np.array(self.fwarp(xy), dtype=np.float64)
         z_comp += zwarp
 
         return x_comp, y_comp, z_comp
