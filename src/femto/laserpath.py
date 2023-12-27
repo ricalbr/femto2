@@ -447,7 +447,7 @@ class LaserPath:
         """
         points = np.array(self.path3d).T
 
-        ds = np.sqrt(np.sum(np.gradient(points.T, axis=1) ** 2, axis=0))
+        ds = np.sqrt(np.sum(np.gradient(points, axis=0) ** 2, axis=1))
         s = np.cumsum(ds)
 
         T_vector = np.gradient(points, axis=0)
@@ -458,6 +458,16 @@ class LaserPath:
         dT_ds = np.gradient(unit_T, axis=0)
         k = dT_ds / norm_T[:, np.newaxis]
         return s, k
+
+    @property
+    def curvature_radius(self) -> nparray:
+        _, k = self.curvature()
+        k_magnitude = np.sqrt(np.sum(k**2, axis=1))
+        return np.divide(
+            np.ones_like(k_magnitude),
+            k_magnitude,
+            where=~np.isclose(k_magnitude, np.zeros_like(k_magnitude), atol=1e-3),
+        )
 
     @property
     def cmd_rate(self) -> nparray:

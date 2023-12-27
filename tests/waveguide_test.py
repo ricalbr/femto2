@@ -727,9 +727,9 @@ def test_spline_z_derivative(param, ddz):
 
 @pytest.mark.parametrize('r_input', [5, 10, 15, 20, 25, 30, 35, 40, 50, 60])
 def test_curvature_radius(param, r_input) -> None:
-    # mean curvature radius is within 5% of the original radius
+    # mean curvature radius is within 1.5% of the original radius
     r = r_input
-    x = 0.05
+    x = 0.015
     wg = Waveguide(**param)
     wg.start().bend(2 * r, dz=0, radius=r, fx=arc)
 
