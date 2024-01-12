@@ -42,9 +42,9 @@ def clements(
     size: int | tuple[int, int],
     param: dict[str, Any],
     f_profile: Callable[..., tuple[nparray, nparray, nparray]] = sin,
+    x_init: float = 5,
     y_init: float | None = None,
     disp_marker: float = 0.2,
-    circuit_init: float = 3,
 ) -> tuple[list[Waveguide], list[tuple[float, float]]]:
     M, N = _get_upp_size(size)
 
@@ -59,7 +59,7 @@ def clements(
         wg = Waveguide(**param)
         wg.start([wg.x_init, yi, wg.z_init])
 
-        wg.linear([circuit_init, None, None], mode='ABS')
+        wg.linear([x_init, None, None], mode='ABS')
         if wg.pitch != wg.pitch_fa:
             wg.bend(dy=fa_in, dz=0, radius=2 * wg.radius, fx=f_profile)
             wg.linear([fa_lin, 0, 0])
