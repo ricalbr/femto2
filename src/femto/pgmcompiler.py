@@ -1348,7 +1348,7 @@ def farcall(directory: str | pathlib.Path, parameters: dict[str, Any]) -> None:
     None.
     """
 
-    pgm_files = [str(fpath) for fpath in sorted(pathlib.Path(directory).glob('*.pgm'))]
+    pgm_files = [str(fpath.name) for fpath in sorted(pathlib.Path(directory).glob('*.pgm'))]
 
     if not pgm_files:
         logger.warning(f'No .pgm file found in {pathlib.Path(directory).absolute()}.')
