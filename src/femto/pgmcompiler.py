@@ -1330,7 +1330,7 @@ class PGMCompiler:
         logger.debug('Deactivate axis rotation.')
 
 
-def farcall(directory: str | pathlib.Path, parameters: dict[str, Any]) -> None:
+def farcall(directory: str | pathlib.Path, parameters: dict[str, Any], filename:str='FARCALL.pgm') -> None:
     """Generate a FARCALL script.
 
     The function compile a FARCALL file for calling the files stored in a given directory. The file will be saved in
@@ -1342,22 +1342,26 @@ def farcall(directory: str | pathlib.Path, parameters: dict[str, Any]) -> None:
         Directory containing the files to call.
     parameters: dict[str, Any]
         Dictionary of the the parameters for a G-Code file.
+    filename: str, optional
+        Name of the FARCALL file. The default is 'FARCALL.pgm'
 
     Returns
     -------
     None.
     """
 
-    pgm_files = [
-        str(fpath.name)
-        for fpath in sorted(pathlib.Path(directory).glob('*.pgm'))
-        if fpath.name.lower() != 'farcall.pgm'
-    ]
+    # Add '.pgm' extension to file
+    fn = filename.split('.')[0].upper() + '.pgm'
+
+    # Remove the FARCALL file before collecting the files to call, this avoid farcall loops.
+    pathlib.Path(fn).unlink(missing_ok=True)
+
+    pgm_files = [str(fpath.name) for fpath in sorted(pathlib.Path(directory).glob('*.pgm'))]
 
     if not pgm_files:
         logger.warning(f'No .pgm file found in {pathlib.Path(directory).absolute()}.')
     else:
-        parameters['filename'] = 'FARCALL.pgm'
+        parameters['filename'] = fn
         parameters['export_dir'] = directory
         gcode_writer = PGMCompiler(**parameters)
         gcode_writer.comment('FARCALL PROGRAM\n; ---------------')
