@@ -1354,7 +1354,7 @@ def farcall(directory: str | pathlib.Path, parameters: dict[str, Any], filename:
     fn = filename.split('.')[0].upper() + '.pgm'
 
     # Remove the FARCALL file before collecting the files to call, this avoid farcall loops.
-    pathlib.Path(fn).unlink(missing_ok=True)
+    (pathlib.Path(directory) / fn).unlink(missing_ok=True)
 
     pgm_files = [str(fpath.name) for fpath in sorted(pathlib.Path(directory).glob('*.pgm'))]
 
