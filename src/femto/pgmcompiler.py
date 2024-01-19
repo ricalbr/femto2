@@ -1402,12 +1402,14 @@ def sample_warp(pts_x: int, pts_y: int, margin: float, parameters: dict[str, Any
     None.
     """
 
-    parameters['filename'] = 'SAMPLE_WARP.pgm'
-    size_x, size_y = parameters['samplesize']
-    angle = parameters['aerotech_angle']
+    p = copy.deepcopy(parameters)
+    p['filename'] = 'SAMPLE_WARP.pgm'
+    p['warp_flag'] = False
+    size_x, size_y = p['samplesize']
+    angle = p['aerotech_angle'] % 360
     warp_name = 'WARP.txt'
 
-    gcode_writer = PGMCompiler(**parameters)
+    gcode_writer = PGMCompiler(**p)
 
     function_txt = gcode_writer.CWD / 'POS.txt'
     if pathlib.Path.is_file(function_txt):
@@ -1419,7 +1421,6 @@ def sample_warp(pts_x: int, pts_y: int, margin: float, parameters: dict[str, Any
                 gcode_writer.header()
             else:
                 gcode_writer.instruction(line.format_map(locals()))
-                print(line.format_map(locals()))
     gcode_writer.close()
 
 
