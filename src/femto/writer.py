@@ -1234,9 +1234,9 @@ class WaveguideWriter(Writer):
         fn = pathlib.Path(fn).stem + '_WG.pgm'
 
         with PGMCompiler.from_dict(self._param, filename=fn, verbose=verbose) as G:
-            with G.repeat(listcast(self.objs)[0].scan):
-                for wg in listcast(self.objs):
-                    _wg_fab_time += wg.fabrication_time
+            for wg in listcast(self.objs):
+                _wg_fab_time += wg.fabrication_time
+                with G.repeat(wg.scan):
                     logger.debug(f'Export {wg}.')
                     G.write(wg.points)
             G.go_init()
