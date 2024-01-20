@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import math
 from collections import deque
 from contextlib import nullcontext as does_not_raise
@@ -552,28 +553,28 @@ def test_sample_warp_param_error(param):
     param['aerotech_angle'] = 0.55
     sampling_script = Path('.') / param['export_dir'] / 'SAMPLE_WARP.pgm'
 
-    p1 = param
+    p1 = copy.deepcopy(param)
     p1['laser'] = None
     with pytest.raises(ValueError):
-        assert sample_warp(7, 7, 3, param) is not None
+        assert sample_warp(7, 7, 3, p1) is not None
         assert not sampling_script.is_file()
 
-    p2 = param
+    p2 = copy.deepcopy(param)
     p2['aerotech_angle'] = None
-    with pytest.raises(ValueError):
-        assert sample_warp(7, 7, 3, param) is not None
+    with pytest.raises(TypeError):
+        assert sample_warp(7, 7, 3, p2) is not None
         assert not sampling_script.is_file()
 
-    p3 = param
+    p3 = copy.deepcopy(param)
     p3['samplesize'] = (None, 4)
-    with pytest.raises(ValueError):
-        assert sample_warp(7, 7, 3, param) is not None
+    with pytest.raises(TypeError):
+        assert sample_warp(7, 7, 3, p3) is not None
         assert not sampling_script.is_file()
 
-    p4 = param
+    p4 = copy.deepcopy(param)
     p4['samplesize'] = (None, None)
-    with pytest.raises(ValueError):
-        assert sample_warp(7, 7, 3, param) is not None
+    with pytest.raises(TypeError):
+        assert sample_warp(7, 7, 3, p4) is not None
         assert not sampling_script.is_file()
 
 
