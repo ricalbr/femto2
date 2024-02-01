@@ -1231,17 +1231,59 @@ class WaveguideWriter(Writer):
 
         _wg_fab_time = 0.0
         fn = self.filename if filename is None else filename
-        fn = pathlib.Path(fn).stem + '_WG.pgm'
 
-        with PGMCompiler.from_dict(self._param, filename=fn, verbose=verbose) as G:
-            for wg in listcast(self.objs):
+        if self._param['buffered'] is True:
+            # esporta le guide numerate nella cartella ceh si chiama filename e genera un chiamatutto
+            fn = pathlib.Path(fn).stem
+            pathlib.Path(fn).mkdir(exist_ok=True)
+
+            repeat_per_wg = []
+            for index, wg in enumerate(listcast(self.objs)):
                 _wg_fab_time += wg.fabrication_time
-                with G.repeat(wg.scan):
-                    logger.debug(f'Export {wg}.')
-                    G.write(wg.points)
-            G.go_init()
-            _wg_fab_time += G.total_dwell_time
-        del G
+                logger.debug(f'Export {wg}.')
+
+                wg_fn = f'WG_{index+1:03}.pgm'
+                repeat_per_wg.append((wg_fn, wg.scan))
+                G = PGMCompiler.from_dict(self._param, filename=wg_fn, export_dir=fn, verbose=verbose)
+                G.comment('WAIT UNTIL 250 LINES ARE LOADED IN THE BUFFER.')
+                G.wait('DATAITEM_QueueLineCount > 250')
+                G.instruction('\n')
+                G._enter_axis_rotation()
+                G.write(wg.points)
+                G._exit_axis_rotation()
+                G.close()
+                _wg_fab_time += G.total_dwell_time
+                del G
+
+            parameters = copy.deepcopy(self._param)
+            parameters['filename'] = f'FARCALL_{str(fn).upper()}.pgm'
+            parameters['export_dir'] = fn
+
+            gcode_farcall = PGMCompiler(**parameters)
+            gcode_farcall.instruction('; FARCALL PROGRAM\n; ---------------\n')
+            for wg_file, scn in repeat_per_wg:
+                gcode_farcall.comment(f' {wg_file.split(".")[0].replace("_", " ").upper()} '.center(20, '-'))
+                # TODO: questo non dovrebbe servire
+                # gcode_farcall.load_program(str(wg_file), task_id=2)
+                with gcode_farcall.repeat(scn):
+                    gcode_farcall.bufferedcall(wg_file)
+                    gcode_farcall.dwell(self.short_pause)
+                gcode_farcall.remove_program(wg_file)
+                gcode_farcall.dwell(self.short_pause)
+            gcode_farcall.go_origin()
+            gcode_farcall.close()
+
+        else:
+            fn = pathlib.Path(fn).stem + '_WG.pgm'
+            with PGMCompiler.from_dict(self._param, filename=fn, verbose=verbose) as G:
+                for wg in listcast(self.objs):
+                    _wg_fab_time += wg.fabrication_time
+                    with G.repeat(wg.scan):
+                        logger.debug(f'Export {wg}.')
+                        G.write(wg.points)
+                G.go_init()
+                _wg_fab_time += G.total_dwell_time
+            del G
 
         self._fabtime = _wg_fab_time
         string = '{:.<49} {}'.format(
@@ -2027,18 +2069,19 @@ class MarkerWriter(Writer):
 def main() -> None:
     """The main function of the script."""
     from femto.curves import sin, circ, spline_bridge
-    from femto.waveguide import NasuWaveguide
+    from femto.waveguide import Waveguide
 
     # Data
     param_wg: dict[str, Any] = dict(scan=6, speed=20, radius=15, pitch=0.080, int_dist=0.007, samplesize=(10, 3))
-    param_gc: dict[str, Any] = dict(filename='testPGM.pgm', samplesize=param_wg['samplesize'])
-
+    param_gc: dict[str, Any] = dict(
+        filename='testPGM.pgm', samplesize=param_wg['samplesize'], buffered=True, aerotech_angle=1, minimal_gcode=True
+    )
     increment = [5.0, 0, 0]
 
     # Calculations
     mzi = []
     for index in range(2):
-        wg = NasuWaveguide(adj_scan_shift=(0, 0.004, 0), **param_wg)
+        wg = Waveguide(adj_scan_shift=(0, 0.004, 0), **param_wg)
         wg.y_init = -wg.pitch / 2 + index * wg.pitch
         wg.start()
         wg.linear(increment)
@@ -2049,9 +2092,10 @@ def main() -> None:
         wg.end()
         mzi.append(wg)
 
-    nwr = NasuWriter(param_gc, objects=mzi)
-    fig = nwr.plot3d()
-    fig.show()
+    wwr = WaveguideWriter(param_gc, objects=mzi)
+    wwr.pgm()
+    # fig = wwr.plot3d()
+    # fig.show()
 
 
 if __name__ == '__main__':
