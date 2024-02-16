@@ -486,7 +486,7 @@ class Device:
 
         # Generate Spreadsheet
         logger.info('Generating spreadsheet...')
-        with Spreadsheet(**kwargs, metadata=metadata) as S:
+        with Spreadsheet(**kwargs, metadata=metadata, export_dir=self._param['export_dir']) as S:
             S.write(objs)
         logger.info('Excel file created.')
 
