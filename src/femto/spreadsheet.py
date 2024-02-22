@@ -68,6 +68,7 @@ class Spreadsheet:
     redundant_cols: bool = False  #: Flag, remove redundant columns when filling the Excel file. Defaults to True.
     new_columns: list[Any] = attrs.field(factory=list)  #: New columns for the Excel file. As default value it is empty.
     metadata: dict[str, Any] = attrs.field(factory=dict)  #: Extra preamble information. As default it is empty.
+    export_dir: str = ''  #: Directory of the Excel file.
 
     _workbook: xlsxwriter.Workbook = None
     _worksheet: xlsxwriter.Workbook.worksheets = None
@@ -92,7 +93,7 @@ class Spreadsheet:
 
         # Create the workbook and worksheet
         self._workbook = xlsxwriter.Workbook(
-            self.book_name,
+            pathlib.Path(self.export_dir) / self.book_name,
             options={'default_format_properties': {'font_name': self.font_name, 'font_size': self.font_size}},
         )
         self._worksheet = self._workbook.add_worksheet(self.sheet_name)

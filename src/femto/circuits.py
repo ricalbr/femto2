@@ -53,7 +53,7 @@ def clements(
 
     circuit_wgs = []
     mk_coords = []
-    for i in range(M):
+    for i in range(N):
         yi, fa_in, fa_lin, fa_lout, fa_out = next(param_io)
 
         wg = Waveguide(**param)
@@ -67,7 +67,7 @@ def clements(
         if i == 0:
             mk_coords.append((wg.lastx - wg.arm_length / 2, wg.lasty - disp_marker))
         wg.bend(dy=next(sign) * wg.dy_bend, dz=0, fx=f_profile)
-        for _ in range(N - 1):
+        for _ in range(M - 1):
             wg.bend(dy=next(sign) * wg.dy_bend, dz=0, fx=f_profile)
             if i == 0:
                 mk_coords.append((wg.lastx, wg.lasty - disp_marker))
@@ -107,7 +107,7 @@ def bell(
 
     circuit_wgs = []
     mk_coords = []
-    for i in range(M):
+    for i in range(N):
         yi, fa_in, fa_lin, fa_lout, fa_out = next(param_io)
 
         wg = Waveguide(**param)
@@ -118,7 +118,7 @@ def bell(
             wg.bend(dy=fa_in, dz=0, radius=2 * wg.radius, fx=f_profile)
             wg.linear([fa_lin, 0, 0])
         wg.bend(dy=next(sign) * wg.dy_bend, dz=0, fx=f_profile)
-        for _ in range(N):
+        for _ in range(M):
             wg.bend(dy=next(sign) * wg.dy_bend, dz=0, fx=f_profile)
             if i == 0:
                 mk_coords.append((wg.lastx, wg.lasty - disp_marker))
