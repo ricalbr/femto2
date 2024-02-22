@@ -791,7 +791,7 @@ class PGMCompiler:
         -------
         None.
         """
-        self._instructions.append(f'WAIT ({condition}) {time}\n')
+        self._instructions.append(f'WAIT ({condition}) {time or -1}\n')
 
     def farcall(self, filename: str) -> None:
         """FARCALL instruction.
