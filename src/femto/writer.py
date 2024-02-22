@@ -590,7 +590,7 @@ class TrenchWriter(Writer):
         # Export each Trench for each TrenchColumn
         for i_col, col in enumerate(self._obj_list):
             # Prepare PGM files export directory
-            col_dir = self._export_path / f'trenchCol{i_col + 1:03}'
+            col_dir = self._export_path / col.base_folder/ f'trenchCol{i_col + 1:03}'
             col_dir.mkdir(parents=True, exist_ok=True)
             logger.debug(f'Export trench column to "{col_dir}".')
 
@@ -605,9 +605,9 @@ class TrenchWriter(Writer):
             # Create a MAIN farcall file, calls all columns .pgm scripts
             logger.debug('Generate MAIN.pgm file.')
             farcall_list = [
-                str(pathlib.Path(col.base_folder) / f'FARCALL{i + 1:03}.pgm') for i, col in enumerate(self._obj_list)
+                str(pathlib.Path(f'FARCALL{i + 1:03}.pgm')) for i, col in enumerate(self._obj_list)
             ]
-            fn = self._export_path / 'MAIN.pgm'
+            fn = self._export_path / col.base_folder / 'MAIN.pgm'
             with PGMCompiler.from_dict(
                 self._param, filename=fn, aerotech_angle=None, rotation_angle=None, verbose=False
             ) as G:
@@ -788,7 +788,7 @@ class TrenchWriter(Writer):
 
         logger.debug('Generate U-Trench columns FARCALL.pgm file.')
         column_param = dict(self._param.copy())
-        column_param['filename'] = self._export_path / f'FARCALL{index + 1:03}.pgm'
+        column_param['filename'] = self._export_path / column.base_folder / f'FARCALL{index + 1:03}.pgm'
         with PGMCompiler.from_dict(column_param, verbose=verbose) as G:
             G.dvar(['ZCURR'])
 
@@ -796,8 +796,8 @@ class TrenchWriter(Writer):
                 # load filenames (wall/floor)
                 wall_filename = f'trench{i_trc + 1:03}_WALL.pgm'
                 floor_filename = f'trench{i_trc + 1:03}_FLOOR.pgm'
-                wall_path = pathlib.Path(column.base_folder) / f'trenchCol{index + 1:03}' / wall_filename
-                floor_path = pathlib.Path(column.base_folder) / f'trenchCol{index + 1:03}' / floor_filename
+                wall_path = pathlib.Path(f'trenchCol{index + 1:03}') / wall_filename
+                floor_path = pathlib.Path(f'trenchCol{index + 1:03}') / floor_filename
 
                 # INIT POINT
                 x0, y0, z0 = self.transform_points(
@@ -847,7 +847,7 @@ class TrenchWriter(Writer):
                 )
                 # load filenames (beds)
                 bed_filename = f'trench_BED_{i_bed + 1:03}.pgm'
-                bed_path = pathlib.Path(column.base_folder) / f'trenchCol{index + 1:03}' / bed_filename
+                bed_path = pathlib.Path(f'trenchCol{index + 1:03}') / bed_filename
 
                 G.comment(f'+--- COLUMN #{index + 1}, TRENCH BED #{i_bed + 1} ---+')
 
@@ -1233,15 +1233,57 @@ class WaveguideWriter(Writer):
         fn = self.filename if filename is None else filename
         fn = pathlib.Path(fn).stem + '_WG.pgm'
 
-        with PGMCompiler.from_dict(self._param, filename=fn, verbose=verbose) as G:
-            for wg in listcast(self.objs):
+        if 'buffered' in self._param and self._param['buffered'] is True:
+            # esporta le guide numerate nella cartella ceh si chiama filename e genera un chiamatutto
+            fn = pathlib.Path(fn).stem
+            pathlib.Path(fn).mkdir(exist_ok=True)
+
+            repeat_per_wg = []
+            for index, wg in enumerate(listcast(self.objs)):
                 _wg_fab_time += wg.fabrication_time
-                with G.repeat(wg.scan):
-                    logger.debug(f'Export {wg}.')
-                    G.write(wg.points)
-            G.go_init()
-            _wg_fab_time += G.total_dwell_time
-        del G
+                logger.debug(f'Export {wg}.')
+
+                wg_fn = f'WG_{index+1:03}.pgm'
+                repeat_per_wg.append((wg_fn, wg.scan))
+                G = PGMCompiler.from_dict(self._param, filename=wg_fn, export_dir=fn, verbose=verbose)
+                G.comment('WAIT UNTIL 250 LINES ARE LOADED IN THE BUFFER.')
+                G.wait('DATAITEM_QueueLineCount > 250')
+                G.instruction('\n')
+                G._enter_axis_rotation()
+                G.write(wg.points)
+                G._exit_axis_rotation()
+                G.close()
+                _wg_fab_time += G.total_dwell_time
+                del G
+
+            parameters = copy.deepcopy(self._param)
+            parameters['filename'] = f'FARCALL_{str(fn).upper()}.pgm'
+            parameters['export_dir'] = fn
+
+            gcode_farcall = PGMCompiler(**parameters)
+            gcode_farcall.instruction('; FARCALL PROGRAM\n; ---------------\n')
+            for wg_file, scn in repeat_per_wg:
+                gcode_farcall.comment(f' {wg_file.split(".")[0].replace("_", " ").upper()} '.center(20, '-'))
+                # TODO: questo non dovrebbe servire
+                # gcode_farcall.load_program(str(wg_file), task_id=2)
+                with gcode_farcall.repeat(scn):
+                    gcode_farcall.bufferedcall(wg_file)
+                    gcode_farcall.dwell(self.short_pause)
+                gcode_farcall.remove_program(wg_file)
+                gcode_farcall.dwell(self.short_pause)
+            gcode_farcall.go_origin()
+            gcode_farcall.close()
+        else:
+            fn = pathlib.Path(fn).stem + '_WG.pgm'
+            with PGMCompiler.from_dict(self._param, filename=fn, verbose=verbose) as G:
+                for wg in listcast(self.objs):
+                    _wg_fab_time += wg.fabrication_time
+                    with G.repeat(wg.scan):
+                        logger.debug(f'Export {wg}.')
+                        G.write(wg.points)
+                G.go_init()
+                _wg_fab_time += G.total_dwell_time
+            del G
 
         self._fabtime = _wg_fab_time
         string = '{:.<49} {}'.format(
