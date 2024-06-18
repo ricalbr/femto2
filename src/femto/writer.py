@@ -1240,7 +1240,7 @@ class WaveguideWriter(Writer):
                 _wg_fab_time += wg.fabrication_time
                 logger.debug(f'Export {wg}.')
 
-                wg_fn = f'WG_{index+1:03}.pgm'
+                wg_fn = f'WG_{index + 1:03}.pgm'
                 repeat_per_wg.append((wg_fn, wg.scan))
                 G = PGMCompiler.from_dict(self._param, filename=wg_fn, export_dir=fn, verbose=verbose)
                 G.comment('WAIT UNTIL 250 LINES ARE LOADED IN THE BUFFER.')
