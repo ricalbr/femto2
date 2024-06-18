@@ -590,7 +590,7 @@ class TrenchWriter(Writer):
         # Export each Trench for each TrenchColumn
         for i_col, col in enumerate(self._obj_list):
             # Prepare PGM files export directory
-            col_dir = self._export_path / col.base_folder/ f'trenchCol{i_col + 1:03}'
+            col_dir = self._export_path / col.base_folder / f'trenchCol{i_col + 1:03}'
             col_dir.mkdir(parents=True, exist_ok=True)
             logger.debug(f'Export trench column to "{col_dir}".')
 
@@ -604,9 +604,7 @@ class TrenchWriter(Writer):
         if len(self._obj_list) > 1:
             # Create a MAIN farcall file, calls all columns .pgm scripts
             logger.debug('Generate MAIN.pgm file.')
-            farcall_list = [
-                str(pathlib.Path(f'FARCALL{i + 1:03}.pgm')) for i, col in enumerate(self._obj_list)
-            ]
+            farcall_list = [str(pathlib.Path(f'FARCALL{i + 1:03}.pgm')) for i, col in enumerate(self._obj_list)]
             fn = self._export_path / col.base_folder / 'MAIN.pgm'
             with PGMCompiler.from_dict(
                 self._param, filename=fn, aerotech_angle=None, rotation_angle=None, verbose=False
@@ -1246,7 +1244,7 @@ class WaveguideWriter(Writer):
                 repeat_per_wg.append((wg_fn, wg.scan))
                 G = PGMCompiler.from_dict(self._param, filename=wg_fn, export_dir=fn, verbose=verbose)
                 G.comment('WAIT UNTIL 250 LINES ARE LOADED IN THE BUFFER.')
-                G.wait('DATAITEM_QueueLineCount > 250')
+                G.instruction('WAIT (DATAITEM_QueueLineCount > 250)')
                 G.instruction('\n')
                 G._enter_axis_rotation()
                 G.write(wg.points)
