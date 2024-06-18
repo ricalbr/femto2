@@ -1330,7 +1330,7 @@ class PGMCompiler:
         logger.debug('Deactivate axis rotation.')
 
 
-def farcall(directory: str | pathlib.Path, parameters: dict[str, Any], filename:str='FARCALL.pgm') -> None:
+def farcall(directory: str | pathlib.Path, parameters: dict[str, Any], filename: str = 'FARCALL.pgm') -> None:
     """Generate a FARCALL script.
 
     The function compile a FARCALL file for calling the files stored in a given directory. The file will be saved in

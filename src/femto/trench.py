@@ -664,7 +664,7 @@ class TrenchColumn:
         # Define the trench bed shape as union of a rectangle and the first and last trench of the column.
         # Automatically convert the bed polygon to a MultiPolygon to keep the code flexible to word with the
         # no-pillar case.
-        logger.debug(f'Divide bed in {n_pillars +1} parts.')
+        logger.debug(f'Divide bed in {n_pillars + 1} parts.')
         t1, t2 = self._trench_list[0], self._trench_list[-1]
         tmp_rect = geometry.box(t1.xmin, t1.center[1], t2.xmax, t2.center[1])
         tmp_bed = geometry.MultiPolygon([unary_union([t1.block, t2.block, tmp_rect])])
