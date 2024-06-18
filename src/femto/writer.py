@@ -1231,10 +1231,9 @@ class WaveguideWriter(Writer):
 
         _wg_fab_time = 0.0
         fn = self.filename if filename is None else filename
-        fn = pathlib.Path(fn).stem + '_WG.pgm'
 
         if 'buffered' in self._param and self._param['buffered'] is True:
-            # esporta le guide numerate nella cartella ceh si chiama filename e genera un chiamatutto
+            # esporta le guide numerate nella cartella che si chiama filename e genera un chiamatutto
             fn = pathlib.Path(fn).stem
             pathlib.Path(fn).mkdir(exist_ok=True)
 

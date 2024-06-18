@@ -126,7 +126,7 @@ def test_spsh_init_default():
 
     assert S._workbook.default_format_properties['font_name'] == 'DejaVu Sans Mono'
     assert S._workbook.default_format_properties['font_size'] == 11
-    assert S._workbook.filename == 'FABRICATION.xlsx'
+    assert S._workbook.filename.name == 'FABRICATION.xlsx'
     assert S._worksheet.name == 'Fabrication'
 
 
