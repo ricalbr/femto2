@@ -814,7 +814,7 @@ class TrenchWriter(Writer):
                     G.dwell(self.long_pause)
                 G.move_to([float(x0), float(y0), float(z0)], speed_pos=column.speed_closed)
 
-                G.instruction(f'$ZCURR = {z0:.6f}')
+                G.instruction(f'$ZCURR = {float(z0):.6f}')
                 G.shutter(state='ON')
                 with G.repeat(column.n_repeat):
                     G.farcall(wall_filename)
