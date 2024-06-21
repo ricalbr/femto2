@@ -981,19 +981,18 @@ class PGMCompiler:
         y -= self.shift_origin[1]
         logger.debug('Shift x-, y-arrays to new origin.')
 
+        # Compensate for warp
+        if self.warp_flag:
+            logger.debug('Compensate for warp.')
+            x, y, z = self.compensate(x, y, z)
+
         # Flip x, y coordinates
         x, y = self.flip(x, y)
 
         # Rotate points
         point_matrix = np.stack((x, y, z), axis=-1)
-        x_t, y_t, z_t = np.matmul(point_matrix, self.t_matrix).T
         logger.debug('Applied 3D rotation matrix.')
-
-        # Compensate for warp
-        if self.warp_flag:
-            logger.debug('Compensate for warp.')
-            return self.compensate(x_t, y_t, z_t)
-        return x_t, y_t, z_t
+        return np.matmul(point_matrix, self.t_matrix).T
 
     def flip(
         self,
@@ -1055,8 +1054,8 @@ class PGMCompiler:
         z_comp = copy.deepcopy(np.array(z))
 
         xy = np.column_stack([x_comp, y_comp])
-        zwarp = np.array(self.fwarp(xy), dtype=np.float32)
-        z_comp += zwarp
+        z_warp = np.array(self.fwarp(xy), dtype=np.float32).reshape(z_comp.shape)
+        z_comp += z_warp
 
         return x_comp, y_comp, z_comp
 
