@@ -62,4 +62,3 @@ repos:
       - id: mypy
         additional_dependencies: [types-all, attrs]
         exclude: ^tests/|^examples/
-        args: [--python-version=3.8]
