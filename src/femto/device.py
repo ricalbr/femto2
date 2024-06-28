@@ -473,10 +473,11 @@ class Device:
 
         # Case in which metadata is given as keyword argument, use it for the Spreadsheet generation
         if not metadata:
-            metadata = {
+            meta = {
                 'laser_name': self._param.get('laser') or '',
                 'sample_name': pathlib.Path(self._param.get('filename') or '').stem,
             }
+            metadata = {**self._param, **meta}
 
         # Fetch all objects from writers
         objs: list[Waveguide | NasuWaveguide] = []
