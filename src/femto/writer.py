@@ -10,17 +10,16 @@ from typing import Any
 import dill
 import numpy as np
 import numpy.typing as npt
+import shapely
+from plotly import graph_objs as go
+
 from femto import logger
-from femto.helpers import flatten
-from femto.helpers import listcast
-from femto.helpers import split_mask
+from femto.helpers import flatten, listcast, split_mask
 from femto.marker import Marker
 from femto.pgmcompiler import PGMCompiler
-from femto.trench import Trench
-from femto.trench import TrenchColumn
-from femto.waveguide import NasuWaveguide
-from femto.waveguide import Waveguide
-from plotly import graph_objs as go
+from femto.text import Text
+from femto.trench import Trench, TrenchColumn
+from femto.waveguide import NasuWaveguide, Waveguide
 
 
 def plot2d_base_layer(fig: go.Figure, x0: float, y0: float, x1: float, y1: float) -> go.Figure:
@@ -51,80 +50,80 @@ def plot2d_base_layer(fig: go.Figure, x0: float, y0: float, x1: float, y1: float
     # GLASS
     logger.debug('Add glass shape.')
     fig.add_shape(
-        type='rect',
-        x0=x0,
-        y0=y0,
-        x1=x1,
-        y1=y1,
-        fillcolor='#E0F2F1',
-        line_color='#000000',
-        line_width=2,
-        layer='below',
+            type='rect',
+            x0=x0,
+            y0=y0,
+            x1=x1,
+            y1=y1,
+            fillcolor='#E0F2F1',
+            line_color='#000000',
+            line_width=2,
+            layer='below',
     )
 
     # ORIGIN
     logger.debug('Add origin reference.')
     fig.add_trace(
-        go.Scattergl(
-            x=[0],
-            y=[0],
-            marker=dict(color='red', size=12),
-            hoverinfo='none',
-            showlegend=False,
-        )
+            go.Scattergl(
+                    x=[0],
+                    y=[0],
+                    marker=dict(color='red', size=12),
+                    hoverinfo='none',
+                    showlegend=False,
+            )
     )
 
     logger.debug('Add axis labels.')
     fig.update_layout(
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)',
-        margin=dict(pad=15),
-        xaxis=dict(
-            title='x [mm]',
-            showgrid=False,
-            zeroline=False,
-            showline=True,
-            linewidth=1,
-            linecolor='black',
-            ticklen=10,
-            tick0=0,
-            ticks='outside',
-            fixedrange=False,
-            minor=dict(
-                ticklen=5,
-                tickmode='linear',
-                ticks='outside',
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            margin=dict(pad=15),
+            xaxis=dict(
+                    title='x [mm]',
+                    showgrid=False,
+                    zeroline=False,
+                    showline=True,
+                    linewidth=1,
+                    linecolor='black',
+                    ticklen=10,
+                    tick0=0,
+                    ticks='outside',
+                    fixedrange=False,
+                    minor=dict(
+                            ticklen=5,
+                            tickmode='linear',
+                            ticks='outside',
+                    ),
             ),
-        ),
-        yaxis=dict(
-            title='y [mm]',
-            showgrid=False,
-            zeroline=False,
-            showline=True,
-            linewidth=1,
-            linecolor='black',
-            ticklen=10,
-            tick0=0,
-            ticks='outside',
-            fixedrange=False,
-            minor=dict(
-                ticklen=5,
-                tickmode='linear',
-                ticks='outside',
+            yaxis=dict(
+                    title='y [mm]',
+                    showgrid=False,
+                    zeroline=False,
+                    showline=True,
+                    linewidth=1,
+                    linecolor='black',
+                    ticklen=10,
+                    tick0=0,
+                    ticks='outside',
+                    fixedrange=False,
+                    minor=dict(
+                            ticklen=5,
+                            tickmode='linear',
+                            ticks='outside',
+                    ),
             ),
-        ),
-        annotations=[
-            dict(
-                x=0,
-                y=0,
-                text='(0,0)',
-                showarrow=False,
-                xanchor='left',
-                xshift=-25,
-                yshift=-20,
-                font=dict(color='red'),
-            )
-        ],
+            annotations=[
+                    dict(
+                            x=0,
+                            y=0,
+                            text='(0,0)',
+                            showarrow=False,
+                            xanchor='left',
+                            xshift=-25,
+                            yshift=-20,
+                            font=dict(color='red'),
+                    )
+            ],
     )
     return fig
 
@@ -148,54 +147,54 @@ def plot3d_base_layer(fig: go.Figure) -> go.Figure:
     # ORIGIN
     logger.debug('Add origin reference.')
     fig.add_trace(
-        go.Scatter3d(
-            x=[0],
-            y=[0],
-            z=[0],
-            marker=dict(color='red', size=12),
-            hoverinfo='none',
-            showlegend=False,
-        )
+            go.Scatter3d(
+                    x=[0],
+                    y=[0],
+                    z=[0],
+                    marker=dict(color='red', size=12),
+                    hoverinfo='none',
+                    showlegend=False,
+            )
     )
 
     logger.debug('Add axis labels and fix camera angle.')
     fig.update_layout(
-        scene_camera=dict(up=dict(x=0, y=np.cos(45), z=np.sin(45)), eye=dict(x=0.0, y=0.0, z=-2.5)),
-        scene=dict(
-            bgcolor='rgba(0,0,0,0)',
-            aspectratio=dict(
-                x=2,
-                y=1,
-                z=0.25,
+            scene_camera=dict(up=dict(x=0, y=np.cos(45), z=np.sin(45)), eye=dict(x=0.0, y=0.0, z=-2.5)),
+            scene=dict(
+                    bgcolor='rgba(0,0,0,0)',
+                    aspectratio=dict(
+                            x=2,
+                            y=1,
+                            z=0.25,
+                    ),
+                    xaxis=dict(
+                            title='x [mm]',
+                            showgrid=False,
+                            zeroline=False,
+                    ),
+                    yaxis=dict(
+                            title='y [mm]',
+                            showgrid=False,
+                            zeroline=False,
+                    ),
+                    zaxis=dict(
+                            title='z [mm]',
+                            showgrid=False,
+                            zeroline=False,
+                    ),
+                    annotations=[
+                            dict(
+                                    x=0,
+                                    y=0,
+                                    z=0,
+                                    text='(0,0,0)',
+                                    showarrow=False,
+                                    xanchor='left',
+                                    xshift=10,
+                                    font=dict(color='red'),
+                            )
+                    ],
             ),
-            xaxis=dict(
-                title='x [mm]',
-                showgrid=False,
-                zeroline=False,
-            ),
-            yaxis=dict(
-                title='y [mm]',
-                showgrid=False,
-                zeroline=False,
-            ),
-            zaxis=dict(
-                title='z [mm]',
-                showgrid=False,
-                zeroline=False,
-            ),
-            annotations=[
-                dict(
-                    x=0,
-                    y=0,
-                    z=0,
-                    text='(0,0,0)',
-                    showarrow=False,
-                    xanchor='left',
-                    xshift=10,
-                    font=dict(color='red'),
-                )
-            ],
-        ),
     )
     return fig
 
@@ -253,10 +252,10 @@ class Writer(PGMCompiler, abc.ABC):
 
     @abc.abstractmethod
     def plot2d(
-        self,
-        fig: go.Figure | None = None,
-        show_shutter_close: bool = True,
-        style: dict[str, Any] | None = None,
+            self,
+            fig: go.Figure | None = None,
+            show_shutter_close: bool = True,
+            style: dict[str, Any] | None = None,
     ) -> go.Figure:
         """Plot 2D.
 
@@ -285,10 +284,10 @@ class Writer(PGMCompiler, abc.ABC):
 
     @abc.abstractmethod
     def plot3d(
-        self,
-        fig: go.Figure | None = None,
-        show_shutter_close: bool = True,
-        style: dict[str, Any] | None = None,
+            self,
+            fig: go.Figure | None = None,
+            show_shutter_close: bool = True,
+            style: dict[str, Any] | None = None,
     ) -> go.Figure:
         """Plot 3D.
 
@@ -340,14 +339,14 @@ class Writer(PGMCompiler, abc.ABC):
 
     def _get_glass_borders(self) -> tuple[float, float, float, float]:
         return (
-            self.shift_origin[0] if self.flip_x else 0 - self.shift_origin[0],
-            self.shift_origin[1] if self.flip_y else 0 - self.shift_origin[1],
-            self.shift_origin[0] - self.xsample if self.flip_x else self.xsample - self.shift_origin[0],
-            self.shift_origin[1] - self.ysample if self.flip_y else self.ysample - self.shift_origin[1],
+                self.shift_origin[0] if self.flip_x else 0 - self.shift_origin[0],
+                self.shift_origin[1] if self.flip_y else 0 - self.shift_origin[1],
+                self.shift_origin[0] - self.xsample if self.flip_x else self.xsample - self.shift_origin[0],
+                self.shift_origin[1] - self.ysample if self.flip_y else self.ysample - self.shift_origin[1],
         )
 
     def export(
-        self, filename: str | pathlib.Path | None = None, export_root: str | pathlib.Path | None = 'EXPORT'
+            self, filename: str | pathlib.Path | None = None, export_root: str | pathlib.Path | None = 'EXPORT'
     ) -> None:
         """Export objects.
 
@@ -368,7 +367,7 @@ class Writer(PGMCompiler, abc.ABC):
         """
 
         filepath = (
-            self.CWD / (self.export_dir or '') / (export_root or '') / pathlib.Path(filename or self.filename).stem
+                self.CWD / (self.export_dir or '') / (export_root or '') / pathlib.Path(filename or self.filename).stem
         )
         filepath.mkdir(exist_ok=True, parents=True)
 
@@ -384,11 +383,11 @@ class TrenchWriter(Writer):
     __slots__ = ('dirname', '_obj_list', '_trenches', '_beds', '_param', '_export_path', '_fabtime')
 
     def __init__(
-        self,
-        param: dict[str, Any],
-        objects: TrenchColumn | list[TrenchColumn] | None = None,
-        dirname: str = 'TRENCH',
-        **kwargs: Any | None,
+            self,
+            param: dict[str, Any],
+            objects: TrenchColumn | list[TrenchColumn] | None = None,
+            dirname: str = 'TRENCH',
+            **kwargs: Any | None,
     ) -> None:
         p = copy.deepcopy(param)
         p.update(kwargs)
@@ -480,7 +479,7 @@ class TrenchWriter(Writer):
             logger.debug('Append Trench bed to _trenchbed.')
 
     def plot2d(
-        self, fig: go.Figure | None = None, show_shutter_close: bool = True, style: dict[str, Any] | None = None
+            self, fig: go.Figure | None = None, show_shutter_close: bool = True, style: dict[str, Any] | None = None
     ) -> go.Figure:
         """Plot 2D.
 
@@ -518,10 +517,10 @@ class TrenchWriter(Writer):
         return fig
 
     def plot3d(
-        self,
-        fig: go.Figure | None = None,
-        show_shutter_close: bool = True,
-        style: dict[str, Any] | None = None,
+            self,
+            fig: go.Figure | None = None,
+            show_shutter_close: bool = True,
+            style: dict[str, Any] | None = None,
     ) -> go.Figure:
         """Plot 3D.
 
@@ -607,7 +606,7 @@ class TrenchWriter(Writer):
             farcall_list = [str(pathlib.Path(f'FARCALL{i + 1:03}.pgm')) for i, col in enumerate(self._obj_list)]
             fn = self._export_path / col.base_folder / 'MAIN.pgm'
             with PGMCompiler.from_dict(
-                self._param, filename=fn, aerotech_angle=None, rotation_angle=None, verbose=False
+                    self._param, filename=fn, aerotech_angle=None, rotation_angle=None, verbose=False
             ) as G:
                 G.farcall_list(farcall_list)
 
@@ -616,17 +615,17 @@ class TrenchWriter(Writer):
             _tc_fab_time += col.fabrication_time + 10
         self._fabtime = _tc_fab_time
         string = '{:.<49} {}'.format(
-            'Estimated isolation trenches fabrication time: ', datetime.timedelta(seconds=int(self._fabtime))
+                'Estimated isolation trenches fabrication time: ', datetime.timedelta(seconds=int(self._fabtime))
         )
         logger.info(string)
 
     def export_array2d(
-        self,
-        filename: pathlib.Path,
-        x: npt.NDArray[np.float32],
-        y: npt.NDArray[np.float32],
-        speed: float | list[float],
-        forced_deceleration: bool | list[bool] | npt.NDArray[np.bool_] = False,
+            self,
+            filename: pathlib.Path,
+            x: npt.NDArray[np.float32],
+            y: npt.NDArray[np.float32],
+            speed: float | list[float],
+            forced_deceleration: bool | list[bool] | npt.NDArray[np.bool_] = False,
     ) -> None:
         """Export 2D path to PGM file.
 
@@ -665,8 +664,8 @@ class TrenchWriter(Writer):
 
         # Export points
         instr = [
-            self._format_args(x, y, z, f)
-            for (x, y, z, f) in itertools.zip_longest(x_arr, y_arr, z_arr, listcast(speed))
+                self._format_args(x, y, z, f)
+                for (x, y, z, f) in itertools.zip_longest(x_arr, y_arr, z_arr, listcast(speed))
         ]
 
         gcode_instr = []
@@ -707,10 +706,10 @@ class TrenchWriter(Writer):
             x_wall, y_wall = trench.border
             logger.debug(f'Export trench wall (border) for trench {trench}.')
             self.export_array2d(
-                filename=column_path / f'trench{i + 1:03}_WALL.pgm',
-                x=x_wall,
-                y=y_wall,
-                speed=column.speed_wall,
+                    filename=column_path / f'trench{i + 1:03}_WALL.pgm',
+                    x=x_wall,
+                    y=y_wall,
+                    speed=column.speed_wall,
             )
 
             # Floor script
@@ -731,11 +730,11 @@ class TrenchWriter(Writer):
 
             logger.debug(f'Export trench floor for trench {trench}.')
             self.export_array2d(
-                filename=column_path / f'trench{i + 1:03}_FLOOR.pgm',
-                x=x_floor,
-                y=y_floor,
-                speed=column.speed_floor,
-                forced_deceleration=f_decel,
+                    filename=column_path / f'trench{i + 1:03}_FLOOR.pgm',
+                    x=x_floor,
+                    y=y_floor,
+                    speed=column.speed_floor,
+                    forced_deceleration=f_decel,
             )
 
         # Bed script
@@ -758,11 +757,11 @@ class TrenchWriter(Writer):
                 f_decel = np.append(f_decel, f_temp)
 
             self.export_array2d(
-                filename=column_path / f'trench_BED_{i + 1:03}.pgm',
-                x=x_bed_block,
-                y=y_bed_block,
-                speed=column.speed_floor,
-                forced_deceleration=f_decel,
+                    filename=column_path / f'trench_BED_{i + 1:03}.pgm',
+                    x=x_bed_block,
+                    y=y_bed_block,
+                    speed=column.speed_floor,
+                    forced_deceleration=f_decel,
             )
 
     def _farcall_trench_column(self, column: TrenchColumn, index: int, verbose: bool = False) -> None:
@@ -799,9 +798,9 @@ class TrenchWriter(Writer):
 
                 # INIT POINT
                 x0, y0, z0 = self.transform_points(
-                    trench.xborder[0],
-                    trench.yborder[0],
-                    np.array(nbox * column.h_box + column.z_off),
+                        trench.xborder[0],
+                        trench.yborder[0],
+                        np.array(nbox * column.h_box + column.z_off),
                 )
                 G.comment(f'+--- COLUMN #{index + 1}, TRENCH #{i_trc + 1} LEVEL {nbox + 1} ---+')
 
@@ -839,9 +838,9 @@ class TrenchWriter(Writer):
             # BED
             for i_bed, bed_block in enumerate(column.bed_list):
                 x0, y0, z0 = self.transform_points(
-                    np.array(bed_block.block.exterior.coords.xy[0])[0],
-                    np.array(bed_block.block.exterior.coords.xy[1])[0],
-                    np.array(nbox * column.h_box + column.z_off),
+                        np.array(bed_block.block.exterior.coords.xy[0])[0],
+                        np.array(bed_block.block.exterior.coords.xy[1])[0],
+                        np.array(nbox * column.h_box + column.z_off),
                 )
                 # load filenames (beds)
                 bed_filename = f'trench_BED_{i_bed + 1:03}.pgm'
@@ -902,14 +901,14 @@ class TrenchWriter(Writer):
             xt, yt, *_ = self.transform_points(xt, yt, np.zeros_like(xt, dtype=np.float32))
 
             fig.add_trace(
-                go.Scattergl(
-                    x=xt,
-                    y=yt,
-                    fill='toself',
-                    **utcargs,
-                    showlegend=False,
-                    hovertemplate='(%{x:.4f}, %{y:.4f})<extra>TR</extra>',
-                )
+                    go.Scattergl(
+                            x=xt,
+                            y=yt,
+                            fill='toself',
+                            **utcargs,
+                            showlegend=False,
+                            hovertemplate='(%{x:.4f}, %{y:.4f})<extra>TR</extra>',
+                    )
             )
 
         logger.debug('Add trenches shapes to figure.')
@@ -919,14 +918,14 @@ class TrenchWriter(Writer):
             xt, yt, *_ = self.transform_points(xt, yt, np.zeros_like(xt, dtype=np.float32))
 
             fig.add_trace(
-                go.Scattergl(
-                    x=xt,
-                    y=yt,
-                    fill='toself',
-                    **tcargs,
-                    showlegend=False,
-                    hovertemplate='(%{x:.4f}, %{y:.4f})<extra>TR</extra>',
-                )
+                    go.Scattergl(
+                            x=xt,
+                            y=yt,
+                            fill='toself',
+                            **tcargs,
+                            showlegend=False,
+                            hovertemplate='(%{x:.4f}, %{y:.4f})<extra>TR</extra>',
+                    )
             )
         return fig
 
@@ -949,16 +948,16 @@ class TrenchWriter(Writer):
             y = np.array([yt, yt])
             z = np.array([np.zeros_like(xt), tr.height * np.ones_like(xt)])
             fig.add_trace(
-                go.Surface(
-                    x=x,
-                    y=y,
-                    z=z,
-                    colorscale=[[0, 'grey'], [1, 'grey']],
-                    showlegend=False,
-                    hoverinfo='skip',
-                    showscale=False,
-                    opacity=0.6,
-                )
+                    go.Surface(
+                            x=x,
+                            y=y,
+                            z=z,
+                            colorscale=[[0, 'grey'], [1, 'grey']],
+                            showlegend=False,
+                            hoverinfo='skip',
+                            showscale=False,
+                            opacity=0.6,
+                    )
             )
 
             # Floor surface
@@ -976,28 +975,28 @@ class TrenchWriter(Writer):
             ys = np.outer(1 - v, y_c1) + np.outer(v, y_c2)
             zs = tr.height * np.ones(xs.shape)
             fig.add_trace(
-                go.Surface(
-                    x=xs,
-                    y=ys,
-                    z=zs,
-                    colorscale=[[0, 'grey'], [1, 'grey']],
-                    showlegend=False,
-                    hoverinfo='skip',
-                    showscale=False,
-                )
+                    go.Surface(
+                            x=xs,
+                            y=ys,
+                            z=zs,
+                            colorscale=[[0, 'grey'], [1, 'grey']],
+                            showlegend=False,
+                            hoverinfo='skip',
+                            showscale=False,
+                    )
             )
 
             # Perimeter points
             fig.add_trace(
-                go.Scatter3d(
-                    x=xt,
-                    y=yt,
-                    z=np.zeros_like(xt),
-                    mode='lines',
-                    line=utcargs,
-                    showlegend=False,
-                    hovertemplate='(%{x:.4f}, %{y:.4f})<extra>TR</extra>',
-                )
+                    go.Scatter3d(
+                            x=xt,
+                            y=yt,
+                            z=np.zeros_like(xt),
+                            mode='lines',
+                            line=utcargs,
+                            showlegend=False,
+                            hovertemplate='(%{x:.4f}, %{y:.4f})<extra>TR</extra>',
+                    )
             )
 
         logger.debug('Add trenches beds 3D shapes to figure.')
@@ -1011,16 +1010,16 @@ class TrenchWriter(Writer):
             y = np.array([yt, yt])
             z = tr.height * np.array([np.ones_like(xt) - 0.015, np.ones_like(xt)])
             fig.add_trace(
-                go.Surface(
-                    x=x,
-                    y=y,
-                    z=z,
-                    colorscale=[[0, 'grey'], [1, 'grey']],
-                    showlegend=False,
-                    hoverinfo='skip',
-                    showscale=False,
-                    opacity=0.6,
-                )
+                    go.Surface(
+                            x=x,
+                            y=y,
+                            z=z,
+                            colorscale=[[0, 'grey'], [1, 'grey']],
+                            showlegend=False,
+                            hoverinfo='skip',
+                            showscale=False,
+                            opacity=0.6,
+                    )
             )
             # Bed floor surface
             if len(xt) % 2:
@@ -1037,28 +1036,325 @@ class TrenchWriter(Writer):
             ys = np.outer(1 - v, y_c1) + np.outer(v, y_c2)
             zs = tr.height * np.ones(xs.shape)
             fig.add_trace(
-                go.Surface(
-                    x=xs,
-                    y=ys,
-                    z=zs,
-                    colorscale=[[0, 'grey'], [1, 'grey']],
-                    showlegend=False,
-                    hoverinfo='skip',
-                    showscale=False,
-                )
+                    go.Surface(
+                            x=xs,
+                            y=ys,
+                            z=zs,
+                            colorscale=[[0, 'grey'], [1, 'grey']],
+                            showlegend=False,
+                            hoverinfo='skip',
+                            showscale=False,
+                    )
             )
             # Bed perimeter points
             fig.add_trace(
-                go.Scatter3d(
-                    x=xt,
-                    y=yt,
-                    z=tr.height * np.ones_like(xt),
-                    mode='lines',
-                    line=utcargs,
-                    showlegend=False,
-                    hovertemplate='(%{x:.4f}, %{y:.4f})<extra>TR</extra>',
-                )
+                    go.Scatter3d(
+                            x=xt,
+                            y=yt,
+                            z=tr.height * np.ones_like(xt),
+                            mode='lines',
+                            line=utcargs,
+                            showlegend=False,
+                            hovertemplate='(%{x:.4f}, %{y:.4f})<extra>TR</extra>',
+                    )
             )
+        return fig
+
+
+class TextWriter(Writer):
+    """Text Writer class."""
+
+    __slots__ = ('dirname', '_obj_list', '_trenches', '_beds', '_param', '_export_path', '_fabtime')
+
+    def __init__(
+            self,
+            param: dict[str, Any],
+            objects: TrenchColumn | list[TrenchColumn] | None = None,
+            dirname: str = 'TRENCH',
+            **kwargs: Any | None,
+    ) -> None:
+        p = copy.deepcopy(param)
+        p.update(kwargs)
+
+        super().__init__(**p)
+        self.dirname: str = dirname
+
+        self._obj_list: list[Text] = [] if objects is None else flatten(listcast(objects))
+        self._letters: list[shapely.geometry.Polygon] = [letter for t in self._obj_list for letter in t.letters]
+
+        self._param: dict[str, Any] = p
+        self._export_path = self.CWD / (self.export_dir or '') / (self.dirname or '')
+        self._fabtime: float = 0.0
+
+    @property
+    def objs(self) -> list[Text]:
+        """Text objects.
+
+        Returns the Text objects contained inside a TextWriter.
+
+        Returns
+        -------
+        list
+           List of Text objects.
+        """
+        return self._obj_list
+
+    @property
+    def letters(self) -> list[shapely.geometry.Polygon]:
+        """Letters polygon objects.
+
+        Returns the list of letters polygon objects contained inside a TextWriter.
+
+        Returns
+        -------
+        list
+           List of letters objects.
+        """
+        return self._letters
+
+    @property
+    def fab_time(self) -> float:
+        """Text fabrication time.
+
+        Returns
+        -------
+        float
+           Total text fabrication time [s].
+        """
+        logger.debug(f'Return fabrication time = {self._fabtime}.')
+        return self._fabtime
+
+    def add(self, objs: Text) -> None:
+        """Append Text objects.
+
+        Parameters
+        ----------
+        objs: Text
+            Text object to be added to object list.
+
+        Returns
+        -------
+        None.
+        """
+
+        objs_cast = flatten([objs])
+        for obj in objs_cast:
+            if not isinstance(obj, Text):
+                logger.error(f'The object must be a Text. {type(obj).__name__} was given.')
+                raise TypeError(f'The object must be a Text. {type(obj).__name__} was given.')
+            self._obj_list.append(obj)
+            self._letters.extend(obj.letters)
+            logger.debug('Append Text to _obj_list.')
+
+    def plot2d(
+            self, fig: go.Figure | None = None, show_shutter_close: bool = True, style: dict[str, Any] | None = None
+    ) -> go.Figure:
+        """Plot 2D.
+
+        2D plot of the Text objects contained in ``self._obj_list``.
+
+        Parameters
+        ----------
+        fig : go.Figure, optional
+            Optional plotly figure object, if no figure is provided a new one is created and updated with the Trench
+            objects stored in the Writer class. If a figure is provided it is updated by adding the stored objects. The
+            default behaviour is creating a new figure.
+        show_shutter_close : bool, optional
+            Boolean flag, if ``True`` the movements with closed shutter are represented. The default value is ``False``.
+        style: dict(str, Any)
+            Plotly compatible styles options for representing the objects.
+
+        Returns
+        -------
+        go.Figure
+            Plotly figure with the 2D plot of the stored Text objects.
+        """
+
+        # If existing figure is given as input parameter append to the figure and return it
+        if fig is not None:
+            logger.debug('Update figure.')
+            return self._plot2d_text(fig=fig, style=style)
+
+        # If fig is None create a new figure from scratch
+        logger.debug('Create figure.')
+        fig = go.Figure()
+        logger.debug('Update figure.')
+        fig = self._plot2d_text(fig=fig, style=style)
+        x0, y0, x1, y1 = self._get_glass_borders()
+        fig = plot2d_base_layer(fig, x0=x0, y0=y0, x1=x1, y1=y1)  # Add glass, shift_origin and axis elements
+        return fig
+
+    def plot3d(
+            self,
+            fig: go.Figure | None = None,
+            show_shutter_close: bool = True,
+            style: dict[str, Any] | None = None,
+    ) -> go.Figure:
+        """Plot 3D.
+
+        3D plot of the Text objects contained in ``self._obj_list``.
+
+        Parameters
+        ----------
+        fig : go.Figure, optional
+            Optional plotly figure object, if no figure is provided a new one is created and updated with the Trench
+            objects stored in the Writer class. If a figure is provided it is updated by adding the stored objects. The
+            default behaviour is creating a new figure.
+        show_shutter_close : bool, optional
+            Boolean flag, if ``True`` the movements with closed shutter are represented. The default value is ``False``.
+        style: dict(str, Any)
+            Plotly compatible styles options for representing the objects.
+
+        Returns
+        -------
+        go.Figure
+            Plotly figure with the 3D plot of the stored Text objects.
+        """
+        if fig is not None:
+            logger.debug('Update figure.')
+            return self._plot3d_text(fig=fig, style=style)
+
+        # If fig is None create a new figure from scratch
+        logger.debug('Create figure.')
+        fig = go.Figure()
+        logger.debug('Update figure.')
+        fig = self._plot3d_text(fig=fig, style=style)
+        fig = plot3d_base_layer(fig)  # Add glass, shift_origin and axis elements
+        return fig
+
+    def pgm(self, filename: str | None = None, verbose: bool = False) -> None:
+        """Export to PGM file.
+
+        Function for the compilation of Text objects.
+
+        Parameters
+        ----------
+        filename: str, optional
+            Name of the .pgm file. The default value is ``self.filename``.
+        verbose : bool, optional
+            Boolean flag, if ``True`` some information about the exporting procedures are printed. The default value is
+            ``False``.
+
+        Returns
+        -------
+        None.
+
+        See Also
+        --------
+        ``femto.pgmcompiler.PGMCompiler`` : class that convert lists of points to PGM file.
+        """
+
+        if not self._obj_list:
+            logger.debug('No object in current writer, no PGM file created.')
+            return None
+
+        fn = self.filename if filename is None else filename
+        _txt_fab_time = 0
+
+        # Export each Trench for each TrenchColumn
+        #TODO: make Text be a marker with hardcoded speed (slow) and depth
+        for i_txt, txt in enumerate(self._obj_list):
+            fn = pathlib.Path(fn).stem + f'_TXT{i_txt:02}.pgm'
+            with PGMCompiler.from_dict(self._param, filename=fn, verbose=verbose) as G:
+                for letter in txt.letters:
+                    _txt_fab_time += letter.length / txt.speed * txt.scan
+                    x, y = letter.exterior.coords.xy
+                    z, s, f = np.zeros_like(x), np.ones_like(x), txt.speed * np.ones_like(x)
+                    points = [x, y, z, s, f]
+
+                    G.move_to([x[0], y[0], z[0]])
+                    G.dwell(0.05)
+                    with G.repeat(txt.scan):
+                        logger.debug(f'Export {txt} letters.')
+                        G.write(points)
+                    G.close()
+                    G.dwell(0.05)
+            G.go_init()
+            _txt_fab_time += G.total_dwell_time
+            del G
+
+        self._fabtime = _txt_fab_time
+        string = '{:.<49} {}'.format(
+                'Estimated isolation trenches fabrication time: ', datetime.timedelta(seconds=int(self._fabtime))
+        )
+        logger.info(string)
+
+
+    def _plot2d_text(self, fig: go.Figure, style: dict[str, Any] | None = None) -> go.Figure:
+        """2D plot helper.
+
+        The function takes a figure and a style dictionary as inputs, and adds a trace to the figure for each ``Trench``
+        stored in the ``Writer`` object.
+
+        Parameters
+        ----------
+        fig : go.Figure
+            Plotly figure object to add the trench traces.
+        style : dict
+            Dictionary containing all the styling parameters of the trench traces.
+
+        Returns
+        -------
+        go.Figure
+            Input figure with added trench traces.
+
+        See Also
+        --------
+        go.Figure : Plotly's figure object.
+        go.Scattergl : Plotly's method to trace paths and lines.
+        """
+
+        if style is None:
+            style = dict()
+        default_txtargs = {'fillcolor': '#000000', 'mode': 'none', 'hoverinfo': 'none'}
+        txtargs = {**default_txtargs, **style}
+
+        logger.debug('Add text shapes to figure.')
+        for lt in self._letters:
+            # get points and transform them
+            xt, yt = lt.exterior.coords.xy
+            xt, yt, *_ = self.transform_points(xt, yt, np.zeros_like(xt, dtype=np.float32))
+
+            fig.add_trace(
+                    go.Scattergl(
+                            x=xt,
+                            y=yt,
+                            fill='toself',
+                            **txtargs,
+                            showlegend=False,
+                            hovertemplate='(%{x:.4f}, %{y:.4f})<extra>TXT</extra>',
+                    )
+            )
+        return fig
+
+    def _plot3d_text(self, fig: go.Figure, style: dict[str, Any] | None = None) -> go.Figure:
+        if style is None:
+            style = dict()
+        default_txtargs = {'dash': 'solid', 'color': '#000000', 'width': 1.5}
+        txtargs = {**default_txtargs, **style}
+
+        if not self._letters:
+            return fig
+
+        for lt in self._letters:
+            # get points and transform them
+            xt, yt = lt.exterior.coords.xy
+            xt, yt, *_ = self.transform_points(xt, yt, np.zeros_like(xt, dtype=np.float32))
+
+            # Perimeter points
+            fig.add_trace(
+                    go.Scatter3d(
+                            x=xt,
+                            y=yt,
+                            z=np.zeros_like(xt),
+                            mode='lines',
+                            line=txtargs,
+                            showlegend=False,
+                            hovertemplate='(%{x:.4f}, %{y:.4f})<extra>TXT</extra>',
+                    )
+            )
+
+        logger.debug('Add text 3D shapes to figure.')
         return fig
 
 
@@ -1126,7 +1422,7 @@ class WaveguideWriter(Writer):
             raise TypeError('The objects must be of Waveguide type. Given wrong type.')
 
     def plot2d(
-        self, fig: go.Figure | None = None, show_shutter_close: bool = True, style: dict[str, Any] | None = None
+            self, fig: go.Figure | None = None, show_shutter_close: bool = True, style: dict[str, Any] | None = None
     ) -> go.Figure:
         """Plot 2D.
 
@@ -1164,7 +1460,7 @@ class WaveguideWriter(Writer):
         return fig
 
     def plot3d(
-        self, fig: go.Figure | None = None, show_shutter_close: bool = True, style: dict[str, Any] | None = None
+            self, fig: go.Figure | None = None, show_shutter_close: bool = True, style: dict[str, Any] | None = None
     ) -> go.Figure:
         """Plot 3D.
 
@@ -1284,13 +1580,13 @@ class WaveguideWriter(Writer):
 
         self._fabtime = _wg_fab_time
         string = '{:.<49} {}'.format(
-            'Estimated waveguides fabrication time: ', datetime.timedelta(seconds=int(self._fabtime))
+                'Estimated waveguides fabrication time: ', datetime.timedelta(seconds=int(self._fabtime))
         )
         logger.info(string)
         self._instructions.clear()
 
     def _plot2d_wg(
-        self, fig: go.Figure, show_shutter_close: bool = True, style: dict[str, Any] | None = None
+            self, fig: go.Figure, show_shutter_close: bool = True, style: dict[str, Any] | None = None
     ) -> go.Figure:
         """2D plot helper.
 
@@ -1330,40 +1626,40 @@ class WaveguideWriter(Writer):
             yo = split_mask(y, s.astype(bool))
             zo = split_mask(z, s.astype(bool))
             [
-                fig.add_trace(
-                    go.Scattergl(
-                        x=list(xoo),
-                        y=list(yoo),
-                        mode='lines',
-                        line=wg_args,
-                        showlegend=False,
-                        customdata=zoo,
-                        hovertemplate='(%{x:.4f}, %{y:.4f}, %{customdata:.4f})<extra>WG</extra>',
+                    fig.add_trace(
+                            go.Scattergl(
+                                    x=list(xoo),
+                                    y=list(yoo),
+                                    mode='lines',
+                                    line=wg_args,
+                                    showlegend=False,
+                                    customdata=zoo,
+                                    hovertemplate='(%{x:.4f}, %{y:.4f}, %{customdata:.4f})<extra>WG</extra>',
+                            )
                     )
-                )
-                for xoo, yoo, zoo in zip(xo, yo, zo)
+                    for xoo, yoo, zoo in zip(xo, yo, zo)
             ]
             logger.debug('Add shutter close trace to figure.')
             if show_shutter_close:
                 xc = split_mask(x, ~s.astype(bool))
                 yc = split_mask(y, ~s.astype(bool))
                 [
-                    fig.add_trace(
-                        go.Scattergl(
-                            x=x,
-                            y=y,
-                            mode='lines',
-                            line=sc_args,
-                            hoverinfo='none',
-                            showlegend=False,
+                        fig.add_trace(
+                                go.Scattergl(
+                                        x=x,
+                                        y=y,
+                                        mode='lines',
+                                        line=sc_args,
+                                        hoverinfo='none',
+                                        showlegend=False,
+                                )
                         )
-                    )
-                    for x, y in zip(xc, yc)
+                        for x, y in zip(xc, yc)
                 ]
         return fig
 
     def _plot3d_wg(
-        self, fig: go.Figure, show_shutter_close: bool = True, style: dict[str, Any] | None = None
+            self, fig: go.Figure, show_shutter_close: bool = True, style: dict[str, Any] | None = None
     ) -> go.Figure:
         """3D plot helper.
 
@@ -1403,18 +1699,18 @@ class WaveguideWriter(Writer):
             zo = split_mask(z, s.astype(bool))
             logger.debug('Add shutter open trace.')
             [
-                fig.add_trace(
-                    go.Scatter3d(
-                        x=x,
-                        y=y,
-                        z=z,
-                        mode='lines',
-                        line=wg_args,
-                        showlegend=False,
-                        hovertemplate='(%{x:.4f}, %{y:.4f}, %{z:.4f})<extra>WG</extra>',
+                    fig.add_trace(
+                            go.Scatter3d(
+                                    x=x,
+                                    y=y,
+                                    z=z,
+                                    mode='lines',
+                                    line=wg_args,
+                                    showlegend=False,
+                                    hovertemplate='(%{x:.4f}, %{y:.4f}, %{z:.4f})<extra>WG</extra>',
+                            )
                     )
-                )
-                for x, y, z in zip(xo, yo, zo)
+                    for x, y, z in zip(xo, yo, zo)
             ]
             if show_shutter_close:
                 logger.debug('Add shutter close trace.')
@@ -1422,18 +1718,18 @@ class WaveguideWriter(Writer):
                 yc = split_mask(y, ~s.astype(bool))
                 zc = split_mask(z, ~s.astype(bool))
                 [
-                    fig.add_trace(
-                        go.Scatter3d(
-                            x=x,
-                            y=y,
-                            z=z,
-                            mode='lines',
-                            line=sc_args,
-                            hoverinfo='none',
-                            showlegend=False,
+                        fig.add_trace(
+                                go.Scatter3d(
+                                        x=x,
+                                        y=y,
+                                        z=z,
+                                        mode='lines',
+                                        line=sc_args,
+                                        hoverinfo='none',
+                                        showlegend=False,
+                                )
                         )
-                    )
-                    for x, y, z in zip(xc, yc, zc)
+                        for x, y, z in zip(xc, yc, zc)
                 ]
         return fig
 
@@ -1501,7 +1797,7 @@ class NasuWriter(Writer):
             raise TypeError('The objects must be of NasuWaveguide type. Given wrong type.')
 
     def plot2d(
-        self, fig: go.Figure | None = None, show_shutter_close: bool = True, style: dict[str, Any] | None = None
+            self, fig: go.Figure | None = None, show_shutter_close: bool = True, style: dict[str, Any] | None = None
     ) -> go.Figure:
         """Plot 2D.
 
@@ -1539,7 +1835,7 @@ class NasuWriter(Writer):
         return fig
 
     def plot3d(
-        self, fig: go.Figure | None = None, show_shutter_close: bool = True, style: dict[str, Any] | None = None
+            self, fig: go.Figure | None = None, show_shutter_close: bool = True, style: dict[str, Any] | None = None
     ) -> go.Figure:
         """Plot 3D.
 
@@ -1620,13 +1916,13 @@ class NasuWriter(Writer):
 
         self._fabtime = _nwg_fab_time
         string = '{:.<49} {}'.format(
-            'Estimated Nasu waveguides fabrication time: ', datetime.timedelta(seconds=int(self._fabtime))
+                'Estimated Nasu waveguides fabrication time: ', datetime.timedelta(seconds=int(self._fabtime))
         )
         logger.info(string)
         self._instructions.clear()
 
     def _plot2d_nwg(
-        self, fig: go.Figure, show_shutter_close: bool = True, style: dict[str, Any] | None = None
+            self, fig: go.Figure, show_shutter_close: bool = True, style: dict[str, Any] | None = None
     ) -> go.Figure:
         """2D plot helper.
 
@@ -1667,38 +1963,38 @@ class NasuWriter(Writer):
                 xo = split_mask(x, s.astype(bool))
                 yo = split_mask(y, s.astype(bool))
                 [
-                    fig.add_trace(
-                        go.Scattergl(
-                            x=list(xoo),
-                            y=list(yoo),
-                            mode='lines',
-                            line=wg_args,
-                            showlegend=False,
-                            hovertemplate='(%{x:.4f}, %{y:.4f})<extra>WG</extra>',
+                        fig.add_trace(
+                                go.Scattergl(
+                                        x=list(xoo),
+                                        y=list(yoo),
+                                        mode='lines',
+                                        line=wg_args,
+                                        showlegend=False,
+                                        hovertemplate='(%{x:.4f}, %{y:.4f})<extra>WG</extra>',
+                                )
                         )
-                    )
-                    for xoo, yoo in zip(xo, yo)
+                        for xoo, yoo in zip(xo, yo)
                 ]
                 if show_shutter_close:
                     xc = split_mask(x, ~s.astype(bool))
                     yc = split_mask(y, ~s.astype(bool))
                     [
-                        fig.add_trace(
-                            go.Scattergl(
-                                x=x,
-                                y=y,
-                                mode='lines',
-                                line=sc_args,
-                                hoverinfo='none',
-                                showlegend=False,
+                            fig.add_trace(
+                                    go.Scattergl(
+                                            x=x,
+                                            y=y,
+                                            mode='lines',
+                                            line=sc_args,
+                                            hoverinfo='none',
+                                            showlegend=False,
+                                    )
                             )
-                        )
-                        for x, y in zip(xc, yc)
+                            for x, y in zip(xc, yc)
                     ]
         return fig
 
     def _plot3d_nwg(
-        self, fig: go.Figure, show_shutter_close: bool = True, style: dict[str, Any] | None = None
+            self, fig: go.Figure, show_shutter_close: bool = True, style: dict[str, Any] | None = None
     ) -> go.Figure:
         """3D plot helper.
 
@@ -1740,36 +2036,36 @@ class NasuWriter(Writer):
                 yo = split_mask(y, s.astype(bool))
                 zo = split_mask(z, s.astype(bool))
                 [
-                    fig.add_trace(
-                        go.Scatter3d(
-                            x=x,
-                            y=y,
-                            z=z,
-                            mode='lines',
-                            line=wg_args,
-                            showlegend=False,
-                            hovertemplate='(%{x:.4f}, %{y:.4f}, %{z:.4f})<extra>WG</extra>',
+                        fig.add_trace(
+                                go.Scatter3d(
+                                        x=x,
+                                        y=y,
+                                        z=z,
+                                        mode='lines',
+                                        line=wg_args,
+                                        showlegend=False,
+                                        hovertemplate='(%{x:.4f}, %{y:.4f}, %{z:.4f})<extra>WG</extra>',
+                                )
                         )
-                    )
-                    for x, y, z in zip(xo, yo, zo)
+                        for x, y, z in zip(xo, yo, zo)
                 ]
                 if show_shutter_close:
                     xc = split_mask(x, ~s.astype(bool))
                     yc = split_mask(y, ~s.astype(bool))
                     zc = split_mask(z, ~s.astype(bool))
                     [
-                        fig.add_trace(
-                            go.Scatter3d(
-                                x=x,
-                                y=y,
-                                z=z,
-                                mode='lines',
-                                line=sc_args,
-                                hoverinfo='none',
-                                showlegend=False,
+                            fig.add_trace(
+                                    go.Scatter3d(
+                                            x=x,
+                                            y=y,
+                                            z=z,
+                                            mode='lines',
+                                            line=sc_args,
+                                            hoverinfo='none',
+                                            showlegend=False,
+                                    )
                             )
-                        )
-                        for x, y, z in zip(xc, yc, zc)
+                            for x, y, z in zip(xc, yc, zc)
                     ]
         return fig
 
@@ -1836,7 +2132,7 @@ class MarkerWriter(Writer):
         logger.debug('Marker added to _obj_list.')
 
     def plot2d(
-        self, fig: go.Figure | None = None, show_shutter_close: bool = True, style: dict[str, Any] | None = None
+            self, fig: go.Figure | None = None, show_shutter_close: bool = True, style: dict[str, Any] | None = None
     ) -> go.Figure:
         """Plot 2D.
 
@@ -1874,7 +2170,7 @@ class MarkerWriter(Writer):
         return fig
 
     def plot3d(
-        self, fig: go.Figure | None = None, show_shutter_close: bool = True, style: dict[str, Any] | None = None
+            self, fig: go.Figure | None = None, show_shutter_close: bool = True, style: dict[str, Any] | None = None
     ) -> go.Figure:
         """Plot 3D.
 
@@ -1955,7 +2251,7 @@ class MarkerWriter(Writer):
 
         self._fabtime = _mk_fab_time
         string = '{:.<49} {}'.format(
-            'Estimated markers fabrication time: ', datetime.timedelta(seconds=int(self._fabtime))
+                'Estimated markers fabrication time: ', datetime.timedelta(seconds=int(self._fabtime))
         )
         logger.info(string)
         self._instructions.clear()
@@ -1996,17 +2292,17 @@ class MarkerWriter(Writer):
             xo = split_mask(x, s.astype(bool))
             yo = split_mask(y, s.astype(bool))
             [
-                fig.add_trace(
-                    go.Scattergl(
-                        x=x,
-                        y=y,
-                        mode='lines',
-                        line=mk_args,
-                        showlegend=False,
-                        hovertemplate='(%{x:.4f}, %{y:.4f})<extra>MK</extra>',
+                    fig.add_trace(
+                            go.Scattergl(
+                                    x=x,
+                                    y=y,
+                                    mode='lines',
+                                    line=mk_args,
+                                    showlegend=False,
+                                    hovertemplate='(%{x:.4f}, %{y:.4f})<extra>MK</extra>',
+                            )
                     )
-                )
-                for x, y in zip(xo, yo)
+                    for x, y in zip(xo, yo)
             ]
         return fig
 
@@ -2047,18 +2343,18 @@ class MarkerWriter(Writer):
             yo = split_mask(y, s.astype(bool))
             zo = split_mask(z, s.astype(bool))
             [
-                fig.add_trace(
-                    go.Scatter3d(
-                        x=x,
-                        y=y,
-                        z=z,
-                        mode='lines',
-                        line=mk_args,
-                        showlegend=False,
-                        hovertemplate='<extra>MK</extra>',
+                    fig.add_trace(
+                            go.Scatter3d(
+                                    x=x,
+                                    y=y,
+                                    z=z,
+                                    mode='lines',
+                                    line=mk_args,
+                                    showlegend=False,
+                                    hovertemplate='<extra>MK</extra>',
+                            )
                     )
-                )
-                for x, y, z in zip(xo, yo, zo)
+                    for x, y, z in zip(xo, yo, zo)
             ]
         return fig
 
