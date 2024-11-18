@@ -9,6 +9,7 @@ import numpy.typing as npt
 from femto import logger
 from femto.helpers import sign
 from femto.laserpath import LaserPath
+from femto.text import Text
 
 # Define array type
 nparray = npt.NDArray[np.float32]
@@ -312,6 +313,35 @@ class Marker(LaserPath):
         logger.debug('Start box as ablation line.')
         self.ablation(points=pts, shift=None)
 
+    def text(
+        self,
+        text: str,
+        origin: list[float] | nparray = [1.0, 1.0],
+        height: float = 1.0,
+        angle: float = 0.0,
+        alignment_position: str = "left-bottom",
+        font: str = "stencil",
+        line_spacing: float = 1.5,
+        true_bbox_alignment: bool = False,
+    ) -> None:
+        txt = Text(
+            text=text,
+            origin=origin,
+            height=height,
+            angle=angle,
+            alignment_position=alignment_position,
+            font=font,
+            line_spacing=line_spacing,
+            true_bbox_alignment=true_bbox_alignment,
+        )
+
+        logger.debug('Start text as ablation line.')
+        for letter in txt.letters:
+            x, y = letter.exterior.coords.xy
+            x, y, z = np.array(x, dtype=np.float32), np.array(y, dtype=np.float32), np.ones_like(x) * self.depth
+            points = list(np.stack([x, y, np.zeros_like(x)], axis=-1))
+            self.ablation(points, shift=None)
+
 
 def main() -> None:
     """The main function of the script."""
@@ -326,7 +356,8 @@ def main() -> None:
     c = Marker(**parameters_mk)
     # c.cross([2.5, 1], 5, 2)
     # c.ablation([[0, 0, 0], [5, 0, 0], [5, 1, 0], [2, 2, 0]], shift=0.001)
-    c.box([1, 2, 3], width=5.0, height=0.01)
+    # c.box([1, 2, 3], width=5.0, height=0.01)
+    c.text('prova')
     print(c.points)
 
     # Plot
@@ -337,7 +368,7 @@ def main() -> None:
         ax.plot(x_seg, y_seg, '-k', linewidth=2.5)
     for x_seg, y_seg in zip(split_mask(x, ~s.astype(bool)), split_mask(y, ~s.astype(bool))):
         ax.plot(x_seg, y_seg, ':b', linewidth=0.5)
-    # plt.show()
+    plt.show()
 
 
 if __name__ == '__main__':

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import attr
-import svgpathtools
 import shapely
 import matplotlib.pyplot as plt
 import numpy as np
@@ -102,6 +101,14 @@ class Alignment:
         return offset
 
 
+def polygon_order(polygon: shapely.geometry.Polygon) -> float:
+    try:
+        val = polygon.bounds[0]
+        return val
+    except TypeError:
+        return 999
+
+
 @attrs.define(kw_only=True, repr=False, init=False)
 class Text:
     text: str = ""
@@ -117,13 +124,14 @@ class Text:
     _bbox: tuple[float, float] | None = None
     _shapely_object: shapely.geometry.MultiPolygon | None = None  #: Multipolygon shape of the text.
     _letters: list[shapely.geometry.Polygon] = attr.field(factory=list)
+    _id: str = attrs.field(alias='_id', default='TX')  #: Text ID.
 
-    def __init__(self, **kwargs: Any):
+    def __init__(self, **kwargs: Any) -> None:
         filtered: dict[str, Any] = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}
         self.__attrs_init__(**filtered)
 
     def __attrs_post_init__(self) -> None:
-        if np.array(self.origin).shape!= (2,):
+        if np.array(self.origin).shape != (2,):
             logger.error('Origin not valid. Need an iterable of two elements.')
             raise AttributeError('Origin not valid. Need an iterable of two elements.')
         self.origin = np.array(self.origin)
@@ -141,6 +149,9 @@ class Text:
         _alignment = Alignment(alignment=self.alignment_position)
         _bbox = None
         _shapely_object = None
+
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}@{id(self) & 0xFFFFFF:x}'
 
     def _invalidate(self) -> None:
         self._bbox = None
@@ -231,7 +242,8 @@ class Text:
 
         self._bbox = np.array(final_text.bounds).reshape(2, 2)
         self._shapely_object = final_text
-        self._letters.extend(list(final_text.geoms))
+        letters = sorted(list(final_text.geoms), key=lambda polygon: polygon.bounds[0])
+        self._letters.extend(letters)
         return final_text
 
 
