@@ -1,17 +1,17 @@
 from __future__ import annotations
 
 import math
-from typing import Any
-from typing import Callable
+from typing import Any, Callable
 
 import attrs
 import numpy as np
 import numpy.typing as npt
+
 from femto import logger
 from femto.laserpath import LaserPath
 
 # Define array type
-nparray = npt.NDArray[np.float32]
+nparray = npt.NDArray[np.float64]
 
 
 @attrs.define(kw_only=True, repr=False, init=False)
@@ -439,7 +439,7 @@ class Waveguide(LaserPath):
 
     def add_curve_points(
         self,
-        points: tuple[nparray, nparray, nparray] | npt.NDArray[np.float32],
+        points: tuple[nparray, nparray, nparray] | npt.NDArray[np.float64],
         speed: float | None = None,
         shutter: int = 1,
     ) -> Waveguide:
@@ -589,9 +589,10 @@ def coupler(
 def main() -> None:
     """The main function of the script."""
     import matplotlib.pyplot as plt
-    from femto.curves import circ, sin
-    from mpl_toolkits.mplot3d import Axes3D
     from addict import Dict as ddict
+    from mpl_toolkits.mplot3d import Axes3D
+
+    from femto.curves import circ, sin
 
     # Data
     param_wg = ddict(scan=6, speed=20, radius=15, pitch=0.080, int_dist=0.007, lsafe=3, samplesize=(50, 3))

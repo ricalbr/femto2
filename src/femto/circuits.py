@@ -1,16 +1,16 @@
 from __future__ import annotations
 
 import itertools
-from typing import Any
-from typing import Callable
+from typing import Any, Callable
 
 import numpy as np
 import numpy.typing as npt
+
 from femto.curves import sin
 from femto.waveguide import Waveguide
 
 # Define array type
-nparray = npt.NDArray[np.float32]
+nparray = npt.NDArray[np.float64]
 
 sign = itertools.cycle([1, -1])
 

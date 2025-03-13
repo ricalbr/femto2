@@ -5,10 +5,11 @@ from typing import Any
 
 import attrs
 import numpy as np
+from PIL import Image
+
 from femto import logger
 from femto.helpers import split_mask
 from femto.laserpath import LaserPath
-from PIL import Image
 
 
 @attrs.define(kw_only=True, repr=False, init=False)
@@ -86,11 +87,11 @@ class RasterImage(LaserPath):
 
             # add a path for each sub-split with open shutter
             for x_split in x_open_shutter:
-                x_row = np.array([x_split[0], x_split[0], x_split[-1], x_split[-1], x_split[0]], dtype=np.float32)
-                y_row = y_val * np.ones_like(x_row, dtype=np.float32)
-                z_row = z_val * np.ones_like(x_row, dtype=np.float32)
+                x_row = np.array([x_split[0], x_split[0], x_split[-1], x_split[-1], x_split[0]], dtype=np.float64)
+                y_row = y_val * np.ones_like(x_row, dtype=np.float64)
+                z_row = z_val * np.ones_like(x_row, dtype=np.float64)
                 f_row = np.array(
-                    [self.speed_closed, self.speed, self.speed, self.speed_closed, self.speed_closed], dtype=np.float32
+                    [self.speed_closed, self.speed, self.speed, self.speed_closed, self.speed_closed], dtype=np.float64
                 )
                 s_row = np.array([0, 1, 1, 0, 0], dtype=int)
 
@@ -100,8 +101,9 @@ class RasterImage(LaserPath):
 
 def main() -> None:
     """The main function of the script."""
-    import matplotlib.pyplot as plt
     from pathlib import Path
+
+    import matplotlib.pyplot as plt
 
     param_rimg = dict(px_to_mm=0.04, speed=1)
     logo_path = Path('./utils/logo.png')

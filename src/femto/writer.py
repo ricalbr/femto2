@@ -10,17 +10,14 @@ from typing import Any
 import dill
 import numpy as np
 import numpy.typing as npt
+from plotly import graph_objs as go
+
 from femto import logger
-from femto.helpers import flatten
-from femto.helpers import listcast
-from femto.helpers import split_mask
+from femto.helpers import flatten, listcast, split_mask
 from femto.marker import Marker
 from femto.pgmcompiler import PGMCompiler
-from femto.trench import Trench
-from femto.trench import TrenchColumn
-from femto.waveguide import NasuWaveguide
-from femto.waveguide import Waveguide
-from plotly import graph_objs as go
+from femto.trench import Trench, TrenchColumn
+from femto.waveguide import NasuWaveguide, Waveguide
 
 
 def plot2d_base_layer(fig: go.Figure, x0: float, y0: float, x1: float, y1: float) -> go.Figure:
@@ -623,8 +620,8 @@ class TrenchWriter(Writer):
     def export_array2d(
         self,
         filename: pathlib.Path,
-        x: npt.NDArray[np.float32],
-        y: npt.NDArray[np.float32],
+        x: npt.NDArray[np.float64],
+        y: npt.NDArray[np.float64],
         speed: float | list[float],
         forced_deceleration: bool | list[bool] | npt.NDArray[np.bool_] = False,
     ) -> None:
@@ -899,7 +896,7 @@ class TrenchWriter(Writer):
         logger.debug('Add trenches beds shapes to figure.')
         for bd in self._beds:
             xt, yt = bd.border
-            xt, yt, *_ = self.transform_points(xt, yt, np.zeros_like(xt, dtype=np.float32))
+            xt, yt, *_ = self.transform_points(xt, yt, np.zeros_like(xt, dtype=np.float64))
 
             fig.add_trace(
                 go.Scattergl(
@@ -916,7 +913,7 @@ class TrenchWriter(Writer):
         for tr in self._trenches:
             # get points and transform them
             xt, yt = tr.border
-            xt, yt, *_ = self.transform_points(xt, yt, np.zeros_like(xt, dtype=np.float32))
+            xt, yt, *_ = self.transform_points(xt, yt, np.zeros_like(xt, dtype=np.float64))
 
             fig.add_trace(
                 go.Scattergl(
@@ -942,7 +939,7 @@ class TrenchWriter(Writer):
         for tr in self._trenches:
             # get points and transform them
             xt, yt = tr.border
-            xt, yt, *_ = self.transform_points(xt, yt, np.zeros_like(xt, dtype=np.float32))
+            xt, yt, *_ = self.transform_points(xt, yt, np.zeros_like(xt, dtype=np.float64))
 
             # Wall surface
             x = np.array([xt, xt])
@@ -1004,7 +1001,7 @@ class TrenchWriter(Writer):
         tr = self._trenches[0]
         for bd in self._beds:
             xt, yt = bd.border
-            xt, yt, *_ = self.transform_points(xt, yt, np.zeros_like(xt, dtype=np.float32))
+            xt, yt, *_ = self.transform_points(xt, yt, np.zeros_like(xt, dtype=np.float64))
 
             # Bed wall surface
             x = np.array([xt, xt])
@@ -2065,7 +2062,7 @@ class MarkerWriter(Writer):
 
 def main() -> None:
     """The main function of the script."""
-    from femto.curves import sin, circ, spline_bridge
+    from femto.curves import circ, sin, spline_bridge
     from femto.waveguide import NasuWaveguide
 
     # Data

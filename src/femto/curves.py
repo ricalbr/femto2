@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
-from typing import Tuple
+from typing import Any, Tuple
 
 import numpy as np
 import numpy.typing as npt
@@ -10,7 +9,7 @@ from scipy import special
 from scipy.interpolate import BPoly
 
 # Define array types
-nparray = npt.NDArray[np.float32]
+nparray = npt.NDArray[np.float64]
 ptarray = Tuple[nparray, nparray, nparray]
 
 

@@ -4,22 +4,20 @@ import dataclasses
 import itertools
 import pathlib
 from types import TracebackType
-from typing import Any
-from typing import NamedTuple
+from typing import Any, NamedTuple
 
 import attrs
 import numpy as np
 import numpy.typing as npt
 import xlsxwriter
+
 from femto import logger
-from femto.helpers import flatten
-from femto.helpers import listcast
+from femto.helpers import flatten, listcast
 from femto.marker import Marker
-from femto.waveguide import NasuWaveguide
-from femto.waveguide import Waveguide
+from femto.waveguide import NasuWaveguide, Waveguide
 
 # Define array type
-nparray = npt.NDArray[np.float32]
+nparray = npt.NDArray[np.float64]
 
 
 class ColumnData(NamedTuple):
@@ -519,6 +517,7 @@ def main() -> None:
     from itertools import product
 
     from addict import Dict as ddict
+
     from femto.waveguide import Waveguide
 
     l_start = -2

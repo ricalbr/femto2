@@ -8,27 +8,20 @@ import math
 import pathlib
 import re
 from types import TracebackType
-from typing import Any
-from typing import Callable
-from typing import Deque
-from typing import Generator
-from typing import NamedTuple
-from typing import TypeVar
+from typing import Any, Callable, Deque, Generator, NamedTuple, TypeVar
 
 import attrs
 import dill
 import numpy as np
 import numpy.typing as npt
-from femto import logger
-from femto.helpers import flatten
-from femto.helpers import listcast
-from femto.helpers import pad
-from femto.helpers import remove_repeated_coordinates
 from scipy import interpolate
+
+from femto import logger
+from femto.helpers import flatten, listcast, pad, remove_repeated_coordinates
 
 # Create a generic variable that can be 'PGMCompiler', or any subclass.
 GC = TypeVar('GC', bound='PGMCompiler')
-nparray = npt.NDArray[np.float32]
+nparray = npt.NDArray[np.float64]
 
 
 class Laser(NamedTuple):
@@ -109,7 +102,7 @@ class PGMCompiler:
         self._dvars: list[str] = []
 
         # Load warp function
-        self.fwarp: Callable[[npt.NDArray[np.float32]], npt.NDArray[np.float32]] = self.warp_management(self.warp_flag)
+        self.fwarp: Callable[[npt.NDArray[np.float64]], npt.NDArray[np.float64]] = self.warp_management(self.warp_flag)
 
         # Set rotation angle in radians for matrix rotations
         if self.rotation_angle:
@@ -971,9 +964,9 @@ class PGMCompiler:
         """
 
         # Normalize data
-        x = np.asarray(x, dtype=np.float32)
-        y = np.asarray(y, dtype=np.float32)
-        z = np.asarray(z, dtype=np.float32)
+        x = np.asarray(x, dtype=np.float64)
+        y = np.asarray(y, dtype=np.float64)
+        z = np.asarray(z, dtype=np.float64)
         logger.debug('Normalize x-, y-, z-arrays to numpy.ndarrys.')
 
         # Translate points to new origin
@@ -1054,7 +1047,7 @@ class PGMCompiler:
         z_comp = copy.deepcopy(np.array(z))
 
         xy = np.column_stack([x_comp, y_comp])
-        z_warp = np.array(self.fwarp(xy), dtype=np.float32).reshape(z_comp.shape)
+        z_warp = np.array(self.fwarp(xy), dtype=np.float64).reshape(z_comp.shape)
         z_comp += z_warp
 
         return x_comp, y_comp, z_comp
@@ -1425,9 +1418,10 @@ def sample_warp(pts_x: int, pts_y: int, margin: float, parameters: dict[str, Any
 
 def main() -> None:
     """The main function of the script."""
-    from femto.waveguide import Waveguide
-    from femto.curves import sin
     from addict import Dict as ddict
+
+    from femto.curves import sin
+    from femto.waveguide import Waveguide
 
     # Parameters
     param_wg = ddict(scan=6, speed=20, radius=15, pitch=0.080, int_dist=0.007, lsafe=3, samplesize=(25, 3))

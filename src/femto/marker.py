@@ -6,12 +6,13 @@ from typing import Any
 import attrs
 import numpy as np
 import numpy.typing as npt
+
 from femto import logger
 from femto.helpers import sign
 from femto.laserpath import LaserPath
 
 # Define array type
-nparray = npt.NDArray[np.float32]
+nparray = npt.NDArray[np.float64]
 
 
 @attrs.define(kw_only=True, repr=False, init=False)
@@ -83,7 +84,7 @@ class Marker(LaserPath):
 
     def ruler(
         self,
-        y_ticks: list[float] | npt.NDArray[np.float32],
+        y_ticks: list[float] | npt.NDArray[np.float64],
         lx: float | None = None,
         lx2: float | None = None,
         x_init: float | None = None,
@@ -316,9 +317,9 @@ class Marker(LaserPath):
 def main() -> None:
     """The main function of the script."""
     import matplotlib.pyplot as plt
+    from addict import Dict as ddict
 
     from femto.helpers import split_mask
-    from addict import Dict as ddict
 
     parameters_mk = ddict(scan=1, speed=2, speed_pos=5, speed_closed=5, depth=0.010, lx=1, ly=1)
     # parameters_gc = ddict(filename='test.pgm', laser='PHAROS', samplesize=(10, 10), flip_x=True, shift_origin=[1, 1])
