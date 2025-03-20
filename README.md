@@ -143,3 +143,10 @@ The complete documentation can be found [here](https://femto.readthedocs.io/en/l
 To request features or report bugs open an issue [here](https://github.com/ricalbr/femto/issues)
 
 <p align="right">(<a href="#top">back to top</a>)</p>
+
+---
+
+![image](https://github.com/user-attachments/assets/8f952e70-cde9-41cd-81f8-58a0ab947620)
+
+You can finally rest, femto-writer...
+
