@@ -32,7 +32,7 @@ class Trench:
         self.block: geometry.Polygon = block  #: Polygon shape of the trench.
         self.delta_floor: float = delta_floor  #: Offset distance between buffered polygons in the trench toolpath.
         self.height: float = height  #: Depth of the trench box.
-        self.safe_inner_turns: int = safe_inner_turns  #: Number of spiral turns befor zig-zag filling
+        self.safe_inner_turns: int = safe_inner_turns  #: Number of spiral turns before zig-zag filling
 
         self._floor_length: float = 0.0  #: Length of the floor path.
         self._wall_length: float = 0.0  #: Length of the wall path.
