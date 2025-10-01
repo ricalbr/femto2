@@ -42,6 +42,7 @@ The optical components can be plotted and exported to a .pgm file for the fabric
 The package can be installed using `pip`
 
 ```bash
+python3 -m venv .venvs/femto
 pip install git+https://github.com/ricalbr/femto.git
 ```
 
