@@ -44,7 +44,7 @@ The package can be installed using `pip`
 ```bash
 python3 -m venv .venvs/femto
 source .venvs/minimal/bin/activate
-pip install git+https://github.com/ricalbr/femto.git
+pip install git+ssh://git@github.com/ricalbr/femto.git
 ```
 
 <p align="right">(<a href="#top">back to top</a>)</p>
