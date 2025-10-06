@@ -266,9 +266,12 @@ class Spreadsheet:
         # Data
         for i, sdata in enumerate(numerical_data):
             sdata = [
-                s
-                if (isinstance(s, (np.int64, np.float64)) and s < 1e5) or (not isinstance(s, (np.int64, np.float64)))
-                else ''
+                (
+                    s
+                    if (isinstance(s, (np.int64, np.float64)) and s < 1e5)
+                    or (not isinstance(s, (np.int64, np.float64)))
+                    else ''
+                )
                 for s in sdata
             ]
             self.add_line(row=i + 8, col=5, data=sdata, fmt=[col.format for col in cols_info])
