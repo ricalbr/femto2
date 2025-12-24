@@ -104,7 +104,11 @@ class Trench:
             `x` and `y`-coordinates arrays of the trench border.
         """
         xx, yy = self.block.exterior.coords.xy
-        rx, ry = self.resample_polygon(x=xx, y=yy, step=self.step)
+        rx, ry = self.resample_polygon(
+            x=np.asarray(xx, dtype=np.float64),
+            y=np.asarray(yy, dtype=np.float64),
+            step=self.step,
+        )
         logger.debug('Extracting (x,y) from trench block.')
         return np.asarray(rx, dtype=np.float64), np.asarray(ry, dtype=np.float64)
 
@@ -300,11 +304,19 @@ class Trench:
             Coordinates array of the zig-zag filling pattern.
         """
         mask = self.zigzag_mask()
-        path_collection = poly.intersection(mask)
+        path = poly.intersection(mask)
         logger.debug('Intersect rectangular zig-zag line pattern with trench block.')
 
+        # Extract single lines (distinguish between LineString and MultiLineString)
+        if isinstance(path, geometry.LineString):
+            lines = [path]
+        elif isinstance(path, (geometry.MultiLineString, geometry.GeometryCollection)):
+            lines = [x for x in path.geoms if isinstance(x, geometry.LineString)]
+        else:
+            lines = []
+
         coords = []
-        for line in path_collection.geoms:
+        for line in lines:
             self._floor_length += line.length + self.delta_floor
             coords.extend(line.coords)
         return np.array(coords).T
@@ -392,17 +404,23 @@ class Trench:
         geometry.Multipolygon : collections of shapely polygon objects.
         """
 
-        if shape.is_valid or isinstance(shape, geometry.MultiPolygon):
-            buff_polygon = shape.buffer(offset).simplify(tolerance=1e-5, preserve_topology=True)
-            if isinstance(buff_polygon, geometry.MultiPolygon):
-                return [geometry.Polygon(subpol) for subpol in buff_polygon.geoms]
-            return [geometry.Polygon(buff_polygon)]
+        if not shape.is_valid:
+            return [geometry.Polygon()]
+
+        buff = shape.buffer(offset).simplify(tolerance=1e-5, preserve_topology=True)
+
+        if isinstance(buff, geometry.Polygon):
+            return [buff]
+
+        if isinstance(buff, geometry.MultiPolygon):
+            return list(buff.geoms)
+
+        # Pathological case: buffer operation returned a non-area geometry
+        # (e.g. due to numerical degeneracy or topology collapse)
         return [geometry.Polygon()]
 
     @staticmethod
-    def resample_polygon(
-        x: npt.NDArray[np.float64], y: npt.NDArray[np.float64], step: float | None = 0.005
-    ) -> npt.NDArray[np.float64]:
+    def resample_polygon(x: nparray, y: nparray, step: float | None = 0.005) -> nparray:
         """Resample a polygon border by a specified number of points.
 
         Parameters
@@ -470,8 +488,8 @@ class TrenchColumn:
     CWD: pathlib.Path = attrs.field(default=pathlib.Path.cwd())  #: Current working directory
 
     def __init__(self, **kwargs: Any | None) -> None:
-        filtered: dict[str, Any] = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}
-        self.__attrs_init__(**filtered)
+        filtered: dict[str, Any] = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}  # type: ignore[attr-defined]
+        self.__attrs_init__(**filtered)  # type: ignore[attr-defined]
 
     def __attrs_post_init__(self) -> None:
         if not self.speed_floor:
@@ -708,7 +726,20 @@ class TrenchColumn:
         logger.debug(f'Divide bed in {n_pillars + 1} parts.')
         t1, t2 = self._trench_list[0], self._trench_list[-1]
         tmp_rect = geometry.box(t1.xmin, t1.center[1], t2.xmax, t2.center[1])
-        tmp_bed = geometry.MultiPolygon([unary_union([t1.block, t2.block, tmp_rect])])
+
+        unioned = unary_union([t1.block, t2.block, tmp_rect])
+        if isinstance(unioned, geometry.Polygon):
+            tmp_bed_polygons = [unioned]
+        elif isinstance(unioned, geometry.MultiPolygon):
+            tmp_bed_polygons = list(unioned.geoms)
+        elif isinstance(unioned, geometry.GeometryCollection):
+            # extract polygons
+            tmp_bed_polygons = [g for g in unioned.geoms if isinstance(g, geometry.Polygon)]
+        else:
+            # fallback for pathological cases
+            tmp_bed_polygons = [geometry.Polygon()]
+
+        tmp_bed = geometry.MultiPolygon(tmp_bed_polygons)
 
         # Add pillars and define the bed layer as a Trench object
         xmin, ymin, xmax, ymax = tmp_bed.bounds
@@ -716,6 +747,13 @@ class TrenchColumn:
         for x in x_pillars:
             tmp_pillar = geometry.LineString([[x, ymin], [x, ymax]]).buffer(self.adj_pillar_width)
             tmp_bed = tmp_bed.difference(tmp_pillar)
+
+        # Extract polygons
+        polygons = []
+        if isinstance(tmp_bed, geometry.Polygon):
+            polygons = [tmp_bed]
+        elif isinstance(tmp_bed, geometry.MultiPolygon):
+            polygons = list(tmp_bed.geoms)
 
         # Add bed blocks
         logger.debug('Add trench beds as trench objects with height = 0.015 mm.')
@@ -727,7 +765,7 @@ class TrenchColumn:
                 safe_inner_turns=self.safe_inner_turns,
                 step=self.step,
             )
-            for p in tmp_bed.geoms
+            for p in polygons
         ]
         return None
 
@@ -837,18 +875,24 @@ class TrenchColumn:
 
         trench_blocks = self.rect
         for coords in coords_list:
-            dilated = geometry.LineString(coords).buffer(self.adj_bridge, cap_style=1)
+            dilated = geometry.LineString(coords).buffer(self.adj_bridge, cap_style='round')
             trench_blocks = trench_blocks.difference(dilated)
 
         # if coordinates are empty or coordinates do not intersect the trench column rectangle box
-        if almost_equal(trench_blocks, self.rect, tol=1e-8):
+        if isinstance(trench_blocks, geometry.Polygon) and almost_equal(trench_blocks, self.rect, tol=1e-8):
             logger.critical('No trench found intersecting waveguides with trench area.\n')
             return None
 
+        # Extract trench blocks
         logger.debug('Trenches found.')
-        for block in listcast(sorted(trench_blocks.geoms, key=Trench)):
+        blocks = []
+        if isinstance(trench_blocks, geometry.Polygon):
+            blocks = [trench_blocks]
+        elif isinstance(trench_blocks, geometry.MultiPolygon):
+            blocks = list(trench_blocks.geoms)
+        for block in listcast(sorted(blocks, key=Trench)):
             # buffer to round corners
-            block = block.buffer(self.round_corner, resolution=256, cap_style=1)
+            block = block.buffer(self.round_corner, resolution=256, cap_style='round')
             # simplify the shape to avoid path too much dense of points
             block = block.simplify(tolerance=5e-7, preserve_topology=True)
             self._trench_list.append(
