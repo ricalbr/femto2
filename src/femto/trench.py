@@ -27,12 +27,18 @@ class Trench:
     """Class that represents a trench block and provides methods to compute the toolpath of the block."""
 
     def __init__(
-        self, block: geometry.Polygon, delta_floor: float = 0.001, height: float = 0.300, safe_inner_turns: int = 5
+        self,
+        block: geometry.Polygon,
+        delta_floor: float = 0.001,
+        height: float = 0.300,
+        safe_inner_turns: int = 5,
+        step: float | None = None,
     ) -> None:
         self.block: geometry.Polygon = block  #: Polygon shape of the trench.
         self.delta_floor: float = delta_floor  #: Offset distance between buffered polygons in the trench toolpath.
         self.height: float = height  #: Depth of the trench box.
-        self.safe_inner_turns: int = safe_inner_turns  #: Number of spiral turns before zig-zag filling
+        self.safe_inner_turns: int = safe_inner_turns  #: Number of spiral turns before zig-zag filling.
+        self.step: float | None = step  #: Step between adjacent points in the trench toolpath, [mm/s].
 
         self._floor_length: float = 0.0  #: Length of the floor path.
         self._wall_length: float = 0.0  #: Length of the wall path.
@@ -98,8 +104,9 @@ class Trench:
             `x` and `y`-coordinates arrays of the trench border.
         """
         xx, yy = self.block.exterior.coords.xy
+        rx, ry = self.resample_polygon(x=xx, y=yy, step=self.step)
         logger.debug('Extracting (x,y) from trench block.')
-        return np.asarray(xx, dtype=np.float64), np.asarray(yy, dtype=np.float64)
+        return np.asarray(rx, dtype=np.float64), np.asarray(ry, dtype=np.float64)
 
     @property
     def xborder(self) -> nparray:
@@ -339,7 +346,8 @@ class Trench:
                 polygon_list.extend(self.buffer_polygon(current_poly, offset=-np.fabs(self.delta_floor)))
                 self._floor_length += current_poly.length
                 logger.debug('Yield buffered contour path.')
-                yield np.array(current_poly.exterior.coords).T
+                x, y = np.array(current_poly.exterior.coords).T
+                yield self.resample_polygon(x=x, y=y, step=self.step)
 
         for poly in polygon_list:
             logger.debug('Yield inner zig-zag path.')
@@ -391,32 +399,69 @@ class Trench:
             return [geometry.Polygon(buff_polygon)]
         return [geometry.Polygon()]
 
+    @staticmethod
+    def resample_polygon(
+        x: npt.NDArray[np.float64], y: npt.NDArray[np.float64], step: float | None = 0.005
+    ) -> npt.NDArray[np.float64]:
+        """Resample a polygon border by a specified number of points.
+
+        Parameters
+        ----------
+        x : npt.NDArray[np.float64]
+            x-coordinate of the polygon border.
+        y : npt.NDArray[np.float64]
+            y-coordinate of the polygon border.
+        step : float
+            Step between two adjacent points, [mm]. Default value is 0.005 mm.
+
+        Returns
+        -------
+        npt.NDArray[np.float64]
+            xy-coordinates of the re-sampled polygon border.
+        """
+        if step is None:
+            return np.array([x, y]).astype(np.float64)
+
+        # Cumulative Euclidean distance between successive polygon points. This will be later be used for interpolation
+        xy = np.stack([x, y], axis=1)
+        d = np.cumsum(np.r_[0, np.sqrt((np.diff(xy, axis=0) ** 2).sum(axis=1))])
+
+        # Get linearly spaced points along the cumulative Euclidean distance
+        num_points = int(d.max() / step + 1)
+        d_sampled = np.linspace(0, d.max(), num_points)
+
+        # Interpolate x and y coordinates
+        return np.array([np.interp(d_sampled, d, x).astype(np.float64), np.interp(d_sampled, d, y).astype(np.float64)])
+
 
 @attrs.define(kw_only=True, repr=False, init=False)
 class TrenchColumn:
     """Class representing a column of isolation trenches."""
 
-    x_center: float  #: Center of the trench blocks [mm].
-    y_min: float  #: Minimum `y` coordinates of the trench blocks [mm].
-    y_max: float  #: Maximum `y` coordinates of the trench blocks [mm].
-    bridge: float = 0.026  #: Separation length between nearby trench blocks [mm].
-    length: float = 1  #: Lenght of the trench along the `x` axis [mm].
-    h_box: float = 0.075  #: Height of the single trench box [mm].
+    x_center: float  #: Center of the trench blocks, [mm].
+    y_min: float  #: Minimum `y` coordinates of the trench blocks, [mm].
+    y_max: float  #: Maximum `y` coordinates of the trench blocks, [mm].
+    bridge: float = 0.026  #: Separation length between nearby trench blocks, [mm].
+    length: float = 1  #: Lenght of the trench along the `x` axis, [mm].
+    h_box: float = 0.075  #: Height of the single trench box, [mm].
     nboxz: int = 4  #: Number of stacked box along the `z` axis.
-    z_off: float = -0.020  #: Starting offset in `z` with respect to the sample's surface [mm].
-    deltaz: float = 0.0015  #: Offset distance between countors paths of the trench wall [mm].
+    z_off: float = -0.020  #: Starting offset in `z` with respect to the sample's surface, [mm].
+    deltaz: float = 0.0015  #: Offset distance between countors paths of the trench wall, [mm].
     delta_floor: float = 0.001  #: Offset distance between buffered polygons in the trench toolpath [mm].
     n_pillars: int | None = None  #: number of sustaining pillars.
     pillar_width: float = 0.040  #: width of the pillars.
     safe_inner_turns: int = 5  #: Number of spiral turns befor zig-zag filling
-    u: list[float] = attrs.field(factory=list)  #: List of U coordinate to change irradiation power automatically [deg].
-    speed_wall: float = 4.0  #: Translation speed of the wall section [mm/s].
-    speed_floor: float = attrs.field(factory=float)  #: Translation speed of the floor section [mm/s].
-    speed_closed: float = 5.0  #: Translation speed with closed shutter [mm/s].
-    speed_pos: float = 2.0  #: Positioning speed with closed shutter [mm/s].
+    u: list[float] = attrs.field(
+        factory=list
+    )  #: List of U coordinate to change irradiation power automatically, [deg].
+    speed_wall: float = 4.0  #: Translation speed of the wall section, [mm/s].
+    speed_floor: float = attrs.field(factory=float)  #: Translation speed of the floor section, [mm/s].
+    speed_closed: float = 5.0  #: Translation speed with closed shutter, [mm/s].
+    speed_pos: float = 2.0  #: Positioning speed with closed shutter, [mm/s].
     base_folder: str = ''  #: Location where PGM files are stored in lab PC. If empty, load files with relative path.
-    beam_waist: float = 0.004  #: Diameter of the laser beam-waist [mm].
-    round_corner: float = 0.010  #: Radius of the blocks round corners [mm].
+    beam_waist: float = 0.004  #: Diameter of the laser beam-waist, [mm].
+    round_corner: float = 0.010  #: Radius of the blocks round corners, [mm].
+    step: float | None = None  #: Step between adjacent points in the trench toolpath, [mm/s].
 
     _id: str = attrs.field(alias='_id', default='TC')  #: TrenchColumn ID.
     _trench_list: list[Trench] = attrs.field(alias='_trench_list', factory=list)  #: List of trench objects.
@@ -680,6 +725,7 @@ class TrenchColumn:
                 height=0.015,
                 delta_floor=self.delta_floor,
                 safe_inner_turns=self.safe_inner_turns,
+                step=self.step,
             )
             for p in tmp_bed.geoms
         ]
@@ -806,7 +852,12 @@ class TrenchColumn:
             # simplify the shape to avoid path too much dense of points
             block = block.simplify(tolerance=5e-7, preserve_topology=True)
             self._trench_list.append(
-                Trench(normalize_polygon(block), delta_floor=self.delta_floor, safe_inner_turns=self.safe_inner_turns)
+                Trench(
+                    normalize_polygon(block),
+                    delta_floor=self.delta_floor,
+                    safe_inner_turns=self.safe_inner_turns,
+                    step=self.step,
+                )
             )
         logger.debug('Finished append trenches.')
 
