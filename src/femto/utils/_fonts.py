@@ -1,4 +1,22 @@
-FONTS = {
+from typing import Dict, Tuple, List, TypedDict
+
+Char = str
+FloatList = List[float]
+Polyline = Tuple[FloatList, FloatList]
+Lines = Tuple[Polyline, ...]
+KerningTable = Dict[Char, float]
+
+
+class Glyph(TypedDict):
+    kerning: KerningTable
+    lines: Tuple[Polyline, ...]
+    width: float
+
+
+Font = Dict[str, Glyph]
+Fonts = Dict[str, Font]
+
+FONTS: Fonts = {
     "stencil": {
         " ": {
             "kerning": {
