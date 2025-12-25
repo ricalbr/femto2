@@ -10,14 +10,12 @@ from typing import Any
 import dill
 import numpy as np
 import numpy.typing as npt
-import shapely
 from plotly import graph_objs as go
 
 from femto import logger
 from femto.helpers import flatten, listcast, split_mask
 from femto.marker import Marker
 from femto.pgmcompiler import PGMCompiler
-from femto.text import Text
 from femto.trench import Trench, TrenchColumn
 from femto.waveguide import NasuWaveguide, Waveguide
 
@@ -1300,6 +1298,8 @@ class WaveguideWriter(Writer):
         ----------
         fig : go.Figure
             Plotly figure object to add the waveguide traces.
+        show_shutter_close : bool, optional
+            Boolean flag, if ``True`` the movements with closed shutter are represented. The default value is ``False``.
         style : dict
             Dictionary containing all the styling parameters of the waveguide.
 
@@ -1373,6 +1373,8 @@ class WaveguideWriter(Writer):
         ----------
         fig : go.Figure
             Plotly figure object to add the waveguide traces.
+        show_shutter_close : bool, optional
+            Boolean flag, if ``True`` the movements with closed shutter are represented. The default value is ``False``.
         style : dict
             Dictionary containing all the styling parameters of the waveguide.
 
@@ -1389,9 +1391,9 @@ class WaveguideWriter(Writer):
 
         if style is None:
             style = dict()
-        default_wgargs = {'dash': 'solid', 'color': '#0000ff', 'width': 1.5}
+        default_wgargs = {'dash': 'solid', 'color': '#0000FF', 'width': 1.5}
         wg_args = {**default_wgargs, **style}
-        sc_args = {'dash': 'dot', 'color': '#0000ff', 'width': 0.5}
+        sc_args = {'dash': 'dot', 'color': '#0000FF', 'width': 0.5}
 
         logger.debug('Add waveguides to figure.')
         for wg in listcast(flatten(self._obj_list)):
@@ -1861,7 +1863,7 @@ class MarkerWriter(Writer):
         # If existing figure is given as input parameter append to the figure and return it
         if fig is not None:
             logger.debug('Update figure.')
-            return self._plot2d_mk(fig=fig, style=style)
+            return self._plot2d_mk(fig=fig, show_shutter_close=show_shutter_close, style=style)
 
         # If fig is None create a new figure from scratch
         logger.debug('Create figure.')
@@ -1959,7 +1961,7 @@ class MarkerWriter(Writer):
         logger.info(string)
         self._instructions.clear()
 
-    def _plot2d_mk(self, fig: go.Figure, style: dict[str, Any] | None = None) -> go.Figure:
+    def _plot2d_mk(self, fig: go.Figure, show_shutter_close: bool = True, style: dict[str, Any] | None = None) -> go.Figure:
         """2D plot helper.
 
         The function takes a figure and a style dictionary as inputs, and adds a trace to the figure for each
@@ -1969,6 +1971,8 @@ class MarkerWriter(Writer):
         ----------
         fig : go.Figure
             Plotly figure object to add the marker traces.
+        show_shutter_close : bool, optional
+            Boolean flag, if ``True`` the movements with closed shutter are represented. The default value is ``False``.
         style : dict
             Dictionary containing all the styling parameters of the marker.
 
@@ -1987,6 +1991,7 @@ class MarkerWriter(Writer):
             style = dict()
         default_mkargs = {'dash': 'solid', 'color': '#000000', 'width': 2.0}
         mk_args = {**default_mkargs, **style}
+        sc_args = {'dash': 'dot', 'color': '#000000', 'width': 0.5}
 
         logger.debug('Add marker trace to figure.')
         for mk in self._obj_list:
@@ -2007,9 +2012,27 @@ class MarkerWriter(Writer):
                 )
                 for x, y in zip(xo, yo)
             ]
+
+            logger.debug('Add shutter close trace to figure.')
+            if show_shutter_close:
+                xc = split_mask(x, ~s.astype(bool))
+                yc = split_mask(y, ~s.astype(bool))
+                [
+                    fig.add_trace(
+                        go.Scattergl(
+                            x=x,
+                            y=y,
+                            mode='lines',
+                            line=sc_args,
+                            hoverinfo='none',
+                            showlegend=False,
+                        )
+                    )
+                    for x, y in zip(xc, yc)
+                ]
         return fig
 
-    def _plot3d_mk(self, fig: go.Figure, style: dict[str, Any] | None = None) -> go.Figure:
+    def _plot3d_mk(self, fig: go.Figure, show_shutter_close: bool = True,style: dict[str, Any] | None = None) -> go.Figure:
         """3D plot helper.
 
         The function takes a figure and a style dictionary as inputs, and adds a 3D trace to the figure for each
@@ -2019,6 +2042,8 @@ class MarkerWriter(Writer):
         ----------
         fig : go.Figure
             Plotly figure object to add the marker traces.
+        show_shutter_close : bool, optional
+            Boolean flag, if ``True`` the movements with closed shutter are represented. The default value is ``False``.
         style : dict
             Dictionary containing all the styling parameters of the marker.
 
@@ -2037,6 +2062,7 @@ class MarkerWriter(Writer):
             style = dict()
         default_mkargs = {'dash': 'solid', 'color': '#000000', 'width': 2.0}
         mk_args = {**default_mkargs, **style}
+        sc_args = {'dash': 'dot', 'color': '#000000', 'width': 0.5}
 
         logger.debug('Add marker trace to figure.')
         for mk in self._obj_list:
@@ -2059,6 +2085,25 @@ class MarkerWriter(Writer):
                 )
                 for x, y, z in zip(xo, yo, zo)
             ]
+            if show_shutter_close:
+                logger.debug('Add shutter close trace.')
+                xc = split_mask(x, ~s.astype(bool))
+                yc = split_mask(y, ~s.astype(bool))
+                zc = split_mask(z, ~s.astype(bool))
+                [
+                    fig.add_trace(
+                        go.Scatter3d(
+                            x=x,
+                            y=y,
+                            z=z,
+                            mode='lines',
+                            line=sc_args,
+                            hoverinfo='none',
+                            showlegend=False,
+                        )
+                    )
+                    for x, y, z in zip(xc, yc, zc)
+                ]
         return fig
 
 
