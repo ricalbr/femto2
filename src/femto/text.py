@@ -7,7 +7,6 @@ import numpy as np
 import numpy.typing as npt
 from typing import Any
 from typing import Callable
-from typing import cast
 import attrs
 from shapely import geometry
 import shapely.ops
@@ -17,9 +16,10 @@ from femto import logger
 from femto.utils import _fonts
 from femto.helpers import normalize_phase
 
-# Define array type
+# Define custom types
 nparray = npt.NDArray[np.float64]
 AlignmentFunc = Callable[[nparray], float]
+from femto.utils._fonts import Font
 
 
 @attrs.define(kw_only=True)
@@ -296,11 +296,10 @@ class Text:
         if self._shapely_object:
             return self._shapely_object
 
-        # Let's do the actual rendering
         polygons = list()
 
         special_handling_chars = "\n"
-        font = _fonts.FONTS[self.font]
+        font: Font = _fonts.FONTS[self.font]
 
         # Check the text
         for char in self.text:
@@ -308,11 +307,11 @@ class Text:
                 f'Character "{char}" is not supported by ' f'font "{self.font}"'
             )
 
-        max_x = 0
-        cursor_x, cursor_y = 0, 0
+        max_x = 0.0
+        cursor_x, cursor_y = 0.0, 0.0
         for i, char in enumerate(self.text):
             if char == "\n":
-                cursor_x, cursor_y = 0, cursor_y - self.line_spacing
+                cursor_x, cursor_y = 0.0, cursor_y - self.line_spacing
                 continue
 
             char_font = font[char]
