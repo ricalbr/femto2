@@ -8,8 +8,11 @@ import numpy as np
 import numpy.typing as npt
 
 from femto import logger
+from femto.helpers import flatten
+from femto.helpers import listcast
 from femto.helpers import sign
 from femto.laserpath import LaserPath
+from femto.text import Text
 
 # Define array type
 nparray = npt.NDArray[np.float64]
@@ -26,8 +29,8 @@ class Marker(LaserPath):
     _id: str = attrs.field(alias='_id', default='MK')  #: Marker ID.
 
     def __init__(self, **kwargs: Any) -> None:
-        filtered: dict[str, Any] = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}
-        self.__attrs_init__(**filtered)
+        filtered: dict[str, Any] = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}  # type: ignore[attr-defined]
+        self.__attrs_init__(**filtered)  # type: ignore[attr-defined]
 
     def __attrs_post_init__(self) -> None:
         super().__attrs_post_init__()
@@ -250,19 +253,24 @@ class Marker(LaserPath):
             return
 
         # shift the path's points by shift value
-        pts = np.asarray(points)
+        # pts = np.asarray(points)
+        # pts=points
         if shift is None:
-            path_list = [pts]
+            path_list = flatten(listcast(points))
             logger.debug('No shift applied to ablation line.')
         else:
             logger.debug(f'Apply shift of {shift} um to ablation line.')
             path_list = [
-                np.add(pts, [0, 0, 0]),
-                np.add(pts, [shift, 0, 0]),
-                np.add(pts, [-shift, 0, 0]),
-                np.add(pts, [0, shift, 0]),
-                np.add(pts, [0, -shift, 0]),
+                [
+                    np.add(pts, [0, 0, 0]),
+                    np.add(pts, [shift, 0, 0]),
+                    np.add(pts, [-shift, 0, 0]),
+                    np.add(pts, [0, shift, 0]),
+                    np.add(pts, [0, -shift, 0]),
+                ]
+                for pts in points
             ]
+            path_list = flatten(path_list)
 
         # Add linear segments
         logger.debug('Start ablation line.')
@@ -276,6 +284,7 @@ class Marker(LaserPath):
             self.linear(path[-1], mode='ABS', shutter=1)
             self.linear(path[-1], mode='ABS', shutter=0)
         self.end()
+        logger.debug('Ablation line completed.')
 
     def box(self, lower_left_corner: list[float] | nparray, width: float = 1.0, height: float = 0.06) -> None:
         """Box.
@@ -310,8 +319,50 @@ class Marker(LaserPath):
             ll_corner + np.array([0, abs(height), 0]),
             ll_corner,
         ]
+        pts = list(np.asarray(pts, dtype=np.float64))
         logger.debug('Start box as ablation line.')
         self.ablation(points=pts, shift=None)
+
+    def text(
+        self,
+        text: str,
+        origin: list[float] | nparray = [1.0, 1.0],
+        height: float = 1.0,
+        angle: float = 0.0,
+        alignment_position: str = "left-bottom",
+        font: str = "stencil",
+        line_spacing: float = 1.5,
+        true_bbox_alignment: bool = False,
+    ) -> None:
+        txt = Text(
+            text=text,
+            origin=origin,
+            height=height,
+            angle=angle,
+            alignment_position=alignment_position,
+            font=font,
+            line_spacing=line_spacing,
+            true_bbox_alignment=true_bbox_alignment,
+        )
+
+        logger.debug('Start text as ablation line.')
+        abl_points = []
+        for letter in txt.letters:
+            x, y = letter.exterior.coords.xy
+            coords = np.asarray(letter.exterior.coords[:-1], dtype=np.float64)
+
+            # Find bottom-left index: min y, then min x
+            idx = np.lexsort((coords[:, 0], coords[:, 1]))[0]
+            ordered = np.vstack((coords[idx:], coords[:idx]))
+            ordered = np.vstack((ordered, ordered[0]))
+            x, y = ordered[:, 0], ordered[:, 1]
+
+            x = np.asarray(x, dtype=np.float64)
+            y = np.asarray(y, dtype=np.float64)
+            z = np.ones_like(x) * self.depth
+
+            abl_points.append(np.stack((x, y, z), axis=-1))
+        self.ablation(abl_points, shift=None)
 
 
 def main() -> None:
@@ -327,18 +378,20 @@ def main() -> None:
     c = Marker(**parameters_mk)
     # c.cross([2.5, 1], 5, 2)
     # c.ablation([[0, 0, 0], [5, 0, 0], [5, 1, 0], [2, 2, 0]], shift=0.001)
-    c.box([1, 2, 3], width=5.0, height=0.01)
+    # c.meander([1, 2, 3], [1, 3, 3])
+    c.text('prova')
     print(c.points)
 
     # Plot
-    fig, ax = plt.subplots()
-    ax.set_xlabel('X [mm]'), ax.set_ylabel('Y [mm]')
+    _, ax = plt.subplots()
+    ax.set_xlabel('X [mm]')
+    ax.set_ylabel('Y [mm]')
     x, y, *_, s = c.points
     for x_seg, y_seg in zip(split_mask(x, s.astype(bool)), split_mask(y, s.astype(bool))):
         ax.plot(x_seg, y_seg, '-k', linewidth=2.5)
     for x_seg, y_seg in zip(split_mask(x, ~s.astype(bool)), split_mask(y, ~s.astype(bool))):
         ax.plot(x_seg, y_seg, ':b', linewidth=0.5)
-    # plt.show()
+    plt.show()
 
 
 if __name__ == '__main__':

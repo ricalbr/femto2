@@ -485,3 +485,25 @@ def delete_folder(path: str | pathlib.Path) -> None:
         else:
             sub.unlink()
     path.rmdir()
+
+
+def normalize_phase(phase, zero_to_two_pi=False):
+    """Normalize a phase to be within +/- pi.
+
+    Parameters
+    ----------
+    phase: float
+        Phase to normalize.
+    zero_to_two_pi: bool
+        True ->  0 to 2*pi, False -> +/- pi.
+
+    Returns
+    -------
+    float
+        Normalized phase within +/- pi or 0 to 2*pi
+    """
+
+    if not zero_to_two_pi:
+        return (phase + np.pi) % (2 * np.pi) - np.pi
+    else:
+        return (phase + 2 * np.pi) % (2 * np.pi)
