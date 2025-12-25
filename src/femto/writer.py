@@ -1961,7 +1961,9 @@ class MarkerWriter(Writer):
         logger.info(string)
         self._instructions.clear()
 
-    def _plot2d_mk(self, fig: go.Figure, show_shutter_close: bool = True, style: dict[str, Any] | None = None) -> go.Figure:
+    def _plot2d_mk(
+        self, fig: go.Figure, show_shutter_close: bool = True, style: dict[str, Any] | None = None
+    ) -> go.Figure:
         """2D plot helper.
 
         The function takes a figure and a style dictionary as inputs, and adds a trace to the figure for each
@@ -2032,7 +2034,9 @@ class MarkerWriter(Writer):
                 ]
         return fig
 
-    def _plot3d_mk(self, fig: go.Figure, show_shutter_close: bool = True,style: dict[str, Any] | None = None) -> go.Figure:
+    def _plot3d_mk(
+        self, fig: go.Figure, show_shutter_close: bool = True, style: dict[str, Any] | None = None
+    ) -> go.Figure:
         """3D plot helper.
 
         The function takes a figure and a style dictionary as inputs, and adds a 3D trace to the figure for each
