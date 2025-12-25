@@ -88,8 +88,8 @@ class PGMCompiler:
     _dvars: list[str] = attrs.field(factory=list)
 
     def __init__(self, **kwargs: Any):
-        filtered: dict[str, Any] = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}
-        self.__attrs_init__(**filtered)
+        filtered: dict[str, Any] = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}  # type: ignore[attr-defined]
+        self.__attrs_init__(**filtered)  # type: ignore[attr-defined]
 
     def __attrs_post_init__(self) -> None:
         if not self.filename:
@@ -1187,6 +1187,7 @@ class PGMCompiler:
         if show:
             # Plot the surface
             import matplotlib.pyplot as plt
+            from mpl_toolkits.mplot3d import Axes3D
 
             # Data generation for surface plotting
             x_f = np.linspace(np.min(x), np.max(x), int(gridsize[0]))
@@ -1197,10 +1198,13 @@ class PGMCompiler:
             xy_points = np.stack([x.ravel(), y.ravel()], -1)
             z = f.__call__(xy_points).reshape(x.shape)
 
-            ax = plt.axes(projection='3d')
-            ax.contour3D(x, y, z, 200, cmap='viridis')
-            ax.set_xlabel('X [mm]'), ax.set_ylabel('Y [mm]'), ax.set_zlabel('Z [mm]')
-            ax.set_aspect('equalxz')
+            fig = plt.figure()
+            ax = fig.add_subplot(111, projection="3d")  # type: Axes3D
+            ax.contourf(x, y, z, 200, cmap='viridis')
+            ax.set_xlabel('X [mm]')
+            ax.set_ylabel('Y [mm]')
+            ax.set_zlabel('Z [mm]')
+            ax.set_aspect('equal')
             plt.show(block=False)
 
         return f

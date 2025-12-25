@@ -21,8 +21,8 @@ class RasterImage(LaserPath):
     _id: str = attrs.field(alias='_id', default='RI')  #: RasterImage ID.
 
     def __init__(self, **kwargs: Any) -> None:
-        filtered: dict[str, Any] = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}
-        self.__attrs_init__(**filtered)
+        filtered: dict[str, Any] = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}  # type: ignore[attr-defined]
+        self.__attrs_init__(**filtered)  # type: ignore[attr-defined]
 
     def __attrs_post_init__(self) -> None:
         super().__attrs_post_init__()
@@ -114,14 +114,14 @@ def main() -> None:
     r_img.image_to_path(im)
 
     # Plot
-    fig, ax = plt.subplots()
+    _, ax = plt.subplots()
     x, y, *_, s = r_img.points
     for x_seg, y_seg in zip(split_mask(x, s.astype(bool)), split_mask(y, s.astype(bool))):
         ax.plot(x_seg, y_seg, '-k', linewidth=2.5)
     for x_seg, y_seg in zip(split_mask(x, ~s.astype(bool)), split_mask(y, ~s.astype(bool))):
         ax.plot(x_seg, y_seg, ':b', linewidth=0.5)
-    ax.set_xlim([0, 0.04 * im.size[0]])
-    ax.set_ylim([0, 0.04 * im.size[1]])
+    ax.set_xlim((0, 0.04 * im.size[0]))
+    ax.set_ylim((0, 0.04 * im.size[1]))
     plt.show()
 
     print(f'Expected writing time {r_img.fabrication_time:.3f} seconds')
