@@ -582,8 +582,8 @@ def main() -> None:
     test.add(tcol)
     test.add_cell(trenches)
 
-    test.plot2d()
-    test.save('scheme.pdf')
+    test.plot2d(show=False)
+    test.save('scheme.html')
     test.pgm()
     # test.xlsx()
     # test.export()
