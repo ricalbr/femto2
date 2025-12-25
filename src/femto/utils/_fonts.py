@@ -1,15 +1,14 @@
 from typing import Dict, Tuple, List, TypedDict
 
 Char = str
-FloatList = List[float]
-Polyline = Tuple[FloatList, FloatList]
-Lines = Tuple[Polyline, ...]
+Line = List[List[float]]  # [x_coords, y_coords]
+Lines = Tuple[Line, ...]  # tuple of lines
 KerningTable = Dict[Char, float]
 
 
 class Glyph(TypedDict):
     kerning: KerningTable
-    lines: Tuple[Polyline, ...]
+    lines: Lines
     width: float
 
 

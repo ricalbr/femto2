@@ -46,8 +46,8 @@ class LaserPath:
     logger.debug('Initialized all the coordinates arrays.')
 
     def __init__(self, **kwargs: Any) -> None:
-        filtered: dict[str, Any] = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}
-        self.__attrs_init__(**filtered)
+        filtered: dict[str, Any] = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}  # type: ignore[attr-defined]
+        self.__attrs_init__(**filtered)  # type: ignore[attr-defined]
 
     def __attrs_post_init__(self) -> None:
         if 'name' not in self.metadata.keys():
@@ -743,7 +743,9 @@ def main() -> None:
     fig.clf()
     ax = Axes3D(fig, auto_add_to_figure=False)
     fig.add_axes(ax)
-    ax.set_xlabel('X [mm]'), ax.set_ylabel('Y [mm]'), ax.set_zlabel('Z [mm]')
+    ax.set_xlabel('X [mm]')
+    ax.set_ylabel('Y [mm]')
+    ax.set_zlabel('Z [mm]')
     ax.plot(lpath.x, lpath.y, lpath.z, '-k', linewidth=2.5)
     ax.set_box_aspect(aspect=(3, 1, 0.5))
     plt.show()
