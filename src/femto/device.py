@@ -325,7 +325,7 @@ class Device:
                 wr = wrs[typ](self._param, objects=list_objs)
                 self.fig = wr.plot2d(fig=self.fig, show_shutter_close=show_shutter_close)
         x0, y0, x1, y1 = writers[Waveguide](self._param)._get_glass_borders()
-        self.fig = plot2d_base_layer(self.fig, x0=x0, y0=y0, x1=x1, y1=y1)
+        self.fig = plot2d_base_layer(fig=self.fig, x0=x0, y0=y0, x1=x1, y1=y1)
         if show:
             logger.debug('Show 2D plot.')
             self.fig.show()
@@ -525,7 +525,7 @@ class Device:
         dev = cls(**param)
 
         logger.info('Loading objects...')
-        for root, dirs, files in walklevel(folder, level):
+        for root, _, files in walklevel(folder, level):
             if not files and pathlib.Path(root) != pathlib.Path(folder):
                 logger.warning(f'No file is present in the given directory {root}.')
             for file in files:
@@ -544,6 +544,7 @@ def main() -> None:
 
     from femto.trench import TrenchColumn
     from femto.waveguide import Waveguide
+    from femto.marker import Marker
 
     # Parameters
     param_wg: dict[str, Any] = dict(speed=20, radius=25, pitch=0.080, int_dist=0.007, samplesize=(25, 3))
@@ -567,6 +568,9 @@ def main() -> None:
         wg.end()
         waveguides.add(wg)
 
+    mk = Marker(**param_wg)
+    mk.text('dev_01', origin=[0.5, 0.5], height=0.25)
+
     # Trench
     trenches = Cell(name='trenches')
     tcol = TrenchColumn(x_center=x_center, **param_tc)
@@ -574,13 +578,14 @@ def main() -> None:
     trenches.add(tcol)
 
     test.add(waveguides)
+    test.add(mk)
     test.add(tcol)
     test.add_cell(trenches)
 
-    # test.plot2d()
+    test.plot2d()
     test.save('scheme.pdf')
     test.pgm()
-    test.xlsx()
+    # test.xlsx()
     # test.export()
 
     # test2 = Device.load_objects('.\EXPORT', param_gc)

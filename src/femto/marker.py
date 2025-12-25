@@ -273,8 +273,6 @@ class Marker(LaserPath):
 
         # Add linear segments
         logger.debug('Start ablation line.')
-        print(path_list[0])
-        print(path_list)
         x0, y0, z0 = path_list[0][0]
         self.add_path(np.array(x0), np.array(y0), np.array(z0), np.array(self.speed_pos), np.array(0))
         for path in path_list:
