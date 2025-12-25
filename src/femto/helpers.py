@@ -364,7 +364,7 @@ def normalize_polygon(poly: geometry.Polygon) -> geometry.Polygon:
     `This <https://stackoverflow.com/a/63402916>`_ stackoverflow answer.
     """
 
-    def normalize_ring(ring: geometry.polygon.LinearRing) -> geometry.Polygon:
+    def normalize_ring(ring: geometry.polygon.LinearRing) -> list[tuple[float, ...]]:
         """Normalize ring.
 
         It takes the exterior ring (a list of coordinates) of a ``Polygon`` object and returns the same ring,

@@ -323,9 +323,9 @@ class Device:
             wrs = writers
             for typ, list_objs in cell.objects.items():
                 wr = wrs[typ](self._param, objects=list_objs)
-                self.fig = wr.plot2d(fig=self.fig, show_shutter_close=show_shutter_close)
+                wr.plot2d(fig=self.fig, show_shutter_close=show_shutter_close)
         x0, y0, x1, y1 = writers[Waveguide](self._param)._get_glass_borders()
-        self.fig = plot2d_base_layer(fig=self.fig, x0=x0, y0=y0, x1=x1, y1=y1)
+        plot2d_base_layer(fig=self.fig, x0=x0, y0=y0, x1=x1, y1=y1)
         if show:
             logger.debug('Show 2D plot.')
             self.fig.show()
@@ -359,8 +359,8 @@ class Device:
             wrs = writers
             for typ, list_objs in cell.objects.items():
                 wr = wrs[typ](self._param, objects=list_objs)
-                self.fig = wr.plot3d(fig=self.fig, show_shutter_close=show_shutter_close)
-        self.fig = plot3d_base_layer(self.fig)
+                wr.plot3d(fig=self.fig, show_shutter_close=show_shutter_close)
+        plot3d_base_layer(self.fig)
         if show:
             logger.debug('Show 3D plot.')
             self.fig.show()
