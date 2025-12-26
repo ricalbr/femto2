@@ -20,7 +20,7 @@ nparray = npt.NDArray[np.float64]
 
 @attrs.define(kw_only=True, repr=False, init=False)
 class Marker(LaserPath):
-    """Class that computes and stores the coordinates of a superficial abletion marker."""
+    """Class that computes and stores the coordinates of a superficial ablation marker."""
 
     depth: float = 0.0  #: Distance for sample's bottom facet, `[mm]`.
     lx: float = 1.000  #: Dimension of cross x-arm, `[mm]`.
@@ -225,9 +225,39 @@ class Marker(LaserPath):
             self.linear([0, next(s) * width, 0], mode='INC')
         self.end()
 
+    @staticmethod
+    def _normalize_paths(
+        points: list[list[float]] | list[nparray] | nparray,
+    ) -> list[nparray]:
+        if isinstance(points, list) and not points:
+            return []
+
+        arr = np.asarray(points, dtype=np.float64)
+
+        # Completely empty array: []
+        if arr.size == 0:
+            return []
+
+        # Single path: (N, 3)
+        if arr.ndim == 2:
+            if arr.shape[1] != 3:
+                raise ValueError(f"Expected points with shape (N, 3), got (N, {arr.shape[1]}).")
+            return [arr]
+
+        # Multiple paths: (M, N, 3)
+        if arr.ndim == 3:
+            if arr.shape[2] != 3:
+                raise ValueError(f"Expected points with shape (M, N, 3), got (M, N, {arr.shape[2]}).")
+
+            # Filter out empty paths (N == 0)
+            paths = [arr[i] for i in range(arr.shape[0]) if arr[i].size > 0]
+            return paths
+
+        raise ValueError("Invalid points shape. Expected (N,3) or (M,N,3).")
+
     def ablation(
         self,
-        points: list[list[float]] | list[nparray],
+        points: list[list[float]] | list[nparray] | nparray,
         shift: float | None = None,
     ) -> None:
         """Ablation line.
@@ -249,28 +279,23 @@ class Marker(LaserPath):
         None.
         """
 
-        if not points:
+        path_list = self._normalize_paths(points)
+        if not path_list:
             return
 
         # shift the path's points by shift value
-        # pts = np.asarray(points)
-        # pts=points
-        if shift is None:
-            path_list = flatten(listcast(points))
-            logger.debug('No shift applied to ablation line.')
-        else:
+        if shift is not None:
             logger.debug(f'Apply shift of {shift} um to ablation line.')
-            path_list = [
-                [
-                    np.add(pts, [0, 0, 0]),
-                    np.add(pts, [shift, 0, 0]),
-                    np.add(pts, [-shift, 0, 0]),
-                    np.add(pts, [0, shift, 0]),
-                    np.add(pts, [0, -shift, 0]),
-                ]
-                for pts in points
+
+            offsets = [
+                np.array([0.0, 0.0, 0.0]),  # no shift
+                np.array([0.0, shift, 0.0]),  # N
+                np.array([shift, 0.0, 0.0]),  # E
+                np.array([0.0, -shift, 0.0]),  # S
+                np.array([-shift, 0.0, 0.0]),  # W
             ]
-            path_list = flatten(path_list)
+
+            path_list = [[pts + offset for pts in path] for path in path_list for offset in offsets]
 
         # Add linear segments
         logger.debug('Start ablation line.')
@@ -310,18 +335,24 @@ class Marker(LaserPath):
         if not lower_left_corner:
             logger.error('No lower_left_corner was given.')
             return
-        ll_corner: nparray = np.array(lower_left_corner)
 
-        pts = [
-            ll_corner,
-            ll_corner + np.array([abs(width), 0, 0]),
-            ll_corner + np.array([abs(width), abs(height), 0]),
-            ll_corner + np.array([0, abs(height), 0]),
-            ll_corner,
-        ]
-        pts = list(np.asarray(pts, dtype=np.float64))
+        ll: nparray = np.asarray(lower_left_corner, dtype=np.float64)
+
+        w = abs(width)
+        h = abs(height)
+
+        path = np.array(
+            [
+                ll,
+                ll + [w, 0.0, 0.0],
+                ll + [w, h, 0.0],
+                ll + [0.0, h, 0.0],
+                ll,
+            ],
+            dtype=np.float64,
+        )
         logger.debug('Start box as ablation line.')
-        self.ablation(points=pts, shift=None)
+        self.ablation(points=path, shift=None)
 
     def text(
         self,
@@ -379,7 +410,8 @@ def main() -> None:
     # c.cross([2.5, 1], 5, 2)
     # c.ablation([[0, 0, 0], [5, 0, 0], [5, 1, 0], [2, 2, 0]], shift=0.001)
     # c.meander([1, 2, 3], [1, 3, 3])
-    c.text('prova')
+    c.box([0, 0, 0], 3, 3)
+    # c.text('prova')
     print(c.points)
 
     # Plot

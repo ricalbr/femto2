@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import functools
 import os
 import pathlib
 from contextlib import nullcontext as does_not_raise
@@ -41,7 +40,6 @@ def gc_param() -> dict:
     return p
 
 
-@functools.lru_cache
 @pytest.fixture
 def list_wg() -> list[Waveguide]:
     PARAM_WG = dict(speed=20, radius=25, pitch=0.080, int_dist=0.007, samplesize=(25, 3))
@@ -57,7 +55,6 @@ def list_wg() -> list[Waveguide]:
     return coup
 
 
-@functools.lru_cache
 @pytest.fixture
 def list_mk() -> list[Marker]:
     PARAM_MK = dict(scan=1, speed=2, speed_pos=5, speed_closed=5, depth=0.000, lx=1, ly=1)
@@ -69,7 +66,6 @@ def list_mk() -> list[Marker]:
     return markers
 
 
-@functools.lru_cache
 @pytest.fixture
 def list_tcol(list_wg) -> list[TrenchColumn]:
     PARAM_TC = dict(
@@ -88,13 +84,11 @@ def list_tcol(list_wg) -> list[TrenchColumn]:
     return t_col
 
 
-@functools.lru_cache
 @pytest.fixture
 def device(gc_param) -> Device:
     return Device(**gc_param)
 
 
-@functools.lru_cache
 @pytest.fixture
 def cell() -> Cell:
     return Cell()

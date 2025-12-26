@@ -960,116 +960,186 @@ def test_coupler_d_int(d_input) -> None:
 def test_reverse_bend(param) -> None:
     dx = 9
     dz = 0.1
-    wg = Waveguide(**param)
-    wg.start([0, 0, 0])
-    wg.bend(dy=wg.dy_bend, dz=dz, disp_x=dx, fx=sin, reverse=True)
+    x0, y0, z0 = 0, 0, 0
+    TOL = 1e-10
 
-    assert pytest.approx(wg.lastx) == -dx
-    assert pytest.approx(wg.lasty) == wg.dy_bend
-    assert pytest.approx(wg.lastz) == -dz
+    # Forward curve
+    wg_fwd = Waveguide(**param)
+    wg_fwd.start([x0, y0, z0])
+    wg_fwd.bend(dy=wg_fwd.dy_bend, dz=dz, disp_x=dx, fx=sin, reverse=False)
 
-    wg_reg = Waveguide(**param)
-    wg_reg.start([0, 0, 0])
-    wg_reg.bend(dy=wg.dy_bend, dz=dz, disp_x=dx, fx=sin)
+    # Reversed curve
+    wg_rev = Waveguide(**param)
+    wg_rev.start([x0, y0, z0])
+    wg_rev.bend(dy=wg_rev.dy_bend, dz=dz, disp_x=dx, fx=sin, reverse=True)
 
-    for xr, x in zip(wg_reg.x, wg.x):
-        assert pytest.approx(np.abs(xr)) == np.abs(x)
-        assert np.sign(xr) == np.sign(-x)
+    # 1) Endpoint check (global geometry)
+    print(f'{x0=}')
+    print(f'{wg_rev.dx_bend=}')
+    print(f'{wg_rev.lastx=}')
+    assert wg_rev.lastx == pytest.approx(x0 - dx, abs=TOL)
+    assert wg_rev.lasty == pytest.approx(y0 + wg_rev.dy_bend, abs=TOL)
+    assert wg_rev.lastz == pytest.approx(z0 - dz, abs=TOL)
 
-    for yr, y in zip(wg_reg.y, wg.y):
-        assert pytest.approx(np.abs(yr)) == np.abs(y)
-        assert np.sign(yr) == np.sign(y)
+    # 2) Curve shape check (local geometry) Work in coordinates relative to the start point
+    xf = np.asarray(wg_fwd.x, dtype=np.float64)
+    yf = np.asarray(wg_fwd.y, dtype=np.float64)
+    zf = np.asarray(wg_fwd.z, dtype=np.float64)
 
-    for zr, z in zip(wg_reg.z, wg.z):
-        assert pytest.approx(np.abs(zr)) == np.abs(z)
-        assert np.sign(zr) == -np.sign(z)
+    xr = np.asarray(wg_rev.x, dtype=np.float64)
+    yr = np.asarray(wg_rev.y, dtype=np.float64)
+    zr = np.asarray(wg_rev.z, dtype=np.float64)
+
+    # local frames
+    xf -= xf[0]
+    yf -= yf[0]
+    zf -= zf[0]
+
+    xr -= xr[0]
+    yr -= yr[0]
+    zr -= zr[0]
+
+    assert xr == pytest.approx(-xf, abs=TOL)  # X: reversed path, mirrored
+    assert yr == pytest.approx(yf, abs=TOL)  # Y: reversed path, same orientation
+    assert zr == pytest.approx(-zf, abs=TOL)  # Z: reversed path, mirrored
 
 
-@pytest.mark.parametrize('f', [euler_S4, sin, spline, arctan, rad, abv, euler_S2, erf])
+@pytest.mark.parametrize(
+    "f",
+    [euler_S4, sin, spline, arctan, rad, abv, euler_S2, erf],
+)
 def test_reverse_bend_curves(f, param) -> None:
-    dx = 9
+    dx = 9.0
     dz = 0.1
-    x0, y0, z0 = 3, 4, 5
-    wg = Waveguide(**param)
-    wg.start([x0, y0, z0])
-    wg.bend(dy=wg.dy_bend, dz=dz, disp_x=dx, fx=f, reverse=True)
+    x0, y0, z0 = 3.0, 4.0, 5.0
+    TOL = 1e-10
 
-    assert pytest.approx(wg.lastx) == -dx + x0
-    assert pytest.approx(wg.lasty) == wg.dy_bend + y0
-    assert pytest.approx(wg.lastz) == z0 - dz
+    # Forward curve
+    wg_fwd = Waveguide(**param)
+    wg_fwd.start([x0, y0, z0])
+    wg_fwd.bend(dy=wg_fwd.dy_bend, dz=dz, disp_x=dx, fx=f, reverse=False)
 
-    wg_reg = Waveguide(**param)
-    wg_reg.start([x0, y0, z0])
-    wg_reg.bend(dy=wg.dy_bend, dz=dz, disp_x=dx, fx=f)
+    # Reversed curve
+    wg_rev = Waveguide(**param)
+    wg_rev.start([x0, y0, z0])
+    wg_rev.bend(dy=wg_rev.dy_bend, dz=dz, disp_x=dx, fx=f, reverse=True)
 
-    for xr, x in zip(wg_reg.x, wg.x):
-        assert pytest.approx(np.abs(xr - x0)) == np.abs(x - x0)
-        assert np.sign(xr - x0) == np.sign(-(x - x0))
+    # 1) Endpoint check (global geometry)
+    assert wg_rev.lastx == pytest.approx(x0 - dx, abs=TOL)
+    assert wg_rev.lasty == pytest.approx(y0 + wg_rev.dy_bend, abs=TOL)
+    assert wg_rev.lastz == pytest.approx(z0 - dz, abs=TOL)
 
-    for yr, y in zip(wg_reg.y, wg.y):
-        assert pytest.approx(np.abs(yr - y0)) == np.abs(y - y0)
-        assert np.sign(yr - y0) == np.sign(y - y0)
+    # 2) Curve shape check (local geometry) Work in coordinates relative to the start point
+    xf = np.asarray(wg_fwd.x, dtype=np.float64)
+    yf = np.asarray(wg_fwd.y, dtype=np.float64)
+    zf = np.asarray(wg_fwd.z, dtype=np.float64)
 
-    for zr, z in zip(wg_reg.z, wg.z):
-        assert pytest.approx(np.abs(zr - z0)) == np.abs(z - z0)
-        assert np.sign(zr - z0) == -np.sign(z - z0)
+    xr = np.asarray(wg_rev.x, dtype=np.float64)
+    yr = np.asarray(wg_rev.y, dtype=np.float64)
+    zr = np.asarray(wg_rev.z, dtype=np.float64)
+
+    # local frames
+    xf -= xf[0]
+    yf -= yf[0]
+    zf -= zf[0]
+
+    xr -= xr[0]
+    yr -= yr[0]
+    zr -= zr[0]
+
+    assert xr == pytest.approx(-xf, abs=TOL)  # X: reversed path, mirrored
+    assert yr == pytest.approx(yf, abs=TOL)  # Y: reversed path, same orientation
+    assert zr == pytest.approx(-zf, abs=TOL)  # Z: reversed path, mirrored
 
 
 def test_reverse_bend_circ(param) -> None:
     dz = 0.1
     x0, y0, z0 = 3, 4, 5
-    wg = Waveguide(**param)
-    wg.start([x0, y0, z0])
-    wg.bend(dy=wg.dy_bend, dz=dz, fx=circ, reverse=True)
+    TOL = 1e-10
 
-    assert pytest.approx(wg.lastx) == -wg.dx_bend + x0
-    assert pytest.approx(wg.lasty) == wg.dy_bend + y0
-    assert pytest.approx(wg.lastz) == z0 - dz
+    # Forward curve
+    wg_fwd = Waveguide(**param)
+    wg_fwd.start([x0, y0, z0])
+    wg_fwd.bend(dy=wg_fwd.dy_bend, dz=dz, fx=circ, reverse=False)
 
-    wg_reg = Waveguide(**param)
-    wg_reg.start([x0, y0, z0])
-    wg_reg.bend(dy=wg.dy_bend, dz=dz, fx=circ)
+    # Reversed curve
+    wg_rev = Waveguide(**param)
+    wg_rev.start([x0, y0, z0])
+    wg_rev.bend(dy=wg_rev.dy_bend, dz=dz, fx=circ, reverse=True)
 
-    for xr, x in zip(wg_reg.x, wg.x):
-        assert pytest.approx(np.abs(xr - x0)) == np.abs(x - x0)
-        assert np.sign(xr - x0) == np.sign(-(x - x0))
+    # 1) Endpoint check (global geometry)
+    print(f'{x0=}')
+    print(f'{wg_rev.dx_bend=}')
+    print(f'{wg_rev.lastx=}')
+    assert wg_rev.lastx == pytest.approx(x0 - wg_rev.dx_bend, abs=TOL)
+    assert wg_rev.lasty == pytest.approx(y0 + wg_rev.dy_bend, abs=TOL)
+    assert wg_rev.lastz == pytest.approx(z0 - dz, abs=TOL)
 
-    for yr, y in zip(wg_reg.y, wg.y):
-        assert pytest.approx(np.abs(yr - y0)) == np.abs(y - y0)
-        assert np.sign(yr - y0) == np.sign(y - y0)
+    # 2) Curve shape check (local geometry) Work in coordinates relative to the start point
+    xf = np.asarray(wg_fwd.x, dtype=np.float64)
+    yf = np.asarray(wg_fwd.y, dtype=np.float64)
+    zf = np.asarray(wg_fwd.z, dtype=np.float64)
 
-    for zr, z in zip(wg_reg.z, wg.z):
-        assert pytest.approx(np.abs(zr - z0)) == np.abs(z - z0)
-        assert np.sign(zr - z0) == -np.sign(z - z0)
+    xr = np.asarray(wg_rev.x, dtype=np.float64)
+    yr = np.asarray(wg_rev.y, dtype=np.float64)
+    zr = np.asarray(wg_rev.z, dtype=np.float64)
+
+    # local frames
+    xf -= xf[0]
+    yf -= yf[0]
+    zf -= zf[0]
+
+    xr -= xr[0]
+    yr -= yr[0]
+    zr -= zr[0]
+
+    assert xr == pytest.approx(-xf, abs=TOL)  # X: reversed path, mirrored
+    assert yr == pytest.approx(yf, abs=TOL)  # Y: reversed path, same orientation
+    assert zr == pytest.approx(-zf, abs=TOL)  # Z: reversed path, mirrored
 
 
 def test_reverse_coupler(param) -> None:
     dz = 0.1
     x0, y0, z0 = 3, 4, 5
     lin = 5
-    wg = Waveguide(**param)
-    wg.start([x0, y0, z0])
-    wg.coupler(dy=wg.dy_bend, dz=dz, fx=circ, int_length=lin, reverse=True)
+    TOL = 1e-11
 
-    assert pytest.approx(wg.lastx) == -2 * wg.dx_bend + x0 - lin
-    assert pytest.approx(wg.lasty) == y0
-    assert pytest.approx(wg.lastz) == z0
+    # Forward curve
+    wg_fwd = Waveguide(**param)
+    wg_fwd.start([x0, y0, z0])
+    wg_fwd.coupler(dy=wg_fwd.dy_bend, dz=dz, fx=circ, int_length=lin, reverse=False)
 
-    wg_reg = Waveguide(**param)
-    wg_reg.start([x0, y0, z0])
-    wg_reg.coupler(dy=wg.dy_bend, dz=dz, fx=circ, int_length=lin)
+    # Reversed curve
+    wg_rev = Waveguide(**param)
+    wg_rev.start([x0, y0, z0])
+    wg_rev.coupler(dy=wg_rev.dy_bend, dz=dz, fx=circ, int_length=lin, reverse=True)
 
-    for xr, x in zip(wg_reg.x, wg.x):
-        assert pytest.approx(np.abs(xr - x0)) == np.abs(x - x0)
-        assert np.sign(xr - x0) == np.sign(-(x - x0))
+    # 1) Endpoint check (global geometry)
+    assert wg_rev.lastx == pytest.approx(x0 - 2 * wg_rev.dx_bend - lin, abs=TOL)
+    assert wg_rev.lasty == pytest.approx(y0, abs=TOL)
+    assert wg_rev.lastz == pytest.approx(z0, abs=TOL)
 
-    for yr, y in zip(wg_reg.y, wg.y):
-        assert pytest.approx(np.abs(yr - y0)) == np.abs(y - y0)
-        assert np.sign(yr - y0) == np.sign(y - y0)
+    # 2) Curve shape check (local geometry) Work in coordinates relative to the start point
+    xf = np.asarray(wg_fwd._x, dtype=np.float64)
+    yf = np.asarray(wg_fwd._y, dtype=np.float64)
+    zf = np.asarray(wg_fwd._z, dtype=np.float64)
 
-    for zr, z in zip(wg_reg.z, wg.z):
-        assert pytest.approx(np.abs(zr - z0)) == np.abs(z - z0)
-        assert np.sign(zr - z0) == -np.sign(z - z0)
+    xr = np.asarray(wg_rev._x, dtype=np.float64)
+    yr = np.asarray(wg_rev._y, dtype=np.float64)
+    zr = np.asarray(wg_rev._z, dtype=np.float64)
+
+    # local frames
+    xf -= xf[0]
+    yf -= yf[0]
+    zf -= zf[0]
+
+    xr -= xr[0]
+    yr -= yr[0]
+    zr -= zr[0]
+
+    assert xr == pytest.approx(-xf, abs=TOL)  # X: reversed path, mirrored
+    assert yr == pytest.approx(yf, abs=TOL)  # Y: reversed path, same orientation
+    assert zr == pytest.approx(-zf, abs=TOL)  # Z: reversed path, mirrored
 
 
 def test_reverse_mzi(param) -> None:
@@ -1077,29 +1147,44 @@ def test_reverse_mzi(param) -> None:
     x0, y0, z0 = 3, 4, 5
     lin = 5
     lar = 3
-    wg = Waveguide(**param)
-    wg.start([x0, y0, z0])
-    wg.mzi(dy=wg.dy_bend, dz=dz, fx=circ, int_length=lin, arm_length=lar, reverse=True)
+    TOL = 1e-12
 
-    assert pytest.approx(wg.lastx) == -4 * wg.dx_bend + x0 - 2 * lin - lar
-    assert pytest.approx(wg.lasty) == y0
-    assert pytest.approx(wg.lastz) == z0
+    # Forward curve
+    wg_fwd = Waveguide(**param)
+    wg_fwd.start([x0, y0, z0])
+    wg_fwd.mzi(dy=wg_fwd.dy_bend, dz=dz, fx=circ, int_length=lin, arm_length=lar, reverse=False)
 
-    wg_reg = Waveguide(**param)
-    wg_reg.start([x0, y0, z0])
-    wg_reg.mzi(dy=wg.dy_bend, dz=dz, fx=circ, int_length=lin, arm_length=lar)
+    # Reversed curve
+    wg_rev = Waveguide(**param)
+    wg_rev.start([x0, y0, z0])
+    wg_rev.mzi(dy=wg_rev.dy_bend, dz=dz, fx=circ, int_length=lin, arm_length=lar, reverse=True)
 
-    for xr, x in zip(wg_reg.x, wg.x):
-        assert pytest.approx(np.abs(xr - x0)) == np.abs(x - x0)
-        assert np.sign(xr - x0) == np.sign(-(x - x0))
+    # 1) Endpoint check (global geometry)
+    assert wg_rev.lastx == pytest.approx(x0 - 4 * wg_rev.dx_bend - 2 * lin - lar, abs=TOL)
+    assert wg_rev.lasty == pytest.approx(y0, abs=TOL)
+    assert wg_rev.lastz == pytest.approx(z0, abs=TOL)
 
-    for yr, y in zip(wg_reg.y, wg.y):
-        assert pytest.approx(np.abs(yr - y0)) == np.abs(y - y0)
-        assert np.sign(yr - y0) == np.sign(y - y0)
+    # 2) Curve shape check (local geometry) Work in coordinates relative to the start point
+    xf = np.asarray(wg_fwd._x, dtype=np.float64)
+    yf = np.asarray(wg_fwd._y, dtype=np.float64)
+    zf = np.asarray(wg_fwd._z, dtype=np.float64)
 
-    for zr, z in zip(wg_reg.z, wg.z):
-        assert pytest.approx(np.abs(zr - z0)) == np.abs(z - z0)
-        assert np.sign(zr - z0) == -np.sign(z - z0)
+    xr = np.asarray(wg_rev._x, dtype=np.float64)
+    yr = np.asarray(wg_rev._y, dtype=np.float64)
+    zr = np.asarray(wg_rev._z, dtype=np.float64)
+
+    # local frames
+    xf -= xf[0]
+    yf -= yf[0]
+    zf -= zf[0]
+
+    xr -= xr[0]
+    yr -= yr[0]
+    zr -= zr[0]
+
+    assert xr == pytest.approx(-xf, abs=TOL)  # X: reversed path, mirrored
+    assert yr == pytest.approx(yf, abs=TOL)  # Y: reversed path, same orientation
+    assert zr == pytest.approx(-zf, abs=TOL)  # Z: reversed path, mirrored
 
 
 def test_add_points(param):
@@ -1108,9 +1193,9 @@ def test_add_points(param):
     wg.start([0, 0, 0])
     wg.add_curve_points(pts, speed=None, shutter=1)
     x, y, z = wg.path3d
-    np.testing.assert_array_equal(x[1:], np.array(pts[0, :], dtype=np.float32))
-    np.testing.assert_array_equal(y[1:], np.array(pts[1, :], dtype=np.float32))
-    np.testing.assert_array_equal(z[1:], np.array(pts[2, :], dtype=np.float32))
+    np.testing.assert_array_equal(x[1:], np.array(pts[0, :], dtype=np.float64))
+    np.testing.assert_array_equal(y[1:], np.array(pts[1, :], dtype=np.float64))
+    np.testing.assert_array_equal(z[1:], np.array(pts[2, :], dtype=np.float64))
     del wg
 
     pts = np.random.rand(123, 3)
@@ -1118,9 +1203,9 @@ def test_add_points(param):
     wg.start([0, 0, 0])
     wg.add_curve_points(pts, speed=None, shutter=1)
     x, y, z = wg.path3d
-    np.testing.assert_array_equal(x[1:], np.array(pts[:, 0], dtype=np.float32))
-    np.testing.assert_array_equal(y[1:], np.array(pts[:, 1], dtype=np.float32))
-    np.testing.assert_array_equal(z[1:], np.array(pts[:, 2], dtype=np.float32))
+    np.testing.assert_array_equal(x[1:], np.array(pts[:, 0], dtype=np.float64))
+    np.testing.assert_array_equal(y[1:], np.array(pts[:, 1], dtype=np.float64))
+    np.testing.assert_array_equal(z[1:], np.array(pts[:, 2], dtype=np.float64))
 
 
 @pytest.mark.parametrize(

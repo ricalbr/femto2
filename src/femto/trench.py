@@ -407,17 +407,27 @@ class Trench:
         if not shape.is_valid:
             return [geometry.Polygon()]
 
-        buff = shape.buffer(offset).simplify(tolerance=1e-5, preserve_topology=True)
+        # split single polygon components
+        if isinstance(shape, geometry.MultiPolygon):
+            parts = shape.geoms
+        else:
+            parts = [shape]
 
-        if isinstance(buff, geometry.Polygon):
-            return [buff]
+        out = []
+        for part in parts:
+            # buffer each single part separately
+            buff = part.buffer(offset).simplify(
+                tolerance=1e-5,
+                preserve_topology=True,
+            )
 
-        if isinstance(buff, geometry.MultiPolygon):
-            return list(buff.geoms)
-
-        # Pathological case: buffer operation returned a non-area geometry
-        # (e.g. due to numerical degeneracy or topology collapse)
-        return [geometry.Polygon()]
+            if isinstance(buff, geometry.Polygon) and not buff.is_empty:
+                out.append(buff)
+            elif isinstance(buff, geometry.MultiPolygon) and not buff.is_empty:
+                out.extend(list(buff.geoms))
+            else:
+                out.append(geometry.Polygon())  # collapsed or non-area geometry
+        return out
 
     @staticmethod
     def resample_polygon(x: nparray, y: nparray, step: float | None = 0.005) -> nparray:

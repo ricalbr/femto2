@@ -30,8 +30,8 @@ class Waveguide(LaserPath):
     _id: str = attrs.field(alias='_id', default='WG')  #: Waveguide ID.
 
     def __init__(self, **kwargs: Any) -> None:
-        filtered: dict[str, Any] = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}
-        self.__attrs_init__(**filtered)
+        filtered: dict[str, Any] = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}  # type: ignore[attr-defined]
+        self.__attrs_init__(**filtered)  # type: ignore[attr-defined]
 
     def __attrs_post_init__(self) -> None:
         super().__attrs_post_init__()
@@ -169,9 +169,9 @@ class Waveguide(LaserPath):
         logger.debug(f'Computed (x, y, z) using {fx} function.')
 
         if reverse:
-            x = np.flip(x) - x[-1]
-            y = -(np.flip(y) - y[-1])
-            z = np.flip(z) - z[-1]
+            x = (x - x[-1])[::-1]
+            y = -(y - y[-1])[::-1]
+            z = (z - z[-1])[::-1]
 
         # Update coordinates
         self.add_path(
@@ -256,6 +256,7 @@ class Waveguide(LaserPath):
             # If the f-profile is sinusoidal match the curvature of the two S-bends portions.
             r = radius if radius is not None else self.radius
             disp_x2 = np.sqrt(4 * np.abs(dy2) * r - np.abs(dy1 * dy2))
+
         self.bend(
             dy=dy2,
             dz=dz2,
@@ -337,7 +338,8 @@ class Waveguide(LaserPath):
         if reverse:
             self.linear([-np.fabs(int_length), 0, 0], speed=speed, shutter=shutter, mode='INC')
         else:
-            self.linear([np.fabs(int_length), 0, 0], speed=speed, shutter=shutter)
+            self.linear([np.fabs(int_length), 0, 0], speed=speed, shutter=shutter, mode='INC')
+
         self.bend(
             dy=-dy,
             dz=-dz,
@@ -421,7 +423,8 @@ class Waveguide(LaserPath):
         if reverse:
             self.linear([-np.fabs(arm_length), 0, 0], shutter=shutter, speed=speed, mode='INC')
         else:
-            self.linear([np.fabs(arm_length), 0, 0], shutter=shutter, speed=speed)
+            self.linear([np.fabs(arm_length), 0, 0], shutter=shutter, speed=speed, mode='INC')
+
         self.coupler(
             dy=dy,
             dz=dz,
@@ -498,8 +501,8 @@ class NasuWaveguide(Waveguide):
     _id: str = attrs.field(alias='_id', default='NWG')  #: Nasu Waveguide ID.
 
     def __init__(self, **kwargs: Any) -> None:
-        filtered: dict[str, Any] = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}
-        self.__attrs_init__(**filtered)
+        filtered: dict[str, Any] = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}  # type: ignore[attr-defined]
+        self.__attrs_init__(**filtered)  # type: ignore[attr-defined]
 
     def __attrs_post_init__(self) -> None:
         super().__attrs_post_init__()
@@ -600,16 +603,25 @@ def main() -> None:
     increment = [5.0, 0, 0]
 
     # Calculations
+    # mzi = []
+    # for index in range(2):
+    #     wg = Waveguide(**param_wg)
+    #     wg.y_init = -wg.pitch / 2 + index * wg.pitch
+    #     wg.start()
+    #     wg.linear(increment)
+    #     wg.coupler(dy=(-1) ** index * wg.dy_bend, dz=0.0, fx=sin, flat_peaks=0)
+    #     wg.bend(dy=(-1) ** index * wg.dy_bend, dz=0.0, fx=circ)
+    #     wg.coupler(dy=(-1) ** index * wg.dy_bend, dz=0.0, fx=circ, flat_peaks=0)
+    #     wg.linear(increment)
+    #     wg.end()
+    #     mzi.append(wg)
+
     mzi = []
     for index in range(2):
         wg = Waveguide(**param_wg)
         wg.y_init = -wg.pitch / 2 + index * wg.pitch
         wg.start()
-        wg.linear(increment)
-        wg.coupler(dy=(-1) ** index * wg.dy_bend, dz=0.0, fx=sin, flat_peaks=0)
-        wg.bend(dy=(-1) ** index * wg.dy_bend, dz=0.0, fx=circ)
-        wg.coupler(dy=(-1) ** index * wg.dy_bend, dz=0.0, fx=circ, flat_peaks=0)
-        wg.linear(increment)
+        wg.coupler(dy=(-1) ** index * wg.dy_bend, dz=0.0, fx=sin, flat_peaks=0, reverse=True)
         wg.end()
         mzi.append(wg)
 
@@ -618,8 +630,11 @@ def main() -> None:
     fig.clf()
     ax = Axes3D(fig, auto_add_to_figure=False)
     fig.add_axes(ax)
-    ax.set_xlabel('X [mm]'), ax.set_ylabel('Y [mm]'), ax.set_zlabel('Z [mm]')
+    ax.set_xlabel('X [mm]')
+    ax.set_ylabel('Y [mm]')
+    ax.set_zlabel('Z [mm]')
     for wg in mzi:
+        ax.scatter(wg.x[0], wg.y[0], wg.z[0], 'or')
         ax.plot(wg.x[:-1], wg.y[:-1], wg.z[:-1], '-k', linewidth=2.5)
         ax.plot(wg.x[-2:], wg.y[-2:], wg.z[-2:], ':b', linewidth=1.0)
     ax.set_box_aspect(aspect=(3, 1, 0.5))

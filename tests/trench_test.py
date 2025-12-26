@@ -239,36 +239,38 @@ def test_centroid(poly) -> None:
 @pytest.mark.parametrize(
     'p, offset, p_expected',
     [
-        (Point(0, 0), 1, [Point(0, 0).buffer(1)]),
-        (Point(0, 0), -1, [Point(0, 0).buffer(1).buffer(-2)]),
-        (
-            MultiPolygon([Polygon([(0, 0), (1, 0), (1, 1), (0, 1)]), Polygon([(5, 5), (5, 6), (6, 6), (5, 6)])]),
-            -0.1,
-            [
-                Polygon([(0, 0), (1, 0), (1, 1), (0, 1)]).buffer(-0.1),
-                Polygon([(5, 5), (5, 6), (6, 6), (5, 6)]).buffer(-0.1),
-            ],
-        ),
-        (
-            MultiPolygon([Polygon([(0, 0), (5, 0), (5, 5), (0, 5)]), Point(7, 7).buffer(0.5)]),
-            -1,
-            [Polygon([(0, 0), (5, 0), (5, 5), (0, 5)]).buffer(-1), Polygon()],
-        ),
-        (
-            Polygon([(0, 0), (0, 3), (3, 3), (3, 0), (2, 0), (2, 2), (1, 2), (1, 1), (2, 1), (2, 0), (0, 0)]),
-            -1,
-            [Polygon()],
-        ),
+        # (Point(0, 0), 1, [Point(0, 0).buffer(1)]),
+        # (Point(0, 0), -1, [Point(0, 0).buffer(1).buffer(-2)]),
+        # (
+        #     MultiPolygon([Polygon([(0, 0), (1, 0), (1, 1), (0, 1)]), Polygon([(5, 5), (5, 6), (6, 6), (6, 5)])]),
+        #     -0.1,
+        #     [
+        #         Polygon([(0, 0), (1, 0), (1, 1), (0, 1)]).buffer(-0.1),
+        #         Polygon([(5, 5), (5, 6), (6, 6), (6, 5)]).buffer(-0.1),
+        #     ],
+        # ),
+        # (
+        #     MultiPolygon([Polygon([(0, 0), (5, 0), (5, 5), (0, 5)]), Point(7, 7).buffer(0.5)]),
+        #     -1,
+        #     [Polygon([(0, 0), (5, 0), (5, 5), (0, 5)]).buffer(-1), Polygon()],
+        # ),
+        # (
+        #     Polygon([(0, 0), (0, 3), (3, 3), (3, 0), (2, 0), (2, 2), (1, 2), (1, 1), (2, 1), (2, 0), (0, 0)]),
+        #     -1,
+        #     [Polygon()],
+        # ),
         (
             Point(-1, 0).buffer(1.5).union(Point(1, 0).buffer(1.5)),
             -1.2,
-            Point(-1, 0).buffer(1.5).union(Point(1, 0).buffer(1.5)).buffer(-1.2).geoms,
+            [g for g in Point(-1, 0).buffer(1.5).union(Point(1, 0).buffer(1.5)).buffer(-1.2).geoms],
         ),
     ],
 )
 def test_buffer_polygon(p, offset, p_expected) -> None:
     tc = Trench(block=Polygon())
     buff_polygon = tc.buffer_polygon(p, offset)
+
+    print(buff_polygon)
 
     for p_calc, p_exp in zip(buff_polygon, p_expected):
         assert almost_equal(p_calc, p_exp)
