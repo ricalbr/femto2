@@ -162,7 +162,7 @@ class Spreadsheet:
 
         # Add the femto logo at top left of spreadsheet
         path_logo = pathlib.Path(__file__).parent / 'utils' / 'logo_excel.png'
-        self._worksheet.insert_image('B2', filename=path_logo, options={'x_scale': 0.33, 'y_scale': 0.33})
+        self._worksheet.insert_image('B2', path_logo, options={'x_scale': 0.33, 'y_scale': 0.33})
 
         # Write the header and leave space for fabrication description
         self._worksheet.set_row(row=2, height=50)
