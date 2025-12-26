@@ -226,34 +226,23 @@ class Marker(LaserPath):
         self.end()
 
     @staticmethod
-    def _normalize_paths(
-        points: list[list[float]] | list[nparray] | nparray,
-    ) -> list[nparray]:
-        if isinstance(points, list) and not points:
-            return []
+    def _normalize_paths(points: list[list[float]] | list[nparray] | nparray) -> list[nparray]:
 
-        arr = np.asarray(points, dtype=np.float64)
+        if isinstance(points, np.ndarray):
+            return [points.astype(np.float64)]
 
-        # Completely empty array: []
-        if arr.size == 0:
-            return []
+        elif isinstance(points, list):
+            if not points:
+                return []
 
-        # Single path: (N, 3)
-        if arr.ndim == 2:
-            if arr.shape[1] != 3:
-                raise ValueError(f"Expected points with shape (N, 3), got (N, {arr.shape[1]}).")
-            return [arr]
-
-        # Multiple paths: (M, N, 3)
-        if arr.ndim == 3:
-            if arr.shape[2] != 3:
-                raise ValueError(f"Expected points with shape (M, N, 3), got (M, N, {arr.shape[2]}).")
-
-            # Filter out empty paths (N == 0)
-            paths = [arr[i] for i in range(arr.shape[0]) if arr[i].size > 0]
-            return paths
-
-        raise ValueError("Invalid points shape. Expected (N,3) or (M,N,3).")
+            if isinstance(points[0], list):
+                # list of coordinates
+                return [np.vstack(points).astype(np.float64)]
+            else:
+                # treat single curves separately (e.g. for text)
+                return [np.asarray(p, dtype=np.float64) for p in points]
+        else:
+            raise TypeError(f"Unsupported type for points: {type(points)}")
 
     def ablation(
         self,
@@ -412,7 +401,7 @@ def main() -> None:
     # c.meander([1, 2, 3], [1, 3, 3])
     c.box([0, 0, 0], 3, 3)
     # c.text('prova')
-    print(c.points)
+    # print(c.points)
 
     # Plot
     _, ax = plt.subplots()
@@ -423,7 +412,7 @@ def main() -> None:
         ax.plot(x_seg, y_seg, '-k', linewidth=2.5)
     for x_seg, y_seg in zip(split_mask(x, ~s.astype(bool)), split_mask(y, ~s.astype(bool))):
         ax.plot(x_seg, y_seg, ':b', linewidth=0.5)
-    plt.show()
+    # plt.show()
 
 
 if __name__ == '__main__':

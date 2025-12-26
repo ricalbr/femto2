@@ -585,34 +585,29 @@ def main() -> None:
     test.plot2d(show=False)
     test.save('scheme.html')
     test.pgm()
-    # test.xlsx()
+    test.xlsx()
     # test.export()
 
-    # test2 = Device.load_objects('.\EXPORT', param_gc)
+    # test2 = Device.load_objects('.\\EXPORT', param_gc)
     # test2.plot2d()
     # test2.save()
 
     # Export
-    # dev.plot2d()
-    # dev.save('circuit_scheme.pdf')
-    # dev.pgm()
-    # dev.export()
-
-    # data_xlsx = dict(
-    #     laboratory='CAPABLE',
-    #     samplename=pathlib.Path(param_gc['filename']).stem,
-    #     material='Cornings Eagle-XG',
-    #     facet='Bottom',
-    #     thickness='1 mm',
-    #     lasername=param_gc['laser'],
-    #     wavelength='1030 nm',
-    #     duration='180 fs',
-    #     reprate='1 MHz',
-    #     attenuator='15 %',
-    #     preset='1',
-    #     objective='20X WI',
-    # )
-    # dev.xlsx(metadata=data_xlsx)
+    data_xlsx = dict(
+        laboratory='CAPABLE',
+        samplename=pathlib.Path(param_gc['filename']).stem,
+        material='Cornings Eagle-XG',
+        facet='Bottom',
+        thickness='1 mm',
+        lasername=param_gc['laser'],
+        wavelength='1030 nm',
+        duration='180 fs',
+        reprate='1 MHz',
+        attenuator='15 %',
+        preset='1',
+        objective='20X WI',
+    )
+    test.xlsx(metadata=data_xlsx)
 
 
 if __name__ == '__main__':
