@@ -8,6 +8,8 @@ filterwarnings = [
     "ignore::DeprecationWarning",
 ]
 testpaths = "tests"
+timeout = 30
+
 
 [tool.mypy]
 mypy_path = "src"
