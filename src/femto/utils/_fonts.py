@@ -1,4 +1,4 @@
-from typing import Dict, Tuple, List, TypedDict
+from typing import Dict, List, Tuple, TypedDict
 
 Char = str
 Line = List[List[float]]  # [x_coords, y_coords]

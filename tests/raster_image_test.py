@@ -3,8 +3,9 @@ from __future__ import annotations
 import numpy as np
 import numpy.testing
 import pytest
-from femto.rasterimage import RasterImage
 from PIL import Image
+
+from femto.rasterimage import RasterImage
 
 
 @pytest.fixture

@@ -4,20 +4,21 @@ from contextlib import nullcontext as does_not_raise
 
 import numpy as np
 import pytest
-from femto.curves import abv
-from femto.curves import arc
-from femto.curves import arctan
-from femto.curves import circ
-from femto.curves import erf
-from femto.curves import euler_S2
-from femto.curves import euler_S4
-from femto.curves import rad
-from femto.curves import sin
-from femto.curves import spline
-from femto.curves import spline_bridge
-from femto.waveguide import coupler
-from femto.waveguide import NasuWaveguide
-from femto.waveguide import Waveguide
+
+from femto.curves import (
+    abv,
+    arc,
+    arctan,
+    circ,
+    erf,
+    euler_S2,
+    euler_S4,
+    rad,
+    sin,
+    spline,
+    spline_bridge,
+)
+from femto.waveguide import NasuWaveguide, Waveguide, coupler
 
 
 @pytest.fixture

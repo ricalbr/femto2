@@ -1,20 +1,20 @@
 from __future__ import annotations
 
+from typing import Any, Callable
+
 import attr
-import shapely
+import attrs
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
-from typing import Any
-from typing import Callable
-import attrs
-from shapely import geometry
-import shapely.ops
+import shapely
 import shapely.affinity
-from femto import logger
+import shapely.ops
+from shapely import geometry
 
-from femto.utils import _fonts
+from femto import logger
 from femto.helpers import normalize_phase
+from femto.utils import _fonts
 
 # Define custom types
 nparray = npt.NDArray[np.float64]

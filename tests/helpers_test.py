@@ -4,22 +4,24 @@ import os
 
 import numpy as np
 import pytest
-from femto.helpers import almost_equal
-from femto.helpers import flatten
-from femto.helpers import grouped
-from femto.helpers import listcast
-from femto.helpers import lookahead
-from femto.helpers import nest_level
-from femto.helpers import pairwise
-from femto.helpers import remove_repeated_coordinates
-from femto.helpers import sign
-from femto.helpers import split_mask
-from femto.helpers import swap
-from femto.helpers import unique_filter
-from femto.helpers import walklevel
+from shapely.geometry import Point, Polygon
+
+from femto.helpers import (
+    almost_equal,
+    flatten,
+    grouped,
+    listcast,
+    lookahead,
+    nest_level,
+    pairwise,
+    remove_repeated_coordinates,
+    sign,
+    split_mask,
+    swap,
+    unique_filter,
+    walklevel,
+)
 from femto.waveguide import Waveguide
-from shapely.geometry import Point
-from shapely.geometry import Polygon
 
 
 @pytest.mark.parametrize(

@@ -7,15 +7,10 @@ import attrs
 import dill
 import numpy as np
 import pytest
-from femto.helpers import almost_equal
-from femto.helpers import normalize_polygon
-from femto.trench import Trench
-from femto.trench import TrenchColumn
-from shapely.geometry import box
-from shapely.geometry import MultiLineString
-from shapely.geometry import MultiPolygon
-from shapely.geometry import Point
-from shapely.geometry import Polygon
+from shapely.geometry import MultiLineString, MultiPolygon, Point, Polygon, box
+
+from femto.helpers import almost_equal, normalize_polygon
+from femto.trench import Trench, TrenchColumn
 
 
 @pytest.fixture
@@ -683,6 +678,7 @@ def test_dig_from_array_raise(tc):
 
 def test_normalize(tc):
     from itertools import combinations
+
     from femto.helpers import almost_equal
 
     poly1 = Polygon([(0, 0), (0, 1), (1, 1), (1, 0)])

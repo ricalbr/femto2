@@ -9,11 +9,9 @@ from pathlib import Path
 import dill
 import numpy as np
 import pytest
-from femto.helpers import flatten
-from femto.helpers import listcast
-from femto.pgmcompiler import farcall
-from femto.pgmcompiler import PGMCompiler
-from femto.pgmcompiler import sample_warp
+
+from femto.helpers import flatten, listcast
+from femto.pgmcompiler import PGMCompiler, farcall, sample_warp
 
 
 @pytest.fixture
@@ -478,6 +476,7 @@ def test_antiwarp_creation(param) -> None:
 
 def test_antiwarp_plot(param) -> None:
     from pathlib import Path
+
     import matplotlib.pyplot as plt
 
     fn = 'POS.txt'

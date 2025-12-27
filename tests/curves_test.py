@@ -1,13 +1,8 @@
 from __future__ import annotations
 
 import pytest
-from femto.curves import abv
-from femto.curves import arctan
-from femto.curves import euler_S2
-from femto.curves import euler_S4
-from femto.curves import rad
-from femto.curves import sin
-from femto.curves import spline
+
+from femto.curves import abv, arctan, euler_S2, euler_S4, rad, sin, spline
 
 
 @pytest.fixture

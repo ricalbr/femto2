@@ -7,17 +7,14 @@ from pathlib import Path
 
 import openpyxl
 import pytest
-from femto.curves import sin
-from femto.device import Cell
-from femto.device import Device
-from femto.helpers import delete_folder
-from femto.helpers import flatten
-from femto.marker import Marker
-from femto.trench import Trench
-from femto.trench import TrenchColumn
-from femto.waveguide import NasuWaveguide
-from femto.waveguide import Waveguide
 from shapely.geometry import Polygon
+
+from femto.curves import sin
+from femto.device import Cell, Device
+from femto.helpers import delete_folder, flatten
+from femto.marker import Marker
+from femto.trench import Trench, TrenchColumn
+from femto.waveguide import NasuWaveguide, Waveguide
 
 
 @pytest.fixture

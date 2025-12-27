@@ -8,9 +8,7 @@ import numpy as np
 import numpy.typing as npt
 
 from femto import logger
-from femto.helpers import flatten
-from femto.helpers import listcast
-from femto.helpers import sign
+from femto.helpers import flatten, listcast, sign
 from femto.laserpath import LaserPath
 from femto.text import Text
 
