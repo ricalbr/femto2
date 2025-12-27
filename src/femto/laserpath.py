@@ -46,7 +46,11 @@ class LaserPath:
     logger.debug('Initialized all the coordinates arrays.')
 
     def __init__(self, **kwargs: Any) -> None:
-        filtered: dict[str, Any] = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}  # type: ignore[attr-defined]
+        filtered: dict[str, Any] = {
+            att.name: kwargs[att.name]
+            for att in self.__attrs_attrs__  # type: ignore[attr-defined]
+            if att.name in kwargs
+        }
         self.__attrs_init__(**filtered)  # type: ignore[attr-defined]
 
     def __attrs_post_init__(self) -> None:

@@ -15,11 +15,11 @@ from shapely import geometry
 from femto import logger
 from femto.helpers import normalize_phase
 from femto.utils import _fonts
+from femto.utils._fonts import Font
 
 # Define custom types
 nparray = npt.NDArray[np.float64]
 AlignmentFunc = Callable[[nparray], float]
-from femto.utils._fonts import Font
 
 
 @attrs.define(kw_only=True)
@@ -160,7 +160,11 @@ class Text:
     _id: str = attrs.field(alias='_id', default='TX')  #: Internal text ID.
 
     def __init__(self, **kwargs: Any) -> None:
-        filtered: dict[str, Any] = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}  # type: ignore[attr-defined]
+        filtered: dict[str, Any] = {
+            att.name: kwargs[att.name]
+            for att in self.__attrs_attrs__  # type: ignore[attr-defined]
+            if att.name in kwargs
+        }
         self.__attrs_init__(**filtered)  # type: ignore[attr-defined]
 
     def __attrs_post_init__(self) -> None:

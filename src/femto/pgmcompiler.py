@@ -80,8 +80,12 @@ class PGMCompiler:
     _loaded_files: list[str] = attrs.field(factory=list)
     _dvars: list[str] = attrs.field(factory=list)
 
-    def __init__(self, **kwargs: Any):
-        filtered: dict[str, Any] = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}  # type: ignore[attr-defined]
+    def __init__(self, **kwargs: Any) -> None:
+        filtered: dict[str, Any] = {
+            att.name: kwargs[att.name]
+            for att in self.__attrs_attrs__  # type: ignore[attr-defined]
+            if att.name in kwargs
+        }
         self.__attrs_init__(**filtered)  # type: ignore[attr-defined]
 
     def __attrs_post_init__(self) -> None:
@@ -1192,7 +1196,7 @@ class PGMCompiler:
             z = f.__call__(xy_points).reshape(x.shape)
 
             fig = plt.figure()
-            ax = fig.add_subplot(111, projection="3d")  # type: Axes3D
+            ax: Axes3D = fig.add_subplot(111, projection="3d")
             ax.contourf(x, y, z, 200, cmap='viridis')
             ax.set_xlabel('X [mm]')
             ax.set_ylabel('Y [mm]')

@@ -30,7 +30,11 @@ class Waveguide(LaserPath):
     _id: str = attrs.field(alias='_id', default='WG')  #: Waveguide ID.
 
     def __init__(self, **kwargs: Any) -> None:
-        filtered: dict[str, Any] = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}  # type: ignore[attr-defined]
+        filtered: dict[str, Any] = {
+            att.name: kwargs[att.name]
+            for att in self.__attrs_attrs__  # type: ignore[attr-defined]
+            if att.name in kwargs
+        }
         self.__attrs_init__(**filtered)  # type: ignore[attr-defined]
 
     def __attrs_post_init__(self) -> None:
@@ -501,7 +505,11 @@ class NasuWaveguide(Waveguide):
     _id: str = attrs.field(alias='_id', default='NWG')  #: Nasu Waveguide ID.
 
     def __init__(self, **kwargs: Any) -> None:
-        filtered: dict[str, Any] = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}  # type: ignore[attr-defined]
+        filtered: dict[str, Any] = {
+            att.name: kwargs[att.name]
+            for att in self.__attrs_attrs__  # type: ignore[attr-defined]
+            if att.name in kwargs
+        }
         self.__attrs_init__(**filtered)  # type: ignore[attr-defined]
 
     def __attrs_post_init__(self) -> None:
@@ -603,25 +611,16 @@ def main() -> None:
     increment = [5.0, 0, 0]
 
     # Calculations
-    # mzi = []
-    # for index in range(2):
-    #     wg = Waveguide(**param_wg)
-    #     wg.y_init = -wg.pitch / 2 + index * wg.pitch
-    #     wg.start()
-    #     wg.linear(increment)
-    #     wg.coupler(dy=(-1) ** index * wg.dy_bend, dz=0.0, fx=sin, flat_peaks=0)
-    #     wg.bend(dy=(-1) ** index * wg.dy_bend, dz=0.0, fx=circ)
-    #     wg.coupler(dy=(-1) ** index * wg.dy_bend, dz=0.0, fx=circ, flat_peaks=0)
-    #     wg.linear(increment)
-    #     wg.end()
-    #     mzi.append(wg)
-
     mzi = []
     for index in range(2):
         wg = Waveguide(**param_wg)
         wg.y_init = -wg.pitch / 2 + index * wg.pitch
         wg.start()
-        wg.coupler(dy=(-1) ** index * wg.dy_bend, dz=0.0, fx=sin, flat_peaks=0, reverse=True)
+        wg.linear(increment)
+        wg.coupler(dy=(-1) ** index * wg.dy_bend, dz=0.0, fx=sin, flat_peaks=0)
+        wg.bend(dy=(-1) ** index * wg.dy_bend, dz=0.0, fx=circ)
+        wg.coupler(dy=(-1) ** index * wg.dy_bend, dz=0.0, fx=circ, flat_peaks=0)
+        wg.linear(increment)
         wg.end()
         mzi.append(wg)
 

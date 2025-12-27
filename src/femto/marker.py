@@ -8,7 +8,7 @@ import numpy as np
 import numpy.typing as npt
 
 from femto import logger
-from femto.helpers import flatten, listcast, sign
+from femto.helpers import sign
 from femto.laserpath import LaserPath
 from femto.text import Text
 
@@ -27,7 +27,11 @@ class Marker(LaserPath):
     _id: str = attrs.field(alias='_id', default='MK')  #: Marker ID.
 
     def __init__(self, **kwargs: Any) -> None:
-        filtered: dict[str, Any] = {att.name: kwargs[att.name] for att in self.__attrs_attrs__ if att.name in kwargs}  # type: ignore[attr-defined]
+        filtered: dict[str, Any] = {
+            att.name: kwargs[att.name]
+            for att in self.__attrs_attrs__  # type: ignore[attr-defined]
+            if att.name in kwargs
+        }
         self.__attrs_init__(**filtered)  # type: ignore[attr-defined]
 
     def __attrs_post_init__(self) -> None:
@@ -274,15 +278,19 @@ class Marker(LaserPath):
         if shift is not None:
             logger.debug(f'Apply shift of {shift} um to ablation line.')
 
-            offsets = [
-                np.array([0.0, 0.0, 0.0]),  # no shift
-                np.array([0.0, shift, 0.0]),  # N
-                np.array([shift, 0.0, 0.0]),  # E
-                np.array([0.0, -shift, 0.0]),  # S
-                np.array([-shift, 0.0, 0.0]),  # W
+            offsets: list[nparray] = [
+                np.array([0.0, 0.0, 0.0], dtype=np.float64),
+                np.array([0.0, shift, 0.0], dtype=np.float64),   # N
+                np.array([shift, 0.0, 0.0], dtype=np.float64),   # E
+                np.array([0.0, -shift, 0.0], dtype=np.float64),  # S
+                np.array([-shift, 0.0, 0.0], dtype=np.float64),  # W
             ]
 
-            path_list = [[pts + offset for pts in path] for path in path_list for offset in offsets]
+            path_list = [
+                path + offset
+                for path in path_list
+                for offset in offsets
+            ]
 
         # Add linear segments
         logger.debug('Start ablation line.')
