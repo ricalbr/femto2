@@ -8,7 +8,6 @@ from typing import Any, Generator, Iterable, Iterator
 
 import numpy as np
 import numpy.typing as npt
-from numpy import AxisError
 from shapely import geometry
 
 
@@ -281,7 +280,7 @@ def unique_filter(arrays: list[npt.NDArray[np.float64]]) -> npt.NDArray[np.float
     # mask
     try:
         mask = np.sum(np.diff(data, axis=0), axis=1, dtype=bool)
-    except AxisError:  # handle 1D-data matrix case
+    except np.exceptions.AxisError:  # handle 1D-data matrix case
         mask = np.diff(data).astype(bool)
     mask = np.insert(mask, 0, True)
 
