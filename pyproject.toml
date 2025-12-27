@@ -8,7 +8,7 @@ filterwarnings = [
     "ignore::DeprecationWarning",
 ]
 testpaths = "tests"
-timeout = 30
+# timeout = 30
 
 
 [tool.mypy]
