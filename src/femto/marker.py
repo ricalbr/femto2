@@ -6,7 +6,6 @@ from typing import Any
 import attrs
 import numpy as np
 import numpy.typing as npt
-
 from femto import logger
 from femto.helpers import sign
 from femto.laserpath import LaserPath
@@ -280,17 +279,13 @@ class Marker(LaserPath):
 
             offsets: list[nparray] = [
                 np.array([0.0, 0.0, 0.0], dtype=np.float64),
-                np.array([0.0, shift, 0.0], dtype=np.float64),   # N
-                np.array([shift, 0.0, 0.0], dtype=np.float64),   # E
+                np.array([0.0, shift, 0.0], dtype=np.float64),  # N
+                np.array([shift, 0.0, 0.0], dtype=np.float64),  # E
                 np.array([0.0, -shift, 0.0], dtype=np.float64),  # S
                 np.array([-shift, 0.0, 0.0], dtype=np.float64),  # W
             ]
 
-            path_list = [
-                path + offset
-                for path in path_list
-                for offset in offsets
-            ]
+            path_list = [path + offset for path in path_list for offset in offsets]
 
         # Add linear segments
         logger.debug('Start ablation line.')
@@ -355,8 +350,8 @@ class Marker(LaserPath):
         origin: list[float] | nparray = [1.0, 1.0],
         height: float = 1.0,
         angle: float = 0.0,
-        alignment_position: str = "left-bottom",
-        font: str = "stencil",
+        alignment_position: str = 'left-bottom',
+        font: str = 'stencil',
         line_spacing: float = 1.5,
         true_bbox_alignment: bool = False,
     ) -> None:

@@ -10,14 +10,17 @@ from typing import Any
 import dill
 import numpy as np
 import numpy.typing as npt
-from plotly import graph_objs as go
-
 from femto import logger
-from femto.helpers import flatten, listcast, split_mask
+from femto.helpers import flatten
+from femto.helpers import listcast
+from femto.helpers import split_mask
 from femto.marker import Marker
 from femto.pgmcompiler import PGMCompiler
-from femto.trench import Trench, TrenchColumn
-from femto.waveguide import NasuWaveguide, Waveguide
+from femto.trench import Trench
+from femto.trench import TrenchColumn
+from femto.waveguide import NasuWaveguide
+from femto.waveguide import Waveguide
+from plotly import graph_objs as go
 
 
 def plot2d_base_layer(fig: go.Figure, x0: float, y0: float, x1: float, y1: float) -> go.Figure:

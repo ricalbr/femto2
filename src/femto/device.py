@@ -3,28 +3,30 @@ from __future__ import annotations
 import collections
 import copy
 import pathlib
-from typing import Any, Union, get_args
+from typing import Any
+from typing import get_args
+from typing import Union
 
 import attrs
 import dill
 import plotly.graph_objects as go
-
 from femto import logger
 from femto.curves import sin
-from femto.helpers import flatten, walklevel
+from femto.helpers import flatten
+from femto.helpers import walklevel
 from femto.laserpath import LaserPath
 from femto.marker import Marker
 from femto.spreadsheet import Spreadsheet
-from femto.trench import Trench, TrenchColumn
-from femto.waveguide import NasuWaveguide, Waveguide
-from femto.writer import (
-    MarkerWriter,
-    NasuWriter,
-    TrenchWriter,
-    WaveguideWriter,
-    plot2d_base_layer,
-    plot3d_base_layer,
-)
+from femto.trench import Trench
+from femto.trench import TrenchColumn
+from femto.waveguide import NasuWaveguide
+from femto.waveguide import Waveguide
+from femto.writer import MarkerWriter
+from femto.writer import NasuWriter
+from femto.writer import plot2d_base_layer
+from femto.writer import plot3d_base_layer
+from femto.writer import TrenchWriter
+from femto.writer import WaveguideWriter
 
 # List of femto objects
 types = dict(

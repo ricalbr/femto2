@@ -4,20 +4,24 @@ import copy
 import math
 import pathlib
 from functools import cached_property
-from typing import Any, Generator, Iterator
+from typing import Any
+from typing import Generator
+from typing import Iterator
 
 import attrs
 import dill
 import largestinteriorrectangle as lir
 import numpy as np
 import numpy.typing as npt
-from shapely import geometry
-from shapely.ops import unary_union
-
 from femto import logger
 from femto.curves import sin
-from femto.helpers import almost_equal, flatten, listcast, normalize_polygon
+from femto.helpers import almost_equal
+from femto.helpers import flatten
+from femto.helpers import listcast
+from femto.helpers import normalize_polygon
 from femto.waveguide import Waveguide
+from shapely import geometry
+from shapely.ops import unary_union
 
 # Define array type
 nparray = npt.NDArray[np.float64]
@@ -321,7 +325,7 @@ class Trench:
             coords.extend(line.coords)
         return np.array(coords).T
 
-    def toolpath(self) -> Generator[nparray, None, None]:
+    def toolpath(self) -> Generator[nparray]:
         """Toolpath generator.
 
         The function takes a polygon and computes the filling toolpath.

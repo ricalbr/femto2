@@ -8,16 +8,23 @@ import math
 import pathlib
 import re
 from types import TracebackType
-from typing import Any, Callable, Deque, Generator, NamedTuple, TypeVar
+from typing import Any
+from typing import Callable
+from typing import Deque
+from typing import Generator
+from typing import NamedTuple
+from typing import TypeVar
 
 import attrs
 import dill
 import numpy as np
 import numpy.typing as npt
-from scipy import interpolate
-
 from femto import logger
-from femto.helpers import flatten, listcast, pad, remove_repeated_coordinates
+from femto.helpers import flatten
+from femto.helpers import listcast
+from femto.helpers import pad
+from femto.helpers import remove_repeated_coordinates
+from scipy import interpolate
 
 # Create a generic variable that can be 'PGMCompiler', or any subclass.
 GC = TypeVar('GC', bound='PGMCompiler')
@@ -554,7 +561,7 @@ class PGMCompiler:
         self.move_to([-2, 0, 0])
 
     @contextlib.contextmanager
-    def axis_rotation(self, angle: float | None = None) -> Generator[PGMCompiler, None, None]:
+    def axis_rotation(self, angle: float | None = None) -> Generator[PGMCompiler]:
         """Aerotech axis rotation (G84).
 
         Context manager for the G84 command. The user can specify the angle (in degree) of the axis rotation.
@@ -575,7 +582,7 @@ class PGMCompiler:
             self._exit_axis_rotation()
 
     @contextlib.contextmanager
-    def for_loop(self, var: str, num: int) -> Generator[PGMCompiler, None, None]:
+    def for_loop(self, var: str, num: int) -> Generator[PGMCompiler]:
         """Foor loop instruction.
 
         Context manager that manages a ``FOR`` loops in a G-Code file.
@@ -612,7 +619,7 @@ class PGMCompiler:
             self._total_dwell_time += int(num - 1) * (self._total_dwell_time - _temp_dt)
 
     @contextlib.contextmanager
-    def repeat(self, num: int) -> Generator[PGMCompiler, None, None]:
+    def repeat(self, num: int) -> Generator[PGMCompiler]:
         """Repeat loop instruction.
 
         Context manager that manages a ``REPEAT`` loops in a G-Code file.
@@ -1196,7 +1203,7 @@ class PGMCompiler:
             z = f.__call__(xy_points).reshape(x.shape)
 
             fig = plt.figure()
-            ax: Axes3D = fig.add_subplot(111, projection="3d")
+            ax: Axes3D = fig.add_subplot(111, projection='3d')
             ax.contourf(x, y, z, 200, cmap='viridis')
             ax.set_xlabel('X [mm]')
             ax.set_ylabel('Y [mm]')

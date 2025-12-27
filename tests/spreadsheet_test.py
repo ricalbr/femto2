@@ -5,7 +5,6 @@ from pathlib import Path
 
 import openpyxl
 import pytest
-
 from femto import __file__ as fpath
 from femto.curves import sin
 from femto.marker import Marker

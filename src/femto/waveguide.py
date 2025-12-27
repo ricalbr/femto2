@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import math
-from typing import Any, Callable
+from typing import Any
+from typing import Callable
 
 import attrs
 import numpy as np
 import numpy.typing as npt
-
 from femto import logger
 from femto.laserpath import LaserPath
 

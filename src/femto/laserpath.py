@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import copy
 import pathlib
-from typing import Any, Sequence
+from typing import Any
+from typing import Sequence
 
 import attrs
 import dill
 import numpy as np
 import numpy.typing as npt
-
 from femto import logger
 from femto.helpers import unique_filter
 

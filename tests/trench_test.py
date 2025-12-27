@@ -7,10 +7,14 @@ import attrs
 import dill
 import numpy as np
 import pytest
-from shapely.geometry import MultiLineString, MultiPolygon, Point, Polygon, box
-
-from femto.helpers import almost_equal, normalize_polygon
-from femto.trench import Trench, TrenchColumn
+from femto.helpers import almost_equal
+from femto.helpers import normalize_polygon
+from femto.trench import Trench
+from femto.trench import TrenchColumn
+from shapely.geometry import box
+from shapely.geometry import MultiLineString
+from shapely.geometry import Point
+from shapely.geometry import Polygon
 
 
 @pytest.fixture

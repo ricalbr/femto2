@@ -7,7 +7,6 @@ import attrs
 import dill
 import numpy as np
 import pytest
-
 from femto.laserpath import LaserPath
 
 

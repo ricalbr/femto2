@@ -4,7 +4,10 @@ import functools
 import itertools
 import os
 import pathlib
-from typing import Any, Generator, Iterable, Iterator
+from typing import Any
+from typing import Generator
+from typing import Iterable
+from typing import Iterator
 
 import numpy as np
 import numpy.typing as npt
@@ -392,7 +395,7 @@ def normalize_polygon(poly: geometry.Polygon) -> geometry.Polygon:
     return geometry.Polygon(normalized_exterior, normalized_interiors)
 
 
-def lookahead(iterable: Iterable[Any]) -> Generator[tuple[Any, bool], None, None]:
+def lookahead(iterable: Iterable[Any]) -> Generator[tuple[Any, bool]]:
     """Lookahead.
 
     Pass through all values from the given iterable, augmented by the information if there are more values to come
@@ -424,7 +427,7 @@ def lookahead(iterable: Iterable[Any]) -> Generator[tuple[Any, bool], None, None
     yield next_item, True
 
 
-def walklevel(path: str | pathlib.Path, depth: int = 1) -> Generator[tuple[Any, Any, Any], None, None]:
+def walklevel(path: str | pathlib.Path, depth: int = 1) -> Generator[tuple[Any, Any, Any]]:
     """Walklevel.
 
     It works just like os.walk, but you can pass it a level parameter that indicates how deep the recursion will go.

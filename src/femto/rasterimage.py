@@ -5,11 +5,10 @@ from typing import Any
 
 import attrs
 import numpy as np
-from PIL import Image
-
 from femto import logger
 from femto.helpers import split_mask
 from femto.laserpath import LaserPath
+from PIL import Image
 
 
 @attrs.define(kw_only=True, repr=False, init=False)

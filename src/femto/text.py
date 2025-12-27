@@ -1,21 +1,20 @@
 from __future__ import annotations
 
-from typing import Any, Callable
+from typing import Any
+from typing import Callable
 
 import attr
 import attrs
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
-import shapely
 import shapely.affinity
 import shapely.ops
-from shapely import geometry
-
 from femto import logger
 from femto.helpers import normalize_phase
 from femto.utils import _fonts
 from femto.utils._fonts import Font
+from shapely import geometry
 
 # Define custom types
 nparray = npt.NDArray[np.float64]
@@ -47,19 +46,19 @@ class Alignment:
     def _alignment_validator(self, attribute, value: str) -> None:
         """Validator for the alignment attribute."""
 
-        options = [option.strip() for option in value.split("-")]
+        options = [option.strip() for option in value.split('-')]
         if len(options) != 2:
             logger.error('Alignment option string must be two options separated by a dash.')
             raise AttributeError('Alignment option string must be two options separated by a dash.')
-        if options[0] not in self._ALIGNMENT["x"]:
+        if options[0] not in self._ALIGNMENT['x']:
             logger.error(f'x-axis alignment option must be one of {self._ALIGNMENT["x"].keys()}')
             raise AttributeError(f'x-axis alignment option must be one of {self._ALIGNMENT["x"].keys()}')
-        if options[1] not in self._ALIGNMENT["y"]:
+        if options[1] not in self._ALIGNMENT['y']:
             logger.error(f'y-axis alignment option must be one of {self._ALIGNMENT["y"].keys()}')
             raise AttributeError(f'y-axis alignment option must be one of {self._ALIGNMENT["y"].keys()}')
 
     alignment: str = attrs.field(
-        default="left-bottom",
+        default='left-bottom',
         validator=[
             attrs.validators.instance_of(str),
             _alignment_validator,
@@ -67,15 +66,15 @@ class Alignment:
     )  # : Alignment option for the text, as "x-y" string (e.g., "left-bottom").
 
     _ALIGNMENT: dict[str, dict[str, AlignmentFunc]] = {
-        "x": {
-            "left": lambda coord: float(coord[0, 0]),
-            "center": lambda coord: float(np.mean(coord[:, 0])),
-            "right": lambda coord: float(coord[-1, 0]),
+        'x': {
+            'left': lambda coord: float(coord[0, 0]),
+            'center': lambda coord: float(np.mean(coord[:, 0])),
+            'right': lambda coord: float(coord[-1, 0]),
         },
-        "y": {
-            "bottom": lambda coord: float(coord[0, 1]),
-            "center": lambda coord: float(np.mean(coord[:, 1])),
-            "top": lambda coord: float(coord[-1, 1]),
+        'y': {
+            'bottom': lambda coord: float(coord[0, 1]),
+            'center': lambda coord: float(np.mean(coord[:, 1])),
+            'top': lambda coord: float(coord[-1, 1]),
         },
     }  # : Dictionary mapping axis ("x" or "y") and alignment keywords to functions computing coordinate offsets.
 
@@ -88,8 +87,8 @@ class Alignment:
         tuple(str, str)
             Tuple of functions.
         """
-        options = self.alignment.split("-")
-        return self._ALIGNMENT["x"][options[0]], self._ALIGNMENT["y"][options[1]]
+        options = self.alignment.split('-')
+        return self._ALIGNMENT['x'][options[0]], self._ALIGNMENT['y'][options[1]]
 
     def calculate_offset(self, bbox: nparray) -> nparray:
         """
@@ -142,12 +141,12 @@ def polygon_order(polygon: geometry.Polygon) -> float:
 
 @attrs.define(kw_only=True, repr=False, init=False)
 class Text:
-    text: str = ""  #: Text content.
-    alignment_position: str = "left-bottom"  #: Alignment option for the text.
+    text: str = ''  #: Text content.
+    alignment_position: str = 'left-bottom'  #: Alignment option for the text.
     origin: list[float] | nparray = [1.0, 1.0]  #: Origin point (x, y) for placement of the text.
     height: float = 1.0  #: Height of the text, [mm].
     angle: float = 0.0  #: Rotation angle of the text, [deg].
-    font: str = "stencil"  #: Name of the font.
+    font: str = 'stencil'  #: Name of the font.
     line_spacing: float = 1.5  #: Vertical spacing between lines.
     true_bbox_alignment: bool = False  #: If True, use the true bounding box for alignment calculations.
 
@@ -241,7 +240,7 @@ class Text:
         if self._bbox is None:
             self.get_shapely_object()
             if self._bbox is None:
-                raise RuntimeError("Bounding box not initialized.")
+                raise RuntimeError('Bounding box not initialized.')
         return self._bbox
 
     @property
@@ -302,7 +301,7 @@ class Text:
 
         polygons = list()
 
-        special_handling_chars = "\n"
+        special_handling_chars = '\n'
         font: Font = _fonts.FONTS[self.font]
 
         # Check the text
@@ -314,23 +313,23 @@ class Text:
         max_x = 0.0
         cursor_x, cursor_y = 0.0, 0.0
         for i, char in enumerate(self.text):
-            if char == "\n":
+            if char == '\n':
                 cursor_x, cursor_y = 0.0, cursor_y - self.line_spacing
                 continue
 
             char_font = font[char]
-            cursor_x += char_font["width"] / 2 * self.height
+            cursor_x += char_font['width'] / 2 * self.height
 
-            for line in char_font["lines"]:
+            for line in char_font['lines']:
                 points = np.array(line).T * self.height + (cursor_x, cursor_y)
                 polygons.append(geometry.Polygon(points))
 
             # Add kerning (space between letters)
             if i < len(self.text) - 1 and self.text[i + 1] not in special_handling_chars:
-                kerning = char_font["kerning"][self.text[i + 1]]
-                cursor_x += (char_font["width"] / 2 + kerning) * self.height
+                kerning = char_font['kerning'][self.text[i + 1]]
+                cursor_x += (char_font['width'] / 2 + kerning) * self.height
 
-            max_x = max(max_x, cursor_x + char_font["width"] / 2 * self.height)
+            max_x = max(max_x, cursor_x + char_font['width'] / 2 * self.height)
 
         merged_polygon = shapely.ops.unary_union(polygons)
 
@@ -366,17 +365,17 @@ class Text:
 
 
 def _example():
-    text = Text(origin=[0, 0], height=0.5, text="c", alignment="left-bottom")
+    text = Text(origin=[0, 0], height=0.5, text='c', alignment='left-bottom')
 
     _, ax = plt.subplots()
     print(list(text.get_shapely_object().geoms))
     for polygon in text.get_shapely_object().geoms:
         # polygon = polygon.buffer(-text.height * 0.025, single_sided=True)
         x, y = polygon.exterior.xy
-        ax.fill(x, y, alpha=0.5, fc="r", edgecolor="black", linewidth=1)
-    ax.set_aspect("equal")
+        ax.fill(x, y, alpha=0.5, fc='r', edgecolor='black', linewidth=1)
+    ax.set_aspect('equal')
     plt.show()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     _example()
