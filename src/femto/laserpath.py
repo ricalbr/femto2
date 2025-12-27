@@ -421,40 +421,65 @@ class LaserPath:
         logger.debug(f'Return total fabrication time, {time} s.')
         return time
 
-    @property
-    def curvature_radius(self) -> nparray:
-        """Point-to-point curvature radius of the trajectory.
+    def curvature(self) -> tuple[nparray, nparray]:
+        """Curvature.
 
-        The curvature radius is computed as the radius of the circle that best fits the curve at a given point.
+        The curvature vector, denoted as k, is a vector that points in the direction of the center of curvature of a
+        curve in three-dimensional space. Its components are related to the curvature of the curve along each of the
+        coordinate axes.
+
+        In more detail, let's say the curvature vector is given by k = (kx, ky, kz). Here's what each component
+        signifies:
+            kx: the component of the curvature along the x-axis.
+            ky: the component of the curvature along the y-axis (same as a flat, 2D, curve).
+            kz: the component of the curvature along the z-axis.
+
+        So, each component of the curvature vector indicates the curvature of the curve in the corresponding plane
+        formed by two of the three coordinate axes. The sign of each component also indicates the direction of
+        curvature along that axis: positive values indicate a leftward curvature, and negative values indicate a
+        rightward curvature.
+        Note this curvature is numerically computed so areas where the curvature jumps instantaneously (such as
+        between an arc and a straight segment) will be slightly interpolated, and sudden changes in point density
+        along the curve can cause discontinuities.
 
         Returns
         -------
-        numpy.ndarray
-            Array of curvature radii of the trajectory.
+        s: np.ndarray[N]
+            The arc-length of the path.
+        k: np.ndarray[3][N]
+            The curvature of the path.
         """
-
         points = np.array(self.path3d).T
 
-        # Compute the first and second derivatives of the curve
-        t = np.linspace(0, 1, len(points))
-        r1 = np.gradient(points, t, axis=0, edge_order=2)
-        r2 = np.gradient(r1, t, axis=0, edge_order=2)
+        ds = np.sqrt(np.sum(np.gradient(points, axis=0) ** 2, axis=1))
+        s = np.cumsum(ds)
 
-        # Compute the cross product and norm of the cross product
-        cross = np.cross(r1, r2)
-        norm_cross = np.linalg.norm(cross, axis=1)
-        norm_r1 = np.linalg.norm(r1, axis=1)
+        T_vector = np.gradient(points, axis=0)
+        norm_T = np.linalg.norm(T_vector, axis=1)
+        unit_T = T_vector / norm_T[:, np.newaxis]
 
-        # Return the local curvature radius, where cannot divide by 0 return inf
-        curv_rad: nparray = np.divide(
-            norm_r1**3,
-            norm_cross,
-            out=np.full_like(norm_r1, fill_value=np.inf),
-            where=~(norm_cross == 0),
-            dtype=np.float64,
+        # Compute the derivative of the unit tangent vector with respect to arc length
+        dT_ds = np.gradient(unit_T, axis=0)
+        k = dT_ds / norm_T[:, np.newaxis]
+        return s, k
+
+
+    @property
+    def curvature_radius(self) -> nparray:
+        """Curvature radius.
+
+        Returns
+        -------
+        nparray
+            Point-by-point curvature radius.
+        """
+        _, k = self.curvature()
+        k_magnitude = np.sqrt(np.sum(k**2, axis=1))
+        return np.divide(
+            np.ones_like(k_magnitude),
+            k_magnitude,
+            where=~np.isclose(k_magnitude, np.zeros_like(k_magnitude), atol=1e-3),
         )
-        logger.debug(f'Return curvature radius, avg_curvature_radius = {np.mean(curv_rad)}.')
-        return curv_rad
 
     @property
     def cmd_rate(self) -> nparray:

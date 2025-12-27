@@ -624,6 +624,20 @@ def main() -> None:
         wg.end()
         mzi.append(wg)
 
+    # Curvature radius
+    # wg = mzi[0]
+    # s, _ = wg.curvature()
+    # v = []
+    # idx = []
+    # k_norm = wg.curvature_radius
+    # R = np.divide(np.array([1]), k_norm, where=~np.isclose(k_norm, np.zeros_like(k_norm), atol=1e-3))
+    #
+    # plt.figure(1)
+    # plt.clf()
+    # plt.plot(s, R)
+    # plt.plot(idx, v)
+    # plt.show()
+
     # Plot
     fig = plt.figure()
     fig.clf()
