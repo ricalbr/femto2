@@ -498,7 +498,7 @@ def test_device_add_raise(device, elem, exp) -> None:
 def test_plot2d_save(device, list_wg, list_mk, list_tcol) -> None:
     device.add([list_wg, list_mk, list_tcol])
 
-    device.plot2d(save=False)
+    device.plot2d(save=False, show=False)
     assert not (Path('.').cwd() / 'scheme.html').is_file()
     assert device.fig is not None
 
@@ -515,7 +515,7 @@ def test_plot2d_save_true(device, list_wg, list_mk, list_tcol) -> None:
 def test_plot3d_save(device, list_wg, list_mk, list_tcol) -> None:
     device.add([list_wg, list_mk, list_tcol])
 
-    device.plot3d(save=False)
+    device.plot3d(save=False, show=False)
     assert not (Path('.').cwd() / 'scheme.html').is_file()
     assert device.fig is not None
 
