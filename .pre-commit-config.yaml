@@ -60,5 +60,8 @@ repos:
     rev: v1.12.1
     hooks:
       - id: mypy
-        additional_dependencies: [types-all, attrs]
+        additional_dependencies:
+          - attrs
+          - numpy
+          - shapely
         exclude: ^tests/|^examples/
