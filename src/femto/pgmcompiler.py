@@ -10,7 +10,6 @@ import re
 from types import TracebackType
 from typing import Any
 from typing import Callable
-from typing import Deque
 from typing import Generator
 from typing import NamedTuple
 from typing import TypeVar
@@ -43,6 +42,16 @@ class Laser(NamedTuple):
     axis: str  #: Axis of the PSO card
     pin: int | None  #: Pin of the PSO card
     mode: int | None  #: Mode od the PSO card
+
+
+class instr_deque(collections.deque):
+    def __init__(self) -> None:
+        super().__init__()
+        self._indent_level = 0
+        self._tab_width = 4
+
+    def append(self, instr: str) -> None:
+        return super().append(''.rjust(self._tab_width * self._indent_level) + instr)
 
 
 @attrs.define(kw_only=True, repr=False, init=False)
@@ -82,8 +91,9 @@ class PGMCompiler:
     _total_dwell_time: float = attrs.field(alias='_total_dwell_time', default=0.0)
     _shutter_on: bool = attrs.field(alias='_shutter_on', default=False)
     _mode_abs: bool = attrs.field(alias='_mode_abs', default=True)
+    _active_axis_rotation: bool = attrs.field(alias='_active_axis_rotation', default=False)
     _lasers: dict[str, Laser] = attrs.field(factory=dict)
-    _instructions: Deque[str] = attrs.field(factory=collections.deque)
+    _instructions: instr_deque = attrs.field(factory=instr_deque)
     _loaded_files: list[str] = attrs.field(factory=list)
     _dvars: list[str] = attrs.field(factory=list)
 
@@ -108,7 +118,7 @@ class PGMCompiler:
         }
 
         # File initialization
-        self._instructions: Deque[str] = collections.deque()
+        self._instructions: instr_deque = instr_deque()
         self._loaded_files: list[str] = []
         self._dvars: list[str] = []
 
@@ -609,10 +619,12 @@ class PGMCompiler:
         self._instructions.append(f'FOR ${var} = 0 TO {int(num) - 1}\n')
         logger.debug(f'Init FOR loop with {num} iterations.')
         _temp_dt = self._total_dwell_time
+        self._instructions._indent_level += 1
         try:
             yield self
         finally:
-            self._instructions.append(f'NEXT ${var}\n\n')
+            self._instructions._indent_level -= 1
+            self._instructions.append(f'NEXT ${var}\n')
             logger.debug('End FOR loop.')
 
             # pauses should be multiplied by number of cycles as well
@@ -640,10 +652,12 @@ class PGMCompiler:
         self._instructions.append(f'REPEAT {int(num)}\n')
         logger.debug(f'Init REPEAT loop with {num} iterations.')
         _temp_dt = self._total_dwell_time
+        self._instructions._indent_level += 1
         try:
             yield self
         finally:
-            self._instructions.append('ENDREPEAT\n\n')
+            self._instructions._indent_level -= 1
+            self._instructions.append('ENDREPEAT\n')
             logger.debug('End REPEAT loop.')
 
             # pauses should be multiplied by number of cycles as well
@@ -762,7 +776,26 @@ class PGMCompiler:
         None.
         """
         self._instructions.append(f'PROGRAM {int(task_id)} STOP\n')
-        self._instructions.append(f'WAIT (TASKSTATUS({int(task_id)}, DATAITEM_TaskState) == TASKSTATE_Idle) -1\n')
+        self.wait(f'TASKSTATUS({int(task_id)}, DATAITEM_TaskState) == TASKSTATE_Idle')
+
+    def wait(self, condition: str, time: int = -1) -> None:
+        """Wait command.
+
+        Add a wait command for the given condition with a given waiting time.
+
+        Parameters
+        ----------
+
+        condition: str
+            AeroBasic condition to wait for.
+        time: int, optional
+            Waiting time [ms]. The default value is -1, the command never times out.
+
+        Returns
+        -------
+        None.
+        """
+        self._instructions.append(f'WAIT ({condition}) {time or -1}\n')
 
     def farcall(self, filename: str) -> None:
         """FARCALL instruction.
@@ -1319,6 +1352,7 @@ class PGMCompiler:
         self.dwell(self.short_pause)
         self._instructions.append(f'G84 X Y F{angle}\n\n')
         self.dwell(self.short_pause)
+        self._active_axis_rotation = True
         logger.debug(f'Activate axis rotation with angle = {angle}.')
 
     def _exit_axis_rotation(self) -> None:
@@ -1330,10 +1364,14 @@ class PGMCompiler:
         -------
         None.
         """
+        if not self._active_axis_rotation:
+            return
+
         self.comment('DEACTIVATE AXIS ROTATION')
         self._instructions.append(f'G1 X{0.0:.6f} Y{0.0:.6f} Z{0.0:.6f} F{self.speed_pos:.6f}\n')
         self._instructions.append('G84 X Y\n')
         self.dwell(self.short_pause)
+        self._active_axis_rotation = False
         logger.debug('Deactivate axis rotation.')
 
 

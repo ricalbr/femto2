@@ -463,7 +463,6 @@ class LaserPath:
         k = dT_ds / norm_T[:, np.newaxis]
         return s, k
 
-
     @property
     def curvature_radius(self) -> nparray:
         """Curvature radius.
