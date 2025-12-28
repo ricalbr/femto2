@@ -923,7 +923,7 @@ def test_for_loop(param, n, v) -> None:
         assert G._instructions[-1] == f'FOR ${v} = 0 TO {int(n) - 1}\n'
         # do G-Code operations
         G.dwell(p)
-    assert G._instructions[-1] == f'NEXT ${v}\n\n'
+    assert G._instructions[-1] == f'NEXT ${v}\n'
     assert G.dwell_time == int(n) * p
 
 
@@ -951,7 +951,7 @@ def test_repeat(param, n) -> None:
         assert G._instructions[-1] == f'REPEAT {int(n)}\n'
         # do G-Code operations
         G.dwell(p)
-    assert G._instructions[-1] == 'ENDREPEAT\n\n'
+    assert G._instructions[-1] == 'ENDREPEAT\n'
     assert G.dwell_time == int(n) * p
 
 
@@ -1035,6 +1035,21 @@ def test_programstop(param) -> None:
     G.programstop(task_id=3)
     assert G._instructions[-2] == 'PROGRAM 3 STOP\n'
     assert G._instructions[-1] == 'WAIT (TASKSTATUS(3, DATAITEM_TaskState) == TASKSTATE_Idle) -1\n'
+
+def test_wait_default_time(param) -> None:
+    G = PGMCompiler(**param)
+    G.wait(condition='ciao')
+    assert G._instructions[-1] == 'WAIT (ciao) -1\n'
+
+
+@pytest.mark.parametrize('t', [0,1,2,3,4,69, 99, 420])
+def test_wait_time(param, t) -> None:
+    G = PGMCompiler(**param)
+    G.wait(condition='ciao', time=t)
+    if t == 0:
+        assert G._instructions[-1] == 'WAIT (ciao) -1\n'
+    else:
+        assert G._instructions[-1] == f'WAIT (ciao) {t}\n'
 
 
 @pytest.mark.parametrize(
